@@ -58,9 +58,20 @@ def init_db() -> None:
             id TEXT PRIMARY KEY, project_id TEXT, job_id TEXT, type TEXT NOT NULL,
             detail_json TEXT NOT NULL, created_at TEXT NOT NULL
         )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS bot_sessions (
+            bot_id TEXT PRIMARY KEY, display_name TEXT NOT NULL,
+            last_action TEXT NOT NULL, last_detail_json TEXT NOT NULL,
+            last_seen TEXT NOT NULL, created_at TEXT NOT NULL
+        )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS bot_activity (
+            id TEXT PRIMARY KEY, bot_id TEXT NOT NULL, action TEXT NOT NULL,
+            detail_json TEXT NOT NULL, created_at TEXT NOT NULL
+        )""")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_project_created ON jobs(project_id, created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_open_status ON jobs(status, created_at DESC) WHERE status NOT IN ('succeeded', 'failed')")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_events_project_created ON events(project_id, created_at DESC)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_sessions_last_seen ON bot_sessions(last_seen DESC)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_activity_bot_created ON bot_activity(bot_id, created_at DESC)")
         conn.execute("PRAGMA optimize")
 
 
@@ -140,6 +151,55 @@ def list_jobs(project_id: str | None = None) -> list[dict[str, Any]]:
     query = "SELECT * FROM jobs" + (" WHERE project_id = ?" if project_id else "") + " ORDER BY created_at DESC LIMIT 100"
     with db() as conn:
         rows = conn.execute(query, (project_id,) if project_id else ()).fetchall()
+    return [row_dict(row) or {} for row in rows]
+
+
+def safe_detail(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        detail = value
+    else:
+        detail = {"message": str(value or "")}
+    raw = json.dumps(detail, ensure_ascii=False)
+    return detail if len(raw) <= 1200 else {"truncated": True, "summary": raw[:1000]}
+
+
+def record_bot_heartbeat(body: dict[str, Any]) -> dict[str, Any]:
+    bot_id = str(body.get("bot_id", "")).strip()[:80]
+    if not bot_id or not all(character.isalnum() or character in "-_." for character in bot_id):
+        raise ValueError("bot_id must use letters, numbers, hyphen, underscore, or period.")
+    display_name = str(body.get("display_name", bot_id)).strip()[:120] or bot_id
+    action = str(body.get("action", "heartbeat")).strip()[:120] or "heartbeat"
+    detail = safe_detail(body.get("detail", {}))
+    now = utc_now()
+    with db() as conn:
+        conn.execute("""INSERT INTO bot_sessions (bot_id, display_name, last_action, last_detail_json, last_seen, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(bot_id) DO UPDATE SET display_name = excluded.display_name, last_action = excluded.last_action,
+            last_detail_json = excluded.last_detail_json, last_seen = excluded.last_seen""", (bot_id, display_name, action, json.dumps(detail), now, now))
+        conn.execute("INSERT INTO bot_activity (id, bot_id, action, detail_json, created_at) VALUES (?, ?, ?, ?, ?)", (str(uuid.uuid4()), bot_id, action, json.dumps(detail), now))
+        row = conn.execute("SELECT * FROM bot_sessions WHERE bot_id = ?", (bot_id,)).fetchone()
+    event(None, None, "bot_heartbeat", {"bot_id": bot_id, "action": action})
+    return row_dict(row) or {}
+
+
+def list_bots() -> dict[str, Any]:
+    with db() as conn:
+        rows = conn.execute("SELECT * FROM bot_sessions ORDER BY last_seen DESC LIMIT 100").fetchall()
+    now = datetime.now(timezone.utc)
+    bots = []
+    for row in rows:
+        bot = row_dict(row) or {}
+        seen = datetime.fromisoformat(str(bot["last_seen"]))
+        seconds_since_checkin = max(0, int((now - seen).total_seconds()))
+        bot["seconds_since_checkin"] = seconds_since_checkin
+        bot["presence"] = "active" if seconds_since_checkin <= 300 else "idle"
+        bots.append(bot)
+    return {"bots": bots, "summary": {"total_known": len(bots), "active_now": sum(bot["presence"] == "active" for bot in bots), "activity_rule": "active means a recorded check-in within the last 5 minutes"}}
+
+
+def list_bot_activity() -> list[dict[str, Any]]:
+    with db() as conn:
+        rows = conn.execute("SELECT * FROM bot_activity ORDER BY created_at DESC LIMIT 80").fetchall()
     return [row_dict(row) or {} for row in rows]
 
 
@@ -285,11 +345,15 @@ class StudioHandler(BaseHTTPRequestHandler):
         try:
             path = urlparse(self.path).path.rstrip("/") or "/"
             if path == "/health":
-                self._json(200, {"service": "NOH Local Studio", "status": "ready", "bind": "127.0.0.1", "workspace": str(WORKSPACE_DIR), "database": str(DB_PATH), "moviepy_installed": self._moviepy_ready(), "instagram_publish_enabled": bool(getattr(self.server, "allow_instagram_publish", False)), "credentials_configured": bool(os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USER_ID") and os.getenv("INSTAGRAM_API_VERSION"))})
+                self._json(200, {"service": "NOH Local Studio", "status": "ready", "bind": "127.0.0.1", "workspace": str(WORKSPACE_DIR), "database": str(DB_PATH), "moviepy_installed": self._moviepy_ready(), "instagram_publish_enabled": bool(getattr(self.server, "allow_instagram_publish", False)), "credentials_configured": bool(os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USER_ID") and os.getenv("INSTAGRAM_API_VERSION")), "bots": list_bots()["summary"]})
             elif path == "/api/projects":
                 self._json(200, {"projects": list_projects()})
             elif path == "/api/jobs":
                 self._json(200, {"jobs": list_jobs()})
+            elif path == "/api/bots":
+                self._json(200, list_bots())
+            elif path == "/api/bot-activity":
+                self._json(200, {"activity": list_bot_activity()})
             elif path.startswith("/api/projects/"):
                 project = get_project(path.rsplit("/", 1)[-1])
                 self._json(200, {"project": project, "jobs": list_jobs(project["id"])} if project else {"error": "Project not found"})
@@ -305,6 +369,8 @@ class StudioHandler(BaseHTTPRequestHandler):
             path = urlparse(self.path).path.rstrip("/"); body = self._body()
             if path == "/api/projects":
                 self._json(201, {"project": new_project(body)})
+            elif path == "/api/bots/heartbeat":
+                self._json(201, {"bot": record_bot_heartbeat(body)})
             elif path.startswith("/api/projects/") and path.endswith("/render"):
                 project_id = path.split("/")[3]; job = create_job(project_id, "render", {"requested_by": body.get("requested_by", "local_user")}, bool(body.get("approved")))
                 self._json(201, {"job": job})
