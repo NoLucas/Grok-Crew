@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
 import { useCallback, useEffect, useState } from 'react';
+import { LanguageSwitcher, useLanguage } from './language';
 
 type Bot = { bot_id: string; display_name: string; last_action: string; last_detail_json: Record<string, unknown>; last_seen: string; presence: 'active' | 'idle'; seconds_since_checkin: number };
 type Activity = { id: string; bot_id: string; action: string; detail_json: Record<string, unknown>; created_at: string };
@@ -26,6 +27,7 @@ function dateTime(value: string) { return new Date(value).toLocaleString('ko-KR'
 function since(seconds: number) { return seconds < 60 ? `${seconds}초 전` : seconds < 3600 ? `${Math.floor(seconds / 60)}분 전` : `${Math.floor(seconds / 3600)}시간 전`; }
 
 export default function BotStatusConsole() {
+  const { t } = useLanguage();
   const [health, setHealth] = useState<Health | null>(null);
   const [bots, setBots] = useState<Bot[]>([]);
   const [summary, setSummary] = useState<BotSummary | null>(null);
@@ -50,9 +52,9 @@ export default function BotStatusConsole() {
   const copyRequest = async () => { await navigator.clipboard?.writeText(botRequest); setCopied(true); window.setTimeout(() => setCopied(false), 1700); };
 
   return <>
-    <header className="bot-topbar"><a className="wordmark" href="/"><span>NOH</span><i>Reel Forge</i></a><nav aria-label="Bot navigation"><a href="/">Studio</a><a href="/cut">Cut log</a><a href="/production">Production</a><a className="current" href="/bots">Bot check</a><a href="/bot-guide">Bot guide</a><a href="/connect">Local desk</a></nav><div><span>LOCAL ACTIVITY</span><b>{summary?.active_now ?? 0} ACTIVE</b></div></header>
+    <header className="bot-topbar"><a className="wordmark" href="/"><span>NOH</span><i>Reel Forge</i></a><nav aria-label={t('봇 메뉴', 'Bot navigation')}><a href="/">{t('스튜디오', 'Studio')}</a><a href="/cut">{t('컷 로그', 'Cut log')}</a><a href="/production">{t('제작', 'Production')}</a><a className="current" href="/bots">{t('봇 확인', 'Bot check')}</a><a href="/bot-guide">{t('봇 설명서', 'Bot guide')}</a><a href="/connect">{t('로컬 도구', 'Local desk')}</a></nav><LanguageSwitcher /><div><span>LOCAL ACTIVITY</span><b>{summary?.active_now ?? 0} ACTIVE</b></div></header>
     <main className="bot-main">
-      <section className="bot-hero"><div><p className="kicker">GROK CREW · BOT CHECK</p><h1>내 봇들이 <span>무엇을 하고 있는지</span><br />확인 가능한 곳.</h1><p>이 화면은 추측으로 “봇이 접속했다”고 말하지 않습니다. 로컬 제작 서비스에 체크인을 남긴 봇만 표시하며, 최근 5분 이내의 기록만 활성 상태로 봅니다.</p></div><aside className={`bot-live-card ${health ? 'ready' : ''}`}><span>LIVE ANSWER</span><b>{summary?.active_now ? 'YES · ACTIVE BOTS FOUND' : health ? 'NO · NO VERIFIED BOT YET' : 'SERVICE OFFLINE'}</b><p>{summary?.active_now ? `${summary.active_now}개 봇이 로컬 서비스에 최근 체크인을 기록했습니다.` : health ? '현재는 어떤 봇도 체크인하지 않았습니다. 브라우저를 열어 둔 것만으로는 사용 중으로 간주하지 않습니다.' : '로컬 제작 서비스를 시작한 뒤 다시 확인하세요.'}</p><button onClick={() => void refresh()} disabled={checking}>{checking ? '확인 중…' : '지금 다시 확인'}</button></aside></section>
+      <section className="bot-hero"><div><p className="kicker">GROK CREW · BOT CHECK</p><h1>{t('내 봇들이', 'See what your bots')} <span>{t('무엇을 하고 있는지', 'are actually doing')}</span><br />{t('확인 가능한 곳.', 'on this computer.')}</h1><p>{t('이 화면은 추측으로 “봇이 접속했다”고 말하지 않습니다. 로컬 제작 서비스에 체크인을 남긴 봇만 표시하며, 최근 5분 이내의 기록만 활성 상태로 봅니다.', 'This screen never guesses that a bot is present. It only shows bots that checked in to Local Studio, and counts activity from the last five minutes.')}</p></div><aside className={`bot-live-card ${health ? 'ready' : ''}`}><span>LIVE ANSWER</span><b>{summary?.active_now ? 'YES · ACTIVE BOTS FOUND' : health ? 'NO · NO VERIFIED BOT YET' : 'SERVICE OFFLINE'}</b><p>{summary?.active_now ? t(`${summary.active_now}개 봇이 로컬 서비스에 최근 체크인을 기록했습니다.`, `${summary.active_now} bot(s) checked in to the local service recently.`) : health ? t('현재는 어떤 봇도 체크인하지 않았습니다. 브라우저를 열어 둔 것만으로는 사용 중으로 간주하지 않습니다.', 'No bot has checked in yet. Keeping a browser tab open is not treated as bot activity.') : t('로컬 제작 서비스를 시작한 뒤 다시 확인하세요.', 'Start Local Studio, then check again.')}</p><button onClick={() => void refresh()} disabled={checking}>{checking ? t('확인 중…', 'Checking…') : t('지금 다시 확인', 'Check now')}</button></aside></section>
       <section className="bot-answer-strip"><b>현재 확인 결과</b><span>{message}</span><em>{lastRefresh ? `마지막 확인 ${lastRefresh}` : '연결 대기'}</em></section>
       <section className="bot-summary-grid"><article><b>{summary?.total_known ?? 0}</b><span>등록된 로컬 봇</span><p>체크인을 한 적 있는 봇 수</p></article><article className={summary?.active_now ? 'active' : ''}><b>{summary?.active_now ?? 0}</b><span>현재 활성 봇</span><p>5분 이내 체크인 기준</p></article><article><b>{activity.length}</b><span>최근 작업 기록</span><p>로컬 SQLite의 bot activity</p></article><article className={health?.moviepy_installed ? 'active' : ''}><b>{health?.moviepy_installed ? 'READY' : 'CHECK'}</b><span>로컬 렌더</span><p>MoviePy 실행 가능 여부</p></article></section>
       <section className="bot-section bot-capability-section"><div className="bot-section-head"><div><p className="kicker">WHAT BOTS CAN DO</p><h2>봇에게 맡길 수 있는 일과<br /><span>사람이 반드시 결정할 일.</span></h2></div><p>로컬 제작 서비스의 실제 권한을 기준으로 표시합니다.</p></div><div className="capability-list">{capabilities.map(([name, detail, mode], index) => <article key={name}><i>{String(index + 1).padStart(2, '0')}</i><div><b>{name}</b><p>{detail}</p></div><span className={mode.includes('금지') ? 'never' : mode.includes('승인') ? 'review' : 'auto'}>{mode}</span></article>)}</div></section>

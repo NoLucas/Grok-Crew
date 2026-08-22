@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { LanguageSwitcher } from './language';
 
 type Mood = 'chaos' | 'calm' | 'contrast';
 type Motion = 'push' | 'pull' | 'drift';
@@ -100,7 +101,7 @@ function useForge() {
 }
 
 function Topbar({ view, slots }: { view: View; slots: Record<string, number> }) {
-  return <header className="forge-header"><a href="/" className="wordmark"><span>NOH</span><i>Reel Forge</i></a><nav aria-label="Primary navigation">{nav.map((item) => <a className={item.view === view ? 'current' : ''} href={item.href} key={item.href}>{item.label}</a>)}</nav><div className="header-meta"><span>Reel slots today: {slots[todaySeoul()] ?? 0} / 2</span><b>Created with Grok</b></div></header>;
+  return <header className="forge-header"><a href="/" className="wordmark"><span>NOH</span><i>Reel Forge</i></a><nav aria-label="Primary navigation">{nav.map((item) => <a className={item.view === view ? 'current' : ''} href={item.href} key={item.href}>{item.label}</a>)}</nav><LanguageSwitcher /><div className="header-meta"><span>Reel slots today: {slots[todaySeoul()] ?? 0} / 2</span><b>Created with Grok</b></div></header>;
 }
 
 function Timeline({ project, setProject, playing, playhead, onPlay, onScrub }: { project: Project; setProject: (project: Project) => void; playing: boolean; playhead: number; onPlay: () => void; onScrub: (time: number) => void }) {

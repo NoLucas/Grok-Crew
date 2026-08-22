@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
 import { useCallback, useEffect, useState } from 'react';
+import { LanguageSwitcher, useLanguage } from './language';
 
 type GuideStep = { step: number; name: string; action: string; goal: string };
 type Guide = { schema: string; title: string; scope: string; first_action: string; non_negotiables: string[]; workflow: GuideStep[]; edit_heuristics: Record<string, string>; approval_gates: string[]; allowed_endpoints: { read: string[]; write_after_scope_check: string[]; write_after_human_approval: string[] }; never: string[]; heartbeat_example: Record<string, unknown> };
@@ -15,6 +16,7 @@ const fallbackGuide: Guide = {
 };
 
 export default function BotGuideConsole() {
+  const { t } = useLanguage();
   const [guide, setGuide] = useState<Guide>(fallbackGuide);
   const [loaded, setLoaded] = useState(false);
   const [message, setMessage] = useState('로컬 Bot Guide를 읽는 중입니다.');
@@ -27,9 +29,9 @@ export default function BotGuideConsole() {
   const entries = Object.entries(guide.edit_heuristics);
 
   return <>
-    <header className="guide-topbar"><a className="wordmark" href="/"><span>NOH</span><i>Reel Forge</i></a><nav aria-label="Bot guide navigation"><a href="/">Studio</a><a href="/cut">Cut log</a><a href="/production">Production</a><a href="/bots">Bot check</a><a className="current" href="/bot-guide">Bot guide</a><a href="/connect">Local desk</a></nav><div><span>BOT-READABLE</span><b>{loaded ? 'JSON READY' : 'FALLBACK GUIDE'}</b></div></header>
+    <header className="guide-topbar"><a className="wordmark" href="/"><span>NOH</span><i>Reel Forge</i></a><nav aria-label={t('봇 설명서 메뉴', 'Bot guide navigation')}><a href="/">{t('스튜디오', 'Studio')}</a><a href="/cut">{t('컷 로그', 'Cut log')}</a><a href="/production">{t('제작', 'Production')}</a><a href="/bots">{t('봇 확인', 'Bot check')}</a><a className="current" href="/bot-guide">{t('봇 설명서', 'Bot guide')}</a><a href="/connect">{t('로컬 도구', 'Local desk')}</a></nav><LanguageSwitcher /><div><span>BOT-READABLE</span><b>{loaded ? 'JSON READY' : 'FALLBACK GUIDE'}</b></div></header>
     <main className="guide-main">
-      <section className="guide-hero"><div><p className="kicker">GROK CREW · EDITOR MANUAL</p><h1>봇이 들어와도<br /><span>제대로 편집하게 하는</span><br />작업 설명서.</h1><p>이 가이드는 봇이 어떤 순서로 판단하고, 언제 멈추며, 무엇을 기록해야 하는지 정의합니다. 모든 규칙은 로컬 제작 서비스의 실제 권한과 맞춰져 있습니다.</p></div><aside className="guide-source"><span>BOT ENTRY POINT</span><b>GET /api/bot-guide</b><p>사람은 이 화면을 읽고, 봇은 같은 내용을 구조화된 JSON으로 읽습니다.</p><button onClick={() => void copy('url')}>{copied === 'url' ? '주소 복사됨' : 'JSON 안내 주소 복사'}</button></aside></section>
+      <section className="guide-hero"><div><p className="kicker">GROK CREW · EDITOR MANUAL</p><h1>{t('봇이 들어와도', 'A working manual for')}<br /><span>{t('제대로 편집하게 하는', 'bots that edit correctly')}</span><br />{t('작업 설명서.', 'from the first step.')}</h1><p>{t('이 가이드는 봇이 어떤 순서로 판단하고, 언제 멈추며, 무엇을 기록해야 하는지 정의합니다. 모든 규칙은 로컬 제작 서비스의 실제 권한과 맞춰져 있습니다.', 'This guide defines how a bot should decide, when it must stop, and what it must record. Every rule matches the real permissions of the local production service.')}</p></div><aside className="guide-source"><span>BOT ENTRY POINT</span><b>GET /api/bot-guide</b><p>{t('사람은 이 화면을 읽고, 봇은 같은 내용을 구조화된 JSON으로 읽습니다.', 'People read this screen; bots read the same guide as structured JSON.')}</p><button onClick={() => void copy('url')}>{copied === 'url' ? t('주소 복사됨', 'Address copied') : t('JSON 안내 주소 복사', 'Copy JSON guide URL')}</button></aside></section>
       <section className="guide-first"><b>FIRST ACTION</b><span>{guide.first_action}</span><em>{loaded ? 'Local guide loaded' : 'Fallback shown'}</em></section>
       <section className="guide-layout guide-start-layout"><article className="guide-card"><div className="guide-card-head"><span>NON-NEGOTIABLE</span><em>read before work</em></div><ol className="guide-rules">{guide.non_negotiables.map((rule, index) => <li key={rule}><i>{String(index + 1).padStart(2, '0')}</i><span>{rule}</span></li>)}</ol></article><article className="guide-card guide-scope-card"><div className="guide-card-head"><span>OPERATING SCOPE</span><em>{guide.schema}</em></div><h2>이 봇은 무엇을 전제로 움직이나</h2><p>{guide.scope}</p><div><b>편집 전</b><span>상태 확인 · 체크인 · 기존 작업 확인</span></div><div><b>편집 중</b><span>대본 우선 · 최소 효과 · 읽히는 자막</span></div><div><b>편집 후</b><span>승인 요청 · 결과 보고 · 상태 업데이트</span></div></article></section>
       <section className="guide-workflow"><div className="guide-section-head"><div><p className="kicker">EDITING WORKFLOW</p><h2>봇이 따라야 할 <span>7단계 편집 흐름.</span></h2></div><p>중간에 실패하면 임의로 다음 단계로 넘어가지 말고 체크인에 실패 원인을 남깁니다.</p></div><div className="guide-steps">{guide.workflow.map((item) => <article key={item.step}><i>{String(item.step).padStart(2, '0')}</i><div><b>{item.name.replaceAll('_', ' ')}</b><span>{item.action}</span><p>{item.goal}</p></div></article>)}</div></section>
