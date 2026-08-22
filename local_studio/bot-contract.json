@@ -6,6 +6,7 @@
     "read_project",
     "record_bot_heartbeat",
     "read_bot_status",
+    "read_bot_guide",
     "queue_render_after_human_approval",
     "queue_instagram_publish_after_human_approval",
     "run_approved_job"

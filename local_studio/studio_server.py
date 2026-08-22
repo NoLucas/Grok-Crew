@@ -19,6 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 WORKSPACE_DIR = Path(os.getenv("LOCAL_STUDIO_WORKSPACE", BASE_DIR / "workspace")).resolve()
 DB_PATH = DATA_DIR / "studio.db"
+BOT_GUIDE_PATH = BASE_DIR / "bot-guide.json"
 ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000"}
 
 
@@ -201,6 +202,16 @@ def list_bot_activity() -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute("SELECT * FROM bot_activity ORDER BY created_at DESC LIMIT 80").fetchall()
     return [row_dict(row) or {} for row in rows]
+
+
+def bot_guide() -> dict[str, Any]:
+    try:
+        value = json.loads(BOT_GUIDE_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Local bot guide is unavailable or invalid JSON.") from exc
+    if not isinstance(value, dict):
+        raise RuntimeError("Local bot guide must be a JSON object.")
+    return value
 
 
 def create_job(project_id: str, kind: str, payload: dict[str, Any], approved: bool) -> dict[str, Any]:
@@ -422,6 +433,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, list_bots())
             elif path == "/api/bot-activity":
                 self._json(200, {"activity": list_bot_activity()})
+            elif path == "/api/bot-guide":
+                self._json(200, bot_guide())
             elif path.startswith("/api/projects/"):
                 project = get_project(path.rsplit("/", 1)[-1])
                 self._json(200, {"project": project, "jobs": list_jobs(project["id"])} if project else {"error": "Project not found"})

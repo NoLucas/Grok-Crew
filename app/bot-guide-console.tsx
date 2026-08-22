@@ -1,0 +1,42 @@
+'use client';
+/* eslint-disable @next/next/no-html-link-for-pages */
+
+import { useCallback, useEffect, useState } from 'react';
+
+type GuideStep = { step: number; name: string; action: string; goal: string };
+type Guide = { schema: string; title: string; scope: string; first_action: string; non_negotiables: string[]; workflow: GuideStep[]; edit_heuristics: Record<string, string>; approval_gates: string[]; allowed_endpoints: { read: string[]; write_after_scope_check: string[]; write_after_human_approval: string[] }; never: string[]; heartbeat_example: Record<string, unknown> };
+
+const studio = 'http://127.0.0.1:7214';
+const fallbackGuide: Guide = {
+  schema: 'noh.reel-forge.bot-guide/v1', title: 'NOH Reel Forge Local Editing Playbook', scope: 'Same workstation only.', first_action: 'Record a heartbeat before preparing work.',
+  non_negotiables: ['Stay inside the local workspace.', 'Plan from transcript before adding effects.', 'Ask for approval before rendering or publishing.'],
+  workflow: [{ step: 1, name: 'check_in', action: 'POST /api/bots/heartbeat', goal: 'Identify the bot and current work.' }, { step: 2, name: 'plan_the_cut', action: 'Create transcript-first EDL', goal: 'Keep the hook and remove filler.' }, { step: 3, name: 'request_review', action: 'Record await_human_approval', goal: 'Stop before output actions.' }],
+  edit_heuristics: { hook: 'Lead with the payoff.', cutting: 'Remove filler and dead space.', captions: 'Keep captions short and readable.', reframe: 'Preserve the subject in 9:16.' }, approval_gates: ['Human approval is required before rendering.', 'Human approval is required before publishing.'], allowed_endpoints: { read: ['GET /health'], write_after_scope_check: ['POST /api/bots/heartbeat'], write_after_human_approval: ['POST /api/projects/{id}/render'] }, never: ['Do not read credentials.', 'Do not publish automatically.'], heartbeat_example: { bot_id: 'grok-editor-01', action: 'await_human_approval' },
+};
+
+export default function BotGuideConsole() {
+  const [guide, setGuide] = useState<Guide>(fallbackGuide);
+  const [loaded, setLoaded] = useState(false);
+  const [message, setMessage] = useState('로컬 Bot Guide를 읽는 중입니다.');
+  const [copied, setCopied] = useState('');
+  const refresh = useCallback(async () => {
+    try { const response = await fetch(`${studio}/api/bot-guide`); const value = await response.json() as Guide & { error?: string }; if (!response.ok) throw new Error(value.error ?? 'guide unavailable'); setGuide(value); setLoaded(true); setMessage('로컬 JSON 가이드와 화면 안내가 같은 기준으로 준비되었습니다.'); } catch { setLoaded(false); setMessage('로컬 서비스에 연결하지 못해 내장된 읽기 전용 가이드를 표시하고 있습니다.'); }
+  }, []);
+  useEffect(() => { const timeout = window.setTimeout(() => { void refresh(); }, 0); return () => window.clearTimeout(timeout); }, [refresh]);
+  const copy = async (kind: 'url' | 'heartbeat') => { const text = kind === 'url' ? `${studio}/api/bot-guide` : JSON.stringify(guide.heartbeat_example, null, 2); await navigator.clipboard?.writeText(text); setCopied(kind); window.setTimeout(() => setCopied(''), 1600); };
+  const entries = Object.entries(guide.edit_heuristics);
+
+  return <>
+    <header className="guide-topbar"><a className="wordmark" href="/"><span>NOH</span><i>Reel Forge</i></a><nav aria-label="Bot guide navigation"><a href="/">Studio</a><a href="/cut">Cut log</a><a href="/production">Production</a><a href="/bots">Bot check</a><a className="current" href="/bot-guide">Bot guide</a><a href="/connect">Local desk</a></nav><div><span>BOT-READABLE</span><b>{loaded ? 'JSON READY' : 'FALLBACK GUIDE'}</b></div></header>
+    <main className="guide-main">
+      <section className="guide-hero"><div><p className="kicker">GROK CREW · EDITOR MANUAL</p><h1>봇이 들어와도<br /><span>제대로 편집하게 하는</span><br />작업 설명서.</h1><p>이 가이드는 봇이 어떤 순서로 판단하고, 언제 멈추며, 무엇을 기록해야 하는지 정의합니다. 모든 규칙은 로컬 제작 서비스의 실제 권한과 맞춰져 있습니다.</p></div><aside className="guide-source"><span>BOT ENTRY POINT</span><b>GET /api/bot-guide</b><p>사람은 이 화면을 읽고, 봇은 같은 내용을 구조화된 JSON으로 읽습니다.</p><button onClick={() => void copy('url')}>{copied === 'url' ? '주소 복사됨' : 'JSON 안내 주소 복사'}</button></aside></section>
+      <section className="guide-first"><b>FIRST ACTION</b><span>{guide.first_action}</span><em>{loaded ? 'Local guide loaded' : 'Fallback shown'}</em></section>
+      <section className="guide-layout guide-start-layout"><article className="guide-card"><div className="guide-card-head"><span>NON-NEGOTIABLE</span><em>read before work</em></div><ol className="guide-rules">{guide.non_negotiables.map((rule, index) => <li key={rule}><i>{String(index + 1).padStart(2, '0')}</i><span>{rule}</span></li>)}</ol></article><article className="guide-card guide-scope-card"><div className="guide-card-head"><span>OPERATING SCOPE</span><em>{guide.schema}</em></div><h2>이 봇은 무엇을 전제로 움직이나</h2><p>{guide.scope}</p><div><b>편집 전</b><span>상태 확인 · 체크인 · 기존 작업 확인</span></div><div><b>편집 중</b><span>대본 우선 · 최소 효과 · 읽히는 자막</span></div><div><b>편집 후</b><span>승인 요청 · 결과 보고 · 상태 업데이트</span></div></article></section>
+      <section className="guide-workflow"><div className="guide-section-head"><div><p className="kicker">EDITING WORKFLOW</p><h2>봇이 따라야 할 <span>7단계 편집 흐름.</span></h2></div><p>중간에 실패하면 임의로 다음 단계로 넘어가지 말고 체크인에 실패 원인을 남깁니다.</p></div><div className="guide-steps">{guide.workflow.map((item) => <article key={item.step}><i>{String(item.step).padStart(2, '0')}</i><div><b>{item.name.replaceAll('_', ' ')}</b><span>{item.action}</span><p>{item.goal}</p></div></article>)}</div></section>
+      <section className="guide-layout"><article className="guide-card heuristic-card"><div className="guide-card-head"><span>EDIT DECISION RULES</span><em>quality before effects</em></div><div className="heuristic-grid">{entries.map(([name, rule]) => <article key={name}><b>{name}</b><p>{rule}</p></article>)}</div></article><article className="guide-card approvals-card"><div className="guide-card-head"><span>APPROVAL GATES</span><em>stop conditions</em></div>{guide.approval_gates.map((gate, index) => <div key={gate}><i>{index + 1}</i><p>{gate}</p></div>)}</article></section>
+      <section className="guide-layout guide-endpoint-layout"><article className="guide-card endpoint-guide"><div className="guide-card-head"><span>LOCAL ENDPOINT MAP</span><em>no cloud dependency</em></div><div><b>읽기 가능</b><p>{guide.allowed_endpoints.read.join(' · ')}</p></div><div><b>범위 확인 후 작성</b><p>{guide.allowed_endpoints.write_after_scope_check.join(' · ')}</p></div><div><b>사람 승인 후 작성</b><p>{guide.allowed_endpoints.write_after_human_approval.join(' · ')}</p></div></article><article className="guide-card heartbeat-guide"><div className="guide-card-head"><span>CHECK-IN EXAMPLE</span><button onClick={() => void copy('heartbeat')}>{copied === 'heartbeat' ? '복사됨' : 'JSON 복사'}</button></div><pre>{JSON.stringify(guide.heartbeat_example, null, 2)}</pre><p>봇은 시작, 계획 완료, 승인 대기, 렌더 완료, 실패 시점에 체크인을 남깁니다. Bot Check에서 이 기록으로 실제 사용 여부를 확인합니다.</p></article></section>
+      <section className="guide-never"><div><p className="kicker">HARD STOP</p><h2>봇이 절대 하면 안 되는 일.</h2></div><div>{guide.never.map((item) => <span key={item}>{item}</span>)}</div></section>
+      <p className="guide-message">{message}</p>
+    </main>
+  </>;
+}
