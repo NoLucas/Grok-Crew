@@ -8,7 +8,7 @@ type Scene = { headline: string; body: string; accent: string; marks: string[]; 
 type Project = { presetId: string; hook: string; sceneA: Scene; sceneB: Scene; durationA: number; durationB: number; audio: 'none' | 'ig_safe' | 'original'; abTest: boolean; originalReupload: boolean };
 type Packet = { hook: string; body: string; tags: string[]; commentPrompt: string };
 type Preset = { id: string; title: string; sceneA: Scene; sceneB: Scene; motionHint: string; durationDefault: number; forbiddenTemplates: string[]; format: 'reel' };
-type View = 'studio' | 'edit' | 'cut' | 'library' | 'agent' | 'connect' | 'packet' | 'gates' | 'export';
+type View = 'studio' | 'edit' | 'cut' | 'production' | 'library' | 'agent' | 'connect' | 'packet' | 'gates' | 'export';
 
 const initialPacket: Packet = {
   hook: 'ChatGPT when you say make it professional',
@@ -31,7 +31,7 @@ const presets: Preset[] = [
 ];
 
 const blankProject: Project = { presetId: presets[0].id, hook: presets[0].sceneA.headline, sceneA: presets[0].sceneA, sceneB: presets[0].sceneB, durationA: 5, durationB: 5, audio: 'none', abTest: false, originalReupload: false };
-const nav: { href: string; label: string; view: View }[] = [{ href: '/', label: 'Studio', view: 'studio' }, { href: '/edit', label: 'Edit lab', view: 'edit' }, { href: '/cut', label: 'Cut log', view: 'cut' }, { href: '/library', label: 'Library', view: 'library' }, { href: '/agent', label: 'Agent desk', view: 'agent' }, { href: '/connect', label: 'Local desk', view: 'connect' }, { href: '/packet', label: 'Packet', view: 'packet' }, { href: '/gates', label: 'Gate board', view: 'gates' }, { href: '/export', label: 'Export', view: 'export' }];
+const nav: { href: string; label: string; view: View }[] = [{ href: '/', label: 'Studio', view: 'studio' }, { href: '/edit', label: 'Edit lab', view: 'edit' }, { href: '/cut', label: 'Cut log', view: 'cut' }, { href: '/production', label: 'Production', view: 'production' }, { href: '/library', label: 'Library', view: 'library' }, { href: '/agent', label: 'Agent desk', view: 'agent' }, { href: '/connect', label: 'Local desk', view: 'connect' }, { href: '/packet', label: 'Packet', view: 'packet' }, { href: '/gates', label: 'Gate board', view: 'gates' }, { href: '/export', label: 'Export', view: 'export' }];
 
 function safeRead<T>(key: string, fallback: T): T { try { const value = window.localStorage.getItem(key); return value ? (JSON.parse(value) as T) : fallback; } catch { return fallback; } }
 function hasHangul(value: string) { return /[\uAC00-\uD7A3]/.test(value); }

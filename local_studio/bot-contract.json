@@ -1,0 +1,20 @@
+{
+  "schema": "noh.local-studio.bot-contract/v1",
+  "scope": "127.0.0.1 only",
+  "allowed": [
+    "create_project",
+    "read_project",
+    "queue_render_after_human_approval",
+    "queue_instagram_publish_after_human_approval",
+    "run_approved_job"
+  ],
+  "prohibited": [
+    "read_credentials",
+    "access_paths_outside_workspace",
+    "publish_without_human_approval",
+    "bypass_local_token",
+    "publish_to_unconfigured_platforms"
+  ],
+  "review_required": true,
+  "workspace_rule": "Use only files under local_studio/workspace."
+}
