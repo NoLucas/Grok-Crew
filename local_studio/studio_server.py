@@ -226,15 +226,51 @@ def update_job(job_id: str, *, status: str, result: dict[str, Any] | None = None
 
 def render_moviepy(project: dict[str, Any]) -> dict[str, Any]:
     try:
-        from moviepy import AudioFileClip, CompositeVideoClip, TextClip, VideoFileClip, afx, concatenate_videoclips
+        from moviepy import CompositeVideoClip, TextClip, VideoFileClip, afx, concatenate_videoclips, vfx
     except ImportError as exc:
         raise RuntimeError("MoviePy is not installed. Install local_studio/requirements.txt first.") from exc
+    timeline = project["timeline_json"]
+    raw_settings = timeline.get("render_settings", {})
+    settings = raw_settings if isinstance(raw_settings, dict) else {}
+
+    def bounded(name: str, default: float, minimum: float, maximum: float) -> float:
+        try:
+            return min(max(float(settings.get(name, default)), minimum), maximum)
+        except (TypeError, ValueError):
+            return default
+
+    def enabled(name: str, default: bool = False) -> bool:
+        value = settings.get(name, default)
+        return value if isinstance(value, bool) else default
+
+    fps = int(bounded("fps", 30, 24, 60))
+    if fps not in {24, 30, 60}:
+        fps = 30
+    quality = str(settings.get("quality", "balanced"))
+    bitrate = {"compact": "3500k", "balanced": "6000k", "high": "9000k"}.get(quality, "6000k")
+    crop_anchor = str(settings.get("crop_anchor", "center"))
+    if crop_anchor not in {"left", "center", "right"}:
+        crop_anchor = "center"
+    speed = bounded("speed", 1, .5, 2)
+    volume = bounded("volume", 100, 0, 200) / 100
+    fade_in, fade_out = bounded("fade_in", .08, 0, 2), bounded("fade_out", .08, 0, 2)
+    look = str(settings.get("look", "natural"))
+    if look not in {"natural", "punchy", "mono", "night"}:
+        look = "natural"
+    brightness, contrast, gamma = bounded("brightness", 0, -40, 40), bounded("contrast", 0, -40, 55), bounded("gamma", 1, .65, 1.55)
+    captions_enabled = enabled("captions_enabled", True)
+    caption_color = str(settings.get("caption_color", "#FFFFFF"))
+    if not (caption_color.startswith("#") and len(caption_color) in {4, 7, 9}):
+        caption_color = "#FFFFFF"
+    caption_size = int(bounded("caption_size", 78, 38, 110))
+    caption_y = int(bounded("caption_y", 74, 48, 84) * 1920 / 100)
+    caption_stroke = int(bounded("caption_stroke", 3, 0, 8))
     source = Path(project["source_path"])
     output = Path(project["output_path"])
     if not source.exists():
         raise RuntimeError(f"Source file does not exist: {source}")
     output.parent.mkdir(parents=True, exist_ok=True)
-    clips_data = project["timeline_json"].get("clips", [])
+    clips_data = timeline.get("clips", [])
     cuts = []
     with VideoFileClip(str(source)) as source_clip:
         for entry in clips_data:
@@ -243,23 +279,55 @@ def render_moviepy(project: dict[str, Any]) -> dict[str, Any]:
             start, end = float(entry["in"]), float(entry["out"])
             if end <= start or start < 0 or end > source_clip.duration + .05:
                 continue
-            cut = source_clip.subclipped(start, end).with_effects([afx.AudioFadeIn(.03), afx.AudioFadeOut(.03)])
+            cut = source_clip.subclipped(start, end)
+            effects = []
+            if speed != 1:
+                effects.append(vfx.MultiplySpeed(speed))
+            if look == "punchy":
+                effects.append(vfx.LumContrast(lum=4, contrast=24))
+            elif look == "night":
+                effects.append(vfx.LumContrast(lum=11, contrast=-8))
+            elif look == "mono":
+                effects.append(vfx.BlackAndWhite())
+            if brightness or contrast:
+                effects.append(vfx.LumContrast(lum=brightness, contrast=contrast))
+            if gamma != 1:
+                effects.append(vfx.GammaCorrection(gamma))
+            if enabled("mirror"):
+                effects.append(vfx.MirrorX())
+            if fade_in:
+                effects.append(vfx.FadeIn(fade_in))
+            if fade_out:
+                effects.append(vfx.FadeOut(fade_out))
+            if effects:
+                cut = cut.with_effects(effects)
             if cut.h < 1920:
                 cut = cut.resized(height=1920)
             if cut.w < 1080:
                 cut = cut.resized(width=1080)
-            cut = cut.cropped(x_center=cut.w / 2, y_center=cut.h / 2, width=1080, height=1920)
+            x_center = 540 if crop_anchor == "left" else cut.w - 540 if crop_anchor == "right" else cut.w / 2
+            cut = cut.cropped(x_center=x_center, y_center=cut.h / 2, width=1080, height=1920)
+            if cut.audio:
+                if enabled("mute_audio"):
+                    cut = cut.without_audio()
+                else:
+                    audio_effects = [afx.AudioFadeIn(fade_in), afx.AudioFadeOut(fade_out)]
+                    if enabled("normalize_audio"):
+                        audio_effects.insert(0, afx.AudioNormalize())
+                    if volume != 1:
+                        audio_effects.append(afx.MultiplyVolume(volume))
+                    cut = cut.with_audio(cut.audio.with_effects(audio_effects))
             caption = str(entry.get("caption", "")).strip()
-            if caption:
-                title = TextClip(font=caption_font(), text=caption, font_size=78, color="white", stroke_color="black", stroke_width=3, size=(920, None), method="caption").with_duration(cut.duration).with_position(("center", 1480))
+            if caption and captions_enabled:
+                title = TextClip(font=caption_font(), text=caption, font_size=caption_size, color=caption_color, stroke_color="black", stroke_width=caption_stroke, size=(920, None), method="caption").with_duration(cut.duration).with_position(("center", caption_y))
                 cut = CompositeVideoClip([cut, title], size=(1080, 1920))
             cuts.append(cut)
         if not cuts:
             raise RuntimeError("No valid kept clips are available to render.")
         final = concatenate_videoclips(cuts, method="compose")
-        final.write_videofile(str(output), fps=30, codec="libx264", audio_codec="aac", threads=4, logger=None)
+        final.write_videofile(str(output), fps=fps, codec="libx264", audio_codec="aac", bitrate=bitrate, threads=4, logger=None)
         final.close()
-    return {"output_path": str(output), "format": "mp4", "video": "H.264", "audio": "AAC", "width": 1080, "height": 1920, "fps": 30}
+    return {"output_path": str(output), "format": "mp4", "video": "H.264", "audio": "AAC" if not enabled("mute_audio") else "none", "width": 1080, "height": 1920, "fps": fps, "bitrate": bitrate, "render_settings": {"crop_anchor": crop_anchor, "speed": speed, "look": look, "captions_enabled": captions_enabled, "quality": quality}}
 
 
 def instagram_publish(project: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
