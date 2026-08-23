@@ -114,6 +114,23 @@ python local_studio/grok_crew.py entry --bot-id editor-01 --display-name "Editor
 
 有个机器人完全不点浏览器,只用 CLI 就跑通了整个流程:在 Production 中创建项目(`inputs/source.mp4` → `outputs/final-video.mp4`),把 Finish Rack 设置为 9:16、30fps、compact 画质、居中构图、字幕开启、静音,再通过 Bot Check 以 `auto_local` 执行策略签到,最后把 0–4 秒("ONE ASK")和 5–9 秒("SIX LINES")两段拼接,渲染成一条 8 秒的本地 MP4。Cut Log、编辑方式、Operations 以及真正的 Instagram 上传,仍然是需要有人在浏览器里直接点击完成的部分。
 
+### 用大白话指挥机器人
+
+你不需要懂 API 才能指挥机器人——用大白话下指令就够了,因为机器人会自己阅读 [Bot Guide](http://localhost:3000/bot-guide?lang=en),并把它转换成正确的本地调用。真实的对话大致是这样的:
+
+> **你:** 用这个网站简单剪一下,把成片给我。
+>
+> **机器人:** 我会用 Local Studio 剪一个短版,不会上传到 Instagram。先检查源文件……找到项目格式了……现在正在渲染两段,总共 8 秒。
+>
+> **机器人:** 在 Local Studio 里剪成了 8 秒、两段。没有上传到 Instagram。
+> - 0–4 秒:ONE ASK
+> - 4–8 秒:SIX LINES
+> - 1080×1920,静音,字幕已开启
+
+![机器人仅凭一句大白话指令,从头到尾在本地完成的剪辑成果](public/demo/bot-instructed-edit.gif)
+
+如果问它用了什么功能,它能准确说出自己动用了哪些本地功能——在这个例子里就是用 Production 创建并渲染项目,用 Bot Check 以 `auto_local` 策略签到,全程没有打开任何浏览器页面,也没有碰 Cut Log、Operations 或 Instagram。
+
 ## 面向机器人:浏览器或终端
 
 每一份克隆都自带一个无额外依赖的本地 CLI,并且只接受本机回环地址(loopback)。

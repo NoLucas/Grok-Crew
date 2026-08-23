@@ -114,6 +114,23 @@ The browser workspace at `localhost:3000` is split into several pages. Only two 
 
 A bot drove this end to end with the CLI only, no browser clicks: it created a project in Production (`inputs/source.mp4` → `outputs/final-video.mp4`), set the Finish Rack to 9:16, 30fps, compact quality, center reframe, captions on, and muted audio, entered through Bot Check with an `auto_local` execution policy, then rendered two joined clips — 0–4s ("ONE ASK") and 5–9s ("SIX LINES") — into an 8-second local MP4. Cut Log, the edit method, Operations, and the actual Instagram upload are the parts a person still clicks through directly in the browser.
 
+### Instructing a bot in plain language
+
+You don't need to know the API to direct a bot — plain instructions are enough, because the bot reads the [Bot Guide](http://localhost:3000/bot-guide?lang=en) and turns them into the right local calls itself. A real exchange looked like this:
+
+> **You:** Use the site to do a quick edit and give me the finished clip.
+>
+> **Bot:** I'll edit it in Local Studio and keep it short — no Instagram upload. Checking the source file first... found the project format... rendering two clips now, 8 seconds total.
+>
+> **Bot:** Cut to 8 seconds, two clips, in Local Studio. Nothing was uploaded to Instagram.
+> - 0–4s: ONE ASK
+> - 4–8s: SIX LINES
+> - 1080×1920, muted, captions on
+
+![A bot's local edit, rendered end to end from a plain-language request](public/demo/bot-instructed-edit.gif)
+
+Ask it what it actually used, and it can explain exactly which local functions it touched — in this case, Production to create and render the project and Bot Check to enter with an `auto_local` policy, without ever opening a browser page or touching Cut Log, Operations, or Instagram.
+
 ## For bots: browser or terminal
 
 Every clone includes a dependency-free local CLI. It only accepts loopback addresses.
