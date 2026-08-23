@@ -11,8 +11,6 @@
   <img alt="お使いのパソコンで動作" src="https://img.shields.io/badge/runs-on%20your%20computer-f4c400?style=flat-square">
 </p>
 
-![Grok Crew 制作ワークスペース](public/readme/production-workspace.png)
-
 ## 動作デモ
 
 [![21秒のGrok Crewワークフローデモを見る](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
@@ -20,10 +18,6 @@
 *プレビューはこのREADME内でそのまま再生されます。クリックするとフルのMP4が開きます。*
 
 ## Grok bot への頼み方
-
-[![Grok bot にローカル編集を依頼する方法を見る](public/demo/bot-command-tutorial.gif)](public/demo/bot-command-tutorial.mp4)
-
-*25秒のチュートリアルです。自然言語による一つの依頼から、ボットのローカル処理、完成クリップの受け渡しまでを実際のローカルレンダーで示します。*
 
 まず `npm run local` で Grok Crew を起動し、**同じPCで動いている** Grok bot に次のように依頼します。
 

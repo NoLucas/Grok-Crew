@@ -11,8 +11,6 @@
   <img alt="내 컴퓨터에서 실행" src="https://img.shields.io/badge/runs-on%20your%20computer-f4c400?style=flat-square">
 </p>
 
-![Grok Crew 영문 제작 화면](public/readme/production-workspace.png)
-
 ## 작동 영상
 
 [![21초 Grok Crew 작업 흐름 데모 보기](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
@@ -20,10 +18,6 @@
 *미리보기는 이 README에서 바로 재생됩니다. 클릭하면 원본 MP4를 엽니다.*
 
 ## Grok bot에게 이렇게 명령하세요
-
-[![Grok bot에게 로컬 편집을 요청하는 방법 보기](public/demo/bot-command-tutorial.gif)](public/demo/bot-command-tutorial.mp4)
-
-*25초 안내 영상입니다. 자연어 작업 지시 하나가 봇의 로컬 작업 흐름과 완성된 클립으로 이어지는 실제 예시를 보여줍니다.*
 
 먼저 `npm run local`로 Grok Crew를 실행한 뒤, **같은 PC에서 실행 중인** Grok bot에게 다음처럼 요청하세요.
 

@@ -11,8 +11,6 @@
   <img alt="Runs on your computer" src="https://img.shields.io/badge/runs-on%20your%20computer-f4c400?style=flat-square">
 </p>
 
-![Grok Crew production workspace](public/readme/production-workspace.png)
-
 ## Watch it work
 
 [![Watch the 21-second Grok Crew workflow demo](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
@@ -20,10 +18,6 @@
 *The preview plays directly in this README. Click it to open the full MP4.*
 
 ## Tell a Grok bot what to do
-
-[![Watch how to brief a Grok bot for a local edit](public/demo/bot-command-tutorial.gif)](public/demo/bot-command-tutorial.mp4)
-
-*This 25-second tutorial follows a real local render: one plain-language brief, the bot's local workflow, then the delivered clip.*
 
 Start Grok Crew with `npm run local`, then send this to a bot that is running on the **same PC**:
 

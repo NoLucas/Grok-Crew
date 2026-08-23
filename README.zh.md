@@ -11,8 +11,6 @@
   <img alt="在你自己的电脑上运行" src="https://img.shields.io/badge/runs-on%20your%20computer-f4c400?style=flat-square">
 </p>
 
-![Grok Crew 制作工作台](public/readme/production-workspace.png)
-
 ## 观看演示
 
 [![观看 21 秒的 Grok Crew 工作流程演示](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
@@ -20,10 +18,6 @@
 *预览会直接在本 README 中播放。点击可打开完整 MP4。*
 
 ## 如何向 Grok bot 下达任务
-
-[![观看如何向 Grok bot 说明本地剪辑任务](public/demo/bot-command-tutorial.gif)](public/demo/bot-command-tutorial.mp4)
-
-*这段 25 秒教程展示一次真实的本地渲染：一条自然语言任务、机器人的本地工作流，以及交付的成片。*
 
 先用 `npm run local` 启动 Grok Crew，再把下面的内容发送给**运行在同一台电脑上**的 Grok bot：
 
