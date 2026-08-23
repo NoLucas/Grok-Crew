@@ -1,21 +1,60 @@
-# NOH Reel Forge offline handoff desk
+# NOH Reel Forge — local Grok Crew workspace
 
-## Run locally
+Each person can clone this repository and run the complete video-editing workspace, Local Studio, and bot CLI on their own computer. Projects, bot records, media paths, and render outputs remain on that person's device.
 
-1. Install dependencies with `npm install`.
-2. Start with `npm run dev` and open `http://localhost:3000/connect`.
-3. Editing, gate checks, bot-return notes, and JSON handoffs remain in browser storage on this device.
+## Start on a new computer
 
-## Manual Grok handoff
+Install these once:
 
-The Local Desk creates one offline JSON handoff from the saved Studio, Agent Desk, Edit Lab, and caption packet:
+- Node.js 22 or newer
+- Python 3.10 or newer
 
-- Copy or download the JSON brief.
-- Paste it into a Grok conversation only when you decide to do so.
-- Copy Grok's returned plan and paste it into the Local Desk for local review.
+Then clone this repository, open a terminal in the cloned top-level folder, and run:
 
-No key, API route, provider call, or automatic data transfer is included. The Local Desk deliberately does not publish to Instagram, share media, or expose an API key.
+```sh
+npm run local
+```
 
-## Keep it local
+The first run installs the app and local rendering dependencies, starts both local services, and opens the workspace at `http://localhost:3000/production`.
 
-`localhost` is your own local workspace. A Grok bot running elsewhere cannot reach it—and this version intentionally does not provide a tunnel, network endpoint, or background connection.
+`Ctrl+C` stops the local workspace. Running `npm run local` again starts the same personal workspace with its existing local project records.
+
+## Give a local bot the full toolset
+
+The bot CLI is included in every clone. A bot running on the same computer should use the included file rather than download another copy:
+
+```sh
+python local_studio/grok_crew.py contract
+python local_studio/grok_crew.py entry --bot-id grok-editor-01 --display-name "Grok Editor" --purpose edit_video --task "Prepare a transcript-first edit plan."
+```
+
+The first command lists every available local feature: projects, shared edit method, media inspection, transcript cut maps, QA, project memory, task board, brand kits, overlays, A/B plans, approved renders, and Instagram delivery queues.
+
+For a browser task or screenshot, the bot can request the exact workspace address:
+
+```sh
+python local_studio/grok_crew.py site --page production
+```
+
+It prints `http://localhost:3000/production`. The CLI/API runs at `http://127.0.0.1:7214`; it is not a browser page. If a bot opens `http://127.0.0.1:7214/production` by mistake, it redirects to the correct workspace.
+
+## What stays local
+
+- The web workspace uses `localhost:3000`.
+- Local Studio binds only to `127.0.0.1:7214`.
+- SQLite records and media folders are created under `local_studio/` and are ignored by Git.
+- Bots can only connect to local loopback addresses through the included CLI.
+- Rendering and project operations need no provider API key.
+
+Instagram publishing is optional and remains disabled by default. It requires the owner's own local credentials, a startup switch, explicit recorded human approval, and a final `PUBLISH` confirmation.
+
+## Important limitation
+
+`localhost` means the computer where the command is running. A remote cloud bot cannot access another person's local workspace. To use the full browser and terminal workflow, run the bot runtime, browser, and `npm run local` on the same computer.
+
+## Advanced local commands
+
+- `npm run dev` starts only the browser interface.
+- `local_studio/run.ps1` starts only Local Studio on Windows.
+- `python local_studio/grok_crew.py guide` reads the bot editing manual.
+- `python local_studio/grok_crew.py bots list` shows bots that have actually checked in on this computer.

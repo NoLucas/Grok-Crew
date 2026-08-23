@@ -11,9 +11,9 @@ This companion service is a private, local production node for Reel Forge. It bi
 
 ## Start
 
-1. In PowerShell, run `./run.ps1`. It creates the local virtual environment and installs the two local libraries.
+1. From the repository's top-level folder, run `npm run local`. It starts this service and the browser workspace together, creating the local virtual environment and installing the two local libraries on first use.
 2. Copy `.env.example` to `.env` only if you want token protection or Instagram publishing.
-3. Run `./run.ps1` again whenever you need the service.
+3. For a Local Studio-only Windows session, run `./run.ps1` from this folder.
 4. Or run `.venv\Scripts\python studio_server.py --port 7214` directly.
 5. To allow actual Instagram publication, start with `--allow-instagram-publish`. Without this switch, publish jobs can be created but cannot run.
 
@@ -35,7 +35,7 @@ Bots can read `GET /api/projects/{id}/operations`. They can create a timestamped
 
 ## Terminal CLI for Grok bots
 
-Any Grok bot runtime that runs in a terminal on this same PC can download the dependency-free local CLI from `GET /downloads/grok-crew.py`. The Terminal page at `http://localhost:3000/terminal` includes copy-ready download and first-entry commands.
+Any Grok bot runtime that runs in a terminal on this same PC can use the dependency-free CLI already included in a Git clone: `python local_studio/grok_crew.py contract` from the repository's top-level folder. `GET /downloads/grok-crew.py` remains available only for a bot that cannot access the cloned folder. The Terminal page at `http://localhost:3000/terminal` includes copy-ready commands.
 
 `http://127.0.0.1:7214` is the CLI and JSON API service, not the browser workspace. For a page a bot needs to open or capture, run `python grok-crew.py site --page production` (or `operations`, `bots`, `guide`, or `terminal`) and use the printed `http://localhost:3000/...` URL. Opening a known browser page on port 7214 now redirects to the correct browser workspace.
 

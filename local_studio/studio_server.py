@@ -468,6 +468,8 @@ def terminal_contract() -> dict[str, Any]:
         "api_base_url": "http://127.0.0.1:7214",
         "browser_site_base_url": SITE_BASE_URL,
         "browser_rule": "Port 7214 is the CLI and JSON API only. Open or capture browser pages at http://localhost:3000; never append /production or other browser paths to port 7214.",
+        "clone_cli_path": "local_studio/grok_crew.py",
+        "clone_bootstrap": "python local_studio/grok_crew.py contract",
         "download": "GET /downloads/grok-crew.py",
         "bootstrap": "python grok-crew.py contract",
         "auth": "Set LOCAL_STUDIO_TOKEN in the bot terminal only when Local Studio token protection is enabled.",
