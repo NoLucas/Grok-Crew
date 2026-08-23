@@ -284,8 +284,8 @@ def closing(copy: Copy) -> Image.Image:
 
 def build_language(code: str) -> None:
     copy = COPY[code]
-    output = DEMO_DIR / f"bot-plain-language-{code}.mp4"
-    preview = DEMO_DIR / f"bot-plain-language-{code}.gif"
+    output = DEMO_DIR / f"bot-plain-language-{code}-v2.mp4"
+    preview = DEMO_DIR / f"bot-plain-language-{code}-v2.gif"
     source = VideoFileClip(str(SOURCE), audio=False)
     render = source.resized(height=900).with_position((80, 526))
     rendered_segment = CompositeVideoClip(

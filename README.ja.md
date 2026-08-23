@@ -137,7 +137,7 @@ python local_studio/grok_crew.py entry --bot-id editor-01 --display-name "Editor
 > - 4〜8秒:SIX LINES
 > - 1080×1920、ミュート、字幕あり
 
-[![自然言語で指示したボットの作業フロー全体を見る](public/demo/bot-plain-language-ja.gif)](public/demo/bot-plain-language-ja.mp4)
+[![自然言語で指示したボットの作業フロー全体を見る](public/demo/bot-plain-language-ja-v2.gif)](public/demo/bot-plain-language-ja-v2.mp4)
 
 何を使ったのか尋ねれば、実際にどのローカル機能を使ったのかを正確に説明してくれます——今回のケースでは、プロジェクトの作成とレンダリングにProductionを、`auto_local`ポリシーでの入場にBot Checkを使っただけで、ブラウザページを一切開かず、Cut Log・Operations・Instagramにも触れていません。
 

@@ -138,7 +138,7 @@ You don't need to know the API to direct a bot — plain instructions are enough
 > - 4–8s: SIX LINES
 > - 1080×1920, muted, captions on
 
-[![Watch the full plain-language bot workflow](public/demo/bot-plain-language-en.gif)](public/demo/bot-plain-language-en.mp4)
+[![Watch the full plain-language bot workflow](public/demo/bot-plain-language-en-v2.gif)](public/demo/bot-plain-language-en-v2.mp4)
 
 Ask it what it actually used, and it can explain exactly which local functions it touched — in this case, Production to create and render the project and Bot Check to enter with an `auto_local` policy, without ever opening a browser page or touching Cut Log, Operations, or Instagram.
 

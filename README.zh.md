@@ -137,7 +137,7 @@ python local_studio/grok_crew.py entry --bot-id editor-01 --display-name "Editor
 > - 4–8 秒:SIX LINES
 > - 1080×1920,静音,字幕已开启
 
-[![观看完整的自然语言机器人工作流程](public/demo/bot-plain-language-zh.gif)](public/demo/bot-plain-language-zh.mp4)
+[![观看完整的自然语言机器人工作流程](public/demo/bot-plain-language-zh-v2.gif)](public/demo/bot-plain-language-zh-v2.mp4)
 
 如果问它用了什么功能,它能准确说出自己动用了哪些本地功能——在这个例子里就是用 Production 创建并渲染项目,用 Bot Check 以 `auto_local` 策略签到,全程没有打开任何浏览器页面,也没有碰 Cut Log、Operations 或 Instagram。
 
