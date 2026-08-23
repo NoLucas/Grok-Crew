@@ -1,6 +1,6 @@
 # Grok Crew
 
-<p align="right"><strong>English</strong> · <a href="README.ko.md">한국어</a></p>
+<p align="center"><strong>English</strong> &nbsp;·&nbsp; <a href="README.ko.md">한국어</a> &nbsp;·&nbsp; <a href="README.zh.md">简体中文</a> &nbsp;·&nbsp; <a href="README.ja.md">日本語</a></p>
 
 **Turn rough short-form footage into a bot-ready edit plan, a local MP4, and an optional Instagram upload—without sending the project, media, or bot history to a cloud backend.**
 
