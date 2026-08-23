@@ -15,6 +15,13 @@ from urllib.request import Request, urlopen
 
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
+BROWSER_PAGES = {
+    "production": "http://localhost:3000/production",
+    "operations": "http://localhost:3000/operations",
+    "bots": "http://localhost:3000/bots",
+    "guide": "http://localhost:3000/bot-guide",
+    "terminal": "http://localhost:3000/terminal",
+}
 
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -93,6 +100,9 @@ def build_parser() -> argparse.ArgumentParser:
     for name, help_text in (("health", "Read local service status."), ("contract", "Read terminal capability contract."), ("guide", "Read bot editing guide.")):
         commands.add_parser(name, help=help_text)
 
+    site = commands.add_parser("site", help="Print the correct browser workspace URL; do not use port 7214 for browser pages.")
+    site.add_argument("--page", choices=tuple(BROWSER_PAGES), default="production")
+
     entry = commands.add_parser("entry", help="Enter Local Studio and record the first bot heartbeat.")
     entry.add_argument("--bot-id", required=True); entry.add_argument("--display-name", required=True)
     entry.add_argument("--purpose", default="edit_video"); entry.add_argument("--task", default="Prepare a local edit plan.")
@@ -152,6 +162,8 @@ def main() -> None:
         print_json(client.request("/api/terminal-contract")); return
     if args.group == "guide":
         print_json(client.request("/api/bot-guide")); return
+    if args.group == "site":
+        print(BROWSER_PAGES[args.page]); return
     if args.group == "entry":
         print_json(client.request("/api/bot-entry", {"bot_id": args.bot_id, "display_name": args.display_name, "purpose": args.purpose, "task": args.task})); return
     if args.group == "heartbeat":

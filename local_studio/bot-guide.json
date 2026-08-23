@@ -102,6 +102,16 @@
     "rule": "Operations artifacts are plans, checks, and local memory. They never start rendering or publishing."
   },
   "terminal_cli_contract": {
+    "api_base_url": "http://127.0.0.1:7214",
+    "browser_site_base_url": "http://localhost:3000",
+    "browser_rule": "Port 7214 is only for CLI download and JSON API requests. For browser use or screenshots, run python grok-crew.py site --page production and open the printed http://localhost:3000 URL. Never open /production on port 7214.",
+    "browser_pages": {
+      "production": "http://localhost:3000/production",
+      "operations": "http://localhost:3000/operations",
+      "bot_check": "http://localhost:3000/bots",
+      "bot_guide": "http://localhost:3000/bot-guide",
+      "terminal": "http://localhost:3000/terminal"
+    },
     "download": "GET /downloads/grok-crew.py",
     "bootstrap": "python grok-crew.py contract",
     "purpose": "A dependency-free CLI for a bot running in a terminal on the same PC. It can use the Local Studio and Operations endpoints without browser interaction.",

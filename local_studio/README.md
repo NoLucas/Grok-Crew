@@ -37,6 +37,8 @@ Bots can read `GET /api/projects/{id}/operations`. They can create a timestamped
 
 Any Grok bot runtime that runs in a terminal on this same PC can download the dependency-free local CLI from `GET /downloads/grok-crew.py`. The Terminal page at `http://localhost:3000/terminal` includes copy-ready download and first-entry commands.
 
+`http://127.0.0.1:7214` is the CLI and JSON API service, not the browser workspace. For a page a bot needs to open or capture, run `python grok-crew.py site --page production` (or `operations`, `bots`, `guide`, or `terminal`) and use the printed `http://localhost:3000/...` URL. Opening a known browser page on port 7214 now redirects to the correct browser workspace.
+
 The CLI covers bot entry and heartbeat, projects, edit methods, P0–P2 operations, brand kits, and approved job queues. It refuses non-loopback URLs. If token protection is enabled, supply `LOCAL_STUDIO_TOKEN` only through that bot terminal's environment. It requires `--human-approved` for render, Instagram queue, and job-run commands; the server still enforces its own approval and publication checks.
 
 ## Instagram guardrails

@@ -26,6 +26,8 @@ DB_PATH = DATA_DIR / "studio.db"
 BOT_GUIDE_PATH = BASE_DIR / "bot-guide.json"
 TERMINAL_CLI_PATH = BASE_DIR / "grok_crew.py"
 ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000"}
+SITE_BASE_URL = "http://localhost:3000"
+BROWSER_PAGE_PATHS = {"/production", "/operations", "/bots", "/bot-guide", "/terminal"}
 DEFAULT_EDIT_METHOD = {
     "schema": "noh.reel-forge.edit-method/v1",
     "hook_strategy": "payoff_first",
@@ -463,16 +465,25 @@ def terminal_contract() -> dict[str, Any]:
     return {
         "schema": "noh.reel-forge.terminal-cli/v1",
         "scope": "Same workstation and loopback HTTP only.",
+        "api_base_url": "http://127.0.0.1:7214",
+        "browser_site_base_url": SITE_BASE_URL,
+        "browser_rule": "Port 7214 is the CLI and JSON API only. Open or capture browser pages at http://localhost:3000; never append /production or other browser paths to port 7214.",
         "download": "GET /downloads/grok-crew.py",
         "bootstrap": "python grok-crew.py contract",
         "auth": "Set LOCAL_STUDIO_TOKEN in the bot terminal only when Local Studio token protection is enabled.",
         "commands": {
-            "start": ["health", "contract", "guide", "entry", "heartbeat", "bots list|activity|entries"],
+            "start": ["health", "contract", "guide", "site --page production", "entry", "heartbeat", "bots list|activity|entries"],
             "editing": ["projects list|get|create", "method get|set", "ops show|inspect|cut-map|quality|artifact|update", "brand list|save"],
             "delivery": ["jobs list|render|instagram|run"],
         },
         "approval_boundary": "The CLI requires --human-approved before it queues or runs render and Instagram actions. The server additionally enforces recorded approval, and publishing still needs --allow-instagram-publish plus confirmation=PUBLISH.",
-        "browser_pages": ["/production", "/operations", "/bots", "/bot-guide"],
+        "browser_pages": {
+            "production": f"{SITE_BASE_URL}/production",
+            "operations": f"{SITE_BASE_URL}/operations",
+            "bot_check": f"{SITE_BASE_URL}/bots",
+            "bot_guide": f"{SITE_BASE_URL}/bot-guide",
+            "terminal": f"{SITE_BASE_URL}/terminal",
+        },
     }
 
 
@@ -769,6 +780,12 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", origin); self.send_header("Vary", "Origin")
         self.end_headers(); self.wfile.write(raw)
 
+    def _redirect_to_browser_page(self, path: str) -> None:
+        self.send_response(HTTPStatus.FOUND)
+        self.send_header("Location", f"{SITE_BASE_URL}{path}")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+
     def _body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
         if length > 1_000_000:
@@ -795,7 +812,9 @@ class StudioHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         try:
             path = urlparse(self.path).path.rstrip("/") or "/"
-            if path == "/health":
+            if path in BROWSER_PAGE_PATHS:
+                self._redirect_to_browser_page(path)
+            elif path == "/health":
                 self._json(200, {"service": "NOH Local Studio", "status": "ready", "bind": "127.0.0.1", "workspace": str(WORKSPACE_DIR), "database": str(DB_PATH), "moviepy_installed": self._moviepy_ready(), "instagram_publish_enabled": bool(getattr(self.server, "allow_instagram_publish", False)), "credentials_configured": bool(os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USER_ID") and os.getenv("INSTAGRAM_API_VERSION")), "bots": list_bots()["summary"]})
             elif path == "/api/projects":
                 self._json(200, {"projects": list_projects()})
