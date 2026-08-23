@@ -818,7 +818,7 @@ def request_job_cancel(job_id: str) -> dict[str, Any]:
 
 def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] | None = None, should_cancel: Callable[[], bool] | None = None) -> dict[str, Any]:
     try:
-        from moviepy import AudioFileClip, CompositeAudioClip, CompositeVideoClip, TextClip, VideoFileClip, afx, concatenate_videoclips, vfx
+        from moviepy import AudioFileClip, ColorClip, CompositeAudioClip, CompositeVideoClip, TextClip, VideoFileClip, afx, concatenate_videoclips, vfx
     except ImportError as exc:
         raise RuntimeError("MoviePy is not installed. Install local_studio/requirements.txt first.") from exc
     timeline = project["timeline_json"]
@@ -858,7 +858,7 @@ def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] |
     if not (caption_color.startswith("#") and len(caption_color) in {4, 7, 9}):
         caption_color = "#FFFFFF"
     caption_size = int(bounded("caption_size", 78, 38, 110))
-    caption_y = int(bounded("caption_y", 74, 48, 84) * target_h / 100)
+    caption_center_y = int(bounded("caption_y", 74, 48, 84) * target_h / 100)
     caption_stroke = int(bounded("caption_stroke", 3, 0, 8))
     caption_bg = enabled("caption_bg", False)
     caption_bg_color = str(settings.get("caption_bg_color", "#000000"))
@@ -906,13 +906,16 @@ def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] |
                 effects.append(vfx.FadeOut(fade_out))
             if effects:
                 cut = cut.with_effects(effects)
-            if cut.h < target_h:
-                cut = cut.resized(height=target_h)
-            if cut.w < target_w:
-                cut = cut.resized(width=target_w)
-            half_w = target_w / 2
-            x_center = half_w if crop_anchor == "left" else cut.w - half_w if crop_anchor == "right" else cut.w / 2
-            cut = cut.cropped(x_center=x_center, y_center=cut.h / 2, width=target_w, height=target_h)
+            if (int(cut.w), int(cut.h)) != (target_w, target_h):
+                scale = min(target_w / float(cut.w), target_h / float(cut.h))
+                new_w = max(2, int(cut.w * scale) // 2 * 2)
+                new_h = max(2, int(cut.h * scale) // 2 * 2)
+                cut = cut.resized(new_size=(new_w, new_h))
+                if (new_w, new_h) != (target_w, target_h):
+                    x = 0 if crop_anchor == "left" else (target_w - new_w) if crop_anchor == "right" else (target_w - new_w) // 2
+                    y = (target_h - new_h) // 2
+                    bg = ColorClip(size=(target_w, target_h), color=(0, 0, 0)).with_duration(cut.duration)
+                    cut = CompositeVideoClip([bg, cut.with_position((x, y))], size=(target_w, target_h))
             if cut.audio:
                 if enabled("mute_audio"):
                     cut = cut.without_audio()
@@ -926,6 +929,28 @@ def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] |
             caption = str(entry.get("caption", "")).strip()
             word_timings = entry.get("word_timings")
             caption_layers = []
+
+            def caption_layer(text: str, duration: float, start: float = 0) -> TextClip:
+                horizontal_margin = max(8, int(caption_size * .18))
+                vertical_margin = max(6, int(caption_size * .14))
+                text_width = max(200, int(target_w * .85) - horizontal_margin * 2)
+                text_height = max(int(caption_size * 1.45), int(target_h * .055))
+                layer = TextClip(
+                    font=font_path,
+                    text=text,
+                    font_size=caption_size,
+                    color=caption_color,
+                    bg_color=caption_bg_color if caption_bg else None,
+                    stroke_color="black",
+                    stroke_width=caption_stroke,
+                    size=(text_width, text_height),
+                    margin=(horizontal_margin, vertical_margin),
+                    method="caption",
+                    vertical_align="center",
+                )
+                top = max(0, min(int(caption_center_y - layer.h / 2), target_h - int(layer.h)))
+                return layer.with_start(start).with_duration(duration).with_position(("center", top))
+
             if captions_enabled and isinstance(word_timings, list) and word_timings:
                 for word_entry in word_timings[:200]:
                     if not isinstance(word_entry, dict):
@@ -940,10 +965,9 @@ def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] |
                     word_duration = min(word_end, cut.duration) - word_start
                     if word_duration <= 0:
                         continue
-                    word_clip = TextClip(font=font_path, text=word_text, font_size=caption_size, color=caption_color, bg_color=caption_bg_color if caption_bg else None, stroke_color="black", stroke_width=caption_stroke, size=(int(target_w * 0.85), None), method="caption").with_start(word_start).with_duration(word_duration).with_position(("center", caption_y))
-                    caption_layers.append(word_clip)
+                    caption_layers.append(caption_layer(word_text, word_duration, word_start))
             elif caption and captions_enabled:
-                caption_layers.append(TextClip(font=font_path, text=caption, font_size=caption_size, color=caption_color, bg_color=caption_bg_color if caption_bg else None, stroke_color="black", stroke_width=caption_stroke, size=(int(target_w * 0.85), None), method="caption").with_duration(cut.duration).with_position(("center", caption_y)))
+                caption_layers.append(caption_layer(caption, cut.duration))
             if caption_layers:
                 cut = CompositeVideoClip([cut, *caption_layers], size=(target_w, target_h))
             cuts.append(cut)
