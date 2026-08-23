@@ -77,7 +77,7 @@ def main() -> None:
         [clip(intro, 2.2), real_render, clip(outro, 2.2)],
         method="compose",
     )
-    video.write_videofile(str(OUTPUT), fps=FPS, codec="libx264", audio=False, logger=None)
+    video.write_videofile(str(OUTPUT), fps=FPS, codec="libx264", audio=False, logger=None, ffmpeg_params=["-movflags", "+faststart"])
     video.close()
     real_render.close()
 

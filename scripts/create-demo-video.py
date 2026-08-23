@@ -87,7 +87,7 @@ def main() -> None:
         (title_card("THE RESULT", "Rough footage → cut map\n→ local MP4 → delivery", "Keep Instagram delivery queued, or enable auto-upload when local Meta credentials are available.", LIME), 2.5),
     ]
     video = concatenate_videoclips([clip(frame, duration) for frame, duration in frames], method="compose")
-    video.write_videofile(str(OUTPUT), fps=FPS, codec="libx264", audio=False, logger=None)
+    video.write_videofile(str(OUTPUT), fps=FPS, codec="libx264", audio=False, logger=None, ffmpeg_params=["-movflags", "+faststart"])
     video.close()
     subprocess.run(
         [

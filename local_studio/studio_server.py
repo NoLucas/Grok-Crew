@@ -967,7 +967,7 @@ def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] |
         has_audio = bool(final.audio)
         if progress_cb:
             progress_cb(92)
-        final.write_videofile(str(output), fps=fps, codec="libx264", audio_codec="aac", bitrate=bitrate, threads=4, logger=None)
+        final.write_videofile(str(output), fps=fps, codec="libx264", audio_codec="aac", bitrate=bitrate, threads=4, logger=None, ffmpeg_params=["-movflags", "+faststart"])
         final.close()
     if progress_cb:
         progress_cb(100)
