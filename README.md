@@ -90,6 +90,30 @@ Then open [Bot Check](http://localhost:3000/bots). The bot appears only after it
 - Bot Check with real entry, heartbeat, edit, render, and upload progress
 - Korean and English interfaces plus a machine-readable bot guide
 
+## Pages at a glance
+
+The browser workspace at `localhost:3000` is split into several pages. Only two of them are actually wired to Local Studio's render/publish backend — everything else is planning, review, and reference material that stays in the browser's local storage and never touches a media file:
+
+- `/` Studio — see the current project's mood and concept at a glance
+- `/edit` Edit Lab — frame, motion, typography, timing, and caption preview (local-only, does not affect the real render)
+- `/cut` Cut Log — mark kept/dropped segments from the transcript (does not cut the actual file)
+- **`/production` Production — create a project, set the source→output path, configure the Finish Rack, queue renders, and send to Instagram. This is the only page where a real local render or publish actually happens.**
+- `/operations` Operations Center — media inspection, quality reports, project memory, the task board, A/B variants, audio/overlay plans, and brand kits
+- **`/bots` Bot Check — bot entry, heartbeat, and execution policy (`auto_local` vs. approval required). This is the only page where real bot activity is recorded.**
+- `/terminal` Terminal — CLI/API instructions for a bot on this same PC
+- `/bot-guide` Bot Guide — the machine-readable editing rules, workflow, and boundaries for bots
+- `/library` Library — local reference material
+- `/agent` Agent Desk — brief, rules, task list, and handoff notes
+- `/connect` Connect — export/import an offline snapshot for a manual handoff (no server call)
+- `/packet` Packet — a single-piece brief and caption packet
+- `/gates` Gates — a pre-publish readiness checkpoint
+- `/export` Export — resolution, caption packet, and final delivery details
+- `/privacy` Privacy — the "only on this PC" boundary and a local-data reset
+
+### A real example
+
+A bot drove this end to end with the CLI only, no browser clicks: it created a project in Production (`inputs/source.mp4` → `outputs/final-video.mp4`), set the Finish Rack to 9:16, 30fps, compact quality, center reframe, captions on, and muted audio, entered through Bot Check with an `auto_local` execution policy, then rendered two joined clips — 0–4s ("ONE ASK") and 5–9s ("SIX LINES") — into an 8-second local MP4. Cut Log, the edit method, Operations, and the actual Instagram upload are the parts a person still clicks through directly in the browser.
+
 ## For bots: browser or terminal
 
 Every clone includes a dependency-free local CLI. It only accepts loopback addresses.
@@ -137,6 +161,15 @@ Local Studio still never accepts a connection from another machine — that does
 - [x] More local render presets and caption layouts
 - [x] Cloud bot handoff through a dedicated git repository, with loopback still closed to the network
 - [ ] Community-maintained example edit packs
+- [ ] Bundle an open-license caption font so rendering doesn't depend on finding a system font
+- [ ] Surface render concurrency as a documented setting instead of a silent single-worker default
+- [ ] Make the local CORS/Origin allow-list configurable instead of hardcoding port 3000
+- [ ] Publish delivery beyond Instagram (TikTok, YouTube Shorts)
+- [ ] Automated test suite for the render pipeline and app
+- [ ] Automatic music ducking under dialogue instead of a flat volume mix
+- [ ] GitHub Actions CI for lint/build/Python checks on every PR
+- [ ] Extend the live browser UI and bot guide to Chinese/Japanese to match the README translations
+- [ ] Harden the cloud bot handoff channel (media size cap, bundle size cap, max packages per cycle)
 
 ## Feedback and contributions
 

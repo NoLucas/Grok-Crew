@@ -90,6 +90,30 @@ python local_studio/grok_crew.py entry --bot-id editor-01 --display-name "Editor
 - 展示真实签到、心跳、剪辑、渲染与上传进度的 Bot Check
 - 韩语和英语界面,以及机器可读的机器人指南
 
+## 各页面一览
+
+`localhost:3000` 浏览器工作区分成好几个页面。其中真正接入 Local Studio 渲染/发布后端的只有两个,其余都只是规划、复核和参考用的内容,只保存在浏览器的本地存储里,不会碰任何媒体文件:
+
+- `/` Studio —— 一眼看清当前项目的氛围与概念
+- `/edit` Edit Lab —— 构图、运镜、字体、时间轴与字幕预览(仅本地保存,不影响真正的渲染)
+- `/cut` Cut Log —— 按转录文本标记要保留/丢弃的片段(不会真正剪切文件)
+- **`/production` Production —— 创建项目、设置源文件→输出路径、配置 Finish Rack、排队渲染、发送到 Instagram。真正的本地渲染和发布只在这个页面发生。**
+- `/operations` Operations Center —— 素材检查、质量报告、项目记忆、任务看板、A/B 版本、音频/叠加层方案、品牌套件
+- **`/bots` Bot Check —— 机器人签到、心跳、执行策略(`auto_local` 或需要审批)。真正的机器人活动只会记录在这个页面。**
+- `/terminal` Terminal —— 面向本机机器人的 CLI/API 说明
+- `/bot-guide` Bot Guide —— 机器可读的编辑规则、工作流程与边界
+- `/library` Library —— 本地参考素材
+- `/agent` Agent Desk —— 简报、规则、任务清单与交接备注
+- `/connect` Connect —— 导入/导出离线快照,用于手动交接(不发起服务器请求)
+- `/packet` Packet —— 单条内容的简报与字幕素材包
+- `/gates` Gates —— 发布前的准备状态检查点
+- `/export` Export —— 分辨率、字幕包与最终交付信息
+- `/privacy` Privacy —— "只在这台电脑上工作"的边界与本地数据重置
+
+### 一个真实案例
+
+有个机器人完全不点浏览器,只用 CLI 就跑通了整个流程:在 Production 中创建项目(`inputs/source.mp4` → `outputs/final-video.mp4`),把 Finish Rack 设置为 9:16、30fps、compact 画质、居中构图、字幕开启、静音,再通过 Bot Check 以 `auto_local` 执行策略签到,最后把 0–4 秒("ONE ASK")和 5–9 秒("SIX LINES")两段拼接,渲染成一条 8 秒的本地 MP4。Cut Log、编辑方式、Operations 以及真正的 Instagram 上传,仍然是需要有人在浏览器里直接点击完成的部分。
+
 ## 面向机器人:浏览器或终端
 
 每一份克隆都自带一个无额外依赖的本地 CLI,并且只接受本机回环地址(loopback)。
@@ -137,6 +161,15 @@ Local Studio 依旧绝不接受来自其他设备的连接——即便是运行�
 - [x] 更多本地渲染预设与字幕排版
 - [x] 通过专用 git 仓库实现云端机器人交接,回环地址依旧对网络关闭
 - [ ] 社区维护的示例剪辑包
+- [ ] 内置开源许可的字幕字体,避免因找不到系统字体而渲染失败
+- [ ] 把渲染并发数做成有文档说明的设置项,而不是默认静默为 1
+- [ ] 让本地 CORS/Origin 白名单可配置,而不是写死端口 3000
+- [ ] 支持 Instagram 之外的发布渠道(TikTok、YouTube Shorts)
+- [ ] 为渲染流程和应用添加自动化测试套件
+- [ ] 让背景音乐在对白处自动降低音量(智能闪避),而不是固定音量混合
+- [ ] 添加 GitHub Actions CI,在每次 PR 时运行 lint/构建/Python 检查
+- [ ] 让实际应用界面和机器人指南也支持中文/日文,与 README 翻译保持一致
+- [ ] 加强云端机器人交接通道的安全性(素材大小上限、包大小上限、每轮最多处理数量)
 
 ## 反馈与贡献
 
