@@ -49,6 +49,16 @@ Any Grok bot runtime that runs in a terminal on this same PC can use the depende
 
 The CLI covers bot entry and heartbeat, execution policy, projects, edit methods, P0–P2 operations, brand kits, and job queues. It refuses non-loopback URLs. If token protection is enabled, supply `LOCAL_STUDIO_TOKEN` only through that bot terminal's environment. A connected bot can use `policy set --bot-id <id> --mode auto_local` to queue and run its own local renders, or choose `approval_required` to require `--human-approved` for rendering. Use `jobs instagram --auto-upload` to start Instagram upload immediately, or leave it queued for direct execution.
 
+## Cloud bot handoff (remote bots)
+
+A bot that is **not** on this PC (a cloud sandbox, a different machine) cannot reach `127.0.0.1:7214` — that restriction is intentional and this project does not add a way around it. Instead, `local_studio/handoff_watcher.py` lets a remote bot hand off a finished edit through a dedicated git branch instead of a network call:
+
+1. Create a dedicated repository for this (this project uses [NoLucas/handoff-inbox](https://github.com/NoLucas/handoff-inbox)) and give the remote bot credentials that can push only to it (a fine-grained PAT scoped to just that repository is recommended).
+2. Set `HANDOFF_REPO_REMOTE` and `HANDOFF_BRANCH` in `local_studio/.env` (see `.env.example`) so `handoff_watcher.py` knows where to look; otherwise pass `--repo-remote`/`--branch` on the command line.
+3. The remote bot pushes one folder per submission containing `bundle.json` (the same `local-video-workspace.project-bundle/v1` schema `bundle export`/`bundle import` already use) plus the referenced media file. See `local_studio/handoff-guide.json` (or `handoff-guide.ko.json`) for the exact contract to hand that bot.
+4. On this PC, run `python local_studio/handoff_watcher.py` (add `--once` to run a single pass, or register it in Windows Task Scheduler to run continuously at logon). It polls the repository, copies media into `local_studio/workspace/`, and calls this service's own `/api/projects/import` — no new server code, no open port.
+5. A render job created this way runs automatically once its bundle marks it `approved: true`, since rendering only produces a local file. An Instagram publish job stays **queued for a person to run from Production** unless the operator explicitly starts the watcher with `--allow-auto-upload` *and* the bundle itself requests `handoff_auto_upload_requested: true` — both are required, and the flag is off by default.
+
 ## Instagram guardrails
 
 The service never stores Meta tokens in SQLite and only reads them from local process environment variables. It calls Instagram only when an Instagram job is explicitly run or a job is created with auto-upload enabled. The publication client follows the resumable container → binary upload → status poll → publish sequence documented in Meta's sample.

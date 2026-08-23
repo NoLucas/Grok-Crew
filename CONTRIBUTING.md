@@ -28,7 +28,7 @@ Describe the editing problem first, then the smallest workflow that solves it. G
 - Update the Korean and English bot guide together when bot behavior changes.
 - Add or update documentation for user-visible behavior.
 - Run `npm run build` and Python syntax validation before requesting review.
-- Do not add a cloud dependency, remote bot service, or credential collection without an explicit design discussion.
+- Do not add a cloud dependency, remote bot service, or credential collection without an explicit design discussion. (`local_studio/handoff_watcher.py`'s git-branch handoff is not an exception to this: it grants no network access to Local Studio — it only lets an operator-approved script running on this PC pull an offline package and replay it through the existing local API.)
 
 ## Code of conduct
 
