@@ -34,6 +34,7 @@ DEFAULT_EDIT_METHOD = {
     "fps": 30,
     "quality": "balanced",
 }
+BOT_ENTRY_SCHEMA = "noh.reel-forge.bot-entry/v1"
 
 
 def utc_now() -> str:
@@ -85,11 +86,16 @@ def init_db() -> None:
             id TEXT PRIMARY KEY, method_json TEXT NOT NULL, updated_by TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS bot_entries (
+            id TEXT PRIMARY KEY, bot_id TEXT NOT NULL, display_name TEXT NOT NULL,
+            purpose TEXT NOT NULL, task TEXT NOT NULL, joined_at TEXT NOT NULL
+        )""")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_project_created ON jobs(project_id, created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_open_status ON jobs(status, created_at DESC) WHERE status NOT IN ('succeeded', 'failed')")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_events_project_created ON events(project_id, created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_sessions_last_seen ON bot_sessions(last_seen DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_activity_bot_created ON bot_activity(bot_id, created_at DESC)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_entries_joined ON bot_entries(joined_at DESC)")
         conn.execute("PRAGMA optimize")
 
 
@@ -181,10 +187,15 @@ def safe_detail(value: Any) -> dict[str, Any]:
     return detail if len(raw) <= 1200 else {"truncated": True, "summary": raw[:1000]}
 
 
-def record_bot_heartbeat(body: dict[str, Any]) -> dict[str, Any]:
-    bot_id = str(body.get("bot_id", "")).strip()[:80]
+def valid_bot_id(value: Any) -> str:
+    bot_id = str(value or "").strip()[:80]
     if not bot_id or not all(character.isalnum() or character in "-_." for character in bot_id):
         raise ValueError("bot_id must use letters, numbers, hyphen, underscore, or period.")
+    return bot_id
+
+
+def record_bot_heartbeat(body: dict[str, Any]) -> dict[str, Any]:
+    bot_id = valid_bot_id(body.get("bot_id"))
     display_name = str(body.get("display_name", bot_id)).strip()[:120] or bot_id
     action = str(body.get("action", "heartbeat")).strip()[:120] or "heartbeat"
     detail = safe_detail(body.get("detail", {}))
@@ -219,6 +230,59 @@ def list_bot_activity() -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute("SELECT * FROM bot_activity ORDER BY created_at DESC LIMIT 80").fetchall()
     return [row_dict(row) or {} for row in rows]
+
+
+def bot_entry_manifest() -> dict[str, Any]:
+    return {
+        "schema": BOT_ENTRY_SCHEMA,
+        "scope": "Same workstation and 127.0.0.1 only.",
+        "entry_endpoint": "POST /api/bot-entry",
+        "entry_body": {
+            "bot_id": "grok-editor-01",
+            "display_name": "Grok Editor",
+            "purpose": "edit_video",
+            "task": "Prepare a transcript-first local edit plan.",
+        },
+        "first_requests": ["GET /api/bot-guide", "GET /api/projects", "GET /api/jobs", "GET /api/edit-method"],
+        "keep_alive": "POST /api/bots/heartbeat at each meaningful state change and at least once every five minutes while active.",
+        "approval_boundary": "Entry does not grant render or publish approval. Those actions stay behind their existing human approval gates.",
+        "credential_rule": "If LOCAL_STUDIO_TOKEN is enabled, receive it from the bot runtime configuration. Never read .env, SQLite, or browser storage for a token.",
+    }
+
+
+def list_bot_entries() -> list[dict[str, Any]]:
+    with db() as conn:
+        rows = conn.execute("""SELECT e.*, s.last_seen FROM bot_entries e
+            LEFT JOIN bot_sessions s ON s.bot_id = e.bot_id
+            ORDER BY e.joined_at DESC LIMIT 80""").fetchall()
+    now = datetime.now(timezone.utc)
+    entries = []
+    for row in rows:
+        entry = dict(row)
+        last_seen = entry.pop("last_seen", None)
+        if last_seen:
+            seconds = max(0, int((now - datetime.fromisoformat(str(last_seen))).total_seconds()))
+            entry["presence"] = "active" if seconds <= 300 else "idle"
+            entry["seconds_since_checkin"] = seconds
+        else:
+            entry["presence"] = "idle"
+            entry["seconds_since_checkin"] = None
+        entries.append(entry)
+    return entries
+
+
+def enter_bot_workspace(body: dict[str, Any]) -> dict[str, Any]:
+    bot_id = valid_bot_id(body.get("bot_id"))
+    display_name = str(body.get("display_name", bot_id)).strip()[:120] or bot_id
+    purpose = str(body.get("purpose", "edit_video")).strip()[:120] or "edit_video"
+    task = str(body.get("task", "")).strip()[:320]
+    entry_id, now = str(uuid.uuid4()), utc_now()
+    with db() as conn:
+        conn.execute("""INSERT INTO bot_entries (id, bot_id, display_name, purpose, task, joined_at)
+            VALUES (?, ?, ?, ?, ?, ?)""", (entry_id, bot_id, display_name, purpose, task, now))
+    bot = record_bot_heartbeat({"bot_id": bot_id, "display_name": display_name, "action": "entered_local_studio", "detail": {"entry_id": entry_id, "purpose": purpose, "task": task, "next": "read local bot guide"}})
+    event(None, None, "bot_entered", {"entry_id": entry_id, "bot_id": bot_id, "purpose": purpose, "task": task})
+    return {"entry": {"id": entry_id, "bot_id": bot_id, "display_name": display_name, "purpose": purpose, "task": task, "joined_at": now}, "bot": bot, "next_requests": bot_entry_manifest()["first_requests"], "approval_boundary": bot_entry_manifest()["approval_boundary"]}
 
 
 def bot_guide() -> dict[str, Any]:
@@ -506,6 +570,10 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, {"activity": list_bot_activity()})
             elif path == "/api/bot-guide":
                 self._json(200, bot_guide())
+            elif path == "/api/bot-entry":
+                self._json(200, bot_entry_manifest())
+            elif path == "/api/bot-entries":
+                self._json(200, {"entries": list_bot_entries()})
             elif path == "/api/edit-method":
                 self._json(200, current_edit_method())
             elif path.startswith("/api/projects/"):
@@ -525,6 +593,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(201, {"project": new_project(body)})
             elif path == "/api/bots/heartbeat":
                 self._json(201, {"bot": record_bot_heartbeat(body)})
+            elif path == "/api/bot-entry":
+                self._json(201, enter_bot_workspace(body))
             elif path == "/api/edit-method":
                 self._json(200, {"edit_method": set_edit_method(body)})
             elif path.startswith("/api/projects/") and path.endswith("/render"):

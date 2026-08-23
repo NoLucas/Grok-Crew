@@ -2,7 +2,7 @@
   "schema": "noh.reel-forge.bot-guide/v1",
   "title": "NOH Reel Forge Local Editing Playbook",
   "scope": "This guide is for a bot running on the same workstation as NOH Local Studio.",
-  "first_action": "Record a heartbeat before reading or preparing work.",
+  "first_action": "Enter NOH Local Studio. Entry records the first heartbeat before any work starts.",
   "non_negotiables": [
     "Use only files under local_studio/workspace.",
     "Keep the first useful idea or visible change within the first 1.5 seconds when possible.",
@@ -13,14 +13,14 @@
   "workflow": [
     {
       "step": 1,
-      "name": "check_in",
-      "action": "POST /api/bots/heartbeat",
-      "goal": "Identify the bot, its current action, and the project it is preparing."
+      "name": "enter_local_studio",
+      "action": "POST /api/bot-entry with bot_id, display_name, purpose, and task.",
+      "goal": "Create a local entry record and first heartbeat. Entry never grants render or publish approval."
     },
     {
       "step": 2,
       "name": "inspect",
-      "action": "Read Cut Log, edit map, existing projects, and queued jobs.",
+      "action": "Read GET /api/bot-guide, Cut Log, edit map, existing projects, and queued jobs.",
       "goal": "Do not overwrite an existing approved project or retry a job that is already running."
     },
     {
@@ -95,8 +95,8 @@
     "Instagram actual publishing requires approval, --allow-instagram-publish, and confirmation=PUBLISH."
   ],
   "allowed_endpoints": {
-    "read": ["GET /health", "GET /api/projects", "GET /api/jobs", "GET /api/bots", "GET /api/bot-activity", "GET /api/bot-guide", "GET /api/edit-method"],
-    "write_after_scope_check": ["POST /api/bots/heartbeat", "POST /api/edit-method", "POST /api/projects"],
+    "read": ["GET /health", "GET /api/projects", "GET /api/jobs", "GET /api/bots", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method"],
+    "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/edit-method", "POST /api/projects"],
     "write_after_human_approval": ["POST /api/projects/{id}/render", "POST /api/jobs/{id}/run", "POST /api/projects/{id}/instagram"]
   },
   "never": [
