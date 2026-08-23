@@ -25,7 +25,9 @@
     "queue_and_run_local_render_when_auto_local",
     "queue_render_after_human_approval_when_required",
     "queue_or_auto_upload_instagram",
-    "run_queued_job"
+    "run_queued_job",
+    "poll_job_progress",
+    "cancel_local_job"
   ],
   "prohibited": [
     "read_credentials",
@@ -33,6 +35,7 @@
     "bypass_local_token",
     "publish_to_unconfigured_platforms"
   ],
+  "token_rule": "Once LOCAL_STUDIO_TOKEN is configured it is required on GET requests as well as POST requests. Only /health, /api/terminal-contract, /api/bot-guide, /api/bot-entry (GET), and the CLI download stay open without it. Cross-origin requests (a browser Origin header outside http://localhost:3000 / http://127.0.0.1:3000) are rejected regardless of token configuration.",
   "execution_policy": {
     "on_entry": "auto_local",
     "choices": ["auto_local", "approval_required"],

@@ -11,12 +11,13 @@ import sqlite3
 import subprocess
 import time
 import uuid
+from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -29,6 +30,7 @@ TERMINAL_CLI_PATH = BASE_DIR / "grok_crew.py"
 ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000"}
 SITE_BASE_URL = "http://localhost:3000"
 BROWSER_PAGE_PATHS = {"/", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy"}
+PUBLIC_GET_PATHS = frozenset({"/health", "/api/terminal-contract", "/api/bot-guide", "/api/bot-entry", "/downloads/grok-crew.py"})
 DEFAULT_EDIT_METHOD = {
     "schema": "local-video-workspace.edit-method/v1",
     "hook_strategy": "payoff_first",
@@ -43,8 +45,26 @@ DEFAULT_EDIT_METHOD = {
     "quality": "balanced",
 }
 BOT_ENTRY_SCHEMA = "local-video-workspace.bot-entry/v1"
+PROJECT_BUNDLE_SCHEMA = "local-video-workspace.project-bundle/v1"
 ARTIFACT_TYPES = {"audio_plan", "bot_task", "brand_kit", "cut_map", "edit_variant", "media_inspection", "overlay_slots", "performance_note", "preflight_report", "project_memory", "quality_report"}
 EXECUTION_MODES = {"auto_local", "approval_required"}
+RENDER_EXECUTOR = ThreadPoolExecutor(max_workers=max(1, int(os.getenv("LOCAL_STUDIO_RENDER_WORKERS", "1"))))
+PLATFORM_PRESETS = {
+    "reels_tiktok_shorts": {"width": 1080, "height": 1920, "label": "Reels / TikTok / Shorts (9:16)"},
+    "feed_square": {"width": 1080, "height": 1080, "label": "Feed / Square (1:1)"},
+    "landscape_x": {"width": 1920, "height": 1080, "label": "Landscape / X (16:9)"},
+}
+QUALITY_PRESETS = {
+    "fast_draft": {"quality": "compact", "fps": 24},
+    "balanced": {"quality": "balanced", "fps": 30},
+    "high_quality": {"quality": "high", "fps": 30},
+    "archive": {"quality": "high", "fps": 60},
+}
+CAPTION_LAYOUT_PRESETS = {
+    "bottom_bold": {"caption_y": 78, "caption_size": 84, "caption_stroke": 4, "caption_bg": True, "caption_bg_color": "#000000"},
+    "top_minimal": {"caption_y": 48, "caption_size": 52, "caption_stroke": 1, "caption_bg": False},
+    "subtitle_classic": {"caption_y": 80, "caption_size": 58, "caption_stroke": 2, "caption_bg": True, "caption_bg_color": "#00000090"},
+}
 
 
 def utc_now() -> str:
@@ -62,11 +82,20 @@ def load_dotenv() -> None:
         os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    try:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+    except sqlite3.OperationalError as exc:
+        if "duplicate column" not in str(exc).lower():
+            raise
+
+
 def init_db() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     for folder in (WORKSPACE_DIR / "inputs", WORKSPACE_DIR / "outputs"):
         folder.mkdir(parents=True, exist_ok=True)
     with db() as conn:
+        conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("""CREATE TABLE IF NOT EXISTS projects (
             id TEXT PRIMARY KEY, title TEXT NOT NULL, source_path TEXT NOT NULL,
             output_path TEXT NOT NULL, timeline_json TEXT NOT NULL, caption TEXT NOT NULL,
@@ -79,6 +108,8 @@ def init_db() -> None:
             created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
             FOREIGN KEY(project_id) REFERENCES projects(id)
         )""")
+        _ensure_column(conn, "jobs", "progress", "INTEGER NOT NULL DEFAULT 0")
+        _ensure_column(conn, "jobs", "cancel_requested", "INTEGER NOT NULL DEFAULT 0")
         conn.execute("""CREATE TABLE IF NOT EXISTS events (
             id TEXT PRIMARY KEY, project_id TEXT, job_id TEXT, type TEXT NOT NULL,
             detail_json TEXT NOT NULL, created_at TEXT NOT NULL
@@ -166,11 +197,19 @@ def require_path(value: Any, field: str) -> Path:
 
 def caption_font() -> str | None:
     """Find a usable local font without downloading or relying on a font name."""
+    windir = Path(os.environ.get("WINDIR", "C:/Windows"))
     candidates = [
         os.getenv("LOCAL_STUDIO_FONT", ""),
-        str(Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts" / "arial.ttf"),
+        str(windir / "Fonts" / "arialbd.ttf"),
+        str(windir / "Fonts" / "arial.ttf"),
+        str(windir / "Fonts" / "segoeuib.ttf"),
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+        "/Library/Fonts/Arial Bold.ttf",
         "/Library/Fonts/Arial.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
     ]
     return next((candidate for candidate in candidates if candidate and Path(candidate).exists()), None)
 
@@ -206,6 +245,11 @@ def list_jobs(project_id: str | None = None) -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute(query, (project_id,) if project_id else ()).fetchall()
     return [row_dict(row) or {} for row in rows]
+
+
+def get_job(job_id: str) -> dict[str, Any] | None:
+    with db() as conn:
+        return row_dict(conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone())
 
 
 def safe_detail(value: Any) -> dict[str, Any]:
@@ -497,6 +541,77 @@ def project_operations(project_id: str) -> dict[str, Any]:
     return {"project": project, "jobs": jobs, "artifacts": list_artifacts(project_id), "failed_jobs": [job for job in jobs if job.get("status") == "failed"]}
 
 
+def _relative_workspace_path(value: str) -> str:
+    try:
+        return str(Path(value).resolve().relative_to(WORKSPACE_DIR))
+    except ValueError:
+        return value
+
+
+def export_project_bundle(project_id: str) -> dict[str, Any]:
+    project = get_project(project_id)
+    if not project:
+        raise ValueError("Project not found.")
+    jobs = list_jobs(project_id)
+    artifacts = list_artifacts(project_id)
+    return {
+        "schema": PROJECT_BUNDLE_SCHEMA,
+        "exported_at": utc_now(),
+        "project": {
+            "title": project["title"],
+            "source_path": _relative_workspace_path(project["source_path"]),
+            "output_path": _relative_workspace_path(project["output_path"]),
+            "timeline": project["timeline_json"],
+            "caption": project["caption"],
+        },
+        "jobs": [{
+            "kind": job["kind"], "status": job["status"], "approved": bool(job["approved"]),
+            "payload": job.get("payload_json") or {}, "result": job.get("result_json"), "error_text": job.get("error_text"),
+            "created_at": job["created_at"], "updated_at": job["updated_at"],
+        } for job in jobs],
+        "artifacts": [{
+            "type": artifact["type"], "title": artifact["title"], "payload": artifact["payload"],
+            "created_by": artifact["created_by"], "created_at": artifact["created_at"], "updated_at": artifact["updated_at"],
+        } for artifact in artifacts],
+    }
+
+
+def import_project_bundle(body: dict[str, Any]) -> dict[str, Any]:
+    bundle = body.get("bundle")
+    if not isinstance(bundle, dict):
+        raise ValueError("bundle must be a JSON object.")
+    if bundle.get("schema") != PROJECT_BUNDLE_SCHEMA:
+        raise ValueError(f"Unsupported bundle schema. Expected {PROJECT_BUNDLE_SCHEMA}.")
+    project_data = bundle.get("project")
+    if not isinstance(project_data, dict):
+        raise ValueError("bundle.project must be a JSON object.")
+    project = new_project({
+        "title": f"{project_data.get('title', 'Untitled video project')} (imported)",
+        "source_path": project_data.get("source_path"),
+        "output_path": project_data.get("output_path", "outputs/final-video.mp4"),
+        "timeline": project_data.get("timeline", {}),
+        "caption": project_data.get("caption", ""),
+    })
+    imported_jobs = []
+    for job_data in bundle.get("jobs") if isinstance(bundle.get("jobs"), list) else []:
+        if not isinstance(job_data, dict) or job_data.get("kind") not in {"render", "instagram_publish"}:
+            continue
+        payload = job_data.get("payload") if isinstance(job_data.get("payload"), dict) else {}
+        job = create_job(project["id"], job_data["kind"], payload, bool(job_data.get("approved")))
+        if job_data.get("status") in {"succeeded", "failed"}:
+            result = job_data.get("result") if isinstance(job_data.get("result"), dict) else None
+            job = update_job(job["id"], status=job_data["status"], result=result, error=job_data.get("error_text"))
+        imported_jobs.append(job)
+    imported_artifacts = []
+    for artifact_data in bundle.get("artifacts") if isinstance(bundle.get("artifacts"), list) else []:
+        if not isinstance(artifact_data, dict) or artifact_data.get("type") not in ARTIFACT_TYPES:
+            continue
+        payload = artifact_data.get("payload") if isinstance(artifact_data.get("payload"), dict) else {}
+        imported_artifacts.append(save_artifact(project["id"], artifact_data["type"], artifact_data.get("title"), payload, artifact_data.get("created_by", "bundle_import")))
+    event(project["id"], None, "project_bundle_imported", {"jobs": len(imported_jobs), "artifacts": len(imported_artifacts)})
+    return {"project": project, "jobs": imported_jobs, "artifacts": imported_artifacts}
+
+
 def bot_entry_manifest() -> dict[str, Any]:
     return {
         "schema": BOT_ENTRY_SCHEMA,
@@ -532,7 +647,7 @@ def terminal_contract() -> dict[str, Any]:
         "commands": {
             "start": ["health", "contract", "guide", "site --page production", "entry", "policy get|set", "heartbeat", "bots list|activity|entries"],
             "editing": ["projects list|get|create", "method get|set", "ops show|inspect|cut-map|quality|artifact|update", "brand list|save"],
-            "delivery": ["jobs list|render [auto local or human approved]|instagram|run"],
+            "delivery": ["jobs list|render [auto local or human approved]|instagram|run|cancel", "render, instagram, and run accept --wait to poll until the job finishes; renders execute in the background and report progress via GET /api/jobs/{id}"],
         },
         "execution_policy": {"auto_local": "The connected bot can queue and run its own local render work automatically.", "approval_required": "The bot records a request and requires --human-approved for local render work.", "instagram": "Instagram upload can run immediately when auto_upload is enabled, or remain queued for manual execution."},
         "browser_pages": {
@@ -670,16 +785,40 @@ def create_job(project_id: str, kind: str, payload: dict[str, Any], approved: bo
     return row_dict(row) or {}
 
 
-def update_job(job_id: str, *, status: str, result: dict[str, Any] | None = None, error: str | None = None) -> dict[str, Any]:
+def update_job(job_id: str, *, status: str, result: dict[str, Any] | None = None, error: str | None = None, progress: int | None = None) -> dict[str, Any]:
     with db() as conn:
-        conn.execute("UPDATE jobs SET status = ?, result_json = ?, error_text = ?, updated_at = ? WHERE id = ?", (status, json.dumps(result) if result is not None else None, error, utc_now(), job_id))
+        if progress is None:
+            conn.execute("UPDATE jobs SET status = ?, result_json = ?, error_text = ?, updated_at = ? WHERE id = ?", (status, json.dumps(result) if result is not None else None, error, utc_now(), job_id))
+        else:
+            conn.execute("UPDATE jobs SET status = ?, result_json = ?, error_text = ?, progress = ?, updated_at = ? WHERE id = ?", (status, json.dumps(result) if result is not None else None, error, max(0, min(100, int(progress))), utc_now(), job_id))
         row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
     return row_dict(row) or {}
 
 
-def render_moviepy(project: dict[str, Any]) -> dict[str, Any]:
+def update_job_progress(job_id: str, progress: int) -> None:
+    with db() as conn:
+        conn.execute("UPDATE jobs SET progress = ?, updated_at = ? WHERE id = ? AND status = 'running'", (max(0, min(100, int(progress))), utc_now(), job_id))
+
+
+def job_cancel_requested(job_id: str) -> bool:
+    with db() as conn:
+        row = conn.execute("SELECT cancel_requested FROM jobs WHERE id = ?", (job_id,)).fetchone()
+    return bool(row and row["cancel_requested"])
+
+
+def request_job_cancel(job_id: str) -> dict[str, Any]:
+    with db() as conn:
+        row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
+        if not row:
+            raise ValueError("Job not found.")
+        conn.execute("UPDATE jobs SET cancel_requested = 1, updated_at = ? WHERE id = ?", (utc_now(), job_id))
+        updated = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
+    return row_dict(updated) or {}
+
+
+def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] | None = None, should_cancel: Callable[[], bool] | None = None) -> dict[str, Any]:
     try:
-        from moviepy import CompositeVideoClip, TextClip, VideoFileClip, afx, concatenate_videoclips, vfx
+        from moviepy import AudioFileClip, CompositeAudioClip, CompositeVideoClip, TextClip, VideoFileClip, afx, concatenate_videoclips, vfx
     except ImportError as exc:
         raise RuntimeError("MoviePy is not installed. Install local_studio/requirements.txt first.") from exc
     timeline = project["timeline_json"]
@@ -711,13 +850,23 @@ def render_moviepy(project: dict[str, Any]) -> dict[str, Any]:
     if look not in {"natural", "punchy", "mono", "night"}:
         look = "natural"
     brightness, contrast, gamma = bounded("brightness", 0, -40, 40), bounded("contrast", 0, -40, 55), bounded("gamma", 1, .65, 1.55)
+    platform = str(settings.get("platform", "reels_tiktok_shorts"))
+    dims = PLATFORM_PRESETS.get(platform, PLATFORM_PRESETS["reels_tiktok_shorts"])
+    target_w, target_h = int(dims["width"]), int(dims["height"])
     captions_enabled = enabled("captions_enabled", True)
     caption_color = str(settings.get("caption_color", "#FFFFFF"))
     if not (caption_color.startswith("#") and len(caption_color) in {4, 7, 9}):
         caption_color = "#FFFFFF"
     caption_size = int(bounded("caption_size", 78, 38, 110))
-    caption_y = int(bounded("caption_y", 74, 48, 84) * 1920 / 100)
+    caption_y = int(bounded("caption_y", 74, 48, 84) * target_h / 100)
     caption_stroke = int(bounded("caption_stroke", 3, 0, 8))
+    caption_bg = enabled("caption_bg", False)
+    caption_bg_color = str(settings.get("caption_bg_color", "#000000"))
+    if not (caption_bg_color.startswith("#") and len(caption_bg_color) in {4, 7, 9}):
+        caption_bg_color = "#000000"
+    font_path = caption_font()
+    if captions_enabled and not font_path:
+        raise RuntimeError("No usable local font was found for captions. Set LOCAL_STUDIO_FONT to a .ttf/.otf file path, install a system font, or disable captions for this render.")
     source = Path(project["source_path"])
     output = Path(project["output_path"])
     if not source.exists():
@@ -725,8 +874,11 @@ def render_moviepy(project: dict[str, Any]) -> dict[str, Any]:
     output.parent.mkdir(parents=True, exist_ok=True)
     clips_data = timeline.get("clips", [])
     cuts = []
+    total_entries = max(len(clips_data), 1)
     with VideoFileClip(str(source)) as source_clip:
-        for entry in clips_data:
+        for position, entry in enumerate(clips_data):
+            if should_cancel and should_cancel():
+                raise RuntimeError("Render cancelled.")
             if not entry.get("keep", True):
                 continue
             start, end = float(entry["in"]), float(entry["out"])
@@ -754,12 +906,13 @@ def render_moviepy(project: dict[str, Any]) -> dict[str, Any]:
                 effects.append(vfx.FadeOut(fade_out))
             if effects:
                 cut = cut.with_effects(effects)
-            if cut.h < 1920:
-                cut = cut.resized(height=1920)
-            if cut.w < 1080:
-                cut = cut.resized(width=1080)
-            x_center = 540 if crop_anchor == "left" else cut.w - 540 if crop_anchor == "right" else cut.w / 2
-            cut = cut.cropped(x_center=x_center, y_center=cut.h / 2, width=1080, height=1920)
+            if cut.h < target_h:
+                cut = cut.resized(height=target_h)
+            if cut.w < target_w:
+                cut = cut.resized(width=target_w)
+            half_w = target_w / 2
+            x_center = half_w if crop_anchor == "left" else cut.w - half_w if crop_anchor == "right" else cut.w / 2
+            cut = cut.cropped(x_center=x_center, y_center=cut.h / 2, width=target_w, height=target_h)
             if cut.audio:
                 if enabled("mute_audio"):
                     cut = cut.without_audio()
@@ -771,16 +924,54 @@ def render_moviepy(project: dict[str, Any]) -> dict[str, Any]:
                         audio_effects.append(afx.MultiplyVolume(volume))
                     cut = cut.with_audio(cut.audio.with_effects(audio_effects))
             caption = str(entry.get("caption", "")).strip()
-            if caption and captions_enabled:
-                title = TextClip(font=caption_font(), text=caption, font_size=caption_size, color=caption_color, stroke_color="black", stroke_width=caption_stroke, size=(920, None), method="caption").with_duration(cut.duration).with_position(("center", caption_y))
-                cut = CompositeVideoClip([cut, title], size=(1080, 1920))
+            word_timings = entry.get("word_timings")
+            caption_layers = []
+            if captions_enabled and isinstance(word_timings, list) and word_timings:
+                for word_entry in word_timings[:200]:
+                    if not isinstance(word_entry, dict):
+                        continue
+                    word_text = str(word_entry.get("text", "")).strip()
+                    try:
+                        word_start, word_end = float(word_entry.get("start")), float(word_entry.get("end"))
+                    except (TypeError, ValueError):
+                        continue
+                    if not word_text or word_end <= word_start or word_start < 0 or word_start > cut.duration:
+                        continue
+                    word_duration = min(word_end, cut.duration) - word_start
+                    if word_duration <= 0:
+                        continue
+                    word_clip = TextClip(font=font_path, text=word_text, font_size=caption_size, color=caption_color, bg_color=caption_bg_color if caption_bg else None, stroke_color="black", stroke_width=caption_stroke, size=(int(target_w * 0.85), None), method="caption").with_start(word_start).with_duration(word_duration).with_position(("center", caption_y))
+                    caption_layers.append(word_clip)
+            elif caption and captions_enabled:
+                caption_layers.append(TextClip(font=font_path, text=caption, font_size=caption_size, color=caption_color, bg_color=caption_bg_color if caption_bg else None, stroke_color="black", stroke_width=caption_stroke, size=(int(target_w * 0.85), None), method="caption").with_duration(cut.duration).with_position(("center", caption_y)))
+            if caption_layers:
+                cut = CompositeVideoClip([cut, *caption_layers], size=(target_w, target_h))
             cuts.append(cut)
+            if progress_cb:
+                progress_cb(min(90, int(90 * (position + 1) / total_entries)))
         if not cuts:
             raise RuntimeError("No valid kept clips are available to render.")
+        if should_cancel and should_cancel():
+            raise RuntimeError("Render cancelled.")
         final = concatenate_videoclips(cuts, method="compose")
+        music_value = str(settings.get("music_track", "")).strip()
+        if music_value:
+            music_path = workspace_path(music_value)
+            if not music_path.exists():
+                raise RuntimeError(f"Music track does not exist: {music_path}")
+            music_gain = bounded("music_volume", 30, 0, 100) / 100
+            with AudioFileClip(str(music_path)) as music_clip:
+                music = music_clip.with_effects([afx.MultiplyVolume(music_gain)])
+                music = music.with_effects([afx.AudioLoop(duration=final.duration)]) if enabled("music_loop", True) else music.subclipped(0, min(music.duration, final.duration))
+                final = final.with_audio(CompositeAudioClip([final.audio, music]) if final.audio else music)
+        has_audio = bool(final.audio)
+        if progress_cb:
+            progress_cb(92)
         final.write_videofile(str(output), fps=fps, codec="libx264", audio_codec="aac", bitrate=bitrate, threads=4, logger=None)
         final.close()
-    return {"output_path": str(output), "format": "mp4", "video": "H.264", "audio": "AAC" if not enabled("mute_audio") else "none", "width": 1080, "height": 1920, "fps": fps, "bitrate": bitrate, "render_settings": {"crop_anchor": crop_anchor, "speed": speed, "look": look, "captions_enabled": captions_enabled, "quality": quality}}
+    if progress_cb:
+        progress_cb(100)
+    return {"output_path": str(output), "format": "mp4", "video": "H.264", "audio": "AAC" if has_audio else "none", "width": target_w, "height": target_h, "platform": platform, "fps": fps, "bitrate": bitrate, "render_settings": {"crop_anchor": crop_anchor, "speed": speed, "look": look, "captions_enabled": captions_enabled, "quality": quality}}
 
 
 def instagram_publish(project: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
@@ -828,6 +1019,49 @@ def instagram_publish(project: dict[str, Any], payload: dict[str, Any]) -> dict[
     return {"container_id": container_id, "container_status": status_data, "instagram_media_id": published.json().get("id"), "source_path": str(media_path)}
 
 
+def _validate_runnable(job: dict[str, Any]) -> dict[str, Any]:
+    if job["kind"] == "render" and not job["approved"]:
+        raise ValueError("Job has no recorded human approval.")
+    if job["status"] not in {"queued", "failed"}:
+        raise ValueError("Only queued or failed jobs can run.")
+    project = get_project(job["project_id"])
+    if not project:
+        raise ValueError("Project no longer exists.")
+    return project
+
+
+def execute_job(job_id: str) -> dict[str, Any]:
+    job = get_job(job_id)
+    if not job:
+        raise ValueError("Job not found.")
+    project = _validate_runnable(job)
+    update_job(job_id, status="running", progress=0)
+    event(project["id"], job_id, "job_started", {"kind": job["kind"]})
+    try:
+        if job["kind"] == "render":
+            result = render_moviepy(project, progress_cb=lambda pct: update_job_progress(job_id, pct), should_cancel=lambda: job_cancel_requested(job_id))
+        else:
+            result = instagram_publish(project, job["payload_json"])
+        final = update_job(job_id, status="succeeded", result=result, progress=100)
+        event(project["id"], job_id, "job_succeeded", result)
+        return final
+    except Exception as exc:  # noqa: BLE001
+        final = update_job(job_id, status="failed", error=str(exc))
+        event(project["id"], job_id, "job_failed", {"error": str(exc)})
+        return final
+
+
+def start_job(job_id: str, *, wait: bool) -> dict[str, Any]:
+    job = get_job(job_id)
+    if not job:
+        raise ValueError("Job not found.")
+    _validate_runnable(job)
+    future: Future = RENDER_EXECUTOR.submit(execute_job, job_id)
+    if wait:
+        return future.result()
+    return get_job(job_id) or job
+
+
 class StudioHandler(BaseHTTPRequestHandler):
     server_version = "LocalVideoStudio/1.0"
 
@@ -858,14 +1092,18 @@ class StudioHandler(BaseHTTPRequestHandler):
 
     def _body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
-        if length > 1_000_000:
+        if length > 8_000_000:
             raise ValueError("Request body is too large.")
         value = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
         if not isinstance(value, dict):
             raise ValueError("JSON object required.")
         return value
 
-    def _write_allowed(self) -> bool:
+    def _origin_allowed(self) -> bool:
+        origin = self.headers.get("Origin")
+        return origin is None or origin in ALLOWED_ORIGINS
+
+    def _token_ok(self) -> bool:
         expected = os.getenv("LOCAL_STUDIO_TOKEN", "").strip()
         return not expected or self.headers.get("Authorization") == f"Bearer {expected}"
 
@@ -880,8 +1118,12 @@ class StudioHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self) -> None:  # noqa: N802
+        if not self._origin_allowed():
+            self._json(403, {"error": "Cross-origin requests are not allowed."}); return
         try:
             path = urlparse(self.path).path.rstrip("/") or "/"
+            if path not in PUBLIC_GET_PATHS and path not in BROWSER_PAGE_PATHS and not self._token_ok():
+                self._json(401, {"error": "Invalid local studio token."}); return
             if path in BROWSER_PAGE_PATHS:
                 self._redirect_to_browser_page(path)
             elif path == "/health":
@@ -891,6 +1133,9 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, {"projects": list_projects()})
             elif path == "/api/jobs":
                 self._json(200, {"jobs": list_jobs()})
+            elif path.startswith("/api/jobs/"):
+                job = get_job(path.rsplit("/", 1)[-1])
+                self._json(200, {"job": job} if job else {"error": "Job not found"})
             elif path.startswith("/api/bots/") and path.endswith("/execution-policy"):
                 self._json(200, {"execution_policy": execution_policy(path.split("/")[3])})
             elif path == "/api/bots":
@@ -910,10 +1155,14 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, {"entries": list_bot_entries()})
             elif path == "/api/edit-method":
                 self._json(200, current_edit_method())
+            elif path == "/api/presets":
+                self._json(200, {"quality_presets": QUALITY_PRESETS, "caption_layout_presets": CAPTION_LAYOUT_PRESETS, "platform_presets": PLATFORM_PRESETS})
             elif path == "/api/brand-kits":
                 self._json(200, {"brand_kits": list_artifacts(None, "brand_kit")})
             elif path.startswith("/api/projects/") and path.endswith("/operations"):
                 self._json(200, project_operations(path.split("/")[3]))
+            elif path.startswith("/api/projects/") and path.endswith("/export"):
+                self._json(200, {"bundle": export_project_bundle(path.split("/")[3])})
             elif path.startswith("/api/projects/"):
                 project = get_project(path.rsplit("/", 1)[-1])
                 self._json(200, {"project": project, "jobs": list_jobs(project["id"])} if project else {"error": "Project not found"})
@@ -923,12 +1172,16 @@ class StudioHandler(BaseHTTPRequestHandler):
             self._json(500, {"error": str(exc)})
 
     def do_POST(self) -> None:  # noqa: N802
-        if not self._write_allowed():
+        if not self._origin_allowed():
+            self._json(403, {"error": "Cross-origin requests are not allowed."}); return
+        if not self._token_ok():
             self._json(401, {"error": "Invalid local studio token."}); return
         try:
             path = urlparse(self.path).path.rstrip("/"); body = self._body()
             if path == "/api/projects":
                 self._json(201, {"project": new_project(body)})
+            elif path == "/api/projects/import":
+                self._json(201, import_project_bundle(body))
             elif path == "/api/bots/heartbeat":
                 self._json(201, {"bot": record_bot_heartbeat(body)})
             elif path == "/api/bots/execution-policy":
@@ -966,17 +1219,19 @@ class StudioHandler(BaseHTTPRequestHandler):
                 }, human_approved or auto_local)
                 auto_run = auto_local and bool(body.get("run_immediately", True))
                 if auto_run:
-                    job = self._run_job(job["id"], {"bot_id": body.get("bot_id"), "execution_authorization": authorization})
+                    job = start_job(job["id"], wait=bool(body.get("wait", False)))
                 self._json(201, {"job": job, "execution_policy": policy, "auto_run": auto_run})
             elif path.startswith("/api/projects/") and path.endswith("/instagram"):
                 project_id = path.split("/")[3]
                 auto_upload = bool(body.get("auto_upload", False))
                 job = create_job(project_id, "instagram_publish", {"render_path": body.get("render_path"), "caption": body.get("caption", ""), "share_to_feed": bool(body.get("share_to_feed", False)), "requested_by": body.get("requested_by", "local_user"), "auto_upload": auto_upload}, True)
                 if auto_upload:
-                    job = self._run_job(job["id"], {"execution_authorization": "auto_upload"})
+                    job = start_job(job["id"], wait=bool(body.get("wait", False)))
                 self._json(201, {"job": job, "auto_upload": auto_upload})
+            elif path.startswith("/api/jobs/") and path.endswith("/cancel"):
+                self._json(200, {"job": request_job_cancel(path.split("/")[3])})
             elif path.startswith("/api/jobs/") and path.endswith("/run"):
-                job_id = path.split("/")[3]; self._json(200, {"job": self._run_job(job_id, body)})
+                job_id = path.split("/")[3]; self._json(200, {"job": start_job(job_id, wait=bool(body.get("wait", False)))})
             else:
                 self._json(404, {"error": "Not found"})
         except ValueError as exc:
@@ -992,26 +1247,6 @@ class StudioHandler(BaseHTTPRequestHandler):
         except ImportError:
             return False
 
-    def _run_job(self, job_id: str, body: dict[str, Any]) -> dict[str, Any]:
-        with db() as conn:
-            row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
-        job = row_dict(row)
-        if not job:
-            raise ValueError("Job not found.")
-        if job["kind"] == "render" and not job["approved"]:
-            raise ValueError("Job has no recorded human approval.")
-        if job["status"] not in {"queued", "failed"}:
-            raise ValueError("Only queued or failed jobs can run.")
-        project = get_project(job["project_id"])
-        if not project:
-            raise ValueError("Project no longer exists.")
-        update_job(job_id, status="running"); event(project["id"], job_id, "job_started", {"kind": job["kind"]})
-        try:
-            result = render_moviepy(project) if job["kind"] == "render" else instagram_publish(project, job["payload_json"])
-            final = update_job(job_id, status="succeeded", result=result); event(project["id"], job_id, "job_succeeded", result); return final
-        except Exception as exc:  # noqa: BLE001
-            final = update_job(job_id, status="failed", error=str(exc)); event(project["id"], job_id, "job_failed", {"error": str(exc)}); return final
-
     def log_message(self, fmt: str, *args: Any) -> None:
         print(f"[{utc_now()}] {self.address_string()} {fmt % args}")
 
@@ -1020,6 +1255,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run Local Video Studio on loopback only.")
     parser.add_argument("--port", type=int, default=7214)
     args = parser.parse_args(); load_dotenv(); init_db()
+    with db() as conn:
+        conn.execute("UPDATE jobs SET status = 'failed', error_text = ?, updated_at = ? WHERE status = 'running'", ("Interrupted by an unclean Local Studio shutdown.", utc_now()))
     server = ThreadingHTTPServer(("127.0.0.1", args.port), StudioHandler)
     print(f"Local Video Studio listening at http://127.0.0.1:{args.port}")
     print(f"Workspace: {WORKSPACE_DIR}")
@@ -1029,6 +1266,7 @@ def main() -> None:
     except KeyboardInterrupt:
         print("\nLocal Studio stopped.")
     finally:
+        RENDER_EXECUTOR.shutdown(wait=False)
         server.server_close()
 
 

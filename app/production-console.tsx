@@ -31,6 +31,18 @@ type RenderSettings = {
   caption_size: number;
   caption_y: number;
   caption_stroke: number;
+  caption_bg: boolean;
+  caption_bg_color: string;
+  platform: string;
+  music_track: string;
+  music_volume: number;
+  music_loop: boolean;
+};
+type PlatformPreset = { width: number; height: number; label: string };
+type Presets = {
+  quality_presets: Record<string, Partial<RenderSettings>>;
+  caption_layout_presets: Record<string, Partial<RenderSettings>>;
+  platform_presets: Record<string, PlatformPreset>;
 };
 type StudioProject = {
   id: string;
@@ -47,6 +59,8 @@ type StudioJob = {
   kind: "render" | "instagram_publish";
   status: string;
   approved: number;
+  progress?: number;
+  cancel_requested?: number;
   error_text?: string | null;
   created_at: string;
   result_json?: Record<string, unknown> | null;
@@ -104,6 +118,12 @@ const defaultRenderSettings: RenderSettings = {
   caption_size: 78,
   caption_y: 74,
   caption_stroke: 3,
+  caption_bg: false,
+  caption_bg_color: "#000000",
+  platform: "reels_tiktok_shorts",
+  music_track: "",
+  music_volume: 30,
+  music_loop: true,
 };
 
 function cutLogTimeline(): TimelineClip[] {
@@ -156,6 +176,7 @@ export default function ProductionConsole() {
   const [botEditMethod, setBotEditMethod] = useState<BotEditMethod | null>(
     null,
   );
+  const [presets, setPresets] = useState<Presets | null>(null);
   const [title, setTitle] = useState("Untitled video project");
   const [sourcePath, setSourcePath] = useState("inputs/source.mp4");
   const [outputPath, setOutputPath] = useState("outputs/final-video.mp4");
@@ -178,6 +199,8 @@ export default function ProductionConsole() {
     key: K,
     value: RenderSettings[K],
   ) => setRenderSettings((current) => ({ ...current, [key]: value }));
+  const applyPreset = (patch: Partial<RenderSettings>) =>
+    setRenderSettings((current) => ({ ...current, ...patch }));
 
   const api = useCallback(
     async (path: string, init?: RequestInit) => {
@@ -197,17 +220,19 @@ export default function ProductionConsole() {
   const refresh = useCallback(
     async (quiet = false) => {
       try {
-        const [nextHealth, nextProjects, nextJobs, nextMethod] =
+        const [nextHealth, nextProjects, nextJobs, nextMethod, nextPresets] =
           await Promise.all([
             api("/health"),
             api("/api/projects"),
             api("/api/jobs"),
             api("/api/edit-method"),
+            api("/api/presets"),
           ]);
         setHealth(nextHealth as unknown as StudioHealth);
         setProjects((nextProjects.projects ?? []) as StudioProject[]);
         setJobs((nextJobs.jobs ?? []) as StudioJob[]);
         setBotEditMethod(nextMethod as unknown as BotEditMethod);
+        setPresets(nextPresets as unknown as Presets);
         if (!quiet)
           setMessage(
             t("로컬 제작 서비스가 연결되었습니다. 모든 작업 데이터는 이 PC의 SQLite에 저장됩니다.", "Local Studio is connected. All work data is stored in SQLite on this computer."),
@@ -361,7 +386,17 @@ export default function ProductionConsole() {
         }),
       });
       const job = response.job as StudioJob;
-      setMessage(autoUpload ? (job.status === "succeeded" ? t("Instagram 업로드가 완료되었습니다.", "Instagram upload completed.") : t("Instagram 자동 업로드를 시작했습니다. 작업 보드에서 결과를 확인하세요.", "Instagram auto-upload started. Check the job board for the result.")) : t("Instagram 업로드 작업을 대기열에 넣었습니다. 작업 보드에서 바로 실행할 수 있습니다.", "Instagram upload is queued. You can run it directly from the job board."));
+      if (autoUpload) {
+        setMessage(t("Instagram 자동 업로드를 시작했습니다…", "Instagram auto-upload started…"));
+        const final = (await pollJob(job.id)) ?? job;
+        setMessage(
+          final.status === "succeeded"
+            ? t("Instagram 업로드가 완료되었습니다.", "Instagram upload completed.")
+            : t(`업로드 결과: ${final.status}${final.error_text ? ` — ${final.error_text}` : ""}`, `Upload result: ${final.status}${final.error_text ? ` — ${final.error_text}` : ""}`),
+        );
+      } else {
+        setMessage(t("Instagram 업로드 작업을 대기열에 넣었습니다. 작업 보드에서 바로 실행할 수 있습니다.", "Instagram upload is queued. You can run it directly from the job board."));
+      }
       await refresh(true);
     } catch (error) {
       setMessage(
@@ -373,6 +408,21 @@ export default function ProductionConsole() {
       setBusy(false);
     }
   };
+  const pollJob = async (jobId: string): Promise<StudioJob | null> => {
+    for (;;) {
+      let current: StudioJob | null = null;
+      try {
+        const response = await api(`/api/jobs/${jobId}`);
+        current = (response.job ?? null) as StudioJob | null;
+      } catch {
+        return null;
+      }
+      if (!current) return null;
+      setJobs((list) => list.map((item) => (item.id === current!.id ? current! : item)));
+      if (!["queued", "running"].includes(current.status)) return current;
+      await new Promise((resolve) => window.setTimeout(resolve, 1500));
+    }
+  };
   const runJob = async (job: StudioJob) => {
     setBusy(true);
     try {
@@ -380,7 +430,10 @@ export default function ProductionConsole() {
         method: "POST",
         body: JSON.stringify({}),
       });
-      const final = response.job as StudioJob;
+      const queued = response.job as StudioJob;
+      setJobs((list) => list.map((item) => (item.id === queued.id ? queued : item)));
+      setMessage(t("작업이 백그라운드에서 실행 중입니다…", "The job is running in the background…"));
+      const final = (await pollJob(job.id)) ?? queued;
       setMessage(
         final.status === "succeeded"
           ? t(`${job.kind === "render" ? "로컬 MP4 렌더" : "Instagram 게시"}가 완료되었습니다.`, `${job.kind === "render" ? "Local MP4 render" : "Instagram publishing"} completed.`)
@@ -393,6 +446,17 @@ export default function ProductionConsole() {
       );
     } finally {
       setBusy(false);
+    }
+  };
+  const cancelJob = async (job: StudioJob) => {
+    try {
+      await api(`/api/jobs/${job.id}/cancel`, { method: "POST", body: JSON.stringify({}) });
+      setMessage(t("취소를 요청했습니다. 현재 처리 중인 단계가 끝나면 반영됩니다.", "Cancellation requested. It takes effect after the current step finishes."));
+      await refresh(true);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : t("취소 요청을 보내지 못했습니다.", "Could not send the cancellation request."),
+      );
     }
   };
   const selectedProject = projects.find((project) => project.id === selected);
@@ -621,6 +685,29 @@ export default function ProductionConsole() {
               <span>{t("세로 리프레임", "VERTICAL REFRAME")}</span>
               <h3>{t("9:16 프레이밍", "9:16 framing")}</h3>
               <label>
+                {t("출력 플랫폼", "Output platform")}
+                <select
+                  value={renderSettings.platform}
+                  onChange={(event) =>
+                    patchSettings("platform", event.target.value)
+                  }
+                >
+                  {presets
+                    ? Object.entries(presets.platform_presets).map(
+                        ([key, preset]) => (
+                          <option key={key} value={key}>
+                            {preset.label} · {preset.width}×{preset.height}
+                          </option>
+                        ),
+                      )
+                    : (
+                        <option value="reels_tiktok_shorts">
+                          Reels / TikTok / Shorts (9:16) · 1080×1920
+                        </option>
+                      )}
+                </select>
+              </label>
+              <label>
                 {t("피사체 기준 위치", "Subject anchor")}
                 <select
                   value={renderSettings.crop_anchor}
@@ -732,6 +819,40 @@ export default function ProductionConsole() {
                 />{" "}
                 {t("원본 오디오 제거", "Mute source audio")}
               </label>
+              <label>
+                {t("배경 음악 (작업 공간 내부 경로)", "Background music (path inside workspace)")}
+                <input
+                  value={renderSettings.music_track}
+                  onChange={(event) =>
+                    patchSettings("music_track", event.target.value)
+                  }
+                  placeholder="inputs/music-bed.mp3"
+                />
+              </label>
+              <label>
+                {t("음악 음량", "Music volume")} <output>{renderSettings.music_volume}%</output>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  disabled={!renderSettings.music_track}
+                  value={renderSettings.music_volume}
+                  onChange={(event) =>
+                    patchSettings("music_volume", Number(event.target.value))
+                  }
+                />
+              </label>
+              <label className="finish-toggle">
+                <input
+                  type="checkbox"
+                  checked={renderSettings.music_loop}
+                  disabled={!renderSettings.music_track}
+                  onChange={(event) =>
+                    patchSettings("music_loop", event.target.checked)
+                  }
+                />{" "}
+                {t("영상 길이에 맞춰 반복 재생", "Loop to match the video length")}
+              </label>
             </article>
             <article>
               <span>{t("색상 + 룩", "COLOR + LOOK")}</span>
@@ -841,6 +962,29 @@ export default function ProductionConsole() {
                   />
                 </label>
               </div>
+              <div className="finish-pair">
+                <label className="finish-toggle">
+                  <input
+                    type="checkbox"
+                    checked={renderSettings.caption_bg}
+                    onChange={(event) =>
+                      patchSettings("caption_bg", event.target.checked)
+                    }
+                  />{" "}
+                  {t("자막 배경 패널", "Caption background panel")}
+                </label>
+                <label>
+                  {t("배경 색상", "Background color")}
+                  <input
+                    type="color"
+                    value={renderSettings.caption_bg_color.slice(0, 7)}
+                    disabled={!renderSettings.caption_bg}
+                    onChange={(event) =>
+                      patchSettings("caption_bg_color", event.target.value)
+                    }
+                  />
+                </label>
+              </div>
               <label>
                 {t("자막 크기", "Caption size")} <output>{renderSettings.caption_size}px</output>
                 <input
@@ -897,6 +1041,50 @@ export default function ProductionConsole() {
                   <option value="60">{t("60 fps · 빠른 동작", "60 fps · fast action")}</option>
                 </select>
               </label>
+              {presets && (
+                <label>
+                  {t("품질 프리셋", "Quality preset")}
+                  <select
+                    defaultValue=""
+                    onChange={(event) => {
+                      const patch = presets.quality_presets[event.target.value];
+                      if (patch) applyPreset(patch);
+                      event.target.value = "";
+                    }}
+                  >
+                    <option value="" disabled>
+                      {t("프리셋 선택…", "Choose a preset…")}
+                    </option>
+                    {Object.keys(presets.quality_presets).map((key) => (
+                      <option key={key} value={key}>
+                        {key.replaceAll("_", " ")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {presets && (
+                <label>
+                  {t("자막 레이아웃 프리셋", "Caption layout preset")}
+                  <select
+                    defaultValue=""
+                    onChange={(event) => {
+                      const patch = presets.caption_layout_presets[event.target.value];
+                      if (patch) applyPreset(patch);
+                      event.target.value = "";
+                    }}
+                  >
+                    <option value="" disabled>
+                      {t("프리셋 선택…", "Choose a preset…")}
+                    </option>
+                    {Object.keys(presets.caption_layout_presets).map((key) => (
+                      <option key={key} value={key}>
+                        {key.replaceAll("_", " ")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </article>
           </div>
           <div className="finish-readout">
@@ -919,7 +1107,12 @@ export default function ProductionConsole() {
           <article className="production-card lane-card">
             <div className="production-card-head">
               <span>{t("02 · 렌더 작업", "02 · RENDER LANE")}</span>
-              <em>MoviePy · H.264/AAC · 1080×1920</em>
+              <em>
+                MoviePy · H.264/AAC ·{" "}
+                {presets?.platform_presets[renderSettings.platform]
+                  ? `${presets.platform_presets[renderSettings.platform].width}×${presets.platform_presets[renderSettings.platform].height}`
+                  : "1080×1920"}
+              </em>
             </div>
             <h2>{t("승인된 EDL을 로컬 MP4로 렌더", "Render an approved EDL as local MP4")}</h2>
             <p>
@@ -1033,19 +1226,35 @@ export default function ProductionConsole() {
                           {job.approved ? t("기록됨", "recorded") : t("누락", "missing")}
                         </p>
                         {job.error_text && <small>{job.error_text}</small>}
+                        {job.status === "running" && (
+                          <progress value={job.progress ?? 0} max={100} />
+                        )}
                       </div>
-                      <button
-                        onClick={() => void runJob(job)}
-                        disabled={
-                          busy ||
-                          (job.kind === "render" && !job.approved) ||
-                          !["queued", "failed"].includes(job.status)
-                        }
-                      >
-                        {job.kind === "instagram_publish"
-                          ? t("업로드 실행", "Run upload")
-                          : t("렌더 실행", "Run render")}
-                      </button>
+                      <div className="job-row-actions">
+                        <button
+                          onClick={() => void runJob(job)}
+                          disabled={
+                            busy ||
+                            (job.kind === "render" && !job.approved) ||
+                            !["queued", "failed"].includes(job.status)
+                          }
+                        >
+                          {job.kind === "instagram_publish"
+                            ? t("업로드 실행", "Run upload")
+                            : t("렌더 실행", "Run render")}
+                        </button>
+                        {["queued", "running"].includes(job.status) && (
+                          <button
+                            className="job-cancel-button"
+                            onClick={() => void cancelJob(job)}
+                            disabled={Boolean(job.cancel_requested)}
+                          >
+                            {job.cancel_requested
+                              ? t("취소 요청됨", "Cancel requested")
+                              : t("취소", "Cancel")}
+                          </button>
+                        )}
+                      </div>
                     </article>
                   ))
                 ) : (

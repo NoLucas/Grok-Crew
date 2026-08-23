@@ -186,12 +186,14 @@ export default function BotStatusConsole() {
   const [lastRefresh, setLastRefresh] = useState("");
   const [copied, setCopied] = useState("");
   const [checking, setChecking] = useState(false);
+  const [token, setToken] = useState("");
   const botRequest = `POST ${studio}/api/bots/heartbeat\nContent-Type: application/json\nAuthorization: Bearer <LOCAL_STUDIO_TOKEN if configured>\n\n{\n  "bot_id": "local-editor-bot",\n  "display_name": "Local Editor Bot",\n  "action": "cut_plan_ready",\n  "detail": { "project": "my-video-project", "next": "render or queue/auto-upload Instagram" }\n}`;
   const botEntryRequest = `POST ${studio}/api/bot-entry\nContent-Type: application/json\nAuthorization: Bearer <LOCAL_STUDIO_TOKEN if configured>\n\n{\n  "bot_id": "local-editor-bot",\n  "display_name": "Local Editor Bot",\n  "purpose": "edit_video",\n  "task": "Prepare a transcript-first local edit plan.",\n  "execution_mode": "auto_local"\n}`;
 
   const refresh = useCallback(async (quiet = false) => {
     setChecking(true);
     try {
+      const authHeaders = token ? { Authorization: `Bearer ${token}` } : undefined;
       const [
         healthResponse,
         botResponse,
@@ -200,10 +202,10 @@ export default function BotStatusConsole() {
         entriesResponse,
       ] = await Promise.all([
         fetch(`${studio}/health`),
-        fetch(`${studio}/api/bots`),
-        fetch(`${studio}/api/bot-activity`),
+        fetch(`${studio}/api/bots`, { headers: authHeaders }),
+        fetch(`${studio}/api/bot-activity`, { headers: authHeaders }),
         fetch(`${studio}/api/bot-entry`),
-        fetch(`${studio}/api/bot-entries`),
+        fetch(`${studio}/api/bot-entries`, { headers: authHeaders }),
       ]);
       const [nextHealth, nextBots, nextActivity, nextEntryGuide, nextEntries] =
         (await Promise.all([
@@ -261,7 +263,7 @@ export default function BotStatusConsole() {
     } finally {
       setChecking(false);
     }
-  }, [language, t]);
+  }, [language, t, token]);
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       void refresh();
@@ -339,6 +341,15 @@ export default function BotStatusConsole() {
                 ? t("확인 중…", "Checking…")
                 : t("지금 다시 확인", "Check now")}
             </button>
+            <label className="token-field">
+              {t("로컬 보호 토큰", "Local protection token")}{" "}
+              <input
+                type="password"
+                value={token}
+                onChange={(event) => setToken(event.target.value)}
+                placeholder={t("설정된 경우에만 입력", "Enter only if one is configured")}
+              />
+            </label>
           </aside>
         </section>
         <section className="bot-answer-strip">

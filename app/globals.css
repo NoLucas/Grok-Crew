@@ -3878,6 +3878,23 @@ select {
   font-size: 9px;
   font-weight: 900;
 }
+.job-row-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+.job-cancel-button {
+  border-color: #5a2b28 !important;
+  color: #ff8f87 !important;
+}
+.job-row progress {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  height: 6px;
+  margin-top: 8px;
+  accent-color: var(--yellow);
+}
 .empty-job {
   padding: 24px;
   border: 1px dashed #343434;
@@ -3998,6 +4015,9 @@ select {
     gap: 10px;
   }
   .job-row button {
+    width: 100%;
+  }
+  .job-row-actions {
     width: 100%;
   }
   .idea-card li {

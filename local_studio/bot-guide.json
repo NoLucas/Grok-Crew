@@ -89,6 +89,14 @@
       }
     }
   },
+  "render_settings_contract": {
+    "presets_endpoint": "GET /api/presets returns quality_presets, caption_layout_presets, and platform_presets. Merge a chosen preset's fields directly into a project's timeline.render_settings.",
+    "platform": "Set render_settings.platform to one of the keys from platform_presets (default reels_tiktok_shorts, 1080x1920). feed_square (1080x1080) and landscape_x (1920x1080) are also available.",
+    "caption_background": "Set render_settings.caption_bg=true and caption_bg_color (hex) to draw a background panel behind burned-in captions.",
+    "word_level_captions": "Add an optional word_timings array (each item: {text, start, end} in seconds relative to the clip's own start, i.e. 0 = the instant the clip's in point begins) to any timeline clip to render sequential per-word captions instead of one static caption for that clip. Omit it to keep the existing single-caption behavior.",
+    "background_music": "Set render_settings.music_track to a workspace-relative audio file path to mix a background music bed under the source audio (music_volume 0-100, default 30; music_loop true loops the track to match the render length, false trims it once).",
+    "jobs_are_async": "Starting a render or Instagram job (via /render, /instagram, or /api/jobs/{id}/run) returns immediately with a queued or running job. Poll GET /api/jobs/{id} for live progress (0-100) until status is succeeded or failed, or pass wait: true in the request body to block until it finishes. POST /api/jobs/{id}/cancel requests cancellation before the next clip is processed."
+  },
   "operations_contract": {
     "read": "GET /api/projects/{id}/operations returns the project, jobs, saved cut maps, quality reports, bot tasks, memory, overlays, variants, and performance notes.",
     "write": [
@@ -164,7 +172,7 @@
     "download": "GET /downloads/grok-crew.py",
     "bootstrap": "python grok-crew.py contract",
     "purpose": "A dependency-free CLI for a bot running in a terminal on the same PC. It can use the Local Studio and Operations endpoints without browser interaction.",
-    "token_rule": "If token protection is enabled, pass LOCAL_STUDIO_TOKEN through the bot terminal environment. Never read .env, browser storage, or SQLite for it.",
+    "token_rule": "If token protection is enabled, pass LOCAL_STUDIO_TOKEN through the bot terminal environment. Never read .env, browser storage, or SQLite for it. The token is required on every reading request as well as every writing request once configured; only /health, /api/terminal-contract, /api/bot-guide, /api/bot-entry (GET), and the CLI download stay open without it.",
     "approval_rule": "A connected bot starts in auto_local and can render with jobs render --bot-id. Use policy set --bot-id <id> --mode approval_required to require --human-approved for that bot's renders. Use jobs instagram --auto-upload to start Instagram upload immediately, or omit it to queue the upload."
   },
   "execution_policy": {
@@ -182,8 +190,8 @@
     "Use auto_upload=true for immediate upload, or leave it false to keep the job queued."
   ],
   "allowed_endpoints": {
-    "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/bots", "GET /api/bots/{bot_id}/execution-policy", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits"],
-    "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/bots/execution-policy", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits"],
+    "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/jobs/{id}", "GET /api/presets", "GET /api/bots", "GET /api/bots/{bot_id}/execution-policy", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits"],
+    "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/bots/execution-policy", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits", "POST /api/jobs/{id}/cancel"],
     "local_render": ["POST /api/projects/{id}/render when the connected bot's policy is auto_local or a human approval is recorded."],
     "write_for_delivery": ["POST /api/projects/{id}/instagram with auto_upload=true or false"]
   },

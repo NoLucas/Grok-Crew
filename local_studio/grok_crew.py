@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -74,6 +75,16 @@ def print_json(value: Any) -> None:
     print(json.dumps(value, ensure_ascii=False, indent=2))
 
 
+def poll_job(client: LocalStudioClient, job_id: str, interval: float = 1.5) -> dict[str, Any]:
+    """Poll a queued/running job until it reaches a terminal status."""
+    while True:
+        response = client.request(f"/api/jobs/{job_id}")
+        job = response.get("job")
+        if not isinstance(job, dict) or job.get("status") not in {"queued", "running"}:
+            return response
+        time.sleep(interval)
+
+
 def read_json_file(value: str) -> dict[str, Any]:
     try:
         payload = json.loads(Path(value).read_text(encoding="utf-8"))
@@ -107,7 +118,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--token", default=os.getenv("LOCAL_STUDIO_TOKEN", ""), help="Optional Local Studio token. Prefer the LOCAL_STUDIO_TOKEN environment variable.")
     commands = parser.add_subparsers(dest="group", required=True)
 
-    for name, help_text in (("health", "Read local service status."), ("contract", "Read terminal capability contract."), ("guide", "Read bot editing guide.")):
+    for name, help_text in (("health", "Read local service status."), ("contract", "Read terminal capability contract."), ("guide", "Read bot editing guide."), ("presets", "Read quality, caption layout, and platform presets.")):
         commands.add_parser(name, help=help_text)
 
     site = commands.add_parser("site", help="Print the correct browser workspace URL; do not use port 7214 for browser pages.")
@@ -145,9 +156,10 @@ def build_parser() -> argparse.ArgumentParser:
     jobs = commands.add_parser("jobs", help="Read and use local render and publish queues.")
     jobs_sub = jobs.add_subparsers(dest="command", required=True)
     jobs_list = jobs_sub.add_parser("list", help="List all jobs."); jobs_list.add_argument("--project")
-    render = jobs_sub.add_parser("render", help="Queue a render; auto_local bots also run it immediately by default."); render.add_argument("--project", required=True); render.add_argument("--bot-id", required=True); render.add_argument("--human-approved", action="store_true"); render.add_argument("--requested-by", default=""); render.add_argument("--queue-only", action="store_true")
-    instagram = jobs_sub.add_parser("instagram", help="Queue Instagram upload, or upload immediately when requested."); instagram.add_argument("--project", required=True); instagram.add_argument("--file", required=True); instagram.add_argument("--auto-upload", action="store_true")
-    run = jobs_sub.add_parser("run", help="Run a queued job."); run.add_argument("--job", required=True)
+    render = jobs_sub.add_parser("render", help="Queue a render; auto_local bots also run it immediately by default."); render.add_argument("--project", required=True); render.add_argument("--bot-id", required=True); render.add_argument("--human-approved", action="store_true"); render.add_argument("--requested-by", default=""); render.add_argument("--queue-only", action="store_true"); render.add_argument("--wait", action="store_true", help="Poll until the render finishes before printing the result.")
+    instagram = jobs_sub.add_parser("instagram", help="Queue Instagram upload, or upload immediately when requested."); instagram.add_argument("--project", required=True); instagram.add_argument("--file", required=True); instagram.add_argument("--auto-upload", action="store_true"); instagram.add_argument("--wait", action="store_true", help="Poll until the upload finishes before printing the result.")
+    run = jobs_sub.add_parser("run", help="Run a queued job."); run.add_argument("--job", required=True); run.add_argument("--wait", action="store_true", help="Poll until the job finishes before printing the result.")
+    jobs_cancel = jobs_sub.add_parser("cancel", help="Request cancellation of a queued or running job."); jobs_cancel.add_argument("--job", required=True)
 
     method = commands.add_parser("method", help="Read or set the shared bot edit method.")
     method_sub = method.add_subparsers(dest="command", required=True)
@@ -167,6 +179,11 @@ def build_parser() -> argparse.ArgumentParser:
     brand_sub = brand.add_subparsers(dest="command", required=True)
     brand_sub.add_parser("list", help="List brand kits.")
     brand_save = brand_sub.add_parser("save", help="Save a brand kit from JSON."); brand_save.add_argument("--file", required=True)
+
+    bundle = commands.add_parser("bundle", help="Export or import a portable project bundle (project, jobs, and artifacts; media files are not included).")
+    bundle_sub = bundle.add_subparsers(dest="command", required=True)
+    bundle_export = bundle_sub.add_parser("export", help="Export a project as a portable JSON bundle."); bundle_export.add_argument("--project", required=True); bundle_export.add_argument("--out", help="Write the bundle to this file instead of stdout.")
+    bundle_import = bundle_sub.add_parser("import", help="Import a project bundle JSON file as a new local project."); bundle_import.add_argument("--file", required=True)
     return parser
 
 
@@ -181,6 +198,8 @@ def main() -> None:
         print_json(client.request("/api/terminal-contract")); return
     if args.group == "guide":
         print_json(client.request("/api/bot-guide")); return
+    if args.group == "presets":
+        print_json(client.request("/api/presets")); return
     if args.group == "site":
         print(BROWSER_PAGES[args.page]); return
     if args.group == "entry":
@@ -211,11 +230,26 @@ def main() -> None:
         if args.command == "list":
             print_json(client.request(f"/api/projects/{args.project}" if args.project else "/api/jobs"))
         elif args.command == "render":
-            print_json(client.request(f"/api/projects/{args.project}/render", {"bot_id": args.bot_id, "approved": args.human_approved, "requested_by": args.requested_by or args.bot_id, "run_immediately": not args.queue_only}))
+            response = client.request(f"/api/projects/{args.project}/render", {"bot_id": args.bot_id, "approved": args.human_approved, "requested_by": args.requested_by or args.bot_id, "run_immediately": not args.queue_only})
+            job = response.get("job") if isinstance(response, dict) else None
+            if args.wait and isinstance(job, dict) and job.get("id"):
+                response = poll_job(client, job["id"])
+            print_json(response)
         elif args.command == "instagram":
-            payload = read_json_file(args.file); payload["auto_upload"] = args.auto_upload; print_json(client.request(f"/api/projects/{args.project}/instagram", payload))
+            payload = read_json_file(args.file); payload["auto_upload"] = args.auto_upload
+            response = client.request(f"/api/projects/{args.project}/instagram", payload)
+            job = response.get("job") if isinstance(response, dict) else None
+            if args.wait and isinstance(job, dict) and job.get("id"):
+                response = poll_job(client, job["id"])
+            print_json(response)
+        elif args.command == "cancel":
+            print_json(client.request(f"/api/jobs/{args.job}/cancel", {}))
         else:
-            print_json(client.request(f"/api/jobs/{args.job}/run", {}))
+            response = client.request(f"/api/jobs/{args.job}/run", {})
+            job = response.get("job") if isinstance(response, dict) else None
+            if args.wait and isinstance(job, dict) and job.get("id"):
+                response = poll_job(client, job["id"])
+            print_json(response)
         return
 
     if args.group == "method":
@@ -232,6 +266,19 @@ def main() -> None:
 
     if args.group == "brand":
         print_json(client.request("/api/brand-kits" if args.command == "list" else "/api/brand-kits", None if args.command == "list" else read_json_file(args.file)))
+        return
+
+    if args.group == "bundle":
+        if args.command == "export":
+            response = client.request(f"/api/projects/{args.project}/export")
+            text = json.dumps(response.get("bundle", response), ensure_ascii=False, indent=2)
+            if args.out:
+                Path(args.out).write_text(text, encoding="utf-8")
+                print(f"Wrote bundle to {args.out}")
+            else:
+                print(text)
+        else:
+            print_json(client.request("/api/projects/import", {"bundle": read_json_file(args.file)}))
 
 
 if __name__ == "__main__":

@@ -128,8 +128,8 @@ Instagram delivery is optional. It needs the owner's locally configured Meta cre
 - [x] Local project desk, bot entry, task memory, rendering, and optional Instagram delivery
 - [x] Transcript cut maps, media preflight, render QA, A/B variants, audio plans, overlays, and brand kits
 - [x] Korean/English bot guide and browser-page map
-- [ ] Import/export portable project bundles
-- [ ] More local render presets and caption layouts
+- [x] Import/export portable project bundles
+- [x] More local render presets and caption layouts
 - [ ] Community-maintained example edit packs
 
 ## Feedback and contributions

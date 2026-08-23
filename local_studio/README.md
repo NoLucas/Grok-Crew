@@ -8,6 +8,10 @@ This companion service is a private, local production node for Local Video Works
 - Uses MoviePy locally to render EDLs into 1080×1920 H.264/AAC MP4 files.
 - Lets each local agent choose automatic local rendering or a human-approval gate for rendering; Instagram delivery is queued or auto-uploaded per job.
 - Can use Meta's resumable upload workflow to upload a rendered file to Instagram when local credentials are available.
+- Runs renders and uploads on a background worker: starting a job returns immediately with a `queued`/`running` status, `GET /api/jobs/{id}` reports live `progress` (0–100), and `POST /api/jobs/{id}/cancel` requests cancellation before the next clip is processed. Pass `wait: true` in the request body (or `--wait` on the CLI) to block until the job finishes instead. A job still `running` when Local Studio stops unexpectedly is marked `failed` on the next startup.
+- `GET /api/presets` lists quality, caption-layout, and platform presets (Reels/TikTok/Shorts 9:16, Feed square 1:1, Landscape/X 16:9); merge one into a project's `render_settings` instead of setting every field by hand.
+- Captions can carry a background panel (`caption_bg` / `caption_bg_color`) and, per clip, an optional `word_timings` array for sequential word-by-word captions instead of one static line. A render fails fast with a clear error if no local font can be found, instead of silently skipping captions.
+- `render_settings.music_track` mixes a workspace-relative audio file under the source audio (`music_volume`, `music_loop`).
 
 ## Start
 
@@ -28,6 +32,8 @@ Open `http://localhost:3000/bot-guide` for the bot-facing editing manual. A loca
 Read a bot's choice with `GET /api/bots/{bot_id}/execution-policy`, or record it with `POST /api/bots/execution-policy` using `mode=auto_local` or `mode=approval_required`. The Bot Check page shows the current choice beside each verified bot.
 
 Local agents can record a check-in with `POST /api/bots/heartbeat`. Supply a `bot_id`, `display_name`, `action`, and optional `detail` object. If `LOCAL_STUDIO_TOKEN` is configured, the agent must receive that token through its own runtime configuration; it must not read `.env` or SQLite to obtain it. The browser’s Bot Check page includes a copy-ready request example.
+
+If `LOCAL_STUDIO_TOKEN` is set, it is required on every reading request as well as every writing request — only `/health`, `/api/terminal-contract`, `/api/bot-guide`, `GET /api/bot-entry`, and the CLI download stay open without it. Local Studio also rejects any request whose browser `Origin` header is outside `http://localhost:3000` / `http://127.0.0.1:3000`, regardless of whether a token is configured, so a page open in another tab cannot drive this service.
 
 ## Operations center
 

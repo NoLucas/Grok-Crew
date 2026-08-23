@@ -43,6 +43,7 @@ export default function OperationsConsole() {
   const [kitName, setKitName] = useState('기본 브랜드 키트');
   const [kitStyle, setKitStyle] = useState('노란 강조 · 굵은 자막 · 하단 안전 영역 · natural look');
   const [performanceNote, setPerformanceNote] = useState('게시 후 조회수·저장·댓글·반응이 좋은 훅을 기록합니다.');
+  const [bundleFile, setBundleFile] = useState<File | null>(null);
 
   const api = useCallback(async (path: string, init: RequestInit = {}) => {
     const headers = new Headers(init.headers);
@@ -96,6 +97,37 @@ export default function OperationsConsole() {
   const tasks = byType('bot_task'); const memories = byType('project_memory'); const variants = byType('edit_variant'); const overlays = byType('overlay_slots'); const performance = byType('performance_note');
   const selectedProject = useMemo(() => projects.find((project) => project.id === selected), [projects, selected]);
 
+  const exportBundle = async () => {
+    if (!selected) { setMessage('먼저 프로젝트를 선택하세요.'); return; }
+    setBusy(true);
+    try {
+      const response = await api(`/api/projects/${selected}/export`);
+      const bundle = response.bundle ?? response;
+      const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${selectedProject?.title || 'project'}-bundle.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setMessage('프로젝트 번들을 내보냈습니다. 원본 미디어 파일은 포함되지 않습니다.');
+    } catch (error) { setMessage(error instanceof Error ? error.message : '번들을 내보내지 못했습니다.'); }
+    finally { setBusy(false); }
+  };
+  const importBundle = async () => {
+    if (!bundleFile) { setMessage('가져올 번들 파일을 먼저 선택하세요.'); return; }
+    setBusy(true);
+    try {
+      const fileText = await bundleFile.text();
+      const bundle = JSON.parse(fileText) as unknown;
+      await api('/api/projects/import', { method: 'POST', body: JSON.stringify({ bundle }) });
+      await refresh(true);
+      setBundleFile(null);
+      setMessage('번들을 새 로컬 프로젝트로 가져왔습니다.');
+    } catch (error) { setMessage(error instanceof Error ? error.message : '번들을 가져오지 못했습니다.'); }
+    finally { setBusy(false); }
+  };
+
   const submitCutMap = () => {
     try {
       const segments = JSON.parse(transcript) as unknown;
@@ -130,6 +162,7 @@ export default function OperationsConsole() {
       <section className="ops-section"><div className="ops-section-head"><div><p className="kicker">P2 · RECOVERY AND LEARNING</p><h2>실패를 남기고, <span>다음 편집에 반영.</span></h2></div><p>실패한 렌더의 원인과 게시 후 성과 메모는 이 PC의 프로젝트 기록으로만 남습니다.</p></div><div className="ops-grid p2-grid">
         <article className="ops-card recovery-card"><div className="ops-card-head"><span>11 · RECOVERY CENTER</span><em>{operations?.failed_jobs.length ?? 0} failed</em></div><h3>실패 복구 센터</h3>{operations?.failed_jobs.length ? <div className="ops-recovery-list">{operations.failed_jobs.map((job) => <article key={job.id}><b>{job.kind}</b><p>{job.error_text || '실패 원인을 기록하지 못했습니다.'}</p><small>승인된 작업만 기존 Production 대기열에서 재시도할 수 있습니다.</small></article>)}</div> : <p>현재 실패한 로컬 작업이 없습니다. 실패가 생기면 정확한 원인이 여기에 표시됩니다.</p>}</article>
         <article className="ops-card"><div className="ops-card-head"><span>12 · PERFORMANCE NOTES</span><em>{performance.length} note(s)</em></div><h3>콘텐츠 성과 메모</h3><textarea value={performanceNote} onChange={(event) => setPerformanceNote(event.target.value)} /><button onClick={() => void action('성과 메모', `/api/projects/${selected}/artifacts`, { type: 'performance_note', title: '게시 후 성과 메모', payload: { note: performanceNote, use_for: 'next hook and pacing decision' }, created_by: botId })} disabled={busy || !selected}>성과 메모 저장</button><div className="ops-mini-list">{performance.length ? performance.slice(0, 3).map((note) => <span key={note.id}>{text(note.payload.note).slice(0, 74)}</span>) : <small>조회수·저장·댓글과 반응이 좋았던 훅을 기록하세요.</small>}</div></article>
+        <article className="ops-card bundle-card"><div className="ops-card-head"><span>13 · PROJECT BUNDLE</span><em>portable JSON</em></div><h3>프로젝트 번들 내보내기·가져오기</h3><p>선택한 프로젝트의 EDL, 작업 이력, 아티팩트를 이식 가능한 JSON으로 내보내거나 다른 로컬 워크스페이스의 번들을 새 프로젝트로 가져옵니다. 원본 미디어 파일은 포함되지 않습니다.</p><button onClick={() => void exportBundle()} disabled={busy || !selected}>선택한 프로젝트 내보내기</button><div className="ops-button-row"><input type="file" accept="application/json" onChange={(event) => setBundleFile(event.target.files?.[0] ?? null)} aria-label="Project bundle file" /><button onClick={() => void importBundle()} disabled={busy || !bundleFile}>번들 가져오기</button></div></article>
       </div></section>
     </main>
   </>;
