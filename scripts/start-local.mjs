@@ -2,7 +2,8 @@
 /** Start the complete local video workspace on this computer only. */
 
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { createServer } from 'node:net';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -39,25 +40,58 @@ function findPython() {
   return found;
 }
 
-async function studioReady() {
+async function studioHealth() {
   try {
     const response = await fetch('http://127.0.0.1:7214/health');
-    return response.ok;
+    return response.ok ? await response.json() : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
 async function waitForStudio() {
   for (let attempt = 0; attempt < 30; attempt += 1) {
-    if (await studioReady()) return;
+    if (await studioHealth()) return;
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error('Local Studio did not become ready on http://127.0.0.1:7214.');
 }
 
+function portIsFree(port) {
+  return new Promise((resolve) => {
+    const probe = createServer();
+    probe.once('error', () => resolve(false));
+    probe.once('listening', () => probe.close(() => resolve(true)));
+    probe.listen(port, '127.0.0.1');
+  });
+}
+
+function assertStudioBelongsToThisClone(health) {
+  if (!health) return;
+  const expectedWorkspace = join(studioRoot, 'workspace').replace(/\\/g, '/').toLowerCase();
+  const activeWorkspace = String(health.workspace || '').replace(/\\/g, '/').toLowerCase();
+  if (activeWorkspace !== expectedWorkspace) {
+    throw new Error(`Port 7214 is already serving a different Grok Crew clone (${health.workspace || 'unknown workspace'}). Stop that Local Studio, then run npm run local again.`);
+  }
+}
+
+function provisionBundledSample() {
+  const source = join(root, 'public', 'demo', 'bot-edit-result-source.mp4');
+  const destination = join(studioRoot, 'workspace', 'inputs', 'grok-crew-sample.mp4');
+  if (!existsSync(source) || existsSync(destination)) return;
+  mkdirSync(join(studioRoot, 'workspace', 'inputs'), { recursive: true });
+  copyFileSync(source, destination);
+  console.log('Bundled sample media is ready at local_studio/workspace/inputs/grok-crew-sample.mp4');
+}
+
 async function main() {
   if (!existsSync(join(root, 'node_modules'))) await run(npm, ['ci']);
+  provisionBundledSample();
+
+  if (!await portIsFree(3000)) {
+    throw new Error('Port 3000 is already in use. Stop the existing web workspace, then run npm run local again. Grok Crew always uses http://localhost:3000.');
+  }
+  assertStudioBelongsToThisClone(await studioHealth());
 
   const python = findPython();
   await run(python.command, [...python.args, '-c', "import sys; assert sys.version_info >= (3, 10), 'Python 3.10+ is required'"]);
@@ -65,7 +99,9 @@ async function main() {
   await run(venvPython, ['-m', 'pip', 'install', '-r', join(studioRoot, 'requirements.txt')]);
 
   let studio = null;
-  if (!await studioReady()) {
+  const existingStudio = await studioHealth();
+  assertStudioBelongsToThisClone(existingStudio);
+  if (!existingStudio) {
     studio = spawn(venvPython, ['studio_server.py', '--port', '7214'], { cwd: studioRoot, stdio: 'inherit' });
     studio.on('error', (error) => console.error(`Local Studio could not start: ${error.message}`));
     await waitForStudio();

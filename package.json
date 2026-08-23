@@ -20,6 +20,7 @@
   "scripts": {
     "dev": "vinext dev",
     "local": "node scripts/start-local.mjs",
+    "sample": "node scripts/run-sample-project.mjs",
     "build": "vinext build",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"

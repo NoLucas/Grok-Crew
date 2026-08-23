@@ -13,9 +13,25 @@
 
 ## 观看演示
 
-[![观看 21 秒的 Grok Crew 工作流程演示](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
+[![观看 20 秒的 Grok Crew 工作流程演示](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
 
 *预览会直接在本 README 中播放。点击可打开完整 MP4。*
+
+## 在本地运行
+
+```sh
+git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
+cd grok-crew
+npm run local
+```
+
+准备完成后，打开 [Production](http://localhost:3000/production)。第一次运行会安装本地浏览器与渲染依赖，创建独立的 Python 环境，并准备内置示例素材；无需云端账号或第三方 API 密钥。
+
+> **许可证：**Grok Crew 以 [BUSL-1.1](LICENSE) 源码可见方式提供，并不是开源项目。准确的使用权利请查看 [许可证](LICENSE)。
+
+### 立即渲染真实示例
+
+保持 `npm run local` 运行，在此仓库的第二个终端执行 `npm run sample`。它会创建真实的双片段项目、记录本地示例机器人签到，并渲染 `local_studio/workspace/outputs/grok-crew-sample-render.mp4`。它**不会**创建 Instagram 任务。可移植项目内容请见 [sample-project](sample-project/README.md)。
 
 ## 如何向 Grok bot 下达任务
 
@@ -39,7 +55,7 @@
 
 它是一个**面向个人和同一台电脑上机器人的本地制作台**,不是云端视频编辑器,也不是远程机器人服务。
 
-## 五分钟内开始使用
+## 首次运行详情
 
 ### 你需要准备
 
@@ -47,17 +63,7 @@
 - Python 3.10 或更高版本
 - 本仓库的本地克隆
 
-### 运行
-
-```sh
-git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
-cd grok-crew
-npm run local
-```
-
-首次运行会安装浏览器和本地渲染所需的依赖、创建独立的 Python 环境,并启动 Local Studio。完成后打开 [http://localhost:3000/production](http://localhost:3000/production)。
-
-不需要任何云账号或第三方 API 密钥。按 `Ctrl+C` 停止;再次运行同一条命令会继续使用同一个本地工作区。
+`npm run local` 会启动 `localhost:3000` 的浏览器工作区和 `127.0.0.1:7214` 的 Local Studio。按 `Ctrl+C` 停止；再次运行同一命令会继续使用同一个本地工作区。
 
 ### 给本地机器人分配第一个任务
 
@@ -100,9 +106,17 @@ python local_studio/grok_crew.py entry --bot-id editor-01 --display-name "Editor
 - 展示真实签到、心跳、剪辑、渲染与上传进度的 Bot Check
 - 韩语和英语界面,以及机器可读的机器人指南
 
+## 现在真正可用的功能与规划/预览的区别
+
+| 此电脑上真正执行的动作 | 规划、预览或非破坏性动作 |
+| --- | --- |
+| **Production** 创建 Local Studio 项目并渲染真实的本地 MP4。只有所有者在本地配置了 Meta 凭据时，Instagram 任务才能执行。 | **Studio、Edit Lab、Cut Log、Agent Desk、Connect、Packet、Gates、Export、Library** 用于制定、预览、整理或转移计划；不会剪切源媒体、开始渲染或上传。 |
+| **Bot Check** 会将真实机器人的签到、心跳、策略和任务活动记录到本地 SQLite。同一台电脑上的终端 CLI 也通过同一个本地服务创建项目和执行任务。 | **Operations Center** 可保存剪辑图、项目记忆、任务分配、A/B 版本、音频/叠加层方案、品牌套件和质量报告；它们都保留在本地，并且在 Production 中渲染前不会破坏性地修改媒体。 |
+| **Operations Center** 也真正执行本地媒体检查以及渲染前/后的质量检查。 | **Bot Guide、Terminal、Privacy** 是本地说明或状态页，本身不改变媒体。 |
+
 ## 各页面一览
 
-`localhost:3000` 浏览器工作区分成好几个页面。其中真正接入 Local Studio 渲染/发布后端的只有两个,其余都只是规划、复核和参考用的内容,只保存在浏览器的本地存储里,不会碰任何媒体文件:
+`localhost:3000` 浏览器工作区分成下列本地页面。上面的执行边界是刻意设计的：规划页面不会悄悄改动源文件或发布内容。
 
 - `/` Studio —— 一眼看清当前项目的氛围与概念
 - `/edit` Edit Lab —— 构图、运镜、字体、时间轴与字幕预览(仅本地保存,不影响真正的渲染)

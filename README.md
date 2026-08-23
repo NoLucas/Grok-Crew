@@ -13,9 +13,25 @@
 
 ## Watch it work
 
-[![Watch the 21-second Grok Crew workflow demo](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
+[![Watch the 20-second Grok Crew workflow demo](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
 
 *The preview plays directly in this README. Click it to open the full MP4.*
+
+## Run it locally
+
+```sh
+git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
+cd grok-crew
+npm run local
+```
+
+Open [Production](http://localhost:3000/production) when the setup finishes. The first run installs the local browser and renderer dependencies, creates a private Python environment, and prepares a bundled sample input — no cloud account or provider API key is required.
+
+> **License:** Grok Crew is source-available under [BUSL-1.1](LICENSE), not an open-source project. See the [license](LICENSE) for the exact use rights.
+
+### Render a real sample immediately
+
+Keep `npm run local` running. In a second terminal from this repository, run `npm run sample`. It creates a real two-cut project, records a local sample-bot check-in, and renders `local_studio/workspace/outputs/grok-crew-sample-render.mp4`. It does **not** create an Instagram job. See [sample-project](sample-project/README.md) for the portable project payload.
 
 ## Tell a Grok bot what to do
 
@@ -40,7 +56,7 @@ rough footage → transcript cut map → bot edit method → local MP4 → queue
 
 It is a **local production desk for people and same-PC bots**, not a cloud video editor and not a remote bot service.
 
-## Start in under five minutes
+## First-run details
 
 ### What you need
 
@@ -48,17 +64,7 @@ It is a **local production desk for people and same-PC bots**, not a cloud video
 - Python 3.10 or newer
 - A local clone of this repository
 
-### Run it
-
-```sh
-git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
-cd grok-crew
-npm run local
-```
-
-The first run installs browser and local-render dependencies, creates a private Python environment, and starts Local Studio. Then open [http://localhost:3000/production](http://localhost:3000/production).
-
-Nothing needs a cloud account or provider API key. Stop with `Ctrl+C`; running the command again resumes the same local workspace.
+`npm run local` starts the browser workspace at `localhost:3000` and Local Studio at `127.0.0.1:7214`. Stop with `Ctrl+C`; running the same command later resumes the local workspace.
 
 ### Give a local bot its first task
 
@@ -101,9 +107,17 @@ Then open [Bot Check](http://localhost:3000/bots). The bot appears only after it
 - Bot Check with real entry, heartbeat, edit, render, and upload progress
 - Korean and English interfaces plus a machine-readable bot guide
 
+## What works now vs. planning and preview
+
+| Actually runs on this computer | Planning, preview, or non-destructive work |
+| --- | --- |
+| **Production** creates a Local Studio project and renders a real local MP4. An Instagram job can run only with the owner’s local Meta credentials. | **Studio, Edit Lab, Cut Log, Agent Desk, Connect, Packet, Gates, Export, and Library** help draft, preview, package, or move a plan. They do not cut source media, start a render, or upload anything. |
+| **Bot Check** records real bot entries, heartbeats, policies, and job activity in local SQLite. The same-PC terminal CLI creates projects and runs jobs through the same local service. | **Operations Center** can save cut maps, memory, task assignments, A/B variants, audio/overlay plans, brand kits, and quality reports; these are local and useful, but non-destructive until a project is rendered in Production. |
+| **Operations Center** also performs local media inspection and pre-/post-render quality checks. | **Bot Guide, Terminal, and Privacy** are local instructions and status views; they do not themselves change media. |
+
 ## Pages at a glance
 
-The browser workspace at `localhost:3000` is split into several pages. Only two of them are actually wired to Local Studio's render/publish backend — everything else is planning, review, and reference material that stays in the browser's local storage and never touches a media file:
+The browser workspace at `localhost:3000` is split into these local pages. The live-action boundary above is deliberate: planning never silently changes a source file or publishes a post.
 
 - `/` Studio — see the current project's mood and concept at a glance
 - `/edit` Edit Lab — frame, motion, typography, timing, and caption preview (local-only, does not affect the real render)

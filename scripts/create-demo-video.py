@@ -79,12 +79,12 @@ def clip(image: Image.Image, duration: float) -> ImageClip:
 def main() -> None:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     frames = [
-        (title_card("GROK CREW", "A local workflow\nfor bot-assisted edits", "Rough footage, cut decisions, render jobs, and delivery status stay visible on one computer."), 2.5),
+        (title_card("GROK CREW", "A local workflow\nfor bot-assisted edits", "Rough footage, cut decisions, render jobs, and delivery status stay visible on one computer."), 2.0),
         (screenshot_card("01-production.png", "01 · PRODUCTION", "Create the project and set the edit method", "Choose source/output paths, captions, frame, sound, quality, and the bot's creative method."), 4.0),
         (screenshot_card("02-guide.png", "02 · BOT GUIDE", "Give the bot a structured operating manual", "The bot reads the same local guide, tools, boundaries, and workflow that people see in the workspace."), 4.0),
         (screenshot_card("03-bots.png", "03 · BOT CHECK", "Verify entry, activity, and progress", "A bot must check in. The workspace records its entry, heartbeats, editing activity, and render/upload state."), 4.0),
         (screenshot_card("04-terminal.png", "04 · TERMINAL", "Use the same tools from a local bot terminal", "The included CLI opens workspace pages and controls projects, inspection, cut maps, operations, jobs, and delivery."), 4.0),
-        (title_card("THE RESULT", "Rough footage → cut map\n→ local MP4 → delivery", "Keep Instagram delivery queued, or enable auto-upload when local Meta credentials are available.", LIME), 2.5),
+        (title_card("THE RESULT", "Rough footage → cut map\n→ local MP4 → delivery", "Keep Instagram delivery queued, or enable auto-upload when local Meta credentials are available.", LIME), 2.0),
     ]
     video = concatenate_videoclips([clip(frame, duration) for frame, duration in frames], method="compose")
     video.write_videofile(str(OUTPUT), fps=FPS, codec="libx264", audio=False, logger=None, ffmpeg_params=["-movflags", "+faststart"])

@@ -13,9 +13,25 @@
 
 ## 작동 영상
 
-[![21초 Grok Crew 작업 흐름 데모 보기](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
+[![20초 Grok Crew 작업 흐름 데모 보기](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
 
 *미리보기는 이 README에서 바로 재생됩니다. 클릭하면 원본 MP4를 엽니다.*
+
+## 로컬에서 실행하기
+
+```sh
+git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
+cd grok-crew
+npm run local
+```
+
+준비가 끝나면 [Production](http://localhost:3000/production)을 여세요. 첫 실행은 로컬 브라우저·렌더러 의존성을 설치하고, 독립 Python 환경과 내장 샘플 소스를 준비합니다. 클라우드 계정이나 제공자 API 키는 필요하지 않습니다.
+
+> **라이선스:** Grok Crew는 오픈소스 프로젝트가 아니라 [BUSL-1.1](LICENSE)로 소스가 공개된 프로젝트입니다. 정확한 사용 권한은 [라이선스](LICENSE)를 확인하세요.
+
+### 실제 샘플을 바로 렌더하기
+
+`npm run local`을 계속 실행한 채, 이 저장소에서 두 번째 터미널을 열어 `npm run sample`을 실행하세요. 실제 두 컷 프로젝트가 만들어지고 로컬 샘플 봇 체크인이 기록되며 `local_studio/workspace/outputs/grok-crew-sample-render.mp4`가 렌더됩니다. Instagram 작업은 **만들지 않습니다**. 이식 가능한 프로젝트 내용은 [sample-project](sample-project/README.md)에서 확인할 수 있습니다.
 
 ## Grok bot에게 이렇게 명령하세요
 
@@ -39,7 +55,7 @@
 
 Grok Crew는 **사람과 같은 PC에서 실행되는 봇을 위한 로컬 제작 데스크**입니다. 클라우드 영상 편집기나 원격 봇 서비스가 아닙니다.
 
-## 5분 안에 시작하기
+## 첫 실행 상세
 
 ### 준비물
 
@@ -47,17 +63,7 @@ Grok Crew는 **사람과 같은 PC에서 실행되는 봇을 위한 로컬 제�
 - Python 3.10 이상
 - 이 저장소의 로컬 복제본
 
-### 실행
-
-```sh
-git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
-cd grok-crew
-npm run local
-```
-
-첫 실행은 브라우저·로컬 렌더 의존성을 설치하고, 개인 Python 환경과 Local Studio를 시작합니다. 그런 다음 [http://localhost:3000/production](http://localhost:3000/production)을 여세요.
-
-클라우드 계정이나 제공자 API 키는 필요하지 않습니다. `Ctrl+C`로 멈추고 같은 명령을 다시 실행하면 이전 로컬 작업 공간을 이어서 사용합니다.
+`npm run local`은 `localhost:3000`의 브라우저 작업 공간과 `127.0.0.1:7214`의 Local Studio를 시작합니다. `Ctrl+C`로 멈추고 같은 명령을 다시 실행하면 이전 로컬 작업 공간을 이어서 사용합니다.
 
 ### 로컬 봇에 첫 작업 주기
 
@@ -100,9 +106,17 @@ python local_studio/grok_crew.py entry --bot-id editor-01 --display-name "Editor
 - 실제 입장·heartbeat·편집·렌더·업로드 진행을 보여 주는 Bot Check
 - 한국어·영문 화면과 기계가 읽는 봇 설명서
 
+## 지금 실제로 작동하는 것과 계획·미리보기의 구분
+
+| 이 컴퓨터에서 실제로 실행되는 작업 | 계획·미리보기 또는 비파괴 작업 |
+| --- | --- |
+| **Production**은 Local Studio 프로젝트를 만들고 실제 로컬 MP4를 렌더합니다. Instagram 작업은 소유자의 로컬 Meta 자격 증명이 있을 때만 실행할 수 있습니다. | **Studio, Edit Lab, Cut Log, Agent Desk, Connect, Packet, Gates, Export, Library**는 계획을 만들고 미리 보고 패키징하거나 옮기는 용도입니다. 소스 미디어를 자르거나 렌더·업로드를 시작하지 않습니다. |
+| **Bot Check**은 실제 봇 입장·heartbeat·정책·작업 활동을 로컬 SQLite에 기록합니다. 같은 PC의 터미널 CLI도 같은 로컬 서비스로 프로젝트를 만들고 작업을 실행합니다. | **Operations Center**는 컷 맵, 프로젝트 기억, 작업 할당, A/B 버전, 오디오·오버레이 계획, 브랜드 키트, 품질 보고서를 저장할 수 있습니다. 모두 로컬에서 유용하지만 Production에서 렌더하기 전에는 미디어를 파괴적으로 바꾸지 않습니다. |
+| **Operations Center**는 로컬 미디어 검사와 렌더 전·후 품질 검사도 실제로 실행합니다. | **Bot Guide, Terminal, Privacy**는 로컬 안내·상태 화면이며 그 자체로 미디어를 바꾸지 않습니다. |
+
 ## 페이지 한눈에 보기
 
-`localhost:3000` 브라우저 작업 공간은 여러 페이지로 나뉘어 있습니다. 이 중 실제로 Local Studio의 렌더·게시 백엔드에 연결된 페이지는 딱 두 개뿐이고, 나머지는 계획·검토·참고용으로 브라우저 로컬 저장소에만 남으며 실제 미디어 파일은 건드리지 않습니다.
+`localhost:3000` 브라우저 작업 공간은 아래와 같은 로컬 페이지로 나뉘어 있습니다. 위의 실행 경계는 의도적입니다. 계획 화면은 소스 파일을 몰래 바꾸거나 게시물을 올리지 않습니다.
 
 - `/` 스튜디오 — 지금 프로젝트의 분위기와 컨셉을 한눈에 보기
 - `/edit` 편집실(Edit Lab) — 프레임·모션·타이포·타이밍·자막 미리보기 (로컬 전용, 실제 렌더에는 반영 안 됨)

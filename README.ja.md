@@ -13,9 +13,25 @@
 
 ## 動作デモ
 
-[![21秒のGrok Crewワークフローデモを見る](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
+[![20秒のGrok Crewワークフローデモを見る](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
 
 *プレビューはこのREADME内でそのまま再生されます。クリックするとフルのMP4が開きます。*
+
+## ローカルで実行する
+
+```sh
+git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
+cd grok-crew
+npm run local
+```
+
+準備が完了したら [Production](http://localhost:3000/production) を開いてください。初回実行ではローカルのブラウザ・レンダラー依存関係をインストールし、専用のPython環境と同梱サンプル素材を準備します。クラウドアカウントやプロバイダーのAPIキーは不要です。
+
+> **ライセンス：**Grok Crewはオープンソースプロジェクトではなく、[BUSL-1.1](LICENSE)でソース公開されるプロジェクトです。正確な利用権は[ライセンス](LICENSE)を確認してください。
+
+### 実際のサンプルをすぐにレンダリングする
+
+`npm run local` を実行したまま、このリポジトリの2つ目のターミナルで `npm run sample` を実行してください。実際の2クリッププロジェクトが作成され、ローカルのサンプルボットのチェックインが記録され、`local_studio/workspace/outputs/grok-crew-sample-render.mp4` がレンダリングされます。Instagramジョブは**作成されません**。ポータブルなプロジェクト内容は [sample-project](sample-project/README.md) を参照してください。
 
 ## Grok bot への頼み方
 
@@ -39,7 +55,7 @@
 
 これは**人と同じPC上で動くボットのためのローカル制作デスク**であり、クラウド動画エディタでもなければリモートボットサービスでもありません。
 
-## 5分以内に始める
+## 初回実行の詳細
 
 ### 必要なもの
 
@@ -47,17 +63,7 @@
 - Python 3.10以上
 - このリポジトリのローカルクローン
 
-### 実行する
-
-```sh
-git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
-cd grok-crew
-npm run local
-```
-
-初回実行時にブラウザとローカルレンダリングに必要な依存関係がインストールされ、専用のPython環境が作られ、Local Studioが起動します。その後 [http://localhost:3000/production](http://localhost:3000/production) を開いてください。
-
-クラウドアカウントやプロバイダーのAPIキーは一切不要です。`Ctrl+C`で停止し、同じコマンドを再実行すれば同じローカルワークスペースを再開できます。
+`npm run local` は `localhost:3000` のブラウザワークスペースと `127.0.0.1:7214` のLocal Studioを起動します。`Ctrl+C`で停止し、同じコマンドを再実行すれば同じローカルワークスペースを再開できます。
 
 ### ローカルボットに最初のタスクを与える
 
@@ -100,9 +106,17 @@ python local_studio/grok_crew.py entry --bot-id editor-01 --display-name "Editor
 - 実際の入場・ハートビート・編集・レンダリング・アップロードの進捗を示すBot Check
 - 韓国語・英語のインターフェースと、機械可読なボットガイド
 
+## 現在動作するものと計画・プレビューの区別
+
+| このPCで実際に実行される処理 | 計画、プレビュー、または非破壊の処理 |
+| --- | --- |
+| **Production** はLocal Studioプロジェクトを作成し、実際のローカルMP4をレンダリングします。Instagramジョブは、所有者のローカルMeta認証情報がある場合にのみ実行できます。 | **Studio、Edit Lab、Cut Log、Agent Desk、Connect、Packet、Gates、Export、Library** は計画の作成、プレビュー、整理、移動のためのものです。ソースメディアを切断したり、レンダリングやアップロードを開始したりしません。 |
+| **Bot Check** は実際のボット入場、ハートビート、ポリシー、ジョブ活動をローカルSQLiteに記録します。同じPCのターミナルCLIも、同じローカルサービスを通じてプロジェクトの作成とジョブ実行を行います。 | **Operations Center** はカットマップ、プロジェクトの記憶、タスク割り当て、A/Bバリアント、音声/オーバーレイプラン、ブランドキット、品質レポートを保存できます。すべてローカルに保存され、Productionでレンダリングするまでメディアを破壊的に変更しません。 |
+| **Operations Center** はローカルの素材検査と、レンダリング前/後の品質チェックも実際に実行します。 | **Bot Guide、Terminal、Privacy** はローカルの説明・状態画面であり、それ自体はメディアを変更しません。 |
+
 ## ページ早見表
 
-`localhost:3000` のブラウザワークスペースはいくつかのページに分かれています。このうち実際にLocal Studioのレンダリング・配信バックエンドに接続されているのは2つだけで、それ以外は計画・確認・参照用であり、ブラウザのローカルストレージに残るだけでメディアファイルには一切触れません。
+`localhost:3000` のブラウザワークスペースは下記のローカルページに分かれています。上記の実行境界は意図的です。計画ページがソースファイルを勝手に変更したり投稿を公開したりすることはありません。
 
 - `/` Studio —— 現在のプロジェクトの雰囲気とコンセプトを一目で確認
 - `/edit` Edit Lab —— フレーム・モーション・タイポグラフィ・タイミング・字幕のプレビュー(ローカル限定で、実際のレンダリングには反映されません)
