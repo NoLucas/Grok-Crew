@@ -72,3 +72,7 @@ button, input, textarea, select { font: inherit; } button { cursor: pointer; } b
 @media (max-width: 1120px) { .site-header { grid-template-columns: 180px minmax(0,1fr) auto auto; padding: 0 20px; }.site-header nav { justify-content: flex-start; gap: 16px; overflow-x: auto; } }
 @media (max-width: 940px) { .site-header { grid-template-columns: 1fr auto; min-height: 68px; }.site-header nav { grid-column: 1 / -1; grid-row: 2; height: 40px; gap: 20px; }.site-header .header-meta span { display: none; }.site-header .language-switcher { margin: 0 12px 0 0; } }
 @media (max-width: 600px) { .site-header { min-height: 56px; padding: 0 15px; }.site-header nav { height: 38px; gap: 17px; }.site-header nav a { font-size: 10px; }.site-header .header-meta { display: none; }.site-header .language-switcher { margin-right: 0; } }
+
+/* A calmer title scale leaves more room for the editor itself. */
+.studio-title h1,.page-intro h1 { font-size: clamp(32px,3.4vw,52px); }.agent-hero h1 { font-size: clamp(37px,4.6vw,68px); }.edit-title h1 { font-size: clamp(36px,4.3vw,64px); }.connect-hero h1 { font-size: clamp(42px,5.3vw,72px); }.cut-hero h1 { font-size: clamp(42px,5vw,68px); }.production-hero h1 { font-size: clamp(44px,5.5vw,74px); }.bot-hero h1,.guide-hero h1 { font-size: clamp(42px,5.4vw,72px); }
+@media (max-width: 600px) { .studio-title h1,.page-intro h1 { font-size: 34px; }.agent-hero h1,.edit-title h1 { font-size: 40px; }.connect-hero h1,.cut-hero h1,.bot-hero h1,.guide-hero h1 { font-size: 43px; }.production-hero h1 { font-size: 45px; } }
