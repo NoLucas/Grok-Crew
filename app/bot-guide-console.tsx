@@ -5,6 +5,14 @@ import { useLanguage } from "./language";
 import { SiteHeader } from "./site-header";
 
 type GuideStep = { step: number; name: string; action: string; goal: string };
+type SiteFeature = {
+  id: string;
+  area: string;
+  name: string;
+  use_when: string;
+  bot_action: string;
+  result: string;
+};
 type Guide = {
   schema: string;
   title: string;
@@ -14,6 +22,7 @@ type Guide = {
   workflow: GuideStep[];
   edit_heuristics: Record<string, string>;
   approval_gates: string[];
+  site_features?: SiteFeature[];
   execution_policy?: {
     on_entry: string;
     modes: Record<string, string>;
@@ -306,6 +315,41 @@ export default function BotGuideConsole() {
             ))}
           </div>
         </section>
+        {guide.site_features && guide.site_features.length > 0 && (
+          <section className="guide-capabilities">
+            <div className="guide-section-head">
+              <div>
+                <p className="kicker">{t("사이트 기능 설명서", "SITE FUNCTION MANUAL")}</p>
+                <h2>
+                  {t("봇이 사용할 수 있는", "What a bot can use in the")} {" "}
+                  <span>{t("모든 작업 도구.", "local workspace.")}</span>
+                </h2>
+              </div>
+              <p>
+                {t(
+                  "각 카드는 언제 사용하고, 무엇을 기록하며, 어떤 결과를 확인해야 하는지 알려 줍니다.",
+                  "Each card states when to use the feature, what the bot records, and what result to check.",
+                )}
+              </p>
+            </div>
+            <div className="guide-feature-grid">
+              {guide.site_features.map((feature) => (
+                <article key={feature.id}>
+                  <div>
+                    <i>{feature.id}</i>
+                    <span>{feature.area}</span>
+                  </div>
+                  <h3>{feature.name}</h3>
+                  <dl>
+                    <div><dt>{t("사용 시점", "Use when")}</dt><dd>{feature.use_when}</dd></div>
+                    <div><dt>{t("봇 작업", "Bot action")}</dt><dd>{feature.bot_action}</dd></div>
+                    <div><dt>{t("확인 결과", "Check")}</dt><dd>{feature.result}</dd></div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
         <section className="guide-layout">
           <article className="guide-card heuristic-card">
             <div className="guide-card-head">

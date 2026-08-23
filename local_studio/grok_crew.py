@@ -16,11 +16,20 @@ from urllib.request import Request, urlopen
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 BROWSER_PAGES = {
+    "studio": "http://localhost:3000/",
+    "edit": "http://localhost:3000/edit",
+    "cut": "http://localhost:3000/cut",
     "production": "http://localhost:3000/production",
     "operations": "http://localhost:3000/operations",
     "bots": "http://localhost:3000/bots",
     "guide": "http://localhost:3000/bot-guide",
     "terminal": "http://localhost:3000/terminal",
+    "library": "http://localhost:3000/library",
+    "agent": "http://localhost:3000/agent",
+    "connect": "http://localhost:3000/connect",
+    "packet": "http://localhost:3000/packet",
+    "gates": "http://localhost:3000/gates",
+    "export": "http://localhost:3000/export",
     "privacy": "http://localhost:3000/privacy",
 }
 

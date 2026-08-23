@@ -28,7 +28,7 @@ BOT_GUIDE_KO_PATH = BASE_DIR / "bot-guide.ko.json"
 TERMINAL_CLI_PATH = BASE_DIR / "grok_crew.py"
 ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000"}
 SITE_BASE_URL = "http://localhost:3000"
-BROWSER_PAGE_PATHS = {"/production", "/operations", "/bots", "/bot-guide", "/terminal", "/privacy"}
+BROWSER_PAGE_PATHS = {"/", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy"}
 DEFAULT_EDIT_METHOD = {
     "schema": "local-video-workspace.edit-method/v1",
     "hook_strategy": "payoff_first",
@@ -536,11 +536,20 @@ def terminal_contract() -> dict[str, Any]:
         },
         "execution_policy": {"auto_local": "The connected bot can queue and run its own local render work automatically.", "approval_required": "The bot records a request and requires --human-approved for local render work.", "instagram": "Instagram upload can run immediately when auto_upload is enabled, or remain queued for manual execution."},
         "browser_pages": {
+            "studio": f"{SITE_BASE_URL}/",
+            "edit": f"{SITE_BASE_URL}/edit",
+            "cut": f"{SITE_BASE_URL}/cut",
             "production": f"{SITE_BASE_URL}/production",
             "operations": f"{SITE_BASE_URL}/operations",
             "bot_check": f"{SITE_BASE_URL}/bots",
             "bot_guide": f"{SITE_BASE_URL}/bot-guide",
             "terminal": f"{SITE_BASE_URL}/terminal",
+            "library": f"{SITE_BASE_URL}/library",
+            "agent_desk": f"{SITE_BASE_URL}/agent",
+            "local_desk": f"{SITE_BASE_URL}/connect",
+            "packet": f"{SITE_BASE_URL}/packet",
+            "gate_board": f"{SITE_BASE_URL}/gates",
+            "export": f"{SITE_BASE_URL}/export",
             "privacy": f"{SITE_BASE_URL}/privacy",
         },
     }
