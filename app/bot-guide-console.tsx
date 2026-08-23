@@ -13,6 +13,13 @@ type SiteFeature = {
   bot_action: string;
   result: string;
 };
+type WorkspacePage = {
+  id: string;
+  url: string;
+  name: string;
+  purpose: string;
+  bot_use: string;
+};
 type Guide = {
   schema: string;
   title: string;
@@ -23,6 +30,7 @@ type Guide = {
   edit_heuristics: Record<string, string>;
   approval_gates: string[];
   site_features?: SiteFeature[];
+  workspace_pages?: WorkspacePage[];
   execution_policy?: {
     on_entry: string;
     modes: Record<string, string>;
@@ -345,6 +353,35 @@ export default function BotGuideConsole() {
                     <div><dt>{t("봇 작업", "Bot action")}</dt><dd>{feature.bot_action}</dd></div>
                     <div><dt>{t("확인 결과", "Check")}</dt><dd>{feature.result}</dd></div>
                   </dl>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+        {guide.workspace_pages && guide.workspace_pages.length > 0 && (
+          <section className="guide-pages">
+            <div className="guide-section-head">
+              <div>
+                <p className="kicker">{t("전체 사이트 지도", "FULL WORKSPACE MAP")}</p>
+                <h2>
+                  {t("모든 화면의", "Every page, with its")} {" "}
+                  <span>{t("봇 사용 목적.", "bot purpose.")}</span>
+                </h2>
+              </div>
+              <p>
+                {t(
+                  "터미널 봇은 site --page 이름으로 정확한 로컬 주소를 출력할 수 있습니다.",
+                  "A terminal bot can print the matching local URL with site --page name.",
+                )}
+              </p>
+            </div>
+            <div className="guide-page-grid">
+              {guide.workspace_pages.map((page) => (
+                <article key={page.id}>
+                  <div><i>{page.id}</i><code>{page.url}</code></div>
+                  <h3>{page.name}</h3>
+                  <p>{page.purpose}</p>
+                  <small><b>{t("봇 사용", "Bot use")}</b>{page.bot_use}</small>
                 </article>
               ))}
             </div>

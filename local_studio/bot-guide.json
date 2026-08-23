@@ -121,6 +121,23 @@
     {"id":"17","area":"TERMINAL","name":"Bot CLI and page links","use_when":"The bot works from a terminal instead of clicking through the browser.","bot_action":"Run python local_studio/grok_crew.py contract, then use its project, operation, job, and site commands.","result":"The same local Studio functions without browser automation."},
     {"id":"18","area":"PRIVACY","name":"Local-only boundaries","use_when":"Any action needs files, access tokens, or a publication destination.","bot_action":"Use only local_studio/workspace media and runtime-provided tokens; never read .env, browser storage, or SQLite for secrets.","result":"Work remains local and credentials stay outside bot-readable project records."}
   ],
+  "workspace_pages": [
+    {"id":"01","url":"/","name":"Studio","purpose":"A visual overview of the reel concept, project state, and local creative direction.","bot_use":"Read the current creative context before selecting a project action."},
+    {"id":"02","url":"/edit","name":"Edit Lab","purpose":"Frame, motion, typography, timing, caption, and preview controls.","bot_use":"Use it to inspect or align visual-edit decisions with the shared edit method."},
+    {"id":"03","url":"/cut","name":"Cut Log","purpose":"Transcript-led clip review, keep/remove decisions, and time-based cut planning.","bot_use":"Review the planned cut, then save a non-destructive cut map through Local Studio."},
+    {"id":"04","url":"/production","name":"Production","purpose":"Projects, media paths, finish settings, render queue, and Instagram delivery.","bot_use":"Create or select the local project, apply settings, render, and queue or auto-upload delivery."},
+    {"id":"05","url":"/operations","name":"Operations Center","purpose":"Media inspection, quality reports, project memory, tasks, variants, audio, overlays, brand kits, and recovery notes.","bot_use":"Record plans and checks here before or after rendering; use artifacts for durable teamwork."},
+    {"id":"06","url":"/bots","name":"Bot Check","purpose":"Verified bot entry, heartbeat, capability status, recent activity, and connection flow.","bot_use":"Check in at every meaningful state change and use this page to verify the bot is truly active."},
+    {"id":"07","url":"/terminal","name":"Terminal","purpose":"Copy-ready local CLI and API entry instructions for same-PC bots.","bot_use":"Start with the contract, enter Local Studio, and use the listed local commands."},
+    {"id":"08","url":"/bot-guide","name":"Bot Guide","purpose":"The machine-readable playbook, feature manual, workflow, boundaries, and examples.","bot_use":"Read GET /api/bot-guide before work and refresh it when instructions change."},
+    {"id":"09","url":"/library","name":"Library","purpose":"Local creative references, reusable ideas, and source context.","bot_use":"Use as local inspiration and context; do not assume it grants access beyond the workspace."},
+    {"id":"10","url":"/agent","name":"Agent Desk","purpose":"A browser-local brief, rules, source scope, task queue, and handoff record.","bot_use":"Read the saved brief and task state before proposing or recording new work."},
+    {"id":"11","url":"/connect","name":"Local Desk","purpose":"Offline handoff, local project snapshot, and manual bot-return area.","bot_use":"Use the local manifest when a browser-only workflow needs a portable brief."},
+    {"id":"12","url":"/packet","name":"Packet","purpose":"A packaged creative brief and delivery-ready content details.","bot_use":"Inspect and preserve its constraints when preparing captions or a final handoff."},
+    {"id":"13","url":"/gates","name":"Gate Board","purpose":"Project readiness and quality checkpoints.","bot_use":"Use it to identify unfinished checks instead of claiming a project is ready early."},
+    {"id":"14","url":"/export","name":"Export","purpose":"Output format, size, caption package, and final delivery details.","bot_use":"Match the final local render and delivery settings to the selected platform requirements."},
+    {"id":"15","url":"/privacy","name":"Privacy & Settings","purpose":"Device-local workspace identity and privacy boundaries.","bot_use":"Respect the current local scope; never read secret values from browser storage or configuration files."}
+  ],
   "terminal_cli_contract": {
     "api_base_url": "http://127.0.0.1:7214",
     "browser_site_base_url": "http://localhost:3000",
