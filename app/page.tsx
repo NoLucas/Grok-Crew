@@ -1,2 +1,2 @@
-import ReelForge from './forge';
-export default function Page() { return <ReelForge view="studio" />; }
+import HomeConsole from './home-console';
+export default function Page() { return <HomeConsole />; }

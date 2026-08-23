@@ -20,7 +20,10 @@ const sections = [
   { id: 'export', href: '/export', ko: '내보내기', en: 'Export' },
 ];
 
+const primarySections = sections.slice(0, 8);
+const moreSections = sections.slice(8);
+
 export function SiteHeader({ current }: { current: string }) {
   const { t } = useLanguage();
-  return <header className="site-header"><Link href="/" className="wordmark"><span>NOH</span><i>Reel Forge</i></Link><nav aria-label={t('주요 메뉴', 'Primary navigation')}>{sections.map((section) => <Link className={section.id === current ? 'current' : ''} href={section.href} key={section.id}>{t(section.ko, section.en)}</Link>)}</nav><LanguageSwitcher /><div className="header-meta"><span>{t('이 기기에서만 실행', 'This device only')}</span><b>LOCAL FIRST</b></div></header>;
+  return <header className="site-header"><Link href="/" className="wordmark"><span>NOH</span><i>Reel Forge</i></Link><nav aria-label={t('주요 메뉴', 'Primary navigation')}>{primarySections.map((section) => <Link className={section.id === current ? 'current' : ''} href={section.href} key={section.id}>{t(section.ko, section.en)}</Link>)}<details className={`header-more ${moreSections.some((section) => section.id === current) ? 'current' : ''}`}><summary>{t('더보기', 'More')}</summary><div>{moreSections.map((section) => <Link className={section.id === current ? 'current' : ''} href={section.href} key={section.id}>{t(section.ko, section.en)}</Link>)}</div></details></nav><LanguageSwitcher /><div className="header-meta"><span>{t('이 기기에서만 실행', 'This device only')}</span><b>LOCAL FIRST</b></div></header>;
 }

@@ -24,6 +24,7 @@ DATA_DIR = BASE_DIR / "data"
 WORKSPACE_DIR = Path(os.getenv("LOCAL_STUDIO_WORKSPACE", BASE_DIR / "workspace")).resolve()
 DB_PATH = DATA_DIR / "studio.db"
 BOT_GUIDE_PATH = BASE_DIR / "bot-guide.json"
+BOT_GUIDE_KO_PATH = BASE_DIR / "bot-guide.ko.json"
 TERMINAL_CLI_PATH = BASE_DIR / "grok_crew.py"
 ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000"}
 SITE_BASE_URL = "http://localhost:3000"
@@ -524,9 +525,10 @@ def enter_bot_workspace(body: dict[str, Any]) -> dict[str, Any]:
     return {"entry": {"id": entry_id, "bot_id": bot_id, "display_name": display_name, "purpose": purpose, "task": task, "joined_at": now}, "bot": bot, "next_requests": bot_entry_manifest()["first_requests"], "approval_boundary": bot_entry_manifest()["approval_boundary"]}
 
 
-def bot_guide() -> dict[str, Any]:
+def bot_guide(language: str = "en") -> dict[str, Any]:
     try:
-        value = json.loads(BOT_GUIDE_PATH.read_text(encoding="utf-8"))
+        path = BOT_GUIDE_KO_PATH if language == "ko" else BOT_GUIDE_PATH
+        value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError("Local bot guide is unavailable or invalid JSON.") from exc
     if not isinstance(value, dict):
@@ -827,7 +829,8 @@ class StudioHandler(BaseHTTPRequestHandler):
             elif path == "/api/bot-activity":
                 self._json(200, {"activity": list_bot_activity()})
             elif path == "/api/bot-guide":
-                self._json(200, bot_guide())
+                language = "ko" if "lang=ko" in urlparse(self.path).query else "en"
+                self._json(200, bot_guide(language))
             elif path == "/api/bot-entry":
                 self._json(200, bot_entry_manifest())
             elif path == "/api/terminal-contract":

@@ -1,0 +1,59 @@
+{
+  "schema": "noh.reel-forge.bot-guide/v1",
+  "title": "NOH Reel Forge 로컬 편집 플레이북",
+  "scope": "이 안내서는 NOH Local Studio와 같은 컴퓨터에서 실행되는 봇을 위한 것입니다.",
+  "first_action": "NOH Local Studio에 입장하세요. 작업을 시작하기 전에 입장 기록이 첫 체크인을 남깁니다.",
+  "non_negotiables": [
+    "local_studio/workspace 아래의 파일만 사용합니다.",
+    "가능하면 처음 1.5초 안에 첫 유용한 아이디어나 눈에 보이는 변화를 보여 줍니다.",
+    "효과를 더하기 전에 군더더기, 긴 침묵, 반복되는 내용, 약한 도입부를 제거합니다.",
+    "세로 출력에서는 영상을 늘리지 말고 왼쪽·가운데·오른쪽 리프레임으로 피사체를 유지합니다.",
+    "필요한 승인 없이 렌더·게시·자격 증명 접근·작업 공간 이탈을 하지 않습니다."
+  ],
+  "workflow": [
+    { "step": 1, "name": "로컬 스튜디오 입장", "action": "bot_id, display_name, purpose, task와 함께 POST /api/bot-entry를 호출합니다.", "goal": "로컬 입장 기록과 첫 체크인을 만듭니다. 입장만으로 렌더나 게시 권한은 생기지 않습니다." },
+    { "step": 2, "name": "현재 상태 확인", "action": "GET /api/bot-guide, 컷 로그, 편집 맵, 기존 프로젝트, 대기 작업을 읽습니다.", "goal": "이미 승인된 프로젝트를 덮어쓰거나 진행 중인 작업을 다시 시도하지 않습니다." },
+    { "step": 3, "name": "편집 방식 설정", "action": "선택한 훅 전략·템포·군더더기 정책·자막·리프레임·룩·오디오·속도·FPS·품질로 POST /api/edit-method를 호출합니다.", "goal": "허용된 로컬 편집 제어만 설정합니다. 이는 계획 기록이며 렌더나 게시를 시작하지 않습니다." },
+    { "step": 4, "name": "컷 계획", "action": "남길 말 구간만 담은 대본 우선 EDL을 만듭니다.", "goal": "연속된 원본 시간 코드, 읽기 쉬운 두 단어 자막, 분명한 훅을 사용합니다." },
+    { "step": 5, "name": "마무리 준비", "action": "render_settings에서 리프레임 기준점·속도·오디오·룩·자막·품질·FPS를 설정합니다.", "goal": "전달 문제를 해결하는 최소한의 변경만 선택하고 효과를 과하게 쌓지 않습니다." },
+    { "step": 6, "name": "검토 요청", "action": "action=await_human_approval 및 간결한 결정 요약으로 heartbeat를 기록합니다.", "goal": "소유자가 승인을 기록할 때까지 여기서 멈춥니다." },
+    { "step": 7, "name": "승인 후 렌더", "action": "승인된 렌더 작업만 대기열에 넣고 실행합니다.", "goal": "최종 작업 상태를 확인하고 출력 경로나 정확한 실패 원인을 보고합니다." },
+    { "step": 8, "name": "승인 후 게시", "action": "렌더가 완료된 뒤에만 승인된 Instagram 작업을 대기열에 넣습니다.", "goal": "실제 게시에는 서버 게시 허용과 PUBLISH 확인이 추가로 필요합니다." }
+  ],
+  "edit_heuristics": {
+    "hook": "놀라움, 문제점, 결과 중 하나로 시작합니다. 인사말과 장황한 배경 설명은 피합니다.",
+    "cutting": "대본 중심의 하드 컷을 우선합니다. 강조 효과가 있는 의도적 멈춤만 남깁니다.",
+    "captions": "짧고 대문자에도 읽기 좋은 구절을 씁니다. 세로 안전 영역 안에 두고 화자의 얼굴을 가리지 않습니다.",
+    "reframe": "피사체가 명확히 왼쪽 또는 오른쪽이 아니라면 가운데를 사용합니다. 원본 영상을 늘리지 않습니다.",
+    "audio": "기본값은 30fps, 보통 음량, 80ms 컷 경계 페이드입니다. 원본 음량 차이가 클 때만 정규화합니다.",
+    "look": "기본값은 Natural입니다. Punchy는 대비가 강한 소셜 클립용이고 Mono는 수단이 아니라 의도적인 스타일입니다.",
+    "quality": "일반 게시는 Balanced, 검토는 Compact, 보관이나 시각적 디테일이 중요한 콘텐츠는 High를 사용합니다."
+  },
+  "edit_method_contract": {
+    "endpoint": "POST /api/edit-method",
+    "write_rule": "봇은 로컬 범위를 확인한 뒤 편집 방식을 설정할 수 있습니다. 사람은 이를 Finish Rack에 적용할 수 있으며 렌더나 게시 승인을 우회할 수 없습니다.",
+    "body": { "bot_id": "grok-editor-01", "display_name": "Grok Editor", "method": { "hook_strategy": "payoff_first | question_first | chronological", "pacing": "tight | balanced | deliberate", "filler_policy": "remove | review | keep", "caption_mode": "burn_in | off", "reframe_anchor": "left | center | right", "look": "natural | punchy | mono | night", "audio_policy": "preserve | normalize | mute", "speed": "0.5에서 2.0", "fps": "24 | 30 | 60", "quality": "compact | balanced | high" } }
+  },
+  "operations_contract": {
+    "read": "GET /api/projects/{id}/operations는 프로젝트, 작업, 저장된 컷 맵, 품질 보고, 봇 작업, 기억, 오버레이, 버전, 성과 메모를 반환합니다.",
+    "write": ["로컬 미디어 사전 검사를 위한 POST /api/projects/{id}/inspect", "비파괴 컷 제안을 위한 시간 표시 대본 구간 POST /api/projects/{id}/cut-map", "stage=pre_render, post_render, publish로 POST /api/projects/{id}/quality-check", "project_memory, bot_task, audio_plan, edit_variant, overlay_slots, performance_note를 위한 POST /api/projects/{id}/artifacts", "작업 상태나 계획을 바꾸는 POST /api/artifacts/{id}/update", "재사용 가능한 로컬 스타일 설정을 위한 POST /api/brand-kits"],
+    "rule": "운영 아티팩트는 계획, 검사, 로컬 기억입니다. 렌더나 게시를 시작하지 않습니다."
+  },
+  "terminal_cli_contract": {
+    "api_base_url": "http://127.0.0.1:7214",
+    "browser_site_base_url": "http://localhost:3000",
+    "browser_rule": "7214 포트는 CLI 다운로드와 JSON API 전용입니다. 브라우저 사용이나 스크린샷은 python grok-crew.py site --page production을 실행해 출력된 http://localhost:3000 주소에서 합니다. 7214 포트에 /production을 열지 마세요.",
+    "clone_cli_path": "local_studio/grok_crew.py",
+    "clone_bootstrap": "python local_studio/grok_crew.py contract",
+    "browser_pages": { "production": "http://localhost:3000/production", "operations": "http://localhost:3000/operations", "bot_check": "http://localhost:3000/bots", "bot_guide": "http://localhost:3000/bot-guide", "terminal": "http://localhost:3000/terminal" },
+    "download": "GET /downloads/grok-crew.py",
+    "bootstrap": "python grok-crew.py contract",
+    "purpose": "같은 PC의 터미널에서 실행되는 봇을 위한 의존성 없는 CLI입니다. 브라우저 조작 없이 Local Studio와 Operations 엔드포인트를 사용할 수 있습니다.",
+    "token_rule": "토큰 보호를 켠 경우 LOCAL_STUDIO_TOKEN은 봇 터미널 환경으로만 전달합니다. .env, 브라우저 저장소, SQLite에서 읽지 않습니다.",
+    "approval_rule": "CLI는 렌더, Instagram 대기열, 작업 실행에 --human-approved를 요구합니다. Instagram 게시에는 서버 게시 허용과 PUBLISH 확인도 필요합니다."
+  },
+  "approval_gates": ["렌더 작업을 대기열에 넣거나 실행하기 전에 사람 승인이 필요합니다.", "Instagram 작업을 대기열에 넣기 전에 사람 승인이 필요합니다.", "Instagram 실제 게시에는 승인, --allow-instagram-publish, confirmation=PUBLISH가 필요합니다."],
+  "allowed_endpoints": { "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/bots", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits"], "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits"], "write_after_human_approval": ["POST /api/projects/{id}/render", "POST /api/jobs/{id}/run", "POST /api/projects/{id}/instagram"] },
+  "never": ["LOCAL_STUDIO_TOKEN, INSTAGRAM_ACCESS_TOKEN, .env 내용을 읽거나 드러내지 않습니다.", "local_studio/workspace 밖의 경로를 사용하지 않습니다.", "현재 heartbeat가 없는데 봇이 활성이라고 주장하지 않습니다.", "자동으로 게시하거나 PUBLISH 확인을 우회하지 않습니다.", "소유자가 새 편집을 요청하지 않는 한 완료된 출력 파일을 바꾸지 않습니다."],
+  "heartbeat_example": { "bot_id": "grok-editor-01", "display_name": "Grok Editor", "action": "await_human_approval", "detail": { "project": "six-lines-reel", "decision": "군더더기를 제거하고 말 구간 3개를 유지했으며 9:16 가운데 리프레임을 적용했습니다.", "next": "소유자 승인 후에만 렌더합니다." } }
+}
