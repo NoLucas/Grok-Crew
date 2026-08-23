@@ -5,7 +5,7 @@ Use this before the first public GitHub release.
 ## Repository basics
 
 - [x] The README uses the public GitHub clone URL.
-- [ ] Choose and add an open-source license.
+- [x] Add a license (Business Source License 1.1 — source-available, not open source; converts to MIT on 2030-08-23).
 - [ ] Add a concise repository description: `Local-first video editing workspace for people and same-PC bots.`
 - [ ] Add relevant GitHub topics: `video-editing`, `local-first`, `moviepy`, `ai-agents`, `grok`, `reels`, `instagram`, `automation`.
 - [ ] Create a `v0.1.0` release using the changelog notes.

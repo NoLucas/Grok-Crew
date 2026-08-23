@@ -1,6 +1,7 @@
 {
   "name": "grok-crew",
   "version": "0.1.0",
+  "license": "BUSL-1.1",
   "description": "Local-first video editing workspace for people and same-PC bots.",
   "keywords": [
     "video-editing",
