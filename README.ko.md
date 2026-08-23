@@ -15,7 +15,9 @@
 
 ## 작동 영상
 
-[▶ 21초 로컬 작업 흐름 데모 보기](public/demo/grok-crew-workflow.mp4)
+[![21초 Grok Crew 작업 흐름 데모 보기](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
+
+*미리보기는 이 README에서 바로 재생됩니다. 클릭하면 원본 MP4를 엽니다.*
 
 ## 왜 Grok Crew인가요?
 

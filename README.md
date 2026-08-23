@@ -15,7 +15,9 @@
 
 ## Watch it work
 
-[▶ Watch the 21-second local workflow demo](public/demo/grok-crew-workflow.mp4)
+[![Watch the 21-second Grok Crew workflow demo](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
+
+*The preview plays directly in this README. Click it to open the full MP4.*
 
 ## Why Grok Crew?
 

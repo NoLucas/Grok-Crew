@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
+import imageio_ffmpeg
 from moviepy import ImageClip, concatenate_videoclips
 from numpy import asarray
 from PIL import Image, ImageDraw, ImageFont
@@ -13,6 +15,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parent.parent
 SCREEN_DIR = ROOT / "public" / "readme" / "demo"
 OUTPUT = ROOT / "public" / "demo" / "grok-crew-workflow.mp4"
+PREVIEW = ROOT / "public" / "demo" / "grok-crew-workflow.gif"
 SIZE = (1280, 720)
 FPS = 24
 YELLOW = "#f4c400"
@@ -86,7 +89,24 @@ def main() -> None:
     video = concatenate_videoclips([clip(frame, duration) for frame, duration in frames], method="compose")
     video.write_videofile(str(OUTPUT), fps=FPS, codec="libx264", audio=False, logger=None)
     video.close()
+    subprocess.run(
+        [
+            imageio_ffmpeg.get_ffmpeg_exe(),
+            "-y",
+            "-i",
+            str(OUTPUT),
+            "-vf",
+            "fps=10,scale=720:-2:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer",
+            "-loop",
+            "0",
+            str(PREVIEW),
+        ],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     print(OUTPUT)
+    print(PREVIEW)
 
 
 if __name__ == "__main__":
