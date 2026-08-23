@@ -20,8 +20,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE = ROOT / "public" / "demo" / "bot-instructed-edit-source.mp4"
 DEMO_DIR = ROOT / "public" / "demo"
+SOURCE = DEMO_DIR / "bot-edit-result-source.mp4"
 SIZE = (1080, 1920)
 FPS = 30
 BG = "#090909"
@@ -74,8 +74,8 @@ COPY = {
         "Inspect the source",
         "Plan the keep segments",
         "Render the local file",
-        "A real local render",
-        "8 seconds · two clips\n1080×1920 · muted · captions on",
+        "The local edit result",
+        "8 seconds · two clips\n1080×1920\nMuted · captions on",
         "Delivered locally.",
         "Ask for the file and a change summary.",
     ),
@@ -93,8 +93,8 @@ COPY = {
         "소스 파일 확인",
         "남길 구간 계획",
         "로컬 파일 렌더",
-        "실제 로컬 렌더",
-        "8초 · 두 클립\n1080×1920 · 무음 · 자막 켬",
+        "로컬 편집 결과",
+        "8초 · 두 클립\n1080×1920\n무음 · 자막 켬",
         "로컬에서 전달 완료.",
         "결과 파일과 변경 요약을 요청하세요.",
     ),
@@ -112,8 +112,8 @@ COPY = {
         "检查源文件",
         "规划保留片段",
         "渲染本地文件",
-        "真实的本地渲染",
-        "8 秒 · 两个片段\n1080×1920 · 静音 · 已开启字幕",
+        "本地剪辑结果",
+        "8 秒 · 两个片段\n1080×1920\n静音 · 已开启字幕",
         "已在本地交付。",
         "索要文件和修改摘要。",
     ),
@@ -131,8 +131,8 @@ COPY = {
         "素材を確認",
         "残す区間を計画",
         "ローカルファイルをレンダー",
-        "実際のローカルレンダー",
-        "8秒 · 2クリップ\n1080×1920 · ミュート · 字幕あり",
+        "ローカル編集の結果",
+        "8秒 · 2クリップ\n1080×1920\nミュート · 字幕あり",
         "ローカルで納品完了。",
         "ファイルと変更概要を依頼します。",
     ),
@@ -181,6 +181,37 @@ def rounded_panel(draw: ImageDraw.ImageDraw, bounds: tuple[int, int, int, int], 
 
 def image_clip(image: Image.Image, duration: float) -> ImageClip:
     return ImageClip(np.asarray(image)).with_duration(duration)
+
+
+def clean_result_card(kicker: str, title: str, background: str, accent: str) -> Image.Image:
+    """Render the eight-second result visual with generous safe margins."""
+    image = Image.new("RGB", SIZE, background)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 0, SIZE[0], 10), fill=accent)
+    draw.text((80, 82), "GROK CREW · LOCAL EDIT", font=font("en", 19, True), fill=accent)
+    draw.line((80, 126, SIZE[0] - 80, 126), fill="#3d3d38", width=1)
+    centered(draw, kicker, 680, font("en", 31, True), MUTED)
+    centered(draw, title, 800, font("en", 96, True), WHITE)
+    draw.rounded_rectangle((110, 1215, 970, 1355), radius=24, fill="#050505")
+    centered(draw, title, 1242, font("en", 57, True), WHITE)
+    centered(draw, "BOT-INSTRUCTED · LOCAL MP4", 1514, font("en", 20, True), accent)
+    return image
+
+
+def create_clean_result_source() -> None:
+    """Replace the cropped legacy result card with a safe, full-frame source clip."""
+    first = clean_result_card("SETUP", "ONE ASK", "#101017", YELLOW)
+    second = clean_result_card("PUNCH", "SIX LINES", "#2a080d", LIME)
+    result = concatenate_videoclips([image_clip(first, 4), image_clip(second, 4)], method="compose")
+    result.write_videofile(
+        str(SOURCE),
+        fps=FPS,
+        codec="libx264",
+        audio=False,
+        logger=None,
+        ffmpeg_params=["-movflags", "+faststart"],
+    )
+    result.close()
 
 
 def centered(draw: ImageDraw.ImageDraw, text: str, y: int, typography: ImageFont.ImageFont, fill: str = WHITE, spacing: int = 6) -> None:
@@ -238,7 +269,7 @@ def result_background(copy: Copy) -> Image.Image:
     rounded_panel(draw, (644, 694, 1000, 1138), PANEL)
     draw.text((684, 748), "LOCAL MP4", font=font("en", 17, True), fill=LIME)
     draw.multiline_text((684, 814), copy.result_body, font=font(copy.code, 23), fill=WHITE, spacing=12)
-    centered(draw, "REAL LOCAL RENDER", 1740, font("en", 18, True), MUTED)
+    centered(draw, "LOCAL EDIT RESULT", 1740, font("en", 18, True), MUTED)
     return image
 
 
@@ -306,9 +337,8 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--language", choices=[*COPY, "all"], default="all")
     args = parser.parse_args()
-    if not SOURCE.exists():
-        raise FileNotFoundError(f"Missing source clip: {SOURCE}")
     DEMO_DIR.mkdir(parents=True, exist_ok=True)
+    create_clean_result_source()
     languages = COPY if args.language == "all" else {args.language: COPY[args.language]}
     for code in languages:
         build_language(code)
