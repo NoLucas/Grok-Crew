@@ -430,8 +430,8 @@ export default function ProductionConsole() {
             </h1>
             <p>
               {t(
-                "Grok bot은 편집 계획과 대기열을 만들 수 있습니다. 파일·SQLite·자격증명은 모두 이 PC에 남고, Instagram에는 사람이 승인한 게시만 전송됩니다.",
-                "Grok bots can plan edits and prepare queues. Files, SQLite, and credentials stay on this PC; only a human-approved Instagram post can be sent.",
+                "Grok bot은 편집 계획과 대기열을 만들 수 있습니다. 파일·SQLite·자격증명은 모두 이 PC에 남고, Instagram 업로드는 프로젝트의 자동 업로드 설정을 따릅니다.",
+                "Grok bots can plan edits and prepare queues. Files, SQLite, and credentials stay on this PC; Instagram upload follows the project's auto-upload setting.",
               )}
             </p>
           </div>

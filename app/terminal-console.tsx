@@ -51,7 +51,7 @@ const commands = [
     en: "Local render and publishing",
     code: "jobs list|render --bot-id · instagram · run",
     detailKo:
-      "auto_local 봇은 로컬 렌더를 자동 실행하고, 승인 모드 봇은 사람 승인을 요청합니다. Instagram 실제 게시는 항상 별도 승인입니다.",
+      "auto_local 봇은 로컬 렌더를 자동 실행하고, 승인 모드 봇은 사람 승인을 요청합니다. Instagram은 대기열에 넣거나 --auto-upload으로 즉시 업로드할 수 있습니다.",
     detailEn:
       "auto_local bots run local renders automatically; approval-mode bots request a person. Instagram jobs can be queued or uploaded immediately with --auto-upload.",
   },
