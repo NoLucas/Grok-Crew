@@ -45,6 +45,8 @@ export function useLanguage() {
   return value;
 }
 
+export function LocalizedText({ ko, en }: { ko: string; en: string }) { const { t } = useLanguage(); return <>{t(ko, en)}</>; }
+
 export function LanguageBootstrap() { return null; }
 
 export function LanguageSwitcher() {
