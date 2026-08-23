@@ -47,7 +47,14 @@ export function useLanguage() {
 
 export function LocalizedText({ ko, en }: { ko: string; en: string }) { const { t } = useLanguage(); return <>{t(ko, en)}</>; }
 
-export function LanguageBootstrap() { return null; }
+export function LanguageBootstrap() {
+  const { language, chooseLanguage } = useLanguage();
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('lang');
+    if ((requested === 'ko' || requested === 'en') && requested !== language) chooseLanguage(requested);
+  }, [chooseLanguage, language]);
+  return null;
+}
 
 export function LanguageSwitcher() {
   const { language, chooseLanguage } = useLanguage();

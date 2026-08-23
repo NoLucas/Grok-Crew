@@ -1,6 +1,6 @@
 # Grok Crew announcement kit
 
-Replace the repository placeholder before posting. Keep the message focused on the editing problem and the first local result; do not promise cloud access or automated publishing without local credentials.
+Keep the message focused on the editing problem and the first local result; do not promise cloud access or automated publishing without local credentials.
 
 ## GitHub release title
 
@@ -14,7 +14,7 @@ Grok Crew keeps that workflow on one computer: rough footage → transcript cut 
 
 It includes a local bot CLI, visible bot check-ins, media preflight, render QA, project memory, A/B edits, and a browser workspace. No cloud backend or provider API key is required for local editing.
 
-Try it: `<repository-url>`
+Try it: `https://github.com/NoLucas/JIN-Reel-forge`
 
 I would especially value feedback on the cut-map workflow, local render reliability, and which short-form editing task should be made effortless next.
 
@@ -26,7 +26,7 @@ I would especially value feedback on the cut-map workflow, local render reliabil
 
 로컬 편집에는 클라우드 백엔드나 제공자 API 키가 필요하지 않습니다.
 
-저장소: `<repository-url>`
+저장소: `https://github.com/NoLucas/JIN-Reel-forge`
 
 컷 맵 작업 흐름, 로컬 렌더 안정성, 다음에 가장 쉽게 만들면 좋을 편집 작업에 대한 피드백을 기다립니다.
 

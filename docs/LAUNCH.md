@@ -4,7 +4,7 @@ Use this before the first public GitHub release.
 
 ## Repository basics
 
-- [ ] Replace `<your-repository-url>` in the README with the public clone URL.
+- [x] The README uses the public GitHub clone URL.
 - [ ] Choose and add an open-source license.
 - [ ] Add a concise repository description: `Local-first video editing workspace for people and same-PC bots.`
 - [ ] Add relevant GitHub topics: `video-editing`, `local-first`, `moviepy`, `ai-agents`, `grok`, `reels`, `instagram`, `automation`.

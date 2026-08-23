@@ -1,5 +1,7 @@
 # Grok Crew
 
+<p align="right"><strong>English</strong> · <a href="README.ko.md">한국어</a></p>
+
 **Turn rough short-form footage into a bot-ready edit plan, a local MP4, and an optional Instagram upload—without sending the project, media, or bot history to a cloud backend.**
 
 <p>
@@ -10,6 +12,10 @@
 </p>
 
 ![Grok Crew production workspace](public/readme/production-workspace.png)
+
+## Watch it work
+
+[▶ Watch the 21-second local workflow demo](public/demo/grok-crew-workflow.mp4)
 
 ## Why Grok Crew?
 
@@ -32,7 +38,7 @@ It is a **local production desk for people and same-PC bots**, not a cloud video
 ### Run it
 
 ```sh
-git clone <your-repository-url> grok-crew
+git clone https://github.com/NoLucas/JIN-Reel-forge.git grok-crew
 cd grok-crew
 npm run local
 ```
@@ -101,7 +107,7 @@ python local_studio/grok_crew.py bots activity
 
 Available pages include `studio`, `edit`, `cut`, `production`, `operations`, `bots`, `guide`, `terminal`, `library`, `agent`, `connect`, `packet`, `gates`, `export`, and `privacy`.
 
-See [the local bot manual](local_studio/README.md) for the full command set, or open [Bot Guide](http://localhost:3000/bot-guide) after starting the workspace.
+See [the local bot manual](local_studio/README.md) for the full command set, or open [Bot Guide](http://localhost:3000/bot-guide?lang=en) after starting the workspace.
 
 ## Privacy and optional Instagram delivery
 
@@ -132,4 +138,4 @@ Before opening this repository publicly, choose and add an open-source license t
 
 ## Maintainer launch checklist
 
-The repository includes a practical [launch checklist](docs/LAUNCH.md), [announcement kit](docs/ANNOUNCEMENT.md), and [changelog](CHANGELOG.md). Before announcing it, replace the clone placeholder above with the public repository URL, select a license, add GitHub topics, and publish a tagged first release.
+The repository includes a practical [launch checklist](docs/LAUNCH.md), [announcement kit](docs/ANNOUNCEMENT.md), and [changelog](CHANGELOG.md). Before announcing it, select a license, add GitHub topics, and publish a tagged first release.
