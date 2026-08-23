@@ -21,6 +21,19 @@ WORKSPACE_DIR = Path(os.getenv("LOCAL_STUDIO_WORKSPACE", BASE_DIR / "workspace")
 DB_PATH = DATA_DIR / "studio.db"
 BOT_GUIDE_PATH = BASE_DIR / "bot-guide.json"
 ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000"}
+DEFAULT_EDIT_METHOD = {
+    "schema": "noh.reel-forge.edit-method/v1",
+    "hook_strategy": "payoff_first",
+    "pacing": "tight",
+    "filler_policy": "remove",
+    "caption_mode": "burn_in",
+    "reframe_anchor": "center",
+    "look": "natural",
+    "audio_policy": "normalize",
+    "speed": 1.0,
+    "fps": 30,
+    "quality": "balanced",
+}
 
 
 def utc_now() -> str:
@@ -67,6 +80,10 @@ def init_db() -> None:
         conn.execute("""CREATE TABLE IF NOT EXISTS bot_activity (
             id TEXT PRIMARY KEY, bot_id TEXT NOT NULL, action TEXT NOT NULL,
             detail_json TEXT NOT NULL, created_at TEXT NOT NULL
+        )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS edit_method (
+            id TEXT PRIMARY KEY, method_json TEXT NOT NULL, updated_by TEXT NOT NULL,
+            updated_at TEXT NOT NULL
         )""")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_project_created ON jobs(project_id, created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_open_status ON jobs(status, created_at DESC) WHERE status NOT IN ('succeeded', 'failed')")
@@ -212,6 +229,60 @@ def bot_guide() -> dict[str, Any]:
     if not isinstance(value, dict):
         raise RuntimeError("Local bot guide must be a JSON object.")
     return value
+
+
+def current_edit_method() -> dict[str, Any]:
+    with db() as conn:
+        row = conn.execute("SELECT * FROM edit_method WHERE id = 'current'").fetchone()
+    if not row:
+        return {"method": DEFAULT_EDIT_METHOD.copy(), "updated_by": "local_default", "updated_at": None, "is_default": True}
+    value = dict(row)
+    return {"method": json.loads(value["method_json"]), "updated_by": value["updated_by"], "updated_at": value["updated_at"], "is_default": False}
+
+
+def validated_edit_method(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError("method must be a JSON object.")
+    unknown = set(value) - (set(DEFAULT_EDIT_METHOD) - {"schema"})
+    if unknown:
+        raise ValueError(f"Unsupported edit-method field: {sorted(unknown)[0]}")
+    method = {**DEFAULT_EDIT_METHOD, **value}
+    choices = {
+        "hook_strategy": {"payoff_first", "question_first", "chronological"},
+        "pacing": {"tight", "balanced", "deliberate"},
+        "filler_policy": {"remove", "review", "keep"},
+        "caption_mode": {"burn_in", "off"},
+        "reframe_anchor": {"left", "center", "right"},
+        "look": {"natural", "punchy", "mono", "night"},
+        "audio_policy": {"preserve", "normalize", "mute"},
+        "quality": {"compact", "balanced", "high"},
+    }
+    for field, allowed in choices.items():
+        if method[field] not in allowed:
+            raise ValueError(f"{field} must be one of: {', '.join(sorted(allowed))}.")
+    if method["fps"] not in {24, 30, 60}:
+        raise ValueError("fps must be 24, 30, or 60.")
+    try:
+        method["speed"] = float(method["speed"])
+    except (TypeError, ValueError) as exc:
+        raise ValueError("speed must be a number between 0.5 and 2.0.") from exc
+    if not .5 <= method["speed"] <= 2.0:
+        raise ValueError("speed must be a number between 0.5 and 2.0.")
+    return method
+
+
+def set_edit_method(body: dict[str, Any]) -> dict[str, Any]:
+    bot_id = str(body.get("bot_id", "")).strip()
+    if not bot_id:
+        raise ValueError("bot_id is required when a bot configures an edit method.")
+    method = validated_edit_method(body.get("method"))
+    now = utc_now()
+    with db() as conn:
+        conn.execute("""INSERT INTO edit_method (id, method_json, updated_by, updated_at) VALUES ('current', ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET method_json = excluded.method_json, updated_by = excluded.updated_by, updated_at = excluded.updated_at""", (json.dumps(method), bot_id[:80], now))
+    record_bot_heartbeat({"bot_id": bot_id, "display_name": body.get("display_name", bot_id), "action": "edit_method_configured", "detail": {"method": method, "next": "await human application or review"}})
+    event(None, None, "edit_method_configured", {"bot_id": bot_id, "method": method})
+    return current_edit_method()
 
 
 def create_job(project_id: str, kind: str, payload: dict[str, Any], approved: bool) -> dict[str, Any]:
@@ -435,6 +506,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, {"activity": list_bot_activity()})
             elif path == "/api/bot-guide":
                 self._json(200, bot_guide())
+            elif path == "/api/edit-method":
+                self._json(200, current_edit_method())
             elif path.startswith("/api/projects/"):
                 project = get_project(path.rsplit("/", 1)[-1])
                 self._json(200, {"project": project, "jobs": list_jobs(project["id"])} if project else {"error": "Project not found"})
@@ -452,6 +525,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(201, {"project": new_project(body)})
             elif path == "/api/bots/heartbeat":
                 self._json(201, {"bot": record_bot_heartbeat(body)})
+            elif path == "/api/edit-method":
+                self._json(200, {"edit_method": set_edit_method(body)})
             elif path.startswith("/api/projects/") and path.endswith("/render"):
                 project_id = path.split("/")[3]; job = create_job(project_id, "render", {"requested_by": body.get("requested_by", "local_user")}, bool(body.get("approved")))
                 self._json(201, {"job": job})

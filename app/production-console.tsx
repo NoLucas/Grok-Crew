@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-html-link-for-pages */
 
 import { useCallback, useEffect, useState } from 'react';
 import { useLanguage } from './language';
@@ -10,6 +9,7 @@ type RenderSettings = { fps: 24 | 30 | 60; quality: 'compact' | 'balanced' | 'hi
 type StudioProject = { id: string; title: string; source_path: string; output_path: string; caption: string; timeline_json: { clips: TimelineClip[] }; created_at: string };
 type StudioJob = { id: string; project_id: string; kind: 'render' | 'instagram_publish'; status: string; approved: number; error_text?: string | null; created_at: string; result_json?: Record<string, unknown> | null };
 type StudioHealth = { status: string; bind: string; workspace: string; database: string; moviepy_installed: boolean; instagram_publish_enabled: boolean; credentials_configured: boolean };
+type BotEditMethod = { method: { hook_strategy: 'payoff_first' | 'question_first' | 'chronological'; pacing: 'tight' | 'balanced' | 'deliberate'; filler_policy: 'remove' | 'review' | 'keep'; caption_mode: 'burn_in' | 'off'; reframe_anchor: 'left' | 'center' | 'right'; look: RenderSettings['look']; audio_policy: 'preserve' | 'normalize' | 'mute'; speed: number; fps: RenderSettings['fps']; quality: RenderSettings['quality'] }; updated_by: string; updated_at: string | null; is_default: boolean };
 
 const studio = 'http://127.0.0.1:7214';
 const fallbackTimeline: TimelineClip[] = [
@@ -34,6 +34,7 @@ export default function ProductionConsole() {
   const [health, setHealth] = useState<StudioHealth | null>(null);
   const [projects, setProjects] = useState<StudioProject[]>([]);
   const [jobs, setJobs] = useState<StudioJob[]>([]);
+  const [botEditMethod, setBotEditMethod] = useState<BotEditMethod | null>(null);
   const [title, setTitle] = useState('NOH · six lines, one ask');
   const [sourcePath, setSourcePath] = useState('inputs/source.mp4');
   const [outputPath, setOutputPath] = useState('outputs/noh-final.mp4');
@@ -61,8 +62,8 @@ export default function ProductionConsole() {
   }, [token]);
   const refresh = useCallback(async (quiet = false) => {
     try {
-      const [nextHealth, nextProjects, nextJobs] = await Promise.all([api('/health'), api('/api/projects'), api('/api/jobs')]);
-      setHealth(nextHealth as unknown as StudioHealth); setProjects((nextProjects.projects ?? []) as StudioProject[]); setJobs((nextJobs.jobs ?? []) as StudioJob[]);
+      const [nextHealth, nextProjects, nextJobs, nextMethod] = await Promise.all([api('/health'), api('/api/projects'), api('/api/jobs'), api('/api/edit-method')]);
+      setHealth(nextHealth as unknown as StudioHealth); setProjects((nextProjects.projects ?? []) as StudioProject[]); setJobs((nextJobs.jobs ?? []) as StudioJob[]); setBotEditMethod(nextMethod as unknown as BotEditMethod);
       if (!quiet) setMessage('로컬 제작 서비스가 연결되었습니다. 모든 작업 데이터는 이 PC의 SQLite에 저장됩니다.');
     } catch (error) { setHealth(null); if (!quiet) setMessage(error instanceof Error ? `${error.message} — local_studio를 먼저 실행하세요.` : 'Local Studio에 연결할 수 없습니다.'); }
   }, [api]);
@@ -70,10 +71,17 @@ export default function ProductionConsole() {
   useEffect(() => { const timeout = window.setTimeout(() => { try { const saved = window.localStorage.getItem('nohFinishRack'); if (saved) setRenderSettings({ ...defaultRenderSettings, ...JSON.parse(saved) as Partial<RenderSettings> }); } catch { /* Use the local default if a previous draft cannot be read. */ } finally { setFinishLoaded(true); } }, 0); return () => window.clearTimeout(timeout); }, []);
   useEffect(() => { if (finishLoaded) window.localStorage.setItem('nohFinishRack', JSON.stringify(renderSettings)); }, [renderSettings, finishLoaded]);
 
+  const applyBotEditMethod = () => {
+    if (!botEditMethod) { setMessage('먼저 Local Studio의 봇 편집 방법을 불러오세요.'); return; }
+    const method = botEditMethod.method;
+    setRenderSettings((current) => ({ ...current, crop_anchor: method.reframe_anchor, speed: method.speed, look: method.look, fps: method.fps, quality: method.quality, captions_enabled: method.caption_mode === 'burn_in', normalize_audio: method.audio_policy === 'normalize', mute_audio: method.audio_policy === 'mute' }));
+    setMessage(`${botEditMethod.updated_by}의 편집 방법을 Finish Rack에 적용했습니다. 렌더와 게시에는 여전히 사람 승인이 필요합니다.`);
+  };
+
   const createProject = async () => {
     setBusy(true);
     try {
-      const response = await api('/api/projects', { method: 'POST', body: JSON.stringify({ title, source_path: sourcePath, output_path: outputPath, caption, timeline: { schema: 'noh.reel-forge.edl/v1', clips: cutLogTimeline(), render_settings: renderSettings } }) });
+      const response = await api('/api/projects', { method: 'POST', body: JSON.stringify({ title, source_path: sourcePath, output_path: outputPath, caption, timeline: { schema: 'noh.reel-forge.edl/v1', clips: cutLogTimeline(), render_settings: renderSettings, bot_edit_method: botEditMethod?.method ?? null, bot_edit_method_by: botEditMethod?.updated_by ?? null, bot_edit_method_at: botEditMethod?.updated_at ?? null } }) });
       const project = response.project as StudioProject; setSelected(project.id); setApproved(false); setMessage('프로젝트와 Cut Log EDL을 로컬 SQLite에 저장했습니다. 이제 렌더 승인을 기록할 수 있습니다.'); await refresh(true);
     } catch (error) { setMessage(error instanceof Error ? error.message : '프로젝트를 만들지 못했습니다.'); } finally { setBusy(false); }
   };
@@ -95,13 +103,14 @@ export default function ProductionConsole() {
   };
   const selectedProject = projects.find((project) => project.id === selected);
   const selectedJobs = jobs.filter((job) => job.project_id === selected);
-  const contract = JSON.stringify({ scope: '127.0.0.1 only', actor: 'Grok bot', allowed: ['create project', 'queue approved render', 'queue approved Instagram job'], never: ['read Meta credentials', 'access outside workspace', 'publish without approval'] }, null, 2);
+  const contract = JSON.stringify({ scope: '127.0.0.1 only', actor: 'Grok bot', allowed: ['configure local edit method', 'create project', 'queue approved render', 'queue approved Instagram job'], never: ['read Meta credentials', 'access outside workspace', 'render or publish without approval'] }, null, 2);
 
   return <>
     <SiteHeader current="production" />
     <main className="production-main">
       <section className="production-hero"><div><p className="kicker">LOCAL PRODUCTION NODE</p><h1>{t('컷 로그부터', 'From cut log to')}<br /><span>{t('실제 MP4와 게시 대기열까지.', 'a real MP4 and publish queue.')}</span></h1><p>{t('Grok bot은 편집 계획과 대기열을 만들 수 있습니다. 파일·SQLite·자격증명은 모두 이 PC에 남고, Instagram에는 사람이 승인한 게시만 전송됩니다.', 'Grok bots can plan edits and prepare queues. Files, SQLite, and credentials stay on this PC; only a human-approved Instagram post can be sent.')}</p></div><aside className={`production-health ${health ? 'ready' : ''}`}><span>LOCAL STUDIO</span><b>{health ? 'CONNECTED' : 'OFFLINE'}</b><p>{health ? `SQLite · ${health.moviepy_installed ? 'MoviePy ready' : 'MoviePy install needed'} · publish switch ${health.instagram_publish_enabled ? 'on' : 'off'}` : t('local_studio/studio_server.py를 실행하면 연결됩니다.', 'Start local_studio/studio_server.py to connect.')}</p><button onClick={() => void refresh()} disabled={busy}>{t('연결 다시 확인', 'Check connection')}</button></aside></section>
       <div className="production-note"><b>LOCAL FIRST</b><span>소스는 <code>local_studio/workspace/inputs</code>, 결과물은 <code>workspace/outputs</code>, 프로젝트·작업 이력은 SQLite에 저장됩니다. 외부 데이터베이스는 사용하지 않습니다.</span></div>
+      <section className="bot-method-panel"><div><p className="kicker">BOT EDIT METHOD</p><h2>Grok bot이 정한 <span>편집 방식</span></h2><p>봇은 훅 순서, 템포, 군더더기 처리, 자막, 리프레임, 룩, 오디오, 속도, FPS, 품질을 로컬 API에 설정할 수 있습니다. 아래 버튼을 누르면 실제 Finish Rack과 새 프로젝트 EDL에 반영됩니다.</p></div><aside>{botEditMethod ? <><span>{botEditMethod.is_default ? 'DEFAULT METHOD' : `SET BY ${botEditMethod.updated_by}`}</span><b>{botEditMethod.method.hook_strategy.replaceAll('_', ' ')} · {botEditMethod.method.pacing} pace</b><div className="bot-method-tags"><em>{botEditMethod.method.filler_policy} filler</em><em>{botEditMethod.method.caption_mode}</em><em>{botEditMethod.method.reframe_anchor} frame</em><em>{botEditMethod.method.look}</em><em>{botEditMethod.method.audio_policy} audio</em><em>{botEditMethod.method.speed.toFixed(2)}× · {botEditMethod.method.fps}fps · {botEditMethod.method.quality}</em></div><small>{botEditMethod.updated_at ? `${botEditMethod.updated_by} · ${stamp(botEditMethod.updated_at)}` : '아직 봇이 별도 편집 방법을 설정하지 않았습니다.'}</small><button onClick={applyBotEditMethod} disabled={busy}>봇 편집 방식 적용</button></> : <><span>LOCAL STUDIO OFFLINE</span><b>편집 방식을 불러오는 중입니다.</b><p>Local Studio를 실행하면 봇이 설정한 방식을 이곳에서 확인할 수 있습니다.</p></>}</aside></section>
       <section className="production-grid production-setup-grid">
         <article className="production-card blueprint-card"><div className="production-card-head"><span>01 · PROJECT BLUEPRINT</span><em>Cut Log EDL 자동 사용</em></div><label>프로젝트 이름<input value={title} onChange={(event) => setTitle(event.target.value)} /></label><div className="path-grid"><label>원본 파일 (workspace 내부)<input value={sourcePath} onChange={(event) => setSourcePath(event.target.value)} placeholder="inputs/source.mp4" /></label><label>MP4 결과 위치<input value={outputPath} onChange={(event) => setOutputPath(event.target.value)} placeholder="outputs/noh-final.mp4" /></label></div><label>Instagram 캡션<textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={2200} /></label><p>Cut Log에서 저장한 남길 구간·자막을 읽어 EDL로 넣습니다. 아직 없으면 기본 3개 컷을 사용합니다.</p><button className="production-primary" onClick={() => void createProject()} disabled={busy}>로컬 프로젝트 만들기</button></article>
         <article className="production-card local-status-card"><div className="production-card-head"><span>LOCAL SERVICE STATUS</span><em>{health?.status ?? 'not connected'}</em></div><dl><div><dt>바인딩</dt><dd>{health?.bind ?? '—'} <small>외부 공개 없음</small></dd></div><div><dt>데이터베이스</dt><dd>{health ? 'SQLite · local only' : '—'}</dd></div><div><dt>MoviePy 렌더</dt><dd className={health?.moviepy_installed ? 'good' : ''}>{health?.moviepy_installed ? '준비됨' : '설치 필요'}</dd></div><div><dt>Instagram 자격증명</dt><dd className={health?.credentials_configured ? 'good' : ''}>{health?.credentials_configured ? '로컬 .env에서 확인됨' : '아직 설정 안 됨'}</dd></div></dl><label className="token-field">로컬 보호 토큰 <input type="password" value={token} onChange={(event) => setToken(event.target.value)} placeholder="필요한 경우 이 브라우저 탭에서만 입력" /></label><p>토큰은 이 화면이나 SQLite에 저장되지 않습니다.</p></article>
