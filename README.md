@@ -117,11 +117,16 @@ The browser workspace runs at `localhost:3000`; Local Studio binds to `127.0.0.1
 
 Instagram delivery is optional. It needs the owner's locally configured Meta credentials and a supported local MP4. A job can stay queued or start immediately with `--auto-upload`; credentials are never stored in SQLite or exposed to a bot through this project.
 
+## Cloud bot handoff (for a bot that isn't on this PC)
+
+Local Studio still never accepts a connection from another machine — that does not change for a bot running in a cloud sandbox or a different computer. Instead, such a bot hands off a finished edit through a dedicated git repository, and `local_studio/handoff_watcher.py` (running on the owner's own PC) polls that repository and applies the handoff through the same local API a same-PC bot already uses. See [the local bot manual](local_studio/README.md) for setup, and `local_studio/handoff-guide.json` (or `handoff-guide.ko.json`) for the exact package format to hand that bot.
+
 ## Use cases
 
 - A creator turns a talking-head recording into a tight vertical Reel without losing the edit reasoning.
 - A small content team lets multiple local bots split research, cut planning, QA, and packaging while seeing ownership and status.
 - A developer tests a video-editing agent locally before deciding whether any workflow should leave the device.
+- A cloud-hosted bot without loopback access to the owner's PC produces the media and edit plan, then hands it off through a dedicated git repository instead of any direct connection.
 
 ## Roadmap
 
@@ -130,6 +135,7 @@ Instagram delivery is optional. It needs the owner's locally configured Meta cre
 - [x] Korean/English bot guide and browser-page map
 - [x] Import/export portable project bundles
 - [x] More local render presets and caption layouts
+- [x] Cloud bot handoff through a dedicated git repository, with loopback still closed to the network
 - [ ] Community-maintained example edit packs
 
 ## Feedback and contributions
