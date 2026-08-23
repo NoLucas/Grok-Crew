@@ -11,6 +11,13 @@
     "enter_local_workspace",
     "read_edit_method",
     "configure_edit_method",
+    "inspect_local_media",
+    "create_transcript_cut_map",
+    "record_project_memory",
+    "manage_bot_tasks",
+    "run_local_quality_checks",
+    "save_brand_and_overlay_plans",
+    "record_local_performance_notes",
     "queue_render_after_human_approval",
     "queue_instagram_publish_after_human_approval",
     "run_approved_job"

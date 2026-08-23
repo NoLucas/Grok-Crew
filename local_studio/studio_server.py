@@ -5,14 +5,18 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+import shutil
 import sqlite3
+import subprocess
 import time
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -35,6 +39,7 @@ DEFAULT_EDIT_METHOD = {
     "quality": "balanced",
 }
 BOT_ENTRY_SCHEMA = "noh.reel-forge.bot-entry/v1"
+ARTIFACT_TYPES = {"audio_plan", "bot_task", "brand_kit", "cut_map", "edit_variant", "media_inspection", "overlay_slots", "performance_note", "preflight_report", "project_memory", "quality_report"}
 
 
 def utc_now() -> str:
@@ -56,7 +61,7 @@ def init_db() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     for folder in (WORKSPACE_DIR / "inputs", WORKSPACE_DIR / "outputs"):
         folder.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(DB_PATH) as conn:
+    with db() as conn:
         conn.execute("""CREATE TABLE IF NOT EXISTS projects (
             id TEXT PRIMARY KEY, title TEXT NOT NULL, source_path TEXT NOT NULL,
             output_path TEXT NOT NULL, timeline_json TEXT NOT NULL, caption TEXT NOT NULL,
@@ -90,19 +95,34 @@ def init_db() -> None:
             id TEXT PRIMARY KEY, bot_id TEXT NOT NULL, display_name TEXT NOT NULL,
             purpose TEXT NOT NULL, task TEXT NOT NULL, joined_at TEXT NOT NULL
         )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS project_artifacts (
+            id TEXT PRIMARY KEY, project_id TEXT, type TEXT NOT NULL, title TEXT NOT NULL,
+            payload_json TEXT NOT NULL, created_by TEXT NOT NULL, created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL, FOREIGN KEY(project_id) REFERENCES projects(id)
+        )""")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_project_created ON jobs(project_id, created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_open_status ON jobs(status, created_at DESC) WHERE status NOT IN ('succeeded', 'failed')")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_events_project_created ON events(project_id, created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_sessions_last_seen ON bot_sessions(last_seen DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_activity_bot_created ON bot_activity(bot_id, created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_entries_joined ON bot_entries(joined_at DESC)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_project_artifacts_project_type_updated ON project_artifacts(project_id, type, updated_at DESC)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_project_artifacts_type_updated ON project_artifacts(type, updated_at DESC)")
         conn.execute("PRAGMA optimize")
 
 
-def db() -> sqlite3.Connection:
+@contextmanager
+def db() -> Iterator[sqlite3.Connection]:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def row_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
@@ -230,6 +250,194 @@ def list_bot_activity() -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute("SELECT * FROM bot_activity ORDER BY created_at DESC LIMIT 80").fetchall()
     return [row_dict(row) or {} for row in rows]
+
+
+def artifact_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    value = dict(row)
+    value["payload"] = json.loads(value.pop("payload_json"))
+    return value
+
+
+def artifact_payload(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError("artifact payload must be a JSON object.")
+    raw = json.dumps(value, ensure_ascii=False)
+    if len(raw) > 30_000:
+        raise ValueError("artifact payload is too large.")
+    return value
+
+
+def save_artifact(project_id: str | None, kind: str, title: Any, payload: Any, created_by: Any = "local_user") -> dict[str, Any]:
+    if kind not in ARTIFACT_TYPES:
+        raise ValueError("Unsupported project artifact type.")
+    if project_id and not get_project(project_id):
+        raise ValueError("Project not found.")
+    artifact_id, now = str(uuid.uuid4()), utc_now()
+    safe_title = str(title or kind.replace("_", " ")).strip()[:160] or kind.replace("_", " ")
+    safe_actor = str(created_by or "local_user").strip()[:80] or "local_user"
+    safe_payload = artifact_payload(payload)
+    with db() as conn:
+        conn.execute("""INSERT INTO project_artifacts (id, project_id, type, title, payload_json, created_by, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", (artifact_id, project_id, kind, safe_title, json.dumps(safe_payload), safe_actor, now, now))
+        row = conn.execute("SELECT * FROM project_artifacts WHERE id = ?", (artifact_id,)).fetchone()
+    event(project_id, None, "artifact_saved", {"artifact_id": artifact_id, "type": kind, "title": safe_title, "created_by": safe_actor})
+    return artifact_dict(row) or {}
+
+
+def list_artifacts(project_id: str | None = None, kind: str | None = None) -> list[dict[str, Any]]:
+    clauses, params = [], []
+    if project_id is not None:
+        clauses.append("project_id = ?"); params.append(project_id)
+    if kind is not None:
+        clauses.append("type = ?"); params.append(kind)
+    where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
+    with db() as conn:
+        rows = conn.execute(f"SELECT * FROM project_artifacts{where} ORDER BY updated_at DESC LIMIT 160", tuple(params)).fetchall()
+    return [artifact_dict(row) or {} for row in rows]
+
+
+def update_artifact(artifact_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    with db() as conn:
+        row = conn.execute("SELECT * FROM project_artifacts WHERE id = ?", (artifact_id,)).fetchone()
+        current = artifact_dict(row)
+        if not current:
+            raise ValueError("Artifact not found.")
+        title = str(body.get("title", current["title"])).strip()[:160] or current["title"]
+        current_payload = current["payload"]
+        change = artifact_payload(body.get("payload", {}))
+        payload = {**current_payload, **change}
+        now = utc_now()
+        conn.execute("UPDATE project_artifacts SET title = ?, payload_json = ?, updated_at = ? WHERE id = ?", (title, json.dumps(payload), now, artifact_id))
+        updated = conn.execute("SELECT * FROM project_artifacts WHERE id = ?", (artifact_id,)).fetchone()
+    event(current["project_id"], None, "artifact_updated", {"artifact_id": artifact_id, "type": current["type"]})
+    return artifact_dict(updated) or {}
+
+
+def build_cut_map(project_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    if not get_project(project_id):
+        raise ValueError("Project not found.")
+    raw_segments = body.get("segments")
+    if not isinstance(raw_segments, list) or not raw_segments:
+        raise ValueError("segments must contain timestamped transcript entries.")
+    if len(raw_segments) > 500:
+        raise ValueError("A cut map may contain up to 500 transcript entries.")
+    segments, suggestions, previous_end = [], [], 0.0
+    filler = {"um", "uh", "erm", "hmm", "음", "어", "저기"}
+    for index, raw in enumerate(raw_segments):
+        if not isinstance(raw, dict):
+            raise ValueError("Each transcript segment must be an object.")
+        try:
+            start, end = float(raw.get("start")), float(raw.get("end"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Transcript start and end must be numbers.") from exc
+        text = str(raw.get("text", "")).strip()[:280]
+        if start < 0 or end <= start or not text:
+            raise ValueError("Each transcript segment needs a non-negative range and text.")
+        segment = {"index": index + 1, "start": round(start, 3), "end": round(end, 3), "text": text}
+        segments.append(segment)
+        gap = start - previous_end
+        if index and gap >= .4:
+            suggestions.append({"kind": "silence_gap", "start": round(previous_end, 3), "end": round(start, 3), "action": "review_or_remove", "reason": f"{gap:.2f}s silence between speech segments"})
+        normalized = re.sub(r"[^\w가-힣 ]", "", text.lower()).strip()
+        if normalized in filler:
+            suggestions.append({"kind": "filler", "start": round(start, 3), "end": round(end, 3), "action": "remove", "reason": f"Detected filler phrase: {text}"})
+        previous_end = max(previous_end, end)
+    payload = {"segments": segments, "suggestions": suggestions, "summary": {"segment_count": len(segments), "suggested_reviews": len(suggestions), "source": "bot_or_user_supplied_transcript", "rule": "Suggestions do not modify the EDL until a bot or person creates an approved project."}}
+    return save_artifact(project_id, "cut_map", body.get("title", "Transcript cut map"), payload, body.get("created_by", "grok_bot"))
+
+
+def probe_media(path: Path) -> dict[str, Any]:
+    report: dict[str, Any] = {"path": str(path), "exists": path.exists(), "extension": path.suffix.lower(), "size_bytes": path.stat().st_size if path.exists() else None, "duration_seconds": None, "width": None, "height": None, "fps": None, "video_codec": None, "audio_codec": None, "has_audio": None, "silence_ranges": [], "black_ranges": [], "analysis": []}
+    if not path.exists():
+        report["analysis"].append("Source file is missing from the local workspace.")
+        return report
+    ffprobe = shutil.which("ffprobe")
+    if ffprobe:
+        try:
+            result = subprocess.run([ffprobe, "-v", "error", "-show_entries", "format=duration:stream=codec_type,codec_name,width,height,r_frame_rate", "-of", "json", str(path)], capture_output=True, text=True, timeout=25, check=True)
+            data = json.loads(result.stdout)
+            report["duration_seconds"] = round(float(data.get("format", {}).get("duration", 0)), 3) or None
+            for stream in data.get("streams", []):
+                if stream.get("codec_type") == "video":
+                    report["width"], report["height"], report["video_codec"] = stream.get("width"), stream.get("height"), stream.get("codec_name")
+                    frame_rate = str(stream.get("r_frame_rate", "0/1"))
+                    numerator, denominator = frame_rate.split("/", 1)
+                    report["fps"] = round(float(numerator) / max(float(denominator), 1), 3)
+                elif stream.get("codec_type") == "audio":
+                    report["has_audio"], report["audio_codec"] = True, stream.get("codec_name")
+            if report["has_audio"] is None:
+                report["has_audio"] = False
+            report["analysis"].append("Media metadata read with local ffprobe.")
+        except (OSError, subprocess.SubprocessError, ValueError, json.JSONDecodeError) as exc:
+            report["analysis"].append(f"Metadata probe was unavailable: {exc}")
+    else:
+        report["analysis"].append("ffprobe is not installed, so detailed media metadata is unavailable.")
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg and report["has_audio"]:
+        try:
+            result = subprocess.run([ffmpeg, "-hide_banner", "-i", str(path), "-af", "silencedetect=noise=-35dB:d=0.5", "-f", "null", "-"], capture_output=True, text=True, timeout=90)
+            starts = re.findall(r"silence_start: ([0-9.]+)", result.stderr)
+            ends = re.findall(r"silence_end: ([0-9.]+)", result.stderr)
+            report["silence_ranges"] = [{"start": float(start), "end": float(end)} for start, end in zip(starts[:20], ends[:20])]
+            report["analysis"].append("Silence scan completed locally.")
+        except (OSError, subprocess.SubprocessError):
+            report["analysis"].append("Silence scan could not complete.")
+    if ffmpeg:
+        try:
+            result = subprocess.run([ffmpeg, "-hide_banner", "-i", str(path), "-vf", "blackdetect=d=0.3:pix_th=0.10", "-an", "-f", "null", "-"], capture_output=True, text=True, timeout=90)
+            ranges = re.findall(r"black_start:([0-9.]+) black_end:([0-9.]+)", result.stderr)
+            report["black_ranges"] = [{"start": float(start), "end": float(end)} for start, end in ranges[:20]]
+            report["analysis"].append("Black-frame scan completed locally.")
+        except (OSError, subprocess.SubprocessError):
+            report["analysis"].append("Black-frame scan could not complete.")
+    return report
+
+
+def inspect_project_media(project_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    project = get_project(project_id)
+    if not project:
+        raise ValueError("Project not found.")
+    report = probe_media(Path(project["source_path"]))
+    return save_artifact(project_id, "media_inspection", body.get("title", "Media preflight"), report, body.get("created_by", "local_inspector"))
+
+
+def quality_report(project_id: str, stage: str, body: dict[str, Any]) -> dict[str, Any]:
+    project = get_project(project_id)
+    if not project:
+        raise ValueError("Project not found.")
+    if stage not in {"pre_render", "post_render", "publish"}:
+        raise ValueError("Unsupported quality-check stage.")
+    timeline = project.get("timeline_json", {}) if isinstance(project.get("timeline_json"), dict) else {}
+    clips = timeline.get("clips", []) if isinstance(timeline.get("clips"), list) else []
+    checks: list[dict[str, str]] = []
+    source = Path(project["source_path"]); output = Path(project["output_path"])
+    checks.append({"level": "pass" if source.exists() else "error", "rule": "source_file", "detail": "Source file is available." if source.exists() else "Source file is missing from the local workspace."})
+    checks.append({"level": "pass" if clips else "error", "rule": "timeline", "detail": f"{len(clips)} EDL clip(s) are ready." if clips else "No EDL clips are available."})
+    invalid_clips = [clip for clip in clips if not isinstance(clip, dict) or float(clip.get("end", 0)) <= float(clip.get("start", 0))]
+    checks.append({"level": "pass" if not invalid_clips else "error", "rule": "clip_ranges", "detail": "All clip ranges have positive duration." if not invalid_clips else f"{len(invalid_clips)} clip range(s) need correction."})
+    total_duration = round(sum(max(0, float(clip.get("end", 0)) - float(clip.get("start", 0))) for clip in clips if isinstance(clip, dict)), 3)
+    checks.append({"level": "pass" if 3 <= total_duration <= 90 else "warning", "rule": "duration", "detail": f"Estimated edit duration: {total_duration}s."})
+    settings = timeline.get("render_settings", {}) if isinstance(timeline.get("render_settings"), dict) else {}
+    checks.append({"level": "pass" if settings.get("captions_enabled", True) else "warning", "rule": "captions", "detail": "Captions are enabled." if settings.get("captions_enabled", True) else "Captions are disabled; confirm this is intentional."})
+    checks.append({"level": "pass" if output.suffix.lower() == ".mp4" else "warning", "rule": "output_format", "detail": "MP4 output is selected." if output.suffix.lower() == ".mp4" else "MP4 is recommended for local Reel export."})
+    if stage == "post_render":
+        checks.append({"level": "pass" if output.exists() else "error", "rule": "render_output", "detail": "Rendered output exists." if output.exists() else "No rendered output exists yet."})
+    if stage == "publish":
+        checks.append({"level": "pass" if len(project.get("caption", "")) <= 2200 else "error", "rule": "caption_length", "detail": f"Caption length: {len(project.get('caption', ''))}/2200."})
+    passed = not any(check["level"] == "error" for check in checks)
+    payload = {"stage": stage, "passed": passed, "checks": checks, "estimated_duration_seconds": total_duration, "created_from": "local EDL and workspace files", "note": "A report identifies issues; it never bypasses approval or starts a render."}
+    kind = "preflight_report" if stage == "publish" else "quality_report"
+    return save_artifact(project_id, kind, body.get("title", f"{stage.replace('_', ' ')} quality report"), payload, body.get("created_by", "local_qa"))
+
+
+def project_operations(project_id: str) -> dict[str, Any]:
+    project = get_project(project_id)
+    if not project:
+        raise ValueError("Project not found.")
+    jobs = list_jobs(project_id)
+    return {"project": project, "jobs": jobs, "artifacts": list_artifacts(project_id), "failed_jobs": [job for job in jobs if job.get("status") == "failed"]}
 
 
 def bot_entry_manifest() -> dict[str, Any]:
@@ -576,6 +784,10 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, {"entries": list_bot_entries()})
             elif path == "/api/edit-method":
                 self._json(200, current_edit_method())
+            elif path == "/api/brand-kits":
+                self._json(200, {"brand_kits": list_artifacts(None, "brand_kit")})
+            elif path.startswith("/api/projects/") and path.endswith("/operations"):
+                self._json(200, project_operations(path.split("/")[3]))
             elif path.startswith("/api/projects/"):
                 project = get_project(path.rsplit("/", 1)[-1])
                 self._json(200, {"project": project, "jobs": list_jobs(project["id"])} if project else {"error": "Project not found"})
@@ -597,6 +809,21 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(201, enter_bot_workspace(body))
             elif path == "/api/edit-method":
                 self._json(200, {"edit_method": set_edit_method(body)})
+            elif path == "/api/brand-kits":
+                self._json(201, {"brand_kit": save_artifact(None, "brand_kit", body.get("title", body.get("name", "Brand kit")), body.get("payload", body), body.get("created_by", "local_user"))})
+            elif path.startswith("/api/artifacts/") and path.endswith("/update"):
+                self._json(200, {"artifact": update_artifact(path.split("/")[3], body)})
+            elif path.startswith("/api/projects/") and path.endswith("/cut-map"):
+                self._json(201, {"cut_map": build_cut_map(path.split("/")[3], body)})
+            elif path.startswith("/api/projects/") and path.endswith("/inspect"):
+                self._json(201, {"inspection": inspect_project_media(path.split("/")[3], body)})
+            elif path.startswith("/api/projects/") and path.endswith("/quality-check"):
+                self._json(201, {"quality_report": quality_report(path.split("/")[3], str(body.get("stage", "pre_render")), body)})
+            elif path.startswith("/api/projects/") and path.endswith("/artifacts"):
+                project_id, kind = path.split("/")[3], str(body.get("type", ""))
+                if kind not in {"audio_plan", "bot_task", "edit_variant", "overlay_slots", "performance_note", "project_memory"}:
+                    raise ValueError("Use the dedicated endpoint for this project artifact type.")
+                self._json(201, {"artifact": save_artifact(project_id, kind, body.get("title"), body.get("payload", {}), body.get("created_by", "local_user"))})
             elif path.startswith("/api/projects/") and path.endswith("/render"):
                 project_id = path.split("/")[3]; job = create_job(project_id, "render", {"requested_by": body.get("requested_by", "local_user")}, bool(body.get("approved")))
                 self._json(201, {"job": job})

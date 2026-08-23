@@ -27,6 +27,12 @@ Open `http://localhost:3000/bot-guide` for the bot-facing editing manual. A loca
 
 Local agents can record a check-in with `POST /api/bots/heartbeat`. Supply a `bot_id`, `display_name`, `action`, and optional `detail` object. If `LOCAL_STUDIO_TOKEN` is configured, the agent must receive that token through its own runtime configuration; it must not read `.env` or SQLite to obtain it. The browser’s Bot Check page includes a copy-ready request example.
 
+## Operations center
+
+Open `http://localhost:3000/operations` after creating a project in Production. It keeps the project’s transcript cut map, local media inspection, pre/post-render quality reports, bot task board, edit memory, audio plan, A/B variants, overlay slots, brand kits, publish preflight, failure notes, and performance notes in SQLite.
+
+Bots can read `GET /api/projects/{id}/operations`. They can create a timestamped transcript cut map, request a local media inspection, record quality reports, and save planning artifacts. These records are non-destructive: they never change the EDL, render a file, or publish without the existing human approvals.
+
 ## Instagram guardrails
 
 The service never stores Meta tokens in SQLite and only reads them from local process environment variables. It never calls Instagram unless a job has a recorded human approval, the server has been launched with `--allow-instagram-publish`, and the job runner is explicitly invoked. The publication client follows the resumable container → binary upload → status poll → publish sequence documented in Meta's sample.

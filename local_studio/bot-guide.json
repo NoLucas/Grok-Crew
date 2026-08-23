@@ -89,14 +89,26 @@
       }
     }
   },
+  "operations_contract": {
+    "read": "GET /api/projects/{id}/operations returns the project, jobs, saved cut maps, quality reports, bot tasks, memory, overlays, variants, and performance notes.",
+    "write": [
+      "POST /api/projects/{id}/inspect for a local media preflight.",
+      "POST /api/projects/{id}/cut-map with timestamped transcript segments for non-destructive cut suggestions.",
+      "POST /api/projects/{id}/quality-check with stage=pre_render, post_render, or publish.",
+      "POST /api/projects/{id}/artifacts for project_memory, bot_task, audio_plan, edit_variant, overlay_slots, or performance_note.",
+      "POST /api/artifacts/{id}/update to change a saved task status or local plan.",
+      "POST /api/brand-kits for reusable local style settings."
+    ],
+    "rule": "Operations artifacts are plans, checks, and local memory. They never start rendering or publishing."
+  },
   "approval_gates": [
     "Human approval is required before queuing or running a render.",
     "Human approval is required before queuing an Instagram job.",
     "Instagram actual publishing requires approval, --allow-instagram-publish, and confirmation=PUBLISH."
   ],
   "allowed_endpoints": {
-    "read": ["GET /health", "GET /api/projects", "GET /api/jobs", "GET /api/bots", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method"],
-    "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/edit-method", "POST /api/projects"],
+    "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/bots", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits"],
+    "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits"],
     "write_after_human_approval": ["POST /api/projects/{id}/render", "POST /api/jobs/{id}/run", "POST /api/projects/{id}/instagram"]
   },
   "never": [
