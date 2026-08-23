@@ -126,10 +126,10 @@ const capabilities = [
     ko: "Instagram 실제 게시",
     en: "Publish to Instagram",
     detailKo:
-      "서버 게시 허용 + 기록된 승인 + PUBLISH 확인이 모두 있을 때만 전송합니다.",
+      "자동 업로드가 켜진 작업은 즉시 전송하고, 꺼진 작업은 대기열에서 직접 실행합니다.",
     detailEn:
-      "Send only when the server switch, recorded approval, and PUBLISH confirmation all exist.",
-    mode: "triple",
+      "Jobs with auto-upload run immediately; queued jobs can be run directly from the job board.",
+    mode: "auto",
   },
   {
     ko: "작업 이력 요약",
@@ -186,7 +186,7 @@ export default function BotStatusConsole() {
   const [lastRefresh, setLastRefresh] = useState("");
   const [copied, setCopied] = useState("");
   const [checking, setChecking] = useState(false);
-  const botRequest = `POST ${studio}/api/bots/heartbeat\nContent-Type: application/json\nAuthorization: Bearer <LOCAL_STUDIO_TOKEN if configured>\n\n{\n  "bot_id": "local-editor-bot",\n  "display_name": "Local Editor Bot",\n  "action": "cut_plan_ready",\n  "detail": { "project": "my-video-project", "next": "await human approval" }\n}`;
+  const botRequest = `POST ${studio}/api/bots/heartbeat\nContent-Type: application/json\nAuthorization: Bearer <LOCAL_STUDIO_TOKEN if configured>\n\n{\n  "bot_id": "local-editor-bot",\n  "display_name": "Local Editor Bot",\n  "action": "cut_plan_ready",\n  "detail": { "project": "my-video-project", "next": "render or queue/auto-upload Instagram" }\n}`;
   const botEntryRequest = `POST ${studio}/api/bot-entry\nContent-Type: application/json\nAuthorization: Bearer <LOCAL_STUDIO_TOKEN if configured>\n\n{\n  "bot_id": "local-editor-bot",\n  "display_name": "Local Editor Bot",\n  "purpose": "edit_video",\n  "task": "Prepare a transcript-first local edit plan.",\n  "execution_mode": "auto_local"\n}`;
 
   const refresh = useCallback(async (quiet = false) => {
@@ -281,6 +281,13 @@ export default function BotStatusConsole() {
     setCopied(kind);
     window.setTimeout(() => setCopied(""), 1700);
   };
+  const activityText = activity.map((item) => item.action.toLowerCase()).join(" ");
+  const botFlow = [
+    { id: "01", label: t("입장 기록", "Entry recorded"), detail: t("봇 ID·표시명·목적을 보내고 첫 체크인을 남깁니다.", "The bot sends its ID, display name, purpose, and first check-in."), done: entries.length > 0 },
+    { id: "02", label: t("활동 확인", "Activity verified"), detail: t("heartbeat가 기록되면 이 화면에 활성 또는 대기 상태가 보입니다.", "A recorded heartbeat shows active or idle status here."), done: bots.length > 0 || activity.length > 0 },
+    { id: "03", label: t("편집 진행", "Editing in progress"), detail: t("봇이 컷 맵·편집 방식·검사를 남기면 최근 활동에 표시됩니다.", "Cut maps, edit methods, and checks appear in recent activity."), done: /cut|edit|inspect|plan|project/.test(activityText) },
+    { id: "04", label: t("렌더·업로드", "Render and upload"), detail: t("렌더 또는 Instagram 업로드 기록이 남으면 마지막 단계가 완료됩니다.", "The final stage completes when a render or Instagram upload is recorded."), done: /render|upload|instagram|publish/.test(activityText) },
+  ];
 
   return (
     <>
@@ -378,9 +385,21 @@ export default function BotStatusConsole() {
             </button>
             <small>
               {entryGuide?.approval_boundary ??
-                t("기본 auto_local은 로컬 렌더에만 적용됩니다. Instagram 실제 게시에는 별도 확인이 필요합니다.", "The default auto_local applies only to local renders. Instagram publishing needs separate confirmation.")}
+                t("기본 auto_local은 로컬 렌더에만 적용됩니다. Instagram 업로드는 작업별 자동 업로드 설정을 따릅니다.", "The default auto_local applies only to local renders. Instagram upload follows the per-job auto-upload setting.")}
             </small>
           </aside>
+        </section>
+        <section className="bot-flow-panel">
+          <div className="bot-flow-head">
+            <div>
+              <p className="kicker">{t("봇 접속 진행 상황", "BOT CONNECTION FLOW")}</p>
+              <h2>{t("봇이 들어온 뒤의 진행 상태를", "See each step after a bot enters,")} <span>{t("실제 기록으로 확인합니다.", "based on real local records.")}</span></h2>
+            </div>
+            <p>{entries[0] ? t(`${entries[0].display_name}의 입장 기록과 활동을 기준으로 표시합니다.`, `Based on ${entries[0].display_name}'s entry record and activity.`) : t("아직 입장 기록이 없습니다. 봇이 entry 요청을 보내면 첫 단계가 완료됩니다.", "There is no entry record yet. The first step completes when a bot sends an entry request.")}</p>
+          </div>
+          <div className="bot-flow-steps">
+            {botFlow.map((step) => <article className={step.done ? "done" : "pending"} key={step.id}><i>{step.done ? "✓" : step.id}</i><div><b>{step.label}</b><p>{step.detail}</p></div><em>{step.done ? t("확인됨", "Verified") : t("대기", "Waiting")}</em></article>)}
+          </div>
         </section>
         <section className="bot-summary-grid">
           <article>
@@ -536,12 +555,12 @@ export default function BotStatusConsole() {
               <div>
                 <b>{t("항상 사람 확인", "Always human-confirmed")}</b>
                 <p>
-                  {t("비밀값, 작업 공간 밖 파일, Instagram 실제 게시와 서버 게시 허용 전환", "Secrets, files outside the workspace, Instagram publishing, and the server publish switch")}
+                  {t("비밀값과 작업 공간 밖 파일", "Secrets and files outside the workspace")}
                 </p>
               </div>
             </div>
             <p className="automation-note">
-              {t("Instagram 실제 게시에는 사람 승인 기록 + 서버의 게시 허용 실행 + PUBLISH 확인이 모두 필요합니다.", "Instagram publishing always needs recorded human approval, the server publish switch, and PUBLISH confirmation.")}
+              {t("Instagram 업로드는 각 작업의 자동 업로드 설정을 따릅니다. 자동 업로드를 끄면 작업 보드에서 직접 실행할 수 있습니다.", "Instagram upload follows each job's auto-upload setting. When it is off, run the job directly from the job board.")}
             </p>
           </article>
         </section>

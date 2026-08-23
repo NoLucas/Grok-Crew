@@ -166,7 +166,7 @@ export default function ProductionConsole() {
   const [token, setToken] = useState("");
   const [approved, setApproved] = useState(false);
   const [shareToFeed, setShareToFeed] = useState(true);
-  const [publishConfirm, setPublishConfirm] = useState("");
+  const [autoUpload, setAutoUpload] = useState(false);
   const [renderSettings, setRenderSettings] = useState<RenderSettings>(
     defaultRenderSettings,
   );
@@ -273,7 +273,7 @@ export default function ProductionConsole() {
       mute_audio: method.audio_policy === "mute",
     }));
     setMessage(
-      t(`${botEditMethod.updated_by}의 편집 방법을 Finish Rack에 적용했습니다. 렌더와 게시에는 여전히 사람 승인이 필요합니다.`, `Applied ${botEditMethod.updated_by}'s edit method to the Finish Rack. Rendering and publishing still need human approval.`),
+      t(`${botEditMethod.updated_by}의 편집 방법을 Finish Rack에 적용했습니다. 렌더는 봇 정책을 따르고 Instagram 업로드는 프로젝트의 자동 업로드 설정을 따릅니다.`, `Applied ${botEditMethod.updated_by}'s edit method to the Finish Rack. Rendering follows the bot policy and Instagram upload follows the project's auto-upload setting.`),
     );
   };
 
@@ -344,25 +344,24 @@ export default function ProductionConsole() {
     }
   };
   const queueInstagram = async () => {
-    if (!selected || !approved) {
-      setMessage(t("프로젝트와 사람 승인이 모두 필요합니다.", "A project and human approval are both required."));
+    if (!selected) {
+      setMessage(t("프로젝트를 먼저 선택하세요.", "Choose a project first."));
       return;
     }
     setBusy(true);
     try {
-      await api(`/api/projects/${selected}/instagram`, {
+      const response = await api(`/api/projects/${selected}/instagram`, {
         method: "POST",
         body: JSON.stringify({
-          approved: true,
           render_path: outputPath,
           caption,
-          share_to_feed,
+          share_to_feed: shareToFeed,
+          auto_upload: autoUpload,
           requested_by: "Local browser",
         }),
       });
-      setMessage(
-        t("Instagram 게시 작업은 대기열에만 넣었습니다. 실제 전송은 별도 실행 승인과 PUBLISH 확인이 있어야 합니다.", "The Instagram publish job is only queued. Sending still needs separate execution approval and PUBLISH confirmation."),
-      );
+      const job = response.job as StudioJob;
+      setMessage(autoUpload ? (job.status === "succeeded" ? t("Instagram 업로드가 완료되었습니다.", "Instagram upload completed.") : t("Instagram 자동 업로드를 시작했습니다. 작업 보드에서 결과를 확인하세요.", "Instagram auto-upload started. Check the job board for the result.")) : t("Instagram 업로드 작업을 대기열에 넣었습니다. 작업 보드에서 바로 실행할 수 있습니다.", "Instagram upload is queued. You can run it directly from the job board."));
       await refresh(true);
     } catch (error) {
       setMessage(
@@ -375,19 +374,11 @@ export default function ProductionConsole() {
     }
   };
   const runJob = async (job: StudioJob) => {
-    if (job.kind === "instagram_publish" && publishConfirm !== "PUBLISH") {
-      setMessage(
-        t("게시 작업은 아래 입력칸에 PUBLISH를 정확히 입력해야 실행됩니다.", "Type PUBLISH exactly in the field below before running a publish job."),
-      );
-      return;
-    }
     setBusy(true);
     try {
       const response = await api(`/api/jobs/${job.id}/run`, {
         method: "POST",
-        body: JSON.stringify(
-          job.kind === "instagram_publish" ? { confirmation: "PUBLISH" } : {},
-        ),
+        body: JSON.stringify({}),
       });
       const final = response.job as StudioJob;
       setMessage(
@@ -413,11 +404,7 @@ export default function ProductionConsole() {
       on_entry:
         "all local editing features enabled; local render defaults to auto_local",
       bot_choice: ["auto_local render", "approval_required render"],
-      always_human: [
-        "Instagram queue approval",
-        "Instagram publish switch",
-        "PUBLISH confirmation",
-      ],
+      instagram_upload: "queue manually or auto-upload per project",
       never: ["read Meta credentials", "access outside workspace"],
     },
     null,
@@ -453,7 +440,7 @@ export default function ProductionConsole() {
             <b>{health ? t("연결됨", "CONNECTED") : t("오프라인", "OFFLINE")}</b>
             <p>
               {health
-                ? `SQLite · ${health.moviepy_installed ? t("MoviePy 준비됨", "MoviePy ready") : t("MoviePy 설치 필요", "MoviePy install needed")} · ${t("게시 스위치", "publish switch")} ${health.instagram_publish_enabled ? t("켜짐", "on") : t("꺼짐", "off")}`
+                ? `SQLite · ${health.moviepy_installed ? t("MoviePy 준비됨", "MoviePy ready") : t("MoviePy 설치 필요", "MoviePy install needed")} · ${t("Instagram 자격증명", "Instagram credentials")} ${health.instagram_publish_enabled ? t("준비됨", "ready") : t("필요", "needed")}`
                 : t(
                     "local_studio/studio_server.py를 실행하면 연결됩니다.",
                     "Start local_studio/studio_server.py to connect.",
@@ -964,10 +951,9 @@ export default function ProductionConsole() {
               <span>{t("03 · Instagram 게시", "03 · INSTAGRAM LANE")}</span>
               <em>{t("전문 계정 전용", "Professional account only")}</em>
             </div>
-            <h2>{t("자동 게시가 아닌, 승인된 게시 실행", "Run approved publishing, not automatic publishing")}</h2>
+            <h2>{t("자동 업로드 여부를 정하고 게시", "Choose auto-upload, then publish")}</h2>
             <p>
-              {t("작업을 먼저 대기열에 넣고, 서버를 게시 허용 모드로 시작한 뒤,", "First queue the job and start the server with publishing enabled; then")}{" "}
-              <b>PUBLISH</b>{t("라는 정확한 확인까지 있어야 실제 전송됩니다.", " confirmation is required before it can be sent.")}
+              {t("자동 업로드를 켜면 대기열에 추가하는 즉시 로컬 Instagram 자격증명으로 업로드를 시작합니다. 끄면 작업 보드에서 필요할 때 직접 실행합니다.", "When auto-upload is on, the upload starts with local Instagram credentials as soon as it is queued. When it is off, run the queued job from the job board when ready.")}
             </p>
             <label className="approval-check">
               <input
@@ -977,21 +963,21 @@ export default function ProductionConsole() {
               />{" "}
               {t("릴을 프로필 피드에도 공유", "Also share the reel to the profile feed")}
             </label>
+            <label className="approval-check">
+              <input
+                type="checkbox"
+                checked={autoUpload}
+                onChange={(event) => setAutoUpload(event.target.checked)}
+              />{" "}
+              {t("대기열 추가 후 Instagram 자동 업로드", "Auto-upload to Instagram after queueing")}
+            </label>
             <button
               className="production-outline"
               onClick={() => void queueInstagram()}
-              disabled={busy || !selected || !approved}
+              disabled={busy || !selected}
             >
-              {t("Instagram 게시 작업 대기열에 넣기", "Queue Instagram publish job")}
+              {autoUpload ? t("Instagram 자동 업로드 시작", "Start Instagram auto-upload") : t("Instagram 업로드 작업 대기열에 넣기", "Queue Instagram upload")}
             </button>
-            <label className="publish-field">
-              {t("실제 게시 실행 확인", "Confirm actual publishing")}{" "}
-              <input
-                value={publishConfirm}
-                onChange={(event) => setPublishConfirm(event.target.value)}
-                placeholder={t("PUBLISH 입력", "Type PUBLISH")}
-              />
-            </label>
           </article>
         </section>
         <section className="production-jobs">
@@ -1043,7 +1029,7 @@ export default function ProductionConsole() {
                           {stamp(job.created_at, language)} ·{" "}
                           {job.kind === "render"
                             ? t("로컬 렌더 승인", "local render authorization")
-                            : t("사람 승인", "human approval")}{" "}
+                            : t("자동 업로드", "auto-upload")}{" "}
                           {job.approved ? t("기록됨", "recorded") : t("누락", "missing")}
                         </p>
                         {job.error_text && <small>{job.error_text}</small>}
@@ -1052,12 +1038,12 @@ export default function ProductionConsole() {
                         onClick={() => void runJob(job)}
                         disabled={
                           busy ||
-                          !job.approved ||
+                          (job.kind === "render" && !job.approved) ||
                           !["queued", "failed"].includes(job.status)
                         }
                       >
                         {job.kind === "instagram_publish"
-                          ? t("PUBLISH 실행", "Run PUBLISH")
+                          ? t("업로드 실행", "Run upload")
                           : t("렌더 실행", "Run render")}
                       </button>
                     </article>
@@ -1083,7 +1069,7 @@ export default function ProductionConsole() {
             </div>
             <pre>{contract}</pre>
             <p>
-              {t("봇은 프로젝트를 준비하고 승인된 작업을 대기열에 넣을 수 있습니다. Meta 토큰이나 작업 공간 밖 파일에는 접근할 수 없고, 승인 없이 게시할 수 없습니다.", "Bots can prepare projects and queue approved jobs. They cannot access Meta tokens or files outside the workspace, or publish without approval.")}
+              {t("봇은 프로젝트를 준비하고 렌더·Instagram 업로드 작업을 대기열에 넣거나 자동 실행할 수 있습니다. Meta 토큰이나 작업 공간 밖 파일에는 접근할 수 없습니다.", "Bots can prepare projects and queue or automatically run render and Instagram upload jobs. They cannot access Meta tokens or files outside the workspace.")}
             </p>
           </article>
           <article className="production-card idea-card">
@@ -1100,7 +1086,7 @@ export default function ProductionConsole() {
               </li>
               <li>
                 <b>{t("승인 조건", "Approval gates")}</b>
-                <span>{t("렌더와 게시 모두 기록된 사람 승인이 선행됩니다.", "Both rendering and publishing require recorded human approval.")}</span>
+                <span>{t("렌더는 봇의 실행 정책을 따르고 Instagram 업로드는 프로젝트 자동 업로드 설정을 따릅니다.", "Rendering follows the bot execution policy and Instagram upload follows the project auto-upload setting.")}</span>
               </li>
               <li>
                 <b>{t("지속되는 작업 기록", "Persistent job memory")}</b>
@@ -1111,7 +1097,7 @@ export default function ProductionConsole() {
               <li>
                 <b>{t("이어갈 수 있는 게시", "Resumable publishing")}</b>
                 <span>
-                  {t("승인된 로컬 MP4를 컨테이너 업로드·처리 확인 뒤 게시합니다.", "Publish an approved local MP4 after container upload and processing checks.")}
+                  {t("로컬 MP4를 컨테이너 업로드·처리 확인 뒤 게시합니다.", "Publish a local MP4 after container upload and processing checks.")}
                 </span>
               </li>
             </ul>

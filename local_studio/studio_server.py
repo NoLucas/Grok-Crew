@@ -1,4 +1,4 @@
-"""Local Video Studio: local SQLite jobs, MoviePy rendering, and approval-gated Instagram publishing."""
+"""Local Video Studio: local SQLite jobs, MoviePy rendering, and optional automatic Instagram upload."""
 
 from __future__ import annotations
 
@@ -511,8 +511,8 @@ def bot_entry_manifest() -> dict[str, Any]:
         },
         "first_requests": ["GET /api/bot-guide", "GET /api/projects", "GET /api/jobs", "GET /api/edit-method", "GET /api/bots/{bot_id}/execution-policy"],
         "keep_alive": "POST /api/bots/heartbeat at each meaningful state change and at least once every five minutes while active.",
-        "execution_policy": "On first entry, a bot receives auto_local for local project, inspection, planning, and rendering work. The bot can change its own policy to approval_required. Instagram publishing always keeps the server switch and PUBLISH confirmation.",
-        "approval_boundary": "auto_local can approve local render work for that bot. Instagram publishing still needs the server publish switch and PUBLISH confirmation.",
+        "execution_policy": "On first entry, a bot receives auto_local for local project, inspection, planning, and rendering work. The bot can change its own policy to approval_required. Instagram upload is queued manually or run immediately with auto_upload.",
+        "approval_boundary": "auto_local controls local rendering. Instagram upload can be queued manually or run immediately when auto_upload is enabled for that job.",
         "credential_rule": "If LOCAL_STUDIO_TOKEN is enabled, receive it from the bot runtime configuration. Never read .env, SQLite, or browser storage for a token.",
     }
 
@@ -534,7 +534,7 @@ def terminal_contract() -> dict[str, Any]:
             "editing": ["projects list|get|create", "method get|set", "ops show|inspect|cut-map|quality|artifact|update", "brand list|save"],
             "delivery": ["jobs list|render [auto local or human approved]|instagram|run"],
         },
-        "execution_policy": {"auto_local": "The connected bot can queue and run its own local render work automatically.", "approval_required": "The bot records a request and requires --human-approved for local render work.", "instagram": "Instagram publishing always needs the server publish switch and confirmation=PUBLISH."},
+        "execution_policy": {"auto_local": "The connected bot can queue and run its own local render work automatically.", "approval_required": "The bot records a request and requires --human-approved for local render work.", "instagram": "Instagram upload can run immediately when auto_upload is enabled, or remain queued for manual execution."},
         "browser_pages": {
             "production": f"{SITE_BASE_URL}/production",
             "operations": f"{SITE_BASE_URL}/operations",
@@ -876,7 +876,8 @@ class StudioHandler(BaseHTTPRequestHandler):
             if path in BROWSER_PAGE_PATHS:
                 self._redirect_to_browser_page(path)
             elif path == "/health":
-                self._json(200, {"service": "Local Video Studio", "status": "ready", "bind": "127.0.0.1", "workspace": str(WORKSPACE_DIR), "database": str(DB_PATH), "moviepy_installed": self._moviepy_ready(), "instagram_publish_enabled": bool(getattr(self.server, "allow_instagram_publish", False)), "credentials_configured": bool(os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USER_ID") and os.getenv("INSTAGRAM_API_VERSION")), "bots": list_bots()["summary"]})
+                instagram_ready = bool(os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USER_ID") and os.getenv("INSTAGRAM_API_VERSION"))
+                self._json(200, {"service": "Local Video Studio", "status": "ready", "bind": "127.0.0.1", "workspace": str(WORKSPACE_DIR), "database": str(DB_PATH), "moviepy_installed": self._moviepy_ready(), "instagram_publish_enabled": instagram_ready, "credentials_configured": instagram_ready, "bots": list_bots()["summary"]})
             elif path == "/api/projects":
                 self._json(200, {"projects": list_projects()})
             elif path == "/api/jobs":
@@ -960,10 +961,11 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(201, {"job": job, "execution_policy": policy, "auto_run": auto_run})
             elif path.startswith("/api/projects/") and path.endswith("/instagram"):
                 project_id = path.split("/")[3]
-                if not body.get("approved"):
-                    raise ValueError("Human approval is required before an Instagram job can be queued.")
-                job = create_job(project_id, "instagram_publish", {"render_path": body.get("render_path"), "caption": body.get("caption", ""), "share_to_feed": bool(body.get("share_to_feed", False)), "requested_by": body.get("requested_by", "local_user")}, True)
-                self._json(201, {"job": job})
+                auto_upload = bool(body.get("auto_upload", False))
+                job = create_job(project_id, "instagram_publish", {"render_path": body.get("render_path"), "caption": body.get("caption", ""), "share_to_feed": bool(body.get("share_to_feed", False)), "requested_by": body.get("requested_by", "local_user"), "auto_upload": auto_upload}, True)
+                if auto_upload:
+                    job = self._run_job(job["id"], {"execution_authorization": "auto_upload"})
+                self._json(201, {"job": job, "auto_upload": auto_upload})
             elif path.startswith("/api/jobs/") and path.endswith("/run"):
                 job_id = path.split("/")[3]; self._json(200, {"job": self._run_job(job_id, body)})
             else:
@@ -987,15 +989,10 @@ class StudioHandler(BaseHTTPRequestHandler):
         job = row_dict(row)
         if not job:
             raise ValueError("Job not found.")
-        if not job["approved"]:
+        if job["kind"] == "render" and not job["approved"]:
             raise ValueError("Job has no recorded human approval.")
         if job["status"] not in {"queued", "failed"}:
             raise ValueError("Only queued or failed jobs can run.")
-        if job["kind"] == "instagram_publish":
-            if not getattr(self.server, "allow_instagram_publish", False):
-                raise ValueError("Restart Local Studio with --allow-instagram-publish before running a publish job.")
-            if body.get("confirmation") != "PUBLISH":
-                raise ValueError("Instagram publishing requires confirmation: PUBLISH.")
         project = get_project(job["project_id"])
         if not project:
             raise ValueError("Project no longer exists.")
@@ -1013,13 +1010,11 @@ class StudioHandler(BaseHTTPRequestHandler):
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Local Video Studio on loopback only.")
     parser.add_argument("--port", type=int, default=7214)
-    parser.add_argument("--allow-instagram-publish", action="store_true", help="Allow explicitly approved Instagram publish jobs to run.")
     args = parser.parse_args(); load_dotenv(); init_db()
     server = ThreadingHTTPServer(("127.0.0.1", args.port), StudioHandler)
-    server.allow_instagram_publish = args.allow_instagram_publish  # type: ignore[attr-defined]
     print(f"Local Video Studio listening at http://127.0.0.1:{args.port}")
     print(f"Workspace: {WORKSPACE_DIR}")
-    print("Instagram publishing is " + ("ENABLED" if args.allow_instagram_publish else "DISABLED") + ".")
+    print("Instagram upload runs when a queued job is started or auto_upload is enabled.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

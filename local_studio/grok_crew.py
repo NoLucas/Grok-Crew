@@ -137,8 +137,8 @@ def build_parser() -> argparse.ArgumentParser:
     jobs_sub = jobs.add_subparsers(dest="command", required=True)
     jobs_list = jobs_sub.add_parser("list", help="List all jobs."); jobs_list.add_argument("--project")
     render = jobs_sub.add_parser("render", help="Queue a render; auto_local bots also run it immediately by default."); render.add_argument("--project", required=True); render.add_argument("--bot-id", required=True); render.add_argument("--human-approved", action="store_true"); render.add_argument("--requested-by", default=""); render.add_argument("--queue-only", action="store_true")
-    instagram = jobs_sub.add_parser("instagram", help="Queue Instagram publishing after recorded human approval."); instagram.add_argument("--project", required=True); instagram.add_argument("--file", required=True); instagram.add_argument("--human-approved", action="store_true")
-    run = jobs_sub.add_parser("run", help="Run an already approved job."); run.add_argument("--job", required=True); run.add_argument("--human-approved", action="store_true"); run.add_argument("--publish-confirmation", default="")
+    instagram = jobs_sub.add_parser("instagram", help="Queue Instagram upload, or upload immediately when requested."); instagram.add_argument("--project", required=True); instagram.add_argument("--file", required=True); instagram.add_argument("--auto-upload", action="store_true")
+    run = jobs_sub.add_parser("run", help="Run a queued job."); run.add_argument("--job", required=True)
 
     method = commands.add_parser("method", help="Read or set the shared bot edit method.")
     method_sub = method.add_subparsers(dest="command", required=True)
@@ -204,9 +204,9 @@ def main() -> None:
         elif args.command == "render":
             print_json(client.request(f"/api/projects/{args.project}/render", {"bot_id": args.bot_id, "approved": args.human_approved, "requested_by": args.requested_by or args.bot_id, "run_immediately": not args.queue_only}))
         elif args.command == "instagram":
-            require_human_approval(args); payload = read_json_file(args.file); payload["approved"] = True; print_json(client.request(f"/api/projects/{args.project}/instagram", payload))
+            payload = read_json_file(args.file); payload["auto_upload"] = args.auto_upload; print_json(client.request(f"/api/projects/{args.project}/instagram", payload))
         else:
-            require_human_approval(args); payload = {"confirmation": args.publish_confirmation} if args.publish_confirmation else {}; print_json(client.request(f"/api/jobs/{args.job}/run", payload))
+            print_json(client.request(f"/api/jobs/{args.job}/run", {}))
         return
 
     if args.group == "method":

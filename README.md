@@ -37,7 +37,7 @@ python local_studio/grok_crew.py policy set --bot-id local-editor-bot --mode aut
 python local_studio/grok_crew.py policy set --bot-id local-editor-bot --mode approval_required
 ```
 
-`auto_local` lets that connected bot queue and run its own local render. `approval_required` keeps all planning and editing features available but requires `--human-approved` for each render. Instagram publication is intentionally separate and always requires human approval, the local server switch, and `PUBLISH` confirmation.
+`auto_local` lets that connected bot queue and run its own local render. `approval_required` keeps all planning and editing features available but requires `--human-approved` for each render. Instagram upload is per job: use `--auto-upload` to start it immediately or leave it queued for direct execution.
 
 For a browser task or screenshot, the bot can request the exact workspace address:
 
@@ -55,7 +55,7 @@ It prints `http://localhost:3000/production`. The CLI/API runs at `http://127.0.
 - Bots can only connect to local loopback addresses through the included CLI.
 - Rendering and project operations need no provider API key.
 
-Instagram publishing is optional and remains disabled by default. It requires the owner's own local credentials, a startup switch, explicit recorded human approval, and a final `PUBLISH` confirmation.
+Instagram upload is optional and requires the owner's own local credentials. It can run immediately through an auto-upload job or stay queued for direct execution.
 
 ## Important limitation
 

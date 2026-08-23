@@ -23,7 +23,7 @@ type Guide = {
     read: string[];
     write_after_scope_check: string[];
     local_render?: string[];
-    write_after_human_approval: string[];
+    write_for_delivery: string[];
   };
   never: string[];
   heartbeat_example: Record<string, unknown>;
@@ -40,7 +40,7 @@ const fallbackGuide: Guide = {
     "Stay inside the local workspace.",
     "Plan from transcript before adding effects.",
     "Choose the local render policy before output work.",
-    "Never publish automatically.",
+    "Use the project’s auto-upload setting for Instagram delivery.",
   ],
   workflow: [
     {
@@ -87,9 +87,9 @@ const fallbackGuide: Guide = {
     },
     {
       step: 8,
-      name: "publish_after_approval",
-      action: "Queue an approved Instagram job",
-      goal: "Require a separate publish confirmation.",
+      name: "publish_or_queue",
+      action: "Queue Instagram, with auto-upload when requested",
+      goal: "Deliver immediately or leave the job ready to run.",
     },
   ],
   edit_heuristics: {
@@ -98,7 +98,7 @@ const fallbackGuide: Guide = {
     captions: "Keep captions short and readable.",
     reframe: "Preserve the subject in 9:16.",
   },
-  approval_gates: ["Human approval is required before publishing."],
+  approval_gates: ["Instagram needs local credentials and a supported render file."],
   execution_policy: {
     on_entry: "Every entered bot receives auto_local.",
     modes: {
@@ -106,15 +106,15 @@ const fallbackGuide: Guide = {
       approval_required: "Require human approval for each render.",
     },
     external_boundary:
-      "Instagram publishing requires a person, server switch, and PUBLISH confirmation.",
+      "Instagram upload can run immediately when auto-upload is enabled, or remain queued for direct execution.",
   },
   allowed_endpoints: {
     read: ["GET /health"],
     write_after_scope_check: ["POST /api/bots/heartbeat"],
     local_render: ["POST /api/projects/{id}/render"],
-    write_after_human_approval: ["POST /api/projects/{id}/instagram"],
+    write_for_delivery: ["POST /api/projects/{id}/instagram"],
   },
-  never: ["Do not read credentials.", "Do not publish automatically."],
+  never: ["Do not read credentials.", "Do not use media outside the local workspace."],
   heartbeat_example: { bot_id: "local-editor-bot", action: "render_started" },
 };
 
@@ -265,8 +265,8 @@ export default function BotGuideConsole() {
               <span>
                 {guide.execution_policy?.external_boundary ??
                   t(
-                    "사람 승인 · 서버 스위치 · PUBLISH 확인",
-                    "Human approval · server switch · PUBLISH confirmation",
+                    "프로젝트별 자동 업로드 또는 대기열 실행",
+                    "Project auto-upload or direct queue execution",
                   )}
               </span>
             </div>
@@ -359,9 +359,9 @@ export default function BotGuideConsole() {
               </div>
             )}
             <div>
-              <b>{t("사람 승인 후 작성", "Write after human approval")}</b>
+              <b>{t("렌더·업로드 작업", "Render and upload")}</b>
               <p>
-                {guide.allowed_endpoints.write_after_human_approval.join(" · ")}
+                {guide.allowed_endpoints.write_for_delivery.join(" · ")}
               </p>
             </div>
           </article>

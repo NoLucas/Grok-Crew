@@ -6,8 +6,8 @@ This companion service is a private, local production node for Local Video Works
 
 - Stores projects, render jobs, approval records, and event history in local SQLite.
 - Uses MoviePy locally to render EDLs into 1080×1920 H.264/AAC MP4 files.
-- Lets each local agent choose automatic local rendering or a human-approval gate, while keeping external publishing protected.
-- Can use Meta's resumable upload workflow to publish an approved render to Instagram when the owner explicitly enables publishing and provides local credentials.
+- Lets each local agent choose automatic local rendering or a human-approval gate for rendering; Instagram delivery is queued or auto-uploaded per job.
+- Can use Meta's resumable upload workflow to upload a rendered file to Instagram when local credentials are available.
 
 ## Start
 
@@ -15,7 +15,7 @@ This companion service is a private, local production node for Local Video Works
 2. Copy `.env.example` to `.env` only if you want token protection or Instagram publishing.
 3. For a Local Studio-only Windows session, run `./run.ps1` from this folder.
 4. Or run `.venv\Scripts\python studio_server.py --port 7214` directly.
-5. To allow actual Instagram publication, start with `--allow-instagram-publish`. Without this switch, publish jobs can be created but cannot run.
+5. Instagram upload needs local credentials. Use the website's Auto-upload checkbox or the CLI's `--auto-upload` option to start upload immediately.
 
 The browser app is at `http://localhost:3000/production`. Create or queue jobs there, or use `bot-contract.json` from a local agent with the same workstation access.
 
@@ -33,7 +33,7 @@ Local agents can record a check-in with `POST /api/bots/heartbeat`. Supply a `bo
 
 Open `http://localhost:3000/operations` after creating a project in Production. It keeps the project’s transcript cut map, local media inspection, pre/post-render quality reports, bot task board, edit memory, audio plan, A/B variants, overlay slots, brand kits, publish preflight, failure notes, and performance notes in SQLite.
 
-Bots can read `GET /api/projects/{id}/operations`. They can create a timestamped transcript cut map, request a local media inspection, record quality reports, and save planning artifacts. These records are non-destructive: they never change the EDL, render a file, or publish without the existing human approvals.
+Bots can read `GET /api/projects/{id}/operations`. They can create a timestamped transcript cut map, request a local media inspection, record quality reports, and save planning artifacts. These records are non-destructive: they do not change the EDL, render a file, or start an Instagram upload by themselves.
 
 ## Terminal CLI for Grok bots
 
@@ -41,8 +41,8 @@ Any Grok bot runtime that runs in a terminal on this same PC can use the depende
 
 `http://127.0.0.1:7214` is the CLI and JSON API service, not the browser workspace. For a page a bot needs to open or capture, run `python grok-crew.py site --page production` (or `operations`, `bots`, `guide`, `terminal`, or `privacy`) and use the printed `http://localhost:3000/...` URL. Opening a known browser page on port 7214 now redirects to the correct browser workspace.
 
-The CLI covers bot entry and heartbeat, execution policy, projects, edit methods, P0–P2 operations, brand kits, and job queues. It refuses non-loopback URLs. If token protection is enabled, supply `LOCAL_STUDIO_TOKEN` only through that bot terminal's environment. A connected bot can use `policy set --bot-id <id> --mode auto_local` to queue and run its own local renders, or choose `approval_required` to require `--human-approved` for rendering. Instagram queueing and publishing remain human-approved; the server also enforces the publication switch and `PUBLISH` confirmation.
+The CLI covers bot entry and heartbeat, execution policy, projects, edit methods, P0–P2 operations, brand kits, and job queues. It refuses non-loopback URLs. If token protection is enabled, supply `LOCAL_STUDIO_TOKEN` only through that bot terminal's environment. A connected bot can use `policy set --bot-id <id> --mode auto_local` to queue and run its own local renders, or choose `approval_required` to require `--human-approved` for rendering. Use `jobs instagram --auto-upload` to start Instagram upload immediately, or leave it queued for direct execution.
 
 ## Instagram guardrails
 
-The service never stores Meta tokens in SQLite and only reads them from local process environment variables. It never calls Instagram unless a job has a recorded human approval, the server has been launched with `--allow-instagram-publish`, and the job runner is explicitly invoked. The publication client follows the resumable container → binary upload → status poll → publish sequence documented in Meta's sample.
+The service never stores Meta tokens in SQLite and only reads them from local process environment variables. It calls Instagram only when an Instagram job is explicitly run or a job is created with auto-upload enabled. The publication client follows the resumable container → binary upload → status poll → publish sequence documented in Meta's sample.

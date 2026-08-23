@@ -53,7 +53,7 @@ const commands = [
     detailKo:
       "auto_local 봇은 로컬 렌더를 자동 실행하고, 승인 모드 봇은 사람 승인을 요청합니다. Instagram 실제 게시는 항상 별도 승인입니다.",
     detailEn:
-      "auto_local bots run local renders automatically; approval-mode bots request a person. Instagram publishing always has a separate approval.",
+      "auto_local bots run local renders automatically; approval-mode bots request a person. Instagram jobs can be queued or uploaded immediately with --auto-upload.",
   },
 ];
 
@@ -390,8 +390,8 @@ export default function TerminalConsole() {
             </h3>
             <p>
               {t(
-                "policy set --bot-id &lt;id&gt; --mode approval_required로 바꾸면 그 봇의 렌더에는 --human-approved가 필요합니다. Instagram 실제 게시에는 언제나 사람 승인, 서버 게시 허용, PUBLISH 확인이 필요합니다.",
-                "Use policy set --bot-id &lt;id&gt; --mode approval_required to require --human-approved for that bot. Instagram publishing always needs human approval, the server switch, and PUBLISH confirmation.",
+                "policy set --bot-id &lt;id&gt; --mode approval_required로 바꾸면 그 봇의 렌더에는 --human-approved가 필요합니다. Instagram은 jobs instagram --auto-upload으로 바로 업로드하거나, 이 옵션 없이 대기열에 넣어 직접 실행할 수 있습니다.",
+                "Use policy set --bot-id &lt;id&gt; --mode approval_required to require --human-approved for that bot. Use jobs instagram --auto-upload to upload immediately, or omit it to queue and run the job directly later.",
               )}
             </p>
           </article>

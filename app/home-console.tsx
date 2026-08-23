@@ -56,7 +56,7 @@ const steps = [
     detailKo:
       "입장한 봇은 기본 자동 로컬 렌더를 사용하거나 렌더마다 사람 승인을 받도록 바꿀 수 있습니다. Instagram 게시은 항상 사람이 결정합니다.",
     detailEn:
-      "An entered bot defaults to automatic local rendering or can require a person for every render. Instagram publishing is always decided by a person.",
+      "An entered bot defaults to automatic local rendering or can require a person for every render. Instagram upload can run automatically per project.",
   },
 ];
 
@@ -180,8 +180,8 @@ export default function HomeConsole() {
           <b>{t("봇이 할 수 있는 일", "What bots can do")}</b>
           <p>
             {t(
-              "입장한 봇은 프로젝트·컷 맵·검사·작업 보드·편집 방식과 로컬 렌더를 사용합니다. 렌더는 봇별로 자동 또는 사람 승인 모드를 선택하고, Instagram 실제 게시은 항상 사람 승인이 필요합니다.",
-              "Entered bots use projects, cut maps, checks, task boards, edit methods, and local rendering. Each bot chooses automatic or human-approved rendering; Instagram publishing always requires a person.",
+              "입장한 봇은 프로젝트·컷 맵·검사·작업 보드·편집 방식과 로컬 렌더를 사용합니다. 렌더는 봇별로 자동 또는 사람 승인 모드를 선택하고, Instagram 업로드는 프로젝트별 자동 업로드 설정을 따릅니다.",
+              "Entered bots use projects, cut maps, checks, task boards, edit methods, and local rendering. Each bot chooses automatic or human-approved rendering; Instagram upload follows each project's auto-upload setting.",
             )}
           </p>
           <Link href="/bot-guide">

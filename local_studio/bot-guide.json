@@ -8,14 +8,14 @@
     "Keep the first useful idea or visible change within the first 1.5 seconds when possible.",
     "Remove filler, long silence, duplicate points, and weak setup before adding effects.",
     "For vertical output, preserve the subject with left, center, or right reframing rather than stretching video.",
-    "Do not publish, access credentials, or leave the workspace without the required approval. Local rendering follows this bot's execution policy."
+    "Do not access credentials or leave the workspace. Local rendering follows this bot's execution policy, and Instagram upload follows the job's auto_upload setting."
   ],
   "workflow": [
     {
       "step": 1,
       "name": "enter_local_studio",
       "action": "POST /api/bot-entry with bot_id, display_name, purpose, and task.",
-      "goal": "Create a local entry record and first heartbeat. A new bot receives auto_local for local rendering by default; it can choose approval_required instead. Entry never grants Instagram publishing approval."
+      "goal": "Create a local entry record and first heartbeat. A new bot receives auto_local for local rendering by default and can choose approval_required instead."
     },
     {
       "step": 2,
@@ -55,9 +55,9 @@
     },
     {
       "step": 8,
-      "name": "publish_after_approval",
-      "action": "Queue an approved Instagram job only after a completed render.",
-      "goal": "Actual publishing additionally needs the server publish switch and PUBLISH confirmation."
+      "name": "publish_or_queue",
+      "action": "Queue an Instagram job after a completed render, with auto_upload=true to upload immediately.",
+      "goal": "With auto_upload enabled, the local service starts upload immediately; otherwise the queued job can be run directly."
     }
   ],
   "edit_heuristics": {
@@ -71,7 +71,7 @@
   },
   "edit_method_contract": {
     "endpoint": "POST /api/edit-method",
-    "write_rule": "A bot may set an edit method after checking local scope. The method can be applied to the Finish Rack by a person and never bypasses render or publish approval.",
+    "write_rule": "A bot may set an edit method after checking local scope. The method can be applied to the Finish Rack and does not itself start rendering or upload.",
     "body": {
       "bot_id": "local-editor-bot",
       "display_name": "Local Editor Bot",
@@ -118,7 +118,7 @@
     "bootstrap": "python grok-crew.py contract",
     "purpose": "A dependency-free CLI for a bot running in a terminal on the same PC. It can use the Local Studio and Operations endpoints without browser interaction.",
     "token_rule": "If token protection is enabled, pass LOCAL_STUDIO_TOKEN through the bot terminal environment. Never read .env, browser storage, or SQLite for it.",
-    "approval_rule": "A connected bot starts in auto_local and can render with jobs render --bot-id. Use policy set --bot-id <id> --mode approval_required to require --human-approved for that bot's renders. Instagram queue and publish still require human approval; publishing also needs the server publish switch and PUBLISH confirmation."
+    "approval_rule": "A connected bot starts in auto_local and can render with jobs render --bot-id. Use policy set --bot-id <id> --mode approval_required to require --human-approved for that bot's renders. Use jobs instagram --auto-upload to start Instagram upload immediately, or omit it to queue the upload."
   },
   "execution_policy": {
     "on_entry": "Every bot that enters Local Studio receives auto_local unless it explicitly chooses approval_required.",
@@ -128,33 +128,32 @@
       "auto_local": "The bot can queue and start its own local MP4 render after it is connected.",
       "approval_required": "The bot can use every planning, inspection, project, and operations feature, but its render request requires approved: true or --human-approved."
     },
-    "external_boundary": "Instagram publishing is intentionally separate: it always requires recorded human approval, the server publish switch, and confirmation=PUBLISH."
+    "external_boundary": "Instagram upload is separate from local rendering. The job's auto_upload setting chooses immediate upload or a manual queued run."
   },
   "approval_gates": [
-    "Human approval is required before queuing an Instagram job.",
-    "Instagram actual publishing requires approval, --allow-instagram-publish, and confirmation=PUBLISH."
+    "Instagram upload requires valid local Instagram credentials and a supported rendered file.",
+    "Use auto_upload=true for immediate upload, or leave it false to keep the job queued."
   ],
   "allowed_endpoints": {
     "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/bots", "GET /api/bots/{bot_id}/execution-policy", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits"],
     "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/bots/execution-policy", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits"],
     "local_render": ["POST /api/projects/{id}/render when the connected bot's policy is auto_local or a human approval is recorded."],
-    "write_after_human_approval": ["POST /api/projects/{id}/instagram"]
+    "write_for_delivery": ["POST /api/projects/{id}/instagram with auto_upload=true or false"]
   },
   "never": [
     "Read or reveal LOCAL_STUDIO_TOKEN, INSTAGRAM_ACCESS_TOKEN, or .env contents.",
     "Use a path outside local_studio/workspace.",
     "Claim a bot is active without a current heartbeat.",
-    "Publish automatically or bypass the PUBLISH confirmation.",
     "Change completed output files unless the owner requests a new edit."
   ],
   "heartbeat_example": {
     "bot_id": "local-editor-bot",
     "display_name": "Local Editor Bot",
-    "action": "await_human_approval",
+    "action": "render_or_upload_ready",
     "detail": {
       "project": "six-lines-reel",
       "decision": "Removed filler, retained 3 spoken cuts, centered 9:16 reframe.",
-      "next": "Render only after owner approval."
+      "next": "Run local rendering by bot policy, then queue or auto-upload Instagram as needed."
     }
   }
 }
