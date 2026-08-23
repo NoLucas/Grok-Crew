@@ -137,9 +137,9 @@ function cutLogTimeline(): TimelineClip[] {
   }
 }
 
-function stamp(value: string) {
+function stamp(value: string, language: "ko" | "en") {
   return value
-    ? new Date(value).toLocaleString("ko-KR", {
+    ? new Date(value).toLocaleString(language === "ko" ? "ko-KR" : "en-US", {
         hour: "2-digit",
         minute: "2-digit",
         month: "short",
@@ -149,7 +149,7 @@ function stamp(value: string) {
 }
 
 export default function ProductionConsole() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [health, setHealth] = useState<StudioHealth | null>(null);
   const [projects, setProjects] = useState<StudioProject[]>([]);
   const [jobs, setJobs] = useState<StudioJob[]>([]);
@@ -171,7 +171,7 @@ export default function ProductionConsole() {
     defaultRenderSettings,
   );
   const [finishLoaded, setFinishLoaded] = useState(false);
-  const [message, setMessage] = useState("Local Studio를 확인하는 중입니다.");
+  const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   const patchSettings = <K extends keyof RenderSettings>(
@@ -210,19 +210,19 @@ export default function ProductionConsole() {
         setBotEditMethod(nextMethod as unknown as BotEditMethod);
         if (!quiet)
           setMessage(
-            "로컬 제작 서비스가 연결되었습니다. 모든 작업 데이터는 이 PC의 SQLite에 저장됩니다.",
+            t("로컬 제작 서비스가 연결되었습니다. 모든 작업 데이터는 이 PC의 SQLite에 저장됩니다.", "Local Studio is connected. All work data is stored in SQLite on this computer."),
           );
       } catch (error) {
         setHealth(null);
         if (!quiet)
           setMessage(
             error instanceof Error
-              ? `${error.message} — local_studio를 먼저 실행하세요.`
-              : "Local Studio에 연결할 수 없습니다.",
+              ? `${error.message} — ${t("local_studio를 먼저 실행하세요.", "Start local_studio first.")}`
+              : t("Local Studio에 연결할 수 없습니다.", "Cannot connect to Local Studio."),
           );
       }
     },
-    [api],
+    [api, t],
   );
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -257,7 +257,7 @@ export default function ProductionConsole() {
 
   const applyBotEditMethod = () => {
     if (!botEditMethod) {
-      setMessage("먼저 Local Studio의 봇 편집 방법을 불러오세요.");
+      setMessage(t("먼저 Local Studio의 봇 편집 방법을 불러오세요.", "Load the bot edit method from Local Studio first."));
       return;
     }
     const method = botEditMethod.method;
@@ -273,7 +273,7 @@ export default function ProductionConsole() {
       mute_audio: method.audio_policy === "mute",
     }));
     setMessage(
-      `${botEditMethod.updated_by}의 편집 방법을 Finish Rack에 적용했습니다. 렌더와 게시에는 여전히 사람 승인이 필요합니다.`,
+      t(`${botEditMethod.updated_by}의 편집 방법을 Finish Rack에 적용했습니다. 렌더와 게시에는 여전히 사람 승인이 필요합니다.`, `Applied ${botEditMethod.updated_by}'s edit method to the Finish Rack. Rendering and publishing still need human approval.`),
     );
   };
 
@@ -301,14 +301,14 @@ export default function ProductionConsole() {
       setSelected(project.id);
       setApproved(false);
       setMessage(
-        "프로젝트와 Cut Log EDL을 로컬 SQLite에 저장했습니다. 이제 렌더 승인을 기록할 수 있습니다.",
+        t("프로젝트와 Cut Log EDL을 로컬 SQLite에 저장했습니다. 이제 렌더 승인을 기록할 수 있습니다.", "The project and Cut Log EDL were saved to local SQLite. You can now record render approval."),
       );
       await refresh(true);
     } catch (error) {
       setMessage(
         error instanceof Error
           ? error.message
-          : "프로젝트를 만들지 못했습니다.",
+          : t("프로젝트를 만들지 못했습니다.", "Could not create the project."),
       );
     } finally {
       setBusy(false);
@@ -316,11 +316,11 @@ export default function ProductionConsole() {
   };
   const queueRender = async () => {
     if (!selected) {
-      setMessage("먼저 로컬 프로젝트를 만드세요.");
+      setMessage(t("먼저 로컬 프로젝트를 만드세요.", "Create a local project first."));
       return;
     }
     if (!approved) {
-      setMessage("렌더 전에 사람 승인을 체크하세요.");
+      setMessage(t("렌더 전에 사람 승인을 체크하세요.", "Record human approval before rendering."));
       return;
     }
     setBusy(true);
@@ -330,14 +330,14 @@ export default function ProductionConsole() {
         body: JSON.stringify({ approved: true, requested_by: "Local browser" }),
       });
       setMessage(
-        "렌더 작업을 대기열에 넣었습니다. 아래에서 “승인된 작업 실행”을 누르면 이 PC에서 MoviePy가 렌더합니다.",
+        t("렌더 작업을 대기열에 넣었습니다. 아래에서 “승인된 작업 실행”을 누르면 이 PC에서 MoviePy가 렌더합니다.", "The render job is queued. Choose Run approved job below to render with MoviePy on this computer."),
       );
       await refresh(true);
     } catch (error) {
       setMessage(
         error instanceof Error
           ? error.message
-          : "렌더 작업을 만들지 못했습니다.",
+          : t("렌더 작업을 만들지 못했습니다.", "Could not create the render job."),
       );
     } finally {
       setBusy(false);
@@ -345,7 +345,7 @@ export default function ProductionConsole() {
   };
   const queueInstagram = async () => {
     if (!selected || !approved) {
-      setMessage("프로젝트와 사람 승인이 모두 필요합니다.");
+      setMessage(t("프로젝트와 사람 승인이 모두 필요합니다.", "A project and human approval are both required."));
       return;
     }
     setBusy(true);
@@ -361,14 +361,14 @@ export default function ProductionConsole() {
         }),
       });
       setMessage(
-        "Instagram 게시 작업은 대기열에만 넣었습니다. 실제 전송은 별도 실행 승인과 PUBLISH 확인이 있어야 합니다.",
+        t("Instagram 게시 작업은 대기열에만 넣었습니다. 실제 전송은 별도 실행 승인과 PUBLISH 확인이 있어야 합니다.", "The Instagram publish job is only queued. Sending still needs separate execution approval and PUBLISH confirmation."),
       );
       await refresh(true);
     } catch (error) {
       setMessage(
         error instanceof Error
           ? error.message
-          : "게시 작업을 만들지 못했습니다.",
+          : t("게시 작업을 만들지 못했습니다.", "Could not create the publish job."),
       );
     } finally {
       setBusy(false);
@@ -377,7 +377,7 @@ export default function ProductionConsole() {
   const runJob = async (job: StudioJob) => {
     if (job.kind === "instagram_publish" && publishConfirm !== "PUBLISH") {
       setMessage(
-        "게시 작업은 아래 입력칸에 PUBLISH를 정확히 입력해야 실행됩니다.",
+        t("게시 작업은 아래 입력칸에 PUBLISH를 정확히 입력해야 실행됩니다.", "Type PUBLISH exactly in the field below before running a publish job."),
       );
       return;
     }
@@ -392,13 +392,13 @@ export default function ProductionConsole() {
       const final = response.job as StudioJob;
       setMessage(
         final.status === "succeeded"
-          ? `${job.kind === "render" ? "로컬 MP4 렌더" : "Instagram 게시"}가 완료되었습니다.`
-          : `작업 결과: ${final.status}${final.error_text ? ` — ${final.error_text}` : ""}`,
+          ? t(`${job.kind === "render" ? "로컬 MP4 렌더" : "Instagram 게시"}가 완료되었습니다.`, `${job.kind === "render" ? "Local MP4 render" : "Instagram publishing"} completed.`)
+          : t(`작업 결과: ${final.status}${final.error_text ? ` — ${final.error_text}` : ""}`, `Job result: ${final.status}${final.error_text ? ` — ${final.error_text}` : ""}`),
       );
       await refresh(true);
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "작업을 실행하지 못했습니다.",
+        error instanceof Error ? error.message : t("작업을 실행하지 못했습니다.", "Could not run the job."),
       );
     } finally {
       setBusy(false);
@@ -430,7 +430,7 @@ export default function ProductionConsole() {
       <main className="production-main">
         <section className="production-hero">
           <div>
-            <p className="kicker">LOCAL PRODUCTION NODE</p>
+            <p className="kicker">{t("로컬 제작 노드", "LOCAL PRODUCTION NODE")}</p>
             <h1>
               {t("컷 로그부터", "From cut log to")}
               <br />
@@ -449,11 +449,11 @@ export default function ProductionConsole() {
             </p>
           </div>
           <aside className={`production-health ${health ? "ready" : ""}`}>
-            <span>LOCAL STUDIO</span>
-            <b>{health ? "CONNECTED" : "OFFLINE"}</b>
+            <span>{t("로컬 스튜디오", "LOCAL STUDIO")}</span>
+            <b>{health ? t("연결됨", "CONNECTED") : t("오프라인", "OFFLINE")}</b>
             <p>
               {health
-                ? `SQLite · ${health.moviepy_installed ? "MoviePy ready" : "MoviePy install needed"} · publish switch ${health.instagram_publish_enabled ? "on" : "off"}`
+                ? `SQLite · ${health.moviepy_installed ? t("MoviePy 준비됨", "MoviePy ready") : t("MoviePy 설치 필요", "MoviePy install needed")} · ${t("게시 스위치", "publish switch")} ${health.instagram_publish_enabled ? t("켜짐", "on") : t("꺼짐", "off")}`
                 : t(
                     "local_studio/studio_server.py를 실행하면 연결됩니다.",
                     "Start local_studio/studio_server.py to connect.",
@@ -465,24 +465,19 @@ export default function ProductionConsole() {
           </aside>
         </section>
         <div className="production-note">
-          <b>LOCAL FIRST</b>
+          <b>{t("로컬 우선", "LOCAL FIRST")}</b>
           <span>
-            소스는 <code>local_studio/workspace/inputs</code>, 결과물은{" "}
-            <code>workspace/outputs</code>, 프로젝트·작업 이력은 SQLite에
-            저장됩니다. 입장한 봇은 모든 로컬 기능을 사용할 수 있고, 로컬 렌더는
-            기본 자동 실행 또는 사람 승인 모드를 봇별로 선택합니다.
+            {t("소스는", "Sources are in")} <code>local_studio/workspace/inputs</code>, {t("결과물은", "and output is in")} <code>workspace/outputs</code>{t("입니다. 프로젝트·작업 이력은 SQLite에 저장됩니다. 입장한 봇은 모든 로컬 기능을 사용할 수 있고, 로컬 렌더는 기본 자동 실행 또는 사람 승인 모드를 봇별로 선택합니다.", ". Project and job history is stored in SQLite. Entered bots can use every local function and choose automatic or human-approved local rendering.")}
           </span>
         </div>
         <section className="bot-method-panel">
           <div>
-            <p className="kicker">BOT EDIT METHOD</p>
+            <p className="kicker">{t("봇 편집 방식", "BOT EDIT METHOD")}</p>
             <h2>
-              Grok bot이 정한 <span>편집 방식</span>
+              {t("Grok bot이 정한", "The edit method chosen by the")} <span>{t("편집 방식", "Grok bot")}</span>
             </h2>
             <p>
-              봇은 훅 순서, 템포, 군더더기 처리, 자막, 리프레임, 룩, 오디오,
-              속도, FPS, 품질을 로컬 API에 설정할 수 있습니다. 아래 버튼을
-              누르면 실제 Finish Rack과 새 프로젝트 EDL에 반영됩니다.
+              {t("봇은 훅 순서, 템포, 군더더기 처리, 자막, 리프레임, 룩, 오디오, 속도, FPS, 품질을 로컬 API에 설정할 수 있습니다. 아래 버튼을 누르면 실제 Finish Rack과 새 프로젝트 EDL에 반영됩니다.", "Bots can set hook order, pacing, filler handling, captions, reframing, look, audio, speed, FPS, and quality through the local API. The button below applies the choice to the real Finish Rack and new project EDLs.")}
             </p>
           </div>
           <aside>
@@ -490,19 +485,19 @@ export default function ProductionConsole() {
               <>
                 <span>
                   {botEditMethod.is_default
-                    ? "DEFAULT METHOD"
-                    : `SET BY ${botEditMethod.updated_by}`}
+                    ? t("기본 편집 방식", "DEFAULT METHOD")
+                    : t(`${botEditMethod.updated_by}가 설정`, `SET BY ${botEditMethod.updated_by}`)}
                 </span>
                 <b>
                   {botEditMethod.method.hook_strategy.replaceAll("_", " ")} ·{" "}
-                  {botEditMethod.method.pacing} pace
+                  {t(`${botEditMethod.method.pacing} 템포`, `${botEditMethod.method.pacing} pace`)}
                 </b>
                 <div className="bot-method-tags">
-                  <em>{botEditMethod.method.filler_policy} filler</em>
+                  <em>{t(`${botEditMethod.method.filler_policy} 군더더기`, `${botEditMethod.method.filler_policy} filler`)}</em>
                   <em>{botEditMethod.method.caption_mode}</em>
-                  <em>{botEditMethod.method.reframe_anchor} frame</em>
+                  <em>{t(`${botEditMethod.method.reframe_anchor} 프레임`, `${botEditMethod.method.reframe_anchor} frame`)}</em>
                   <em>{botEditMethod.method.look}</em>
-                  <em>{botEditMethod.method.audio_policy} audio</em>
+                  <em>{t(`${botEditMethod.method.audio_policy} 오디오`, `${botEditMethod.method.audio_policy} audio`)}</em>
                   <em>
                     {botEditMethod.method.speed.toFixed(2)}× ·{" "}
                     {botEditMethod.method.fps}fps ·{" "}
@@ -511,20 +506,19 @@ export default function ProductionConsole() {
                 </div>
                 <small>
                   {botEditMethod.updated_at
-                    ? `${botEditMethod.updated_by} · ${stamp(botEditMethod.updated_at)}`
-                    : "아직 봇이 별도 편집 방법을 설정하지 않았습니다."}
+                    ? `${botEditMethod.updated_by} · ${stamp(botEditMethod.updated_at, language)}`
+                    : t("아직 봇이 별도 편집 방법을 설정하지 않았습니다.", "No bot-specific edit method has been set yet.")}
                 </small>
                 <button onClick={applyBotEditMethod} disabled={busy}>
-                  봇 편집 방식 적용
+                  {t("봇 편집 방식 적용", "Apply bot edit method")}
                 </button>
               </>
             ) : (
               <>
-                <span>LOCAL STUDIO OFFLINE</span>
-                <b>편집 방식을 불러오는 중입니다.</b>
+                <span>{t("로컬 스튜디오 오프라인", "LOCAL STUDIO OFFLINE")}</span>
+                <b>{t("편집 방식을 불러오는 중입니다.", "Loading the edit method.")}</b>
                 <p>
-                  Local Studio를 실행하면 봇이 설정한 방식을 이곳에서 확인할 수
-                  있습니다.
+                  {t("Local Studio를 실행하면 봇이 설정한 방식을 이곳에서 확인할 수 있습니다.", "Start Local Studio to review the method set by a bot here.")}
                 </p>
               </>
             )}
@@ -533,11 +527,11 @@ export default function ProductionConsole() {
         <section className="production-grid production-setup-grid">
           <article className="production-card blueprint-card">
             <div className="production-card-head">
-              <span>01 · PROJECT BLUEPRINT</span>
-              <em>Cut Log EDL 자동 사용</em>
+              <span>{t("01 · 프로젝트 설계", "01 · PROJECT BLUEPRINT")}</span>
+              <em>{t("Cut Log EDL 자동 사용", "Uses Cut Log EDL automatically")}</em>
             </div>
             <label>
-              프로젝트 이름
+              {t("프로젝트 이름", "Project name")}
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
@@ -545,7 +539,7 @@ export default function ProductionConsole() {
             </label>
             <div className="path-grid">
               <label>
-                원본 파일 (workspace 내부)
+                {t("원본 파일 (작업 공간 내부)", "Source file (inside workspace)")}
                 <input
                   value={sourcePath}
                   onChange={(event) => setSourcePath(event.target.value)}
@@ -553,7 +547,7 @@ export default function ProductionConsole() {
                 />
               </label>
               <label>
-                MP4 결과 위치
+                {t("MP4 결과 위치", "MP4 output location")}
                 <input
                   value={outputPath}
                   onChange={(event) => setOutputPath(event.target.value)}
@@ -562,7 +556,7 @@ export default function ProductionConsole() {
               </label>
             </div>
             <label>
-              Instagram 캡션
+              {t("Instagram 캡션", "Instagram caption")}
               <textarea
                 value={caption}
                 onChange={(event) => setCaption(event.target.value)}
@@ -570,79 +564,77 @@ export default function ProductionConsole() {
               />
             </label>
             <p>
-              Cut Log에서 저장한 남길 구간·자막을 읽어 EDL로 넣습니다. 아직
-              없으면 기본 3개 컷을 사용합니다.
+              {t("Cut Log에서 저장한 남길 구간·자막을 읽어 EDL로 넣습니다. 아직 없으면 기본 3개 컷을 사용합니다.", "Uses kept segments and captions saved in Cut Log to create the EDL. If there is none, it uses three starter cuts.")}
             </p>
             <button
               className="production-primary"
               onClick={() => void createProject()}
               disabled={busy}
             >
-              로컬 프로젝트 만들기
+              {t("로컬 프로젝트 만들기", "Create local project")}
             </button>
           </article>
           <article className="production-card local-status-card">
             <div className="production-card-head">
-              <span>LOCAL SERVICE STATUS</span>
-              <em>{health?.status ?? "not connected"}</em>
+              <span>{t("로컬 서비스 상태", "LOCAL SERVICE STATUS")}</span>
+              <em>{health?.status ?? t("연결 안 됨", "not connected")}</em>
             </div>
             <dl>
               <div>
-                <dt>바인딩</dt>
+                <dt>{t("바인딩", "Binding")}</dt>
                 <dd>
-                  {health?.bind ?? "—"} <small>외부 공개 없음</small>
+                  {health?.bind ?? "—"} <small>{t("외부 공개 없음", "not exposed externally")}</small>
                 </dd>
               </div>
               <div>
-                <dt>데이터베이스</dt>
-                <dd>{health ? "SQLite · local only" : "—"}</dd>
+                <dt>{t("데이터베이스", "Database")}</dt>
+                <dd>{health ? t("SQLite · 이 기기 전용", "SQLite · local only") : "—"}</dd>
               </div>
               <div>
-                <dt>MoviePy 렌더</dt>
+                <dt>{t("MoviePy 렌더", "MoviePy render")}</dt>
                 <dd className={health?.moviepy_installed ? "good" : ""}>
-                  {health?.moviepy_installed ? "준비됨" : "설치 필요"}
+                  {health?.moviepy_installed ? t("준비됨", "Ready") : t("설치 필요", "Install needed")}
                 </dd>
               </div>
               <div>
-                <dt>Instagram 자격증명</dt>
+                <dt>{t("Instagram 자격증명", "Instagram credentials")}</dt>
                 <dd className={health?.credentials_configured ? "good" : ""}>
                   {health?.credentials_configured
-                    ? "로컬 .env에서 확인됨"
-                    : "아직 설정 안 됨"}
+                    ? t("로컬 .env에서 확인됨", "Found in local .env")
+                    : t("아직 설정 안 됨", "Not configured")}
                 </dd>
               </div>
             </dl>
             <label className="token-field">
-              로컬 보호 토큰{" "}
+              {t("로컬 보호 토큰", "Local protection token")} {" "}
               <input
                 type="password"
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
-                placeholder="필요한 경우 이 브라우저 탭에서만 입력"
+                placeholder={t("필요한 경우 이 브라우저 탭에서만 입력", "Enter only in this browser tab if needed")}
               />
             </label>
-            <p>토큰은 이 화면이나 SQLite에 저장되지 않습니다.</p>
+            <p>{t("토큰은 이 화면이나 SQLite에 저장되지 않습니다.", "Tokens are never saved in this screen or SQLite.")}</p>
           </article>
         </section>
         <section className="finish-rack">
           <div className="finish-rack-head">
             <div>
-              <p className="kicker">04 · FINISH RACK</p>
+              <p className="kicker">{t("04 · 마무리 설정", "04 · FINISH RACK")}</p>
               <h2>
-                보이는 편집값을 <span>실제 로컬 렌더</span>에도 적용.
+                {t("보이는 편집값을", "Apply visible edit values to the")} <span>{t("실제 로컬 렌더", "real local render")}</span>{t("에도 적용.", ".")}
               </h2>
             </div>
             <p>
-              이 설정은 다음에 만드는 프로젝트의 EDL 안에 저장됩니다. 미리보기용
-              버튼이 아니라 MoviePy 렌더에서 직접 사용됩니다.
+              {t("이 설정은 다음에 만드는 프로젝트의 EDL 안에 저장됩니다. 미리보기용 버튼이 아니라 MoviePy 렌더에서 직접 사용됩니다.", "These settings are saved in the EDL for the next project and used directly by MoviePy rendering, not just for preview.")}
             </p>
           </div>
           <div className="finish-grid">
             <article>
-              <span>VERTICAL REFRAME</span>
-              <h3>9:16 프레이밍</h3>
+              <span>{t("세로 리프레임", "VERTICAL REFRAME")}</span>
+              <h3>{t("9:16 프레이밍", "9:16 framing")}</h3>
               <label>
-                피사체 기준 위치
+                {t("피사체 기준 위치", "Subject anchor")}
                 <select
                   value={renderSettings.crop_anchor}
                   onChange={(event) =>
@@ -652,9 +644,9 @@ export default function ProductionConsole() {
                     )
                   }
                 >
-                  <option value="left">왼쪽 우선</option>
-                  <option value="center">가운데</option>
-                  <option value="right">오른쪽 우선</option>
+                  <option value="left">{t("왼쪽 우선", "Left")}</option>
+                  <option value="center">{t("가운데", "Center")}</option>
+                  <option value="right">{t("오른쪽 우선", "Right")}</option>
                 </select>
               </label>
               <label className="finish-toggle">
@@ -665,18 +657,17 @@ export default function ProductionConsole() {
                     patchSettings("mirror", event.target.checked)
                   }
                 />{" "}
-                좌우 반전
+                {t("좌우 반전", "Mirror horizontally")}
               </label>
               <p>
-                가로 영상을 세로 1080×1920으로 채울 때 어느 쪽을 유지할지
-                정합니다.
+                {t("가로 영상을 세로 1080×1920으로 채울 때 어느 쪽을 유지할지 정합니다.", "Choose which side to preserve when filling a vertical 1080×1920 frame from horizontal footage.")}
               </p>
             </article>
             <article>
-              <span>MOTION + AUDIO</span>
-              <h3>속도와 음량</h3>
+              <span>{t("움직임 + 오디오", "MOTION + AUDIO")}</span>
+              <h3>{t("속도와 음량", "Speed and volume")}</h3>
               <label>
-                전체 속도 <output>{renderSettings.speed.toFixed(2)}×</output>
+                {t("전체 속도", "Overall speed")} <output>{renderSettings.speed.toFixed(2)}×</output>
                 <input
                   type="range"
                   min="0.5"
@@ -689,10 +680,10 @@ export default function ProductionConsole() {
                 />
               </label>
               <label>
-                원본 음량{" "}
+                {t("원본 음량", "Source volume")} {" "}
                 <output>
                   {renderSettings.mute_audio
-                    ? "mute"
+                    ? t("음소거", "mute")
                     : `${renderSettings.volume}%`}
                 </output>
                 <input
@@ -708,7 +699,7 @@ export default function ProductionConsole() {
               </label>
               <div className="finish-pair">
                 <label>
-                  시작 페이드
+                  {t("시작 페이드", "Fade in")}
                   <input
                     type="number"
                     min="0"
@@ -721,7 +712,7 @@ export default function ProductionConsole() {
                   />
                 </label>
                 <label>
-                  끝 페이드
+                  {t("끝 페이드", "Fade out")}
                   <input
                     type="number"
                     min="0"
@@ -742,7 +733,7 @@ export default function ProductionConsole() {
                     patchSettings("normalize_audio", event.target.checked)
                   }
                 />{" "}
-                음량 정규화
+                {t("음량 정규화", "Normalize volume")}
               </label>
               <label className="finish-toggle">
                 <input
@@ -752,14 +743,14 @@ export default function ProductionConsole() {
                     patchSettings("mute_audio", event.target.checked)
                   }
                 />{" "}
-                원본 오디오 제거
+                {t("원본 오디오 제거", "Mute source audio")}
               </label>
             </article>
             <article>
-              <span>COLOR + LOOK</span>
-              <h3>색감 보정</h3>
+              <span>{t("색상 + 룩", "COLOR + LOOK")}</span>
+              <h3>{t("색감 보정", "Color correction")}</h3>
               <label>
-                룩 프리셋
+                {t("룩 프리셋", "Look preset")}
                 <select
                   value={renderSettings.look}
                   onChange={(event) =>
@@ -769,15 +760,15 @@ export default function ProductionConsole() {
                     )
                   }
                 >
-                  <option value="natural">Natural</option>
-                  <option value="punchy">Punchy contrast</option>
-                  <option value="mono">Black & white</option>
-                  <option value="night">Night lift</option>
+                  <option value="natural">{t("자연스러움", "Natural")}</option>
+                  <option value="punchy">{t("강한 대비", "Punchy contrast")}</option>
+                  <option value="mono">{t("흑백", "Black & white")}</option>
+                  <option value="night">{t("야간 보정", "Night lift")}</option>
                 </select>
               </label>
               <div className="finish-pair">
                 <label>
-                  밝기{" "}
+                  {t("밝기", "Brightness")} {" "}
                   <output>
                     {renderSettings.brightness > 0 ? "+" : ""}
                     {renderSettings.brightness}
@@ -793,7 +784,7 @@ export default function ProductionConsole() {
                   />
                 </label>
                 <label>
-                  대비{" "}
+                  {t("대비", "Contrast")} {" "}
                   <output>
                     {renderSettings.contrast > 0 ? "+" : ""}
                     {renderSettings.contrast}
@@ -810,7 +801,7 @@ export default function ProductionConsole() {
                 </label>
               </div>
               <label>
-                감마 <output>{renderSettings.gamma.toFixed(2)}</output>
+                {t("감마", "Gamma")} <output>{renderSettings.gamma.toFixed(2)}</output>
                 <input
                   type="range"
                   min="0.65"
@@ -824,8 +815,8 @@ export default function ProductionConsole() {
               </label>
             </article>
             <article>
-              <span>CAPTION + DELIVERY</span>
-              <h3>읽히는 최종본</h3>
+              <span>{t("자막 + 전달", "CAPTION + DELIVERY")}</span>
+              <h3>{t("읽히는 최종본", "A readable final")}</h3>
               <label className="finish-toggle">
                 <input
                   type="checkbox"
@@ -834,11 +825,11 @@ export default function ProductionConsole() {
                     patchSettings("captions_enabled", event.target.checked)
                   }
                 />{" "}
-                선택 구간 자막 번인
+                {t("선택 구간 자막 번인", "Burn captions into kept clips")}
               </label>
               <div className="finish-pair">
                 <label>
-                  자막 색상
+                  {t("자막 색상", "Caption color")}
                   <input
                     type="color"
                     value={renderSettings.caption_color}
@@ -848,7 +839,7 @@ export default function ProductionConsole() {
                   />
                 </label>
                 <label>
-                  테두리 <output>{renderSettings.caption_stroke}px</output>
+                  {t("테두리", "Outline")} <output>{renderSettings.caption_stroke}px</output>
                   <input
                     type="range"
                     min="0"
@@ -864,7 +855,7 @@ export default function ProductionConsole() {
                 </label>
               </div>
               <label>
-                자막 크기 <output>{renderSettings.caption_size}px</output>
+                {t("자막 크기", "Caption size")} <output>{renderSettings.caption_size}px</output>
                 <input
                   type="range"
                   min="38"
@@ -876,7 +867,7 @@ export default function ProductionConsole() {
                 />
               </label>
               <label>
-                자막 세로 위치 <output>{renderSettings.caption_y}%</output>
+                {t("자막 세로 위치", "Caption vertical position")} <output>{renderSettings.caption_y}%</output>
                 <input
                   type="range"
                   min="48"
@@ -888,7 +879,7 @@ export default function ProductionConsole() {
                 />
               </label>
               <label>
-                출력 품질
+                {t("출력 품질", "Output quality")}
                 <select
                   value={renderSettings.quality}
                   onChange={(event) =>
@@ -898,13 +889,13 @@ export default function ProductionConsole() {
                     )
                   }
                 >
-                  <option value="compact">Compact · 빠른 검토</option>
-                  <option value="balanced">Balanced · 일반 게시</option>
-                  <option value="high">High · 보관/게시</option>
+                  <option value="compact">{t("간단 · 빠른 검토", "Compact · quick review")}</option>
+                  <option value="balanced">{t("균형 · 일반 게시", "Balanced · normal publishing")}</option>
+                  <option value="high">{t("고품질 · 보관/게시", "High · archive/publish")}</option>
                 </select>
               </label>
               <label>
-                프레임레이트
+                {t("프레임레이트", "Frame rate")}
                 <select
                   value={renderSettings.fps}
                   onChange={(event) =>
@@ -914,25 +905,25 @@ export default function ProductionConsole() {
                     )
                   }
                 >
-                  <option value="24">24 fps · 시네마틱</option>
-                  <option value="30">30 fps · 릴 기본</option>
-                  <option value="60">60 fps · 빠른 동작</option>
+                  <option value="24">{t("24 fps · 시네마틱", "24 fps · cinematic")}</option>
+                  <option value="30">{t("30 fps · 릴 기본", "30 fps · reel standard")}</option>
+                  <option value="60">{t("60 fps · 빠른 동작", "60 fps · fast action")}</option>
                 </select>
               </label>
             </article>
           </div>
           <div className="finish-readout">
-            <b>다음 렌더</b>
+            <b>{t("다음 렌더", "Next render")}</b>
             <span>
               {renderSettings.crop_anchor} crop ·{" "}
               {renderSettings.speed.toFixed(2)}× · {renderSettings.look} ·{" "}
               {renderSettings.mute_audio
-                ? "original audio off"
-                : `${renderSettings.volume}% audio`}{" "}
+                ? t("원본 오디오 끔", "source audio off")
+                : t(`${renderSettings.volume}% 음량`, `${renderSettings.volume}% audio`)}{" "}
               ·{" "}
               {renderSettings.captions_enabled
-                ? "burn-in captions"
-                : "no captions"}{" "}
+                ? t("자막 번인", "burn-in captions")
+                : t("자막 없음", "no captions")}{" "}
               · {renderSettings.fps}fps · {renderSettings.quality}
             </span>
           </div>
@@ -940,13 +931,12 @@ export default function ProductionConsole() {
         <section className="production-grid production-action-grid">
           <article className="production-card lane-card">
             <div className="production-card-head">
-              <span>02 · RENDER LANE</span>
+              <span>{t("02 · 렌더 작업", "02 · RENDER LANE")}</span>
               <em>MoviePy · H.264/AAC · 1080×1920</em>
             </div>
-            <h2>승인된 EDL을 로컬 MP4로 렌더</h2>
+            <h2>{t("승인된 EDL을 로컬 MP4로 렌더", "Render an approved EDL as local MP4")}</h2>
             <p>
-              작업 생성만으로 렌더는 시작되지 않습니다. 실행 버튼을 한 번 더
-              눌러야 하며, 실패·완료 결과도 로컬 이력에 남습니다.
+              {t("작업 생성만으로 렌더는 시작되지 않습니다. 실행 버튼을 한 번 더 눌러야 하며, 실패·완료 결과도 로컬 이력에 남습니다.", "Creating a job does not start rendering. Run it separately; failures and completions remain in local history.")}
             </p>
             <label className="approval-check">
               <input
@@ -954,30 +944,30 @@ export default function ProductionConsole() {
                 checked={approved}
                 onChange={(event) => setApproved(event.target.checked)}
               />{" "}
-              이 편집 결정을 사람이 검토·승인했습니다.
+              {t("이 편집 결정을 사람이 검토·승인했습니다.", "A person reviewed and approved this edit decision.")}
             </label>
             <button
               className="production-primary"
               onClick={() => void queueRender()}
               disabled={busy || !selected}
             >
-              승인된 렌더 작업 대기열에 넣기
+              {t("승인된 렌더 작업 대기열에 넣기", "Queue approved render job")}
             </button>
             <small>
               {selectedProject
-                ? `현재 프로젝트: ${selectedProject.title}`
-                : "프로젝트를 만든 뒤 활성화됩니다."}
+                ? t(`현재 프로젝트: ${selectedProject.title}`, `Current project: ${selectedProject.title}`)
+                : t("프로젝트를 만든 뒤 활성화됩니다.", "Available after you create a project.")}
             </small>
           </article>
           <article className="production-card lane-card instagram-card">
             <div className="production-card-head">
-              <span>03 · INSTAGRAM LANE</span>
-              <em>Professional account only</em>
+              <span>{t("03 · Instagram 게시", "03 · INSTAGRAM LANE")}</span>
+              <em>{t("전문 계정 전용", "Professional account only")}</em>
             </div>
-            <h2>자동 게시가 아닌, 승인된 게시 실행</h2>
+            <h2>{t("자동 게시가 아닌, 승인된 게시 실행", "Run approved publishing, not automatic publishing")}</h2>
             <p>
-              작업을 먼저 대기열에 넣고, 서버를 게시 허용 모드로 시작한 뒤,{" "}
-              <b>PUBLISH</b>라는 정확한 확인까지 있어야 실제 전송됩니다.
+              {t("작업을 먼저 대기열에 넣고, 서버를 게시 허용 모드로 시작한 뒤,", "First queue the job and start the server with publishing enabled; then")}{" "}
+              <b>PUBLISH</b>{t("라는 정확한 확인까지 있어야 실제 전송됩니다.", " confirmation is required before it can be sent.")}
             </p>
             <label className="approval-check">
               <input
@@ -985,21 +975,21 @@ export default function ProductionConsole() {
                 checked={shareToFeed}
                 onChange={(event) => setShareToFeed(event.target.checked)}
               />{" "}
-              릴을 프로필 피드에도 공유
+              {t("릴을 프로필 피드에도 공유", "Also share the reel to the profile feed")}
             </label>
             <button
               className="production-outline"
               onClick={() => void queueInstagram()}
               disabled={busy || !selected || !approved}
             >
-              Instagram 게시 작업 대기열에 넣기
+              {t("Instagram 게시 작업 대기열에 넣기", "Queue Instagram publish job")}
             </button>
             <label className="publish-field">
-              실제 게시 실행 확인{" "}
+              {t("실제 게시 실행 확인", "Confirm actual publishing")}{" "}
               <input
                 value={publishConfirm}
                 onChange={(event) => setPublishConfirm(event.target.value)}
-                placeholder="PUBLISH 입력"
+                placeholder={t("PUBLISH 입력", "Type PUBLISH")}
               />
             </label>
           </article>
@@ -1007,13 +997,12 @@ export default function ProductionConsole() {
         <section className="production-jobs">
           <div className="production-section-head">
             <div>
-              <p className="kicker">LOCAL JOB BOARD</p>
+              <p className="kicker">{t("로컬 작업 보드", "LOCAL JOB BOARD")}</p>
               <h2>
-                브라우저에서는 사람이 <span>실행을 허용</span>하고, 봇은 정책에
-                따라 자동화합니다.
+                {t("브라우저에서는 사람이", "In the browser, a person")} <span>{t("실행을 허용", "allows execution")}</span>{t("하고, 봇은 정책에 따라 자동화합니다.", ", while bots automate according to their policy.")}
               </h2>
             </div>
-            <span>{jobs.length} total jobs</span>
+            <span>{t(`${jobs.length}개 작업`, `${jobs.length} total jobs`)}</span>
           </div>
           <div className="job-layout">
             <div className="project-list">
@@ -1026,17 +1015,17 @@ export default function ProductionConsole() {
                   >
                     <b>{project.title}</b>
                     <span>
-                      {project.timeline_json.clips.length} clips ·{" "}
-                      {stamp(project.created_at)}
+                      {t(`${project.timeline_json.clips.length}개 컷`, `${project.timeline_json.clips.length} clips`)} ·{" "}
+                      {stamp(project.created_at, language)}
                     </span>
                     <i>{project.id.slice(0, 8)}</i>
                   </button>
                 ))
               ) : (
                 <div className="empty-job">
-                  아직 로컬 프로젝트가 없습니다.
+                  {t("아직 로컬 프로젝트가 없습니다.", "There are no local projects yet.")}
                   <br />
-                  위에서 첫 프로젝트를 만드세요.
+                  {t("위에서 첫 프로젝트를 만드세요.", "Create your first project above.")}
                 </div>
               )}
             </div>
@@ -1051,11 +1040,11 @@ export default function ProductionConsole() {
                         </span>
                         <b>{job.status.toUpperCase()}</b>
                         <p>
-                          {stamp(job.created_at)} ·{" "}
+                          {stamp(job.created_at, language)} ·{" "}
                           {job.kind === "render"
-                            ? "local render authorization"
-                            : "human approval"}{" "}
-                          {job.approved ? "recorded" : "missing"}
+                            ? t("로컬 렌더 승인", "local render authorization")
+                            : t("사람 승인", "human approval")}{" "}
+                          {job.approved ? t("기록됨", "recorded") : t("누락", "missing")}
                         </p>
                         {job.error_text && <small>{job.error_text}</small>}
                       </div>
@@ -1068,20 +1057,20 @@ export default function ProductionConsole() {
                         }
                       >
                         {job.kind === "instagram_publish"
-                          ? "PUBLISH 실행"
-                          : "렌더 실행"}
+                          ? t("PUBLISH 실행", "Run PUBLISH")
+                          : t("렌더 실행", "Run render")}
                       </button>
                     </article>
                   ))
                 ) : (
                   <div className="empty-job">
-                    선택한 프로젝트에는 아직 작업이 없습니다.
+                    {t("선택한 프로젝트에는 아직 작업이 없습니다.", "The selected project has no jobs yet.")}
                     <br />
-                    Render 또는 Instagram lane에서 대기열을 만드세요.
+                    {t("렌더 또는 Instagram 게시에서 대기열을 만드세요.", "Create a queue in the Render or Instagram lane.")}
                   </div>
                 )
               ) : (
-                <div className="empty-job">왼쪽에서 프로젝트를 선택하세요.</div>
+                <div className="empty-job">{t("왼쪽에서 프로젝트를 선택하세요.", "Choose a project on the left.")}</div>
               )}
             </div>
           </div>
@@ -1089,43 +1078,40 @@ export default function ProductionConsole() {
         <section className="production-grid production-footer-grid">
           <article className="production-card bot-card">
             <div className="production-card-head">
-              <span>GROK BOT BOUNDARY</span>
-              <em>narrow local contract</em>
+              <span>{t("Grok 봇 범위", "GROK BOT BOUNDARY")}</span>
+              <em>{t("제한된 로컬 계약", "narrow local contract")}</em>
             </div>
             <pre>{contract}</pre>
             <p>
-              봇은 프로젝트를 준비하고 승인된 작업을 대기열에 넣을 수 있습니다.
-              Meta 토큰이나 workspace 밖 파일에는 접근할 수 없고, 승인 없이
-              게시할 수 없습니다.
+              {t("봇은 프로젝트를 준비하고 승인된 작업을 대기열에 넣을 수 있습니다. Meta 토큰이나 작업 공간 밖 파일에는 접근할 수 없고, 승인 없이 게시할 수 없습니다.", "Bots can prepare projects and queue approved jobs. They cannot access Meta tokens or files outside the workspace, or publish without approval.")}
             </p>
           </article>
           <article className="production-card idea-card">
             <div className="production-card-head">
-              <span>ADOPTED PRODUCTION IDEAS</span>
-              <em>research → implementation</em>
+              <span>{t("적용한 제작 원칙", "ADOPTED PRODUCTION IDEAS")}</span>
+              <em>{t("조사 → 구현", "research → implementation")}</em>
             </div>
             <ul>
               <li>
                 <b>Transcript → EDL → render</b>
                 <span>
-                  영상 전체를 덤프하지 않고 선택한 말 구간만 렌더합니다.
+                  {t("영상 전체를 덤프하지 않고 선택한 말 구간만 렌더합니다.", "Render only the chosen speech segments instead of dumping the entire video.")}
                 </span>
               </li>
               <li>
-                <b>Approval gates</b>
-                <span>렌더와 게시 모두 기록된 사람 승인이 선행됩니다.</span>
+                <b>{t("승인 조건", "Approval gates")}</b>
+                <span>{t("렌더와 게시 모두 기록된 사람 승인이 선행됩니다.", "Both rendering and publishing require recorded human approval.")}</span>
               </li>
               <li>
-                <b>Persistent job memory</b>
+                <b>{t("지속되는 작업 기록", "Persistent job memory")}</b>
                 <span>
-                  SQLite에 작업·실패·결과를 남겨 봇이 재시도와 상태 확인을 할 수
-                  있습니다.
+                  {t("SQLite에 작업·실패·결과를 남겨 봇이 재시도와 상태 확인을 할 수 있습니다.", "Jobs, failures, and results remain in SQLite so bots can retry and check status.")}
                 </span>
               </li>
               <li>
-                <b>Resumable publishing</b>
+                <b>{t("이어갈 수 있는 게시", "Resumable publishing")}</b>
                 <span>
-                  승인된 로컬 MP4를 컨테이너 업로드·처리 확인 뒤 게시합니다.
+                  {t("승인된 로컬 MP4를 컨테이너 업로드·처리 확인 뒤 게시합니다.", "Publish an approved local MP4 after container upload and processing checks.")}
                 </span>
               </li>
             </ul>

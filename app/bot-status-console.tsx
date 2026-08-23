@@ -182,7 +182,7 @@ export default function BotStatusConsole() {
   const [activity, setActivity] = useState<Activity[]>([]);
   const [entryGuide, setEntryGuide] = useState<BotEntryGuide | null>(null);
   const [entries, setEntries] = useState<BotEntry[]>([]);
-  const [message, setMessage] = useState("로컬 봇 체크인을 읽는 중입니다.");
+  const [message, setMessage] = useState("");
   const [lastRefresh, setLastRefresh] = useState("");
   const [copied, setCopied] = useState("");
   const [checking, setChecking] = useState(false);
@@ -231,7 +231,7 @@ export default function BotStatusConsole() {
             nextActivity.error ??
             nextEntryGuide.error ??
             nextEntries.error ??
-            "로컬 서비스 응답 오류",
+            t("로컬 서비스 응답 오류", "Local service response error"),
         );
       setHealth(nextHealth);
       setBots(nextBots.bots ?? []);
@@ -239,12 +239,12 @@ export default function BotStatusConsole() {
       setActivity(nextActivity.activity ?? []);
       setEntryGuide(nextEntryGuide);
       setEntries(nextEntries.entries ?? []);
-      setLastRefresh(new Date().toLocaleTimeString("ko-KR"));
+      setLastRefresh(new Date().toLocaleTimeString(language === "ko" ? "ko-KR" : "en-US"));
       if (!quiet)
         setMessage(
           (nextBots.summary?.active_now ?? 0)
-            ? `${nextBots.summary?.active_now}개 봇이 최근 5분 안에 실제 체크인했습니다.`
-            : "최근 5분 안에 체크인한 봇이 없습니다. 아직 실제 사용 중이라고 확인된 봇은 없습니다.",
+            ? t(`${nextBots.summary?.active_now}개 봇이 최근 5분 안에 실제 체크인했습니다.`, `${nextBots.summary?.active_now} bot(s) checked in during the last five minutes.`)
+            : t("최근 5분 안에 체크인한 봇이 없습니다. 아직 실제 사용 중이라고 확인된 봇은 없습니다.", "No bot has checked in during the last five minutes, so none is verified as in use yet."),
         );
     } catch (error) {
       setHealth(null);
@@ -255,13 +255,13 @@ export default function BotStatusConsole() {
       setEntries([]);
       setMessage(
         error instanceof Error
-          ? `${error.message} — Local Studio가 실행 중인지 확인하세요.`
-          : "Local Studio에 연결할 수 없습니다.",
+          ? `${error.message} — ${t("Local Studio가 실행 중인지 확인하세요.", "Check that Local Studio is running.")}`
+          : t("Local Studio에 연결할 수 없습니다.", "Cannot connect to Local Studio."),
       );
     } finally {
       setChecking(false);
     }
-  }, []);
+  }, [language, t]);
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       void refresh();
@@ -288,7 +288,7 @@ export default function BotStatusConsole() {
       <main className="bot-main">
         <section className="bot-hero">
           <div>
-            <p className="kicker">GROK CREW · BOT CHECK</p>
+            <p className="kicker">{t("GROK CREW · 봇 확인", "GROK CREW · BOT CHECK")}</p>
             <h1>
               {t("내 봇들이", "See what your bots")}{" "}
               <span>{t("무엇을 하고 있는지", "are actually doing")}</span>
@@ -303,13 +303,13 @@ export default function BotStatusConsole() {
             </p>
           </div>
           <aside className={`bot-live-card ${health ? "ready" : ""}`}>
-            <span>LIVE ANSWER</span>
+            <span>{t("실시간 상태", "LIVE ANSWER")}</span>
             <b>
               {summary?.active_now
-                ? "YES · ACTIVE BOTS FOUND"
+                ? t("예 · 활성 봇 확인", "YES · ACTIVE BOTS FOUND")
                 : health
-                  ? "NO · NO VERIFIED BOT YET"
-                  : "SERVICE OFFLINE"}
+                  ? t("아니요 · 확인된 봇 없음", "NO · NO VERIFIED BOT YET")
+                  : t("서비스 꺼짐", "SERVICE OFFLINE")}
             </b>
             <p>
               {summary?.active_now
@@ -335,82 +335,79 @@ export default function BotStatusConsole() {
           </aside>
         </section>
         <section className="bot-answer-strip">
-          <b>현재 확인 결과</b>
+          <b>{t("현재 확인 결과", "Current result")}</b>
           <span>{message}</span>
-          <em>{lastRefresh ? `마지막 확인 ${lastRefresh}` : "연결 대기"}</em>
+          <em>{lastRefresh ? t(`마지막 확인 ${lastRefresh}`, `Last checked ${lastRefresh}`) : t("연결 대기", "Waiting for connection")}</em>
         </section>
         <section className="bot-entry-panel">
           <div>
-            <p className="kicker">LOCAL BOT ENTRY</p>
+            <p className="kicker">{t("로컬 봇 입장", "LOCAL BOT ENTRY")}</p>
             <h2>
-              Grok bot이 <span>입장하고 바로 작업을 시작</span>할 수 있습니다.
+              {t("Grok bot이", "A Grok bot can")} <span>{t("입장하고 바로 작업을 시작", "enter and start work immediately")}</span>{t("할 수 있습니다.", ".")}
             </h2>
             <p>
-              같은 PC에서 실행되는 Grok bot은 입장 요청을 한 번 보내면 자동으로
-              첫 체크인이 기록됩니다. 입장한 봇은 모든 로컬
-              편집·검사·프로젝트·운영 기능을 곧바로 사용하며, 로컬 렌더는 기본
-              자동 실행 또는 사람 승인 모드 중 스스로 선택합니다.
+              {t("같은 PC에서 실행되는 Grok bot은 입장 요청을 한 번 보내면 자동으로 첫 체크인이 기록됩니다. 입장한 봇은 모든 로컬 편집·검사·프로젝트·운영 기능을 곧바로 사용하며, 로컬 렌더는 기본 자동 실행 또는 사람 승인 모드 중 스스로 선택합니다.", "A Grok bot running on this computer records its first check-in when it sends one entry request. Entered bots can immediately use local editing, checks, projects, and operations, then choose automatic or human-approved local rendering.")}
             </p>
             <div className="bot-entry-steps">
-              <span>01 · 입장 기록</span>
-              <span>02 · 실행 정책 선택</span>
-              <span>03 · 편집·렌더 시작</span>
+              <span>{t("01 · 입장 기록", "01 · Record entry")}</span>
+              <span>{t("02 · 실행 정책 선택", "02 · Choose execution policy")}</span>
+              <span>{t("03 · 편집·렌더 시작", "03 · Start editing and rendering")}</span>
             </div>
           </div>
           <aside>
             <span>
               {entryGuide
-                ? "ENTRY READY · LOCAL ONLY"
+                ? t("입장 준비됨 · 이 기기 전용", "ENTRY READY · LOCAL ONLY")
                 : health
-                  ? "ENTRY LOADING"
-                  : "SERVICE OFFLINE"}
+                  ? t("입장 정보 불러오는 중", "ENTRY LOADING")
+                  : t("서비스 꺼짐", "SERVICE OFFLINE")}
             </span>
             <b>
               {entries.length
-                ? `${entries.length}개의 입장 기록`
-                : "아직 입장한 봇 없음"}
+                ? t(`${entries.length}개의 입장 기록`, `${entries.length} entry record(s)`)
+                : t("아직 입장한 봇 없음", "No bot has entered yet")}
             </b>
             <p>
               {entries[0]
                 ? `${entries[0].display_name} · ${entries[0].purpose} · ${entries[0].presence.toUpperCase()}`
                 : (entryGuide?.scope ??
-                  "Local Studio를 시작하면 입장 주소가 준비됩니다.")}
+                  t("Local Studio를 시작하면 입장 주소가 준비됩니다.", "Start Local Studio to make the entry address available."))}
             </p>
             <button onClick={() => void copyRequest("entry")}>
-              {copied === "entry" ? "입장 요청 복사됨" : "봇 입장 요청 복사"}
+              {copied === "entry" ? t("입장 요청 복사됨", "Entry request copied") : t("봇 입장 요청 복사", "Copy bot entry request")}
             </button>
             <small>
               {entryGuide?.approval_boundary ??
-                "기본 auto_local은 로컬 렌더에만 적용됩니다. Instagram 실제 게시에는 별도 확인이 필요합니다."}
+                t("기본 auto_local은 로컬 렌더에만 적용됩니다. Instagram 실제 게시에는 별도 확인이 필요합니다.", "The default auto_local applies only to local renders. Instagram publishing needs separate confirmation.")}
             </small>
           </aside>
         </section>
         <section className="bot-summary-grid">
           <article>
             <b>{summary?.total_known ?? 0}</b>
-            <span>등록된 로컬 봇</span>
-            <p>체크인을 한 적 있는 봇 수</p>
+            <span>{t("등록된 로컬 봇", "Known local bots")}</span>
+            <p>{t("체크인을 한 적 있는 봇 수", "Bots that have checked in")}</p>
           </article>
           <article className={summary?.active_now ? "active" : ""}>
             <b>{summary?.active_now ?? 0}</b>
-            <span>현재 활성 봇</span>
-            <p>5분 이내 체크인 기준</p>
+            <span>{t("현재 활성 봇", "Active bots now")}</span>
+            <p>{t("5분 이내 체크인 기준", "Checked in within five minutes")}</p>
           </article>
           <article>
             <b>{activity.length}</b>
-            <span>최근 작업 기록</span>
-            <p>로컬 SQLite의 bot activity</p>
+            <span>{t("최근 작업 기록", "Recent activity")}</span>
+            <p>{t("로컬 SQLite의 봇 활동", "Bot activity in local SQLite")}</p>
           </article>
           <article className={health?.moviepy_installed ? "active" : ""}>
             <b>{health?.moviepy_installed ? "READY" : "CHECK"}</b>
-            <span>로컬 렌더</span>
-            <p>MoviePy 실행 가능 여부</p>
+            <span>{t("로컬 렌더", "Local rendering")}</span>
+            <p>{t("MoviePy 실행 가능 여부", "Whether MoviePy can run")}</p>
           </article>
         </section>
         <section className="bot-section bot-capability-section">
           <div className="bot-section-head">
             <div>
-              <p className="kicker">WHAT BOTS CAN DO</p>
+              <p className="kicker">{t("봇이 할 수 있는 일", "WHAT BOTS CAN DO")}</p>
               <h2>
                 {t(
                   "봇에게 맡길 수 있는 일과",
@@ -464,7 +461,7 @@ export default function BotStatusConsole() {
         <section className="bot-layout">
           <article className="bot-card bot-check-card">
             <div className="bot-card-head">
-              <span>VERIFIED BOT PRESENCE</span>
+              <span>{t("확인된 봇 활동", "VERIFIED BOT PRESENCE")}</span>
               <em>
                 {summary?.activity_rule ??
                   t("로컬 체크인만", "local check-in only")}
@@ -516,59 +513,54 @@ export default function BotStatusConsole() {
           </article>
           <article className="bot-card bot-automation-card">
             <div className="bot-card-head">
-              <span>AUTOMATION POLICY</span>
-              <em>bot selected</em>
+              <span>{t("자동화 정책", "AUTOMATION POLICY")}</span>
+              <em>{t("봇이 선택", "bot selected")}</em>
             </div>
-            <h2>봇이 로컬 렌더 허용 방식을 선택합니다</h2>
+            <h2>{t("봇이 로컬 렌더 허용 방식을 선택합니다", "Bots choose how local rendering is allowed")}</h2>
             <div className="automation-rows">
               <div>
-                <b>기본: 자동 로컬</b>
+                <b>{t("기본: 자동 로컬", "Default: automatic local")}</b>
                 <p>
-                  입장한 봇은 계획·검사·프로젝트·운영과 자신의 로컬 렌더를 바로
-                  실행할 수 있습니다.
+                  {t("입장한 봇은 계획·검사·프로젝트·운영과 자신의 로컬 렌더를 바로 실행할 수 있습니다.", "Entered bots can immediately use planning, checks, projects, operations, and their own local rendering.")}
                 </p>
               </div>
               <div>
-                <b>선택: 사람 승인</b>
+                <b>{t("선택: 사람 승인", "Optional: human approval")}</b>
                 <p>
                   <code>
                     policy set --bot-id &lt;id&gt; --mode approval_required
                   </code>
-                  로 바꾸면 렌더마다 사람 승인을 요청합니다.
+                  {t("로 바꾸면 렌더마다 사람 승인을 요청합니다.", " to request a person’s approval for every render.")}
                 </p>
               </div>
               <div>
-                <b>항상 사람 확인</b>
+                <b>{t("항상 사람 확인", "Always human-confirmed")}</b>
                 <p>
-                  비밀값, workspace 밖 파일, Instagram 실제 게시와 서버 게시
-                  허용 전환
+                  {t("비밀값, 작업 공간 밖 파일, Instagram 실제 게시와 서버 게시 허용 전환", "Secrets, files outside the workspace, Instagram publishing, and the server publish switch")}
                 </p>
               </div>
             </div>
             <p className="automation-note">
-              Instagram 실제 게시에는 사람 승인 기록 + 서버의 게시 허용 실행 +
-              PUBLISH 확인이 모두 필요합니다.
+              {t("Instagram 실제 게시에는 사람 승인 기록 + 서버의 게시 허용 실행 + PUBLISH 확인이 모두 필요합니다.", "Instagram publishing always needs recorded human approval, the server publish switch, and PUBLISH confirmation.")}
             </p>
           </article>
         </section>
         <section className="bot-layout bot-bottom-layout">
           <article className="bot-card bot-contract-card">
             <div className="bot-card-head">
-              <span>BOT CHECK-IN CONTRACT</span>
+              <span>{t("봇 체크인 계약", "BOT CHECK-IN CONTRACT")}</span>
               <button onClick={() => void copyRequest("heartbeat")}>
-                {copied === "heartbeat" ? "복사됨" : "체크인 요청 복사"}
+                {copied === "heartbeat" ? t("복사됨", "Copied") : t("체크인 요청 복사", "Copy check-in request")}
               </button>
             </div>
             <pre>{botRequest}</pre>
             <p>
-              봇은 작업을 시작·완료·대기 상태로 바꿀 때마다 이 체크인을
-              남깁니다. 보호 토큰을 켠 경우 토큰은 봇의 실행 환경에만 주입하고,
-              봇이 `.env`를 읽게 하면 안 됩니다.
+              {t("봇은 작업을 시작·완료·대기 상태로 바꿀 때마다 이 체크인을 남깁니다. 보호 토큰을 켠 경우 토큰은 봇의 실행 환경에만 주입하고, 봇이 `.env`를 읽게 하면 안 됩니다.", "Bots record this check-in whenever work starts, completes, or waits. If a protection token is enabled, give it only to the bot runtime; the bot must not read .env.")}
             </p>
           </article>
           <article className="bot-card bot-activity-card">
             <div className="bot-card-head">
-              <span>RECENT CHECK-INS</span>
+              <span>{t("최근 체크인", "RECENT CHECK-INS")}</span>
               <em>
                 {activity.length} {t("개 기록", "entries")}
               </em>

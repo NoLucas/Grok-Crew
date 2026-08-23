@@ -108,7 +108,7 @@ export default function TerminalConsole() {
       <main className="terminal-main">
         <section className="terminal-hero">
           <div>
-            <p className="kicker">GROK CREW · TERMINAL CLI</p>
+            <p className="kicker">{t("GROK CREW · 터미널 CLI", "GROK CREW · TERMINAL CLI")}</p>
             <h1>
               {t("각 bot의 터미널에서", "Give every bot terminal")}
               <br />
@@ -127,7 +127,7 @@ export default function TerminalConsole() {
             </p>
           </div>
           <aside className={`terminal-health ${health ? "ready" : ""}`}>
-            <span>LOCAL CLI GATEWAY</span>
+            <span>{t("로컬 CLI 연결", "LOCAL CLI GATEWAY")}</span>
             <b>
               {health
                 ? t("연결 준비됨", "READY TO CONNECT")
@@ -157,7 +157,7 @@ export default function TerminalConsole() {
         </section>
         <section className="terminal-port-map">
           <article>
-            <span>BOT CLI · JSON API</span>
+            <span>{t("봇 CLI · JSON API", "BOT CLI · JSON API")}</span>
             <b>127.0.0.1:7214</b>
             <p>
               {t(
@@ -167,7 +167,7 @@ export default function TerminalConsole() {
             </p>
           </article>
           <article>
-            <span>BROWSER WORKSPACE · SCREENSHOT</span>
+            <span>{t("브라우저 작업 공간 · 스크린샷", "BROWSER WORKSPACE · SCREENSHOT")}</span>
             <b>localhost:3000</b>
             <p>
               {t(
@@ -189,7 +189,7 @@ export default function TerminalConsole() {
         </section>
         <section className="terminal-clone">
           <div>
-            <p className="kicker">GITHUB CLONE · BUILT-IN BOT CLI</p>
+            <p className="kicker">{t("GitHub 복제본 · 내장 봇 CLI", "GITHUB CLONE · BUILT-IN BOT CLI")}</p>
             <h2>
               {t(
                 "복제본에는 봇 CLI가 이미 들어 있습니다.",
@@ -255,7 +255,7 @@ export default function TerminalConsole() {
         <section className="terminal-flow">
           <div className="terminal-flow-head">
             <div>
-              <p className="kicker">BOT START SEQUENCE</p>
+              <p className="kicker">{t("봇 시작 순서", "BOT START SEQUENCE")}</p>
               <h2>
                 {t("내려받고 · 입장하고 ·", "Download · enter ·")}{" "}
                 <span>{t("작업을 이어갑니다.", "continue the work.")}</span>
@@ -314,7 +314,7 @@ export default function TerminalConsole() {
         <section className="terminal-capabilities">
           <div className="terminal-section-head">
             <div>
-              <p className="kicker">FULL LOCAL CAPABILITY MAP</p>
+              <p className="kicker">{t("전체 로컬 기능 목록", "FULL LOCAL CAPABILITY MAP")}</p>
               <h2>
                 {t(
                   "브라우저 화면의 운영 기능을",
@@ -352,7 +352,7 @@ export default function TerminalConsole() {
         <section className="terminal-safety-grid">
           <article className="terminal-card token-card">
             <div className="terminal-card-head">
-              <span>LOCAL TOKEN</span>
+              <span>{t("로컬 토큰", "LOCAL TOKEN")}</span>
               <em>{t("선택 보호", "optional protection")}</em>
             </div>
             <h3>
@@ -379,7 +379,7 @@ export default function TerminalConsole() {
           </article>
           <article className="terminal-card approval-card">
             <div className="terminal-card-head">
-              <span>BOT EXECUTION POLICY</span>
+              <span>{t("봇 실행 정책", "BOT EXECUTION POLICY")}</span>
               <em>{t("봇이 선택", "bot selected")}</em>
             </div>
             <h3>
@@ -397,7 +397,7 @@ export default function TerminalConsole() {
           </article>
           <article className="terminal-card">
             <div className="terminal-card-head">
-              <span>LIVE STATUS</span>
+              <span>{t("실시간 상태", "LIVE STATUS")}</span>
               <em>
                 {health ? t("연결됨", "connected") : t("오프라인", "offline")}
               </em>

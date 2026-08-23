@@ -68,7 +68,7 @@ export default function HomeConsole() {
       <main className="home-main">
         <section className="home-hero">
           <div>
-            <p className="kicker">LOCAL VIDEO WORKSPACE · BOT READY</p>
+            <p className="kicker">{t("로컬 비디오 작업 공간 · 봇 준비 완료", "LOCAL VIDEO WORKSPACE · BOT READY")}</p>
             <h1>
               {t("봇과 함께 만드는", "Make videos with")}
               <br />
@@ -92,7 +92,7 @@ export default function HomeConsole() {
             </div>
           </div>
           <aside>
-            <span>LOCAL ONLY</span>
+            <span>{t("이 기기 전용", "LOCAL ONLY")}</span>
             <b>127.0.0.1</b>
             <p>
               {t(
@@ -120,7 +120,7 @@ export default function HomeConsole() {
         <section className="home-start">
           <div className="home-section-head">
             <div>
-              <p className="kicker">START HERE</p>
+              <p className="kicker">{t("여기서 시작", "START HERE")}</p>
               <h2>
                 {t(
                   "처음이라면 이 순서로 시작하세요.",
@@ -150,7 +150,7 @@ export default function HomeConsole() {
         <section className="home-workspaces">
           <div className="home-section-head">
             <div>
-              <p className="kicker">WORKSPACES</p>
+              <p className="kicker">{t("작업 공간", "WORKSPACES")}</p>
               <h2>
                 {t(
                   "무엇을 하려는지에 맞춰 들어가세요.",
