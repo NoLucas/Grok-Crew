@@ -19,6 +19,22 @@
 
 *プレビューはこのREADME内でそのまま再生されます。クリックするとフルのMP4が開きます。*
 
+## Grok bot への頼み方
+
+[![Grok bot にローカル編集を依頼する方法を見る](public/demo/bot-command-tutorial.gif)](public/demo/bot-command-tutorial.mp4)
+
+*25秒のチュートリアルです。自然言語による一つの依頼から、ボットのローカル処理、完成クリップの受け渡しまでを実際のローカルレンダーで示します。*
+
+まず `npm run local` で Grok Crew を起動し、**同じPCで動いている** Grok bot に次のように依頼します。
+
+```text
+このPC上の Grok Crew を使い、inputs/source.mp4 を縦型 9:16 のソーシャル動画に編集して。
+最も強いセリフを残し、字幕を追加して outputs/final.mp4 にレンダーして。アップロードはしないで。
+詳細が必要なら先にローカルの Bot Guide を読み、完了後は変更内容と出力ファイルの場所を報告して。
+```
+
+素材、出力形式、編集の目的、受け渡し先、アップロードの有無を具体的に伝えてください。ボットはローカルガイドを読み、チェックインし、作業を記録してからローカルファイルを返します。別のPCやクラウドのサンドボックスにいるボットは、このPCのループバック作業環境を直接開けません。その場合は下記のクラウドボット引き継ぎを使ってください。
+
 ## なぜGrok Crewなのか?
 
 クリエイティブブリーフ、ボットへの指示、カット判断、レンダリングジョブ、配信ステータスがそれぞれ別のツールに散らばると、ショート動画編集は破綻します。Grok Crewはその引き継ぎを1台のパソコン上で可視化し、繰り返し実行できるようにします。
@@ -40,7 +56,7 @@
 ### 実行する
 
 ```sh
-git clone https://github.com/NoLucas/JIN-Reel-forge.git grok-crew
+git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
 cd grok-crew
 npm run local
 ```

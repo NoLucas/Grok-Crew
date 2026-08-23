@@ -19,6 +19,23 @@
 
 *The preview plays directly in this README. Click it to open the full MP4.*
 
+## Tell a Grok bot what to do
+
+[![Watch how to brief a Grok bot for a local edit](public/demo/bot-command-tutorial.gif)](public/demo/bot-command-tutorial.mp4)
+
+*This 25-second tutorial follows a real local render: one plain-language brief, the bot's local workflow, then the delivered clip.*
+
+Start Grok Crew with `npm run local`, then send this to a bot that is running on the **same PC**:
+
+```text
+Use Grok Crew on this PC to turn inputs/source.mp4 into a vertical 9:16 social edit.
+Keep the strongest lines, add captions, and render outputs/final.mp4. Do not upload it.
+First read the local Bot Guide if you need details. When finished, report the changes
+you made and the output path.
+```
+
+Name the source, format, editing goal, delivery path, and upload preference. The bot reads the local guide, checks in, records its work, and returns the local file. A bot on another computer or in a cloud sandbox cannot open this PC's loopback workspace directly; use the [cloud bot handoff](#cloud-bot-handoff-for-a-bot-that-isnt-on-this-pc) for that case.
+
 ## Why Grok Crew?
 
 Short-form editing breaks down when the creative brief, bot instructions, cut decisions, render jobs, and delivery status live in different tools. Grok Crew makes that handoff visible and repeatable on one computer:
@@ -40,7 +57,7 @@ It is a **local production desk for people and same-PC bots**, not a cloud video
 ### Run it
 
 ```sh
-git clone https://github.com/NoLucas/JIN-Reel-forge.git grok-crew
+git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
 cd grok-crew
 npm run local
 ```

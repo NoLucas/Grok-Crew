@@ -19,6 +19,22 @@
 
 *미리보기는 이 README에서 바로 재생됩니다. 클릭하면 원본 MP4를 엽니다.*
 
+## Grok bot에게 이렇게 명령하세요
+
+[![Grok bot에게 로컬 편집을 요청하는 방법 보기](public/demo/bot-command-tutorial.gif)](public/demo/bot-command-tutorial.mp4)
+
+*25초 안내 영상입니다. 자연어 작업 지시 하나가 봇의 로컬 작업 흐름과 완성된 클립으로 이어지는 실제 예시를 보여줍니다.*
+
+먼저 `npm run local`로 Grok Crew를 실행한 뒤, **같은 PC에서 실행 중인** Grok bot에게 다음처럼 요청하세요.
+
+```text
+이 PC에서 실행 중인 Grok Crew를 사용해 inputs/source.mp4를 세로 9:16 소셜 영상으로 편집해줘.
+가장 강한 대사만 남기고 자막을 넣은 뒤 outputs/final.mp4로 렌더해줘. 업로드는 하지 마.
+자세한 내용이 필요하면 먼저 로컬 Bot Guide를 읽고, 완료되면 바꾼 내용과 결과 파일 경로를 알려줘.
+```
+
+소스 파일, 출력 형식, 편집 목표, 전달 경로, 업로드 여부를 함께 알려주면 됩니다. 봇은 로컬 설명서를 읽고 체크인한 다음 작업 내역을 기록하며 로컬 파일을 반환합니다. 다른 컴퓨터나 클라우드 샌드박스의 봇은 이 PC의 로컬 주소에 직접 접속할 수 없으므로, 그 경우에는 아래의 [클라우드 봇 인계](#클라우드-봇-인계-이-pc에-없는-봇을-위해) 방식을 사용하세요.
+
 ## 왜 Grok Crew인가요?
 
 짧은 영상 편집은 창작 브리프, 봇 지시, 컷 결정, 렌더 작업, 전달 상태가 서로 다른 도구에 흩어질 때 맥락을 잃습니다. Grok Crew는 이 전달 과정을 한 컴퓨터 안에서 보이게 만들고 반복할 수 있게 합니다.
@@ -40,7 +56,7 @@ Grok Crew는 **사람과 같은 PC에서 실행되는 봇을 위한 로컬 제�
 ### 실행
 
 ```sh
-git clone https://github.com/NoLucas/JIN-Reel-forge.git grok-crew
+git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
 cd grok-crew
 npm run local
 ```

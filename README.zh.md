@@ -19,6 +19,22 @@
 
 *预览会直接在本 README 中播放。点击可打开完整 MP4。*
 
+## 如何向 Grok bot 下达任务
+
+[![观看如何向 Grok bot 说明本地剪辑任务](public/demo/bot-command-tutorial.gif)](public/demo/bot-command-tutorial.mp4)
+
+*这段 25 秒教程展示一次真实的本地渲染：一条自然语言任务、机器人的本地工作流，以及交付的成片。*
+
+先用 `npm run local` 启动 Grok Crew，再把下面的内容发送给**运行在同一台电脑上**的 Grok bot：
+
+```text
+使用这台电脑上的 Grok Crew，把 inputs/source.mp4 剪成竖屏 9:16 社交短片。
+保留最有力的内容，添加字幕，并渲染到 outputs/final.mp4。不要上传。
+如需细节，先阅读本地 Bot Guide。完成后，请说明修改内容和输出文件路径。
+```
+
+请明确说明源文件、输出格式、剪辑目标、交付路径和是否上传。机器人会读取本地指南、签到、记录工作，并交回本地文件。另一台电脑或云端沙箱中的机器人不能直接打开这台电脑的回环工作区；此时请使用下方的云端机器人交接方式。
+
 ## 为什么选择 Grok Crew?
 
 当创意简报、机器人指令、剪辑决定、渲染任务和交付状态分散在不同工具里时,短视频编辑就会失去连贯性。Grok Crew 让这一整套交接过程在同一台电脑上可见、可重复:
@@ -40,7 +56,7 @@
 ### 运行
 
 ```sh
-git clone https://github.com/NoLucas/JIN-Reel-forge.git grok-crew
+git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
 cd grok-crew
 npm run local
 ```
