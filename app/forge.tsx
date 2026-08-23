@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { LanguageSwitcher } from './language';
+import { SiteHeader } from './site-header';
 
 type Mood = 'chaos' | 'calm' | 'contrast';
 type Motion = 'push' | 'pull' | 'drift';
@@ -32,7 +32,6 @@ const presets: Preset[] = [
 ];
 
 const blankProject: Project = { presetId: presets[0].id, hook: presets[0].sceneA.headline, sceneA: presets[0].sceneA, sceneB: presets[0].sceneB, durationA: 5, durationB: 5, audio: 'none', abTest: false, originalReupload: false };
-const nav: { href: string; label: string; view: View }[] = [{ href: '/', label: 'Studio', view: 'studio' }, { href: '/edit', label: 'Edit lab', view: 'edit' }, { href: '/cut', label: 'Cut log', view: 'cut' }, { href: '/production', label: 'Production', view: 'production' }, { href: '/bots', label: 'Bot check', view: 'bots' }, { href: '/bot-guide', label: 'Bot guide', view: 'bot-guide' }, { href: '/library', label: 'Library', view: 'library' }, { href: '/agent', label: 'Agent desk', view: 'agent' }, { href: '/connect', label: 'Local desk', view: 'connect' }, { href: '/packet', label: 'Packet', view: 'packet' }, { href: '/gates', label: 'Gate board', view: 'gates' }, { href: '/export', label: 'Export', view: 'export' }];
 
 function safeRead<T>(key: string, fallback: T): T { try { const value = window.localStorage.getItem(key); return value ? (JSON.parse(value) as T) : fallback; } catch { return fallback; } }
 function hasHangul(value: string) { return /[\uAC00-\uD7A3]/.test(value); }
@@ -100,8 +99,8 @@ function useForge() {
   return { project, setProject, packet, setPacket, lastTemplates, lastHooks, slots, gates, allGreen, recordExport };
 }
 
-function Topbar({ view, slots }: { view: View; slots: Record<string, number> }) {
-  return <header className="forge-header"><a href="/" className="wordmark"><span>NOH</span><i>Reel Forge</i></a><nav aria-label="Primary navigation">{nav.map((item) => <a className={item.view === view ? 'current' : ''} href={item.href} key={item.href}>{item.label}</a>)}</nav><LanguageSwitcher /><div className="header-meta"><span>Reel slots today: {slots[todaySeoul()] ?? 0} / 2</span><b>Created with Grok</b></div></header>;
+function Topbar({ view }: { view: View }) {
+  return <SiteHeader current={view} />;
 }
 
 function Timeline({ project, setProject, playing, playhead, onPlay, onScrub }: { project: Project; setProject: (project: Project) => void; playing: boolean; playhead: number; onPlay: () => void; onScrub: (time: number) => void }) {
@@ -134,4 +133,4 @@ function ExportRoom({ forge }: { forge: ReturnType<typeof useForge> }) {
   return <main className="forge-main subpage export-room"><section className="page-intro"><p className="kicker">FINAL CHECK</p><h1>Export room</h1><p>Preview the emotional cut. Export only when every gate is green.</p></section><GateStrip gates={gates} /><section className="export-grid"><div className="export-preview"><span>10s MOTION PREVIEW</span><div className="export-monitor"><div className="monitor-a"><b>{project.sceneA.headline}</b><small>zoom in</small></div><div className="monitor-cut">HARD CUT</div><div className="monitor-b"><b>{project.sceneB.headline}</b><small>{project.sceneB.motion} camera</small></div></div><p>Audio: <b>{project.audio}</b> · 30 fps · 1080 × 1920</p></div><div className="export-actions"><button className="export-button" disabled={!allGreen || exporting} onClick={startExport}>{exporting ? 'Rendering WebM…' : allGreen ? 'Export WebM' : 'Export (gates green only)'}</button><p>{status || (allGreen ? 'WebM is offered where your browser supports it. MP4 is never claimed unless created.' : 'Fix the red gates before export.')}</p><button className="recipe-button" onClick={async () => { await navigator.clipboard?.writeText(recipe); setCopied(true); window.setTimeout(() => setCopied(false), 1800); }}>{copied ? 'Recipe copied' : 'Copy ffmpeg zoom + cut recipe'}</button><label className="permalink-label">Instagram reel permalink<input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://www.instagram.com/reel/..." /></label><div className={`permalink-result ${validReel ? 'pass' : 'fail'}`}><b>{validReel ? 'READY FOR /REEL/' : 'PERMALINK CHECK'}</b><span>{permalinkText}</span></div><a className="reference-link" href="https://www.instagram.com/p/DcV6RYjkQaU/" target="_blank" rel="noreferrer">Reference: a hook that worked before ↗</a></div></section></main>;
 }
 
-export default function ReelForge({ view }: { view: View }) { const forge = useForge(); return <><Topbar view={view} slots={forge.slots} />{view === 'studio' && <Studio forge={forge} />}{view === 'library' && <Library forge={forge} />}{view === 'packet' && <PacketEditor forge={forge} />}{view === 'gates' && <GateBoard forge={forge} />}{view === 'export' && <ExportRoom forge={forge} />}<footer className="forge-footer"><span>NOH | AI at work</span><span>Emotional recreate. Not two PNGs taped together.</span><span>Created with Grok</span></footer></>; }
+export default function ReelForge({ view }: { view: View }) { const forge = useForge(); return <><Topbar view={view} />{view === 'studio' && <Studio forge={forge} />}{view === 'library' && <Library forge={forge} />}{view === 'packet' && <PacketEditor forge={forge} />}{view === 'gates' && <GateBoard forge={forge} />}{view === 'export' && <ExportRoom forge={forge} />}<footer className="forge-footer"><span>NOH | AI at work</span><span>Emotional recreate. Not two PNGs taped together.</span><span>Created with Grok</span></footer></>; }

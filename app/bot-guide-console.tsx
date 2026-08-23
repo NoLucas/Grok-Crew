@@ -2,7 +2,8 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
 import { useCallback, useEffect, useState } from 'react';
-import { LanguageSwitcher, useLanguage } from './language';
+import { useLanguage } from './language';
+import { SiteHeader } from './site-header';
 
 type GuideStep = { step: number; name: string; action: string; goal: string };
 type Guide = { schema: string; title: string; scope: string; first_action: string; non_negotiables: string[]; workflow: GuideStep[]; edit_heuristics: Record<string, string>; approval_gates: string[]; allowed_endpoints: { read: string[]; write_after_scope_check: string[]; write_after_human_approval: string[] }; never: string[]; heartbeat_example: Record<string, unknown> };
@@ -29,7 +30,7 @@ export default function BotGuideConsole() {
   const entries = Object.entries(guide.edit_heuristics);
 
   return <>
-    <header className="guide-topbar"><a className="wordmark" href="/"><span>NOH</span><i>Reel Forge</i></a><nav aria-label={t('봇 설명서 메뉴', 'Bot guide navigation')}><a href="/">{t('스튜디오', 'Studio')}</a><a href="/cut">{t('컷 로그', 'Cut log')}</a><a href="/production">{t('제작', 'Production')}</a><a href="/bots">{t('봇 확인', 'Bot check')}</a><a className="current" href="/bot-guide">{t('봇 설명서', 'Bot guide')}</a><a href="/connect">{t('로컬 도구', 'Local desk')}</a></nav><LanguageSwitcher /><div><span>BOT-READABLE</span><b>{loaded ? 'JSON READY' : 'FALLBACK GUIDE'}</b></div></header>
+    <SiteHeader current="bot-guide" />
     <main className="guide-main">
       <section className="guide-hero"><div><p className="kicker">GROK CREW · EDITOR MANUAL</p><h1>{t('봇이 들어와도', 'A working manual for')}<br /><span>{t('제대로 편집하게 하는', 'bots that edit correctly')}</span><br />{t('작업 설명서.', 'from the first step.')}</h1><p>{t('이 가이드는 봇이 어떤 순서로 판단하고, 언제 멈추며, 무엇을 기록해야 하는지 정의합니다. 모든 규칙은 로컬 제작 서비스의 실제 권한과 맞춰져 있습니다.', 'This guide defines how a bot should decide, when it must stop, and what it must record. Every rule matches the real permissions of the local production service.')}</p></div><aside className="guide-source"><span>BOT ENTRY POINT</span><b>GET /api/bot-guide</b><p>{t('사람은 이 화면을 읽고, 봇은 같은 내용을 구조화된 JSON으로 읽습니다.', 'People read this screen; bots read the same guide as structured JSON.')}</p><button onClick={() => void copy('url')}>{copied === 'url' ? t('주소 복사됨', 'Address copied') : t('JSON 안내 주소 복사', 'Copy JSON guide URL')}</button></aside></section>
       <section className="guide-first"><b>FIRST ACTION</b><span>{guide.first_action}</span><em>{loaded ? 'Local guide loaded' : 'Fallback shown'}</em></section>

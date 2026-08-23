@@ -2,7 +2,8 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 
 import { useCallback, useEffect, useState } from 'react';
-import { LanguageSwitcher, useLanguage } from './language';
+import { useLanguage } from './language';
+import { SiteHeader } from './site-header';
 
 type TimelineClip = { in: number; out: number; keep: boolean; caption: string; speaker?: string };
 type RenderSettings = { fps: 24 | 30 | 60; quality: 'compact' | 'balanced' | 'high'; crop_anchor: 'left' | 'center' | 'right'; speed: number; volume: number; normalize_audio: boolean; mute_audio: boolean; fade_in: number; fade_out: number; look: 'natural' | 'punchy' | 'mono' | 'night'; brightness: number; contrast: number; gamma: number; mirror: boolean; captions_enabled: boolean; caption_color: string; caption_size: number; caption_y: number; caption_stroke: number };
@@ -97,7 +98,7 @@ export default function ProductionConsole() {
   const contract = JSON.stringify({ scope: '127.0.0.1 only', actor: 'Grok bot', allowed: ['create project', 'queue approved render', 'queue approved Instagram job'], never: ['read Meta credentials', 'access outside workspace', 'publish without approval'] }, null, 2);
 
   return <>
-    <header className="production-topbar"><a className="wordmark" href="/"><span>NOH</span><i>Reel Forge</i></a><nav aria-label={t('제작 메뉴', 'Production navigation')}><a href="/">{t('스튜디오', 'Studio')}</a><a href="/edit">{t('편집실', 'Edit lab')}</a><a href="/cut">{t('컷 로그', 'Cut log')}</a><a className="current" href="/production">{t('제작', 'Production')}</a><a href="/bots">{t('봇 확인', 'Bot check')}</a><a href="/bot-guide">{t('봇 설명서', 'Bot guide')}</a><a href="/connect">{t('로컬 도구', 'Local desk')}</a><a href="/export">{t('내보내기', 'Export')}</a></nav><LanguageSwitcher /><div><span>LOOPBACK ONLY</span><b>127.0.0.1:7214</b></div></header>
+    <SiteHeader current="production" />
     <main className="production-main">
       <section className="production-hero"><div><p className="kicker">LOCAL PRODUCTION NODE</p><h1>{t('컷 로그부터', 'From cut log to')}<br /><span>{t('실제 MP4와 게시 대기열까지.', 'a real MP4 and publish queue.')}</span></h1><p>{t('Grok bot은 편집 계획과 대기열을 만들 수 있습니다. 파일·SQLite·자격증명은 모두 이 PC에 남고, Instagram에는 사람이 승인한 게시만 전송됩니다.', 'Grok bots can plan edits and prepare queues. Files, SQLite, and credentials stay on this PC; only a human-approved Instagram post can be sent.')}</p></div><aside className={`production-health ${health ? 'ready' : ''}`}><span>LOCAL STUDIO</span><b>{health ? 'CONNECTED' : 'OFFLINE'}</b><p>{health ? `SQLite · ${health.moviepy_installed ? 'MoviePy ready' : 'MoviePy install needed'} · publish switch ${health.instagram_publish_enabled ? 'on' : 'off'}` : t('local_studio/studio_server.py를 실행하면 연결됩니다.', 'Start local_studio/studio_server.py to connect.')}</p><button onClick={() => void refresh()} disabled={busy}>{t('연결 다시 확인', 'Check connection')}</button></aside></section>
       <div className="production-note"><b>LOCAL FIRST</b><span>소스는 <code>local_studio/workspace/inputs</code>, 결과물은 <code>workspace/outputs</code>, 프로젝트·작업 이력은 SQLite에 저장됩니다. 외부 데이터베이스는 사용하지 않습니다.</span></div>
