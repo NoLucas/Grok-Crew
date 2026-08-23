@@ -101,13 +101,20 @@
     ],
     "rule": "Operations artifacts are plans, checks, and local memory. They never start rendering or publishing."
   },
+  "terminal_cli_contract": {
+    "download": "GET /downloads/grok-crew.py",
+    "bootstrap": "python grok-crew.py contract",
+    "purpose": "A dependency-free CLI for a bot running in a terminal on the same PC. It can use the Local Studio and Operations endpoints without browser interaction.",
+    "token_rule": "If token protection is enabled, pass LOCAL_STUDIO_TOKEN through the bot terminal environment. Never read .env, browser storage, or SQLite for it.",
+    "approval_rule": "The CLI requires --human-approved for render, Instagram queue, and job run commands. Instagram publishing also needs the server publish switch and PUBLISH confirmation."
+  },
   "approval_gates": [
     "Human approval is required before queuing or running a render.",
     "Human approval is required before queuing an Instagram job.",
     "Instagram actual publishing requires approval, --allow-instagram-publish, and confirmation=PUBLISH."
   ],
   "allowed_endpoints": {
-    "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/bots", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits"],
+    "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/bots", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits"],
     "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits"],
     "write_after_human_approval": ["POST /api/projects/{id}/render", "POST /api/jobs/{id}/run", "POST /api/projects/{id}/instagram"]
   },

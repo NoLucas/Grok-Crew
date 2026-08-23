@@ -7,6 +7,8 @@
     "record_bot_heartbeat",
     "read_bot_status",
     "read_bot_guide",
+    "read_terminal_contract",
+    "download_local_terminal_cli",
     "read_bot_entry",
     "enter_local_workspace",
     "read_edit_method",

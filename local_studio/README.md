@@ -33,6 +33,12 @@ Open `http://localhost:3000/operations` after creating a project in Production. 
 
 Bots can read `GET /api/projects/{id}/operations`. They can create a timestamped transcript cut map, request a local media inspection, record quality reports, and save planning artifacts. These records are non-destructive: they never change the EDL, render a file, or publish without the existing human approvals.
 
+## Terminal CLI for Grok bots
+
+Any Grok bot runtime that runs in a terminal on this same PC can download the dependency-free local CLI from `GET /downloads/grok-crew.py`. The Terminal page at `http://localhost:3000/terminal` includes copy-ready download and first-entry commands.
+
+The CLI covers bot entry and heartbeat, projects, edit methods, P0–P2 operations, brand kits, and approved job queues. It refuses non-loopback URLs. If token protection is enabled, supply `LOCAL_STUDIO_TOKEN` only through that bot terminal's environment. It requires `--human-approved` for render, Instagram queue, and job-run commands; the server still enforces its own approval and publication checks.
+
 ## Instagram guardrails
 
 The service never stores Meta tokens in SQLite and only reads them from local process environment variables. It never calls Instagram unless a job has a recorded human approval, the server has been launched with `--allow-instagram-publish`, and the job runner is explicitly invoked. The publication client follows the resumable container → binary upload → status poll → publish sequence documented in Meta's sample.

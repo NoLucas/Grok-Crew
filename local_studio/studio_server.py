@@ -24,6 +24,7 @@ DATA_DIR = BASE_DIR / "data"
 WORKSPACE_DIR = Path(os.getenv("LOCAL_STUDIO_WORKSPACE", BASE_DIR / "workspace")).resolve()
 DB_PATH = DATA_DIR / "studio.db"
 BOT_GUIDE_PATH = BASE_DIR / "bot-guide.json"
+TERMINAL_CLI_PATH = BASE_DIR / "grok_crew.py"
 ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000"}
 DEFAULT_EDIT_METHOD = {
     "schema": "noh.reel-forge.edit-method/v1",
@@ -458,6 +459,23 @@ def bot_entry_manifest() -> dict[str, Any]:
     }
 
 
+def terminal_contract() -> dict[str, Any]:
+    return {
+        "schema": "noh.reel-forge.terminal-cli/v1",
+        "scope": "Same workstation and loopback HTTP only.",
+        "download": "GET /downloads/grok-crew.py",
+        "bootstrap": "python grok-crew.py contract",
+        "auth": "Set LOCAL_STUDIO_TOKEN in the bot terminal only when Local Studio token protection is enabled.",
+        "commands": {
+            "start": ["health", "contract", "guide", "entry", "heartbeat", "bots list|activity|entries"],
+            "editing": ["projects list|get|create", "method get|set", "ops show|inspect|cut-map|quality|artifact|update", "brand list|save"],
+            "delivery": ["jobs list|render|instagram|run"],
+        },
+        "approval_boundary": "The CLI requires --human-approved before it queues or runs render and Instagram actions. The server additionally enforces recorded approval, and publishing still needs --allow-instagram-publish plus confirmation=PUBLISH.",
+        "browser_pages": ["/production", "/operations", "/bots", "/bot-guide"],
+    }
+
+
 def list_bot_entries() -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute("""SELECT e.*, s.last_seen FROM bot_entries e
@@ -740,6 +758,17 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", origin); self.send_header("Vary", "Origin")
         self.end_headers(); self.wfile.write(raw)
 
+    def _download(self, path: Path, filename: str) -> None:
+        if not path.is_file():
+            raise RuntimeError("Local terminal CLI download is unavailable.")
+        raw = path.read_bytes()
+        self.send_response(HTTPStatus.OK); self.send_header("Content-Type", "text/x-python; charset=utf-8"); self.send_header("Content-Length", str(len(raw)))
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        origin = self.headers.get("Origin")
+        if origin in ALLOWED_ORIGINS:
+            self.send_header("Access-Control-Allow-Origin", origin); self.send_header("Vary", "Origin")
+        self.end_headers(); self.wfile.write(raw)
+
     def _body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
         if length > 1_000_000:
@@ -780,6 +809,10 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, bot_guide())
             elif path == "/api/bot-entry":
                 self._json(200, bot_entry_manifest())
+            elif path == "/api/terminal-contract":
+                self._json(200, terminal_contract())
+            elif path == "/downloads/grok-crew.py":
+                self._download(TERMINAL_CLI_PATH, "grok-crew.py")
             elif path == "/api/bot-entries":
                 self._json(200, {"entries": list_bot_entries()})
             elif path == "/api/edit-method":

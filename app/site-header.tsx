@@ -10,6 +10,7 @@ const sections = [
   { id: 'production', href: '/production', ko: '제작', en: 'Production' },
   { id: 'operations', href: '/operations', ko: '운영 센터', en: 'Operations' },
   { id: 'bots', href: '/bots', ko: '봇 확인', en: 'Bot check' },
+  { id: 'terminal', href: '/terminal', ko: '터미널', en: 'Terminal' },
   { id: 'bot-guide', href: '/bot-guide', ko: '봇 설명서', en: 'Bot guide' },
   { id: 'library', href: '/library', ko: '라이브러리', en: 'Library' },
   { id: 'agent', href: '/agent', ko: '에이전트', en: 'Agent desk' },
