@@ -11,6 +11,8 @@
     "download_local_terminal_cli",
     "read_bot_entry",
     "enter_local_workspace",
+    "read_execution_policy",
+    "set_execution_policy",
     "read_edit_method",
     "configure_edit_method",
     "inspect_local_media",
@@ -20,7 +22,8 @@
     "run_local_quality_checks",
     "save_brand_and_overlay_plans",
     "record_local_performance_notes",
-    "queue_render_after_human_approval",
+    "queue_and_run_local_render_when_auto_local",
+    "queue_render_after_human_approval_when_required",
     "queue_instagram_publish_after_human_approval",
     "run_approved_job"
   ],
@@ -31,6 +34,12 @@
     "bypass_local_token",
     "publish_to_unconfigured_platforms"
   ],
-  "review_required": true,
+  "execution_policy": {
+    "on_entry": "auto_local",
+    "choices": ["auto_local", "approval_required"],
+    "local_render_rule": "auto_local may queue and run this bot's local render; approval_required needs recorded human approval.",
+    "instagram_rule": "Instagram queueing and publishing always require recorded human approval; publishing also requires the server switch and PUBLISH confirmation."
+  },
+  "review_required": "Only for bots that choose approval_required, and always for Instagram publishing.",
   "workspace_rule": "Use only files under local_studio/workspace."
 }

@@ -106,6 +106,15 @@ def build_parser() -> argparse.ArgumentParser:
     entry = commands.add_parser("entry", help="Enter Local Studio and record the first bot heartbeat.")
     entry.add_argument("--bot-id", required=True); entry.add_argument("--display-name", required=True)
     entry.add_argument("--purpose", default="edit_video"); entry.add_argument("--task", default="Prepare a local edit plan.")
+    entry.add_argument("--execution-mode", choices=("auto_local", "approval_required"), help="Optional first local-render policy. The default on entry is auto_local.")
+
+    policy = commands.add_parser("policy", help="Read or choose a bot's local execution policy.")
+    policy_sub = policy.add_subparsers(dest="command", required=True)
+    policy_get = policy_sub.add_parser("get", help="Read the bot's current local execution policy.")
+    policy_get.add_argument("--bot-id", required=True)
+    policy_set = policy_sub.add_parser("set", help="Choose automatic local rendering or human approval for this bot.")
+    policy_set.add_argument("--bot-id", required=True); policy_set.add_argument("--mode", choices=("auto_local", "approval_required"), required=True)
+    policy_set.add_argument("--display-name", default="")
 
     heartbeat = commands.add_parser("heartbeat", help="Record an active bot state.")
     heartbeat.add_argument("--bot-id", required=True); heartbeat.add_argument("--display-name", required=True)
@@ -123,10 +132,10 @@ def build_parser() -> argparse.ArgumentParser:
     project_get = projects_sub.add_parser("get", help="Read one project and its jobs."); project_get.add_argument("--project", required=True)
     project_create = projects_sub.add_parser("create", help="Create a project from a JSON payload."); project_create.add_argument("--file", required=True)
 
-    jobs = commands.add_parser("jobs", help="Read and use approved render and publish queues.")
+    jobs = commands.add_parser("jobs", help="Read and use local render and publish queues.")
     jobs_sub = jobs.add_subparsers(dest="command", required=True)
     jobs_list = jobs_sub.add_parser("list", help="List all jobs."); jobs_list.add_argument("--project")
-    render = jobs_sub.add_parser("render", help="Queue a render after recorded human approval."); render.add_argument("--project", required=True); render.add_argument("--human-approved", action="store_true"); render.add_argument("--requested-by", default="grok_bot")
+    render = jobs_sub.add_parser("render", help="Queue a render; auto_local bots also run it immediately by default."); render.add_argument("--project", required=True); render.add_argument("--bot-id", required=True); render.add_argument("--human-approved", action="store_true"); render.add_argument("--requested-by", default=""); render.add_argument("--queue-only", action="store_true")
     instagram = jobs_sub.add_parser("instagram", help="Queue Instagram publishing after recorded human approval."); instagram.add_argument("--project", required=True); instagram.add_argument("--file", required=True); instagram.add_argument("--human-approved", action="store_true")
     run = jobs_sub.add_parser("run", help="Run an already approved job."); run.add_argument("--job", required=True); run.add_argument("--human-approved", action="store_true"); run.add_argument("--publish-confirmation", default="")
 
@@ -165,7 +174,16 @@ def main() -> None:
     if args.group == "site":
         print(BROWSER_PAGES[args.page]); return
     if args.group == "entry":
-        print_json(client.request("/api/bot-entry", {"bot_id": args.bot_id, "display_name": args.display_name, "purpose": args.purpose, "task": args.task})); return
+        payload = {"bot_id": args.bot_id, "display_name": args.display_name, "purpose": args.purpose, "task": args.task}
+        if args.execution_mode:
+            payload["execution_mode"] = args.execution_mode
+        print_json(client.request("/api/bot-entry", payload)); return
+    if args.group == "policy":
+        if args.command == "get":
+            print_json(client.request(f"/api/bots/{args.bot_id}/execution-policy"))
+        else:
+            print_json(client.request("/api/bots/execution-policy", {"bot_id": args.bot_id, "mode": args.mode, "display_name": args.display_name or args.bot_id, "updated_by": args.bot_id}))
+        return
     if args.group == "heartbeat":
         detail = read_json_file(args.detail_file) if args.detail_file else {}
         print_json(client.request("/api/bots/heartbeat", {"bot_id": args.bot_id, "display_name": args.display_name, "action": args.action, "detail": detail})); return
@@ -183,7 +201,7 @@ def main() -> None:
         if args.command == "list":
             print_json(client.request(f"/api/projects/{args.project}" if args.project else "/api/jobs"))
         elif args.command == "render":
-            require_human_approval(args); print_json(client.request(f"/api/projects/{args.project}/render", {"approved": True, "requested_by": args.requested_by}))
+            print_json(client.request(f"/api/projects/{args.project}/render", {"bot_id": args.bot_id, "approved": args.human_approved, "requested_by": args.requested_by or args.bot_id, "run_immediately": not args.queue_only}))
         elif args.command == "instagram":
             require_human_approval(args); payload = read_json_file(args.file); payload["approved"] = True; print_json(client.request(f"/api/projects/{args.project}/instagram", payload))
         else:

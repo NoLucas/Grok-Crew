@@ -5,8 +5,8 @@ This companion service is a private, local production node for Reel Forge. It bi
 ## What it does
 
 - Stores projects, render jobs, approval records, and event history in local SQLite.
-- Uses MoviePy locally to render approved EDLs into 1080×1920 H.264/AAC MP4 files.
-- Lets local agents use a narrow, approval-gated job contract.
+- Uses MoviePy locally to render EDLs into 1080×1920 H.264/AAC MP4 files.
+- Lets each local agent choose automatic local rendering or a human-approval gate, while keeping external publishing protected.
 - Can use Meta's resumable upload workflow to publish an approved render to Instagram when the owner explicitly enables publishing and provides local credentials.
 
 ## Start
@@ -23,7 +23,9 @@ The browser app is at `http://localhost:3000/production`. Create or queue jobs t
 
 Open `http://localhost:3000/bots` to see which local bots have actually checked in, their last action, and their recent activity. A bot is marked **active** only after it records a check-in within the last five minutes; a browser tab or an assumed bot is never counted as active.
 
-Open `http://localhost:3000/bot-guide` for the bot-facing editing manual. A local bot starts by reading `GET /api/bot-entry`, then sends `POST /api/bot-entry` with its id, display name, purpose, and task. This creates an auditable local entry and the first heartbeat; it does not grant render or publish approval.
+Open `http://localhost:3000/bot-guide` for the bot-facing editing manual. A local bot starts by reading `GET /api/bot-entry`, then sends `POST /api/bot-entry` with its id, display name, purpose, and task. This creates an auditable local entry and the first heartbeat. A newly entered bot receives `auto_local` by default, which enables all local editing functions and its own local rendering; it may instead choose `approval_required`.
+
+Read a bot's choice with `GET /api/bots/{bot_id}/execution-policy`, or record it with `POST /api/bots/execution-policy` using `mode=auto_local` or `mode=approval_required`. The Bot Check page shows the current choice beside each verified bot.
 
 Local agents can record a check-in with `POST /api/bots/heartbeat`. Supply a `bot_id`, `display_name`, `action`, and optional `detail` object. If `LOCAL_STUDIO_TOKEN` is configured, the agent must receive that token through its own runtime configuration; it must not read `.env` or SQLite to obtain it. The browser’s Bot Check page includes a copy-ready request example.
 
@@ -39,7 +41,7 @@ Any Grok bot runtime that runs in a terminal on this same PC can use the depende
 
 `http://127.0.0.1:7214` is the CLI and JSON API service, not the browser workspace. For a page a bot needs to open or capture, run `python grok-crew.py site --page production` (or `operations`, `bots`, `guide`, or `terminal`) and use the printed `http://localhost:3000/...` URL. Opening a known browser page on port 7214 now redirects to the correct browser workspace.
 
-The CLI covers bot entry and heartbeat, projects, edit methods, P0–P2 operations, brand kits, and approved job queues. It refuses non-loopback URLs. If token protection is enabled, supply `LOCAL_STUDIO_TOKEN` only through that bot terminal's environment. It requires `--human-approved` for render, Instagram queue, and job-run commands; the server still enforces its own approval and publication checks.
+The CLI covers bot entry and heartbeat, execution policy, projects, edit methods, P0–P2 operations, brand kits, and job queues. It refuses non-loopback URLs. If token protection is enabled, supply `LOCAL_STUDIO_TOKEN` only through that bot terminal's environment. A connected bot can use `policy set --bot-id <id> --mode auto_local` to queue and run its own local renders, or choose `approval_required` to require `--human-approved` for rendering. Instagram queueing and publishing remain human-approved; the server also enforces the publication switch and `PUBLISH` confirmation.
 
 ## Instagram guardrails
 

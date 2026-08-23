@@ -8,14 +8,14 @@
     "Keep the first useful idea or visible change within the first 1.5 seconds when possible.",
     "Remove filler, long silence, duplicate points, and weak setup before adding effects.",
     "For vertical output, preserve the subject with left, center, or right reframing rather than stretching video.",
-    "Do not render, publish, access credentials, or leave the workspace without the required approval."
+    "Do not publish, access credentials, or leave the workspace without the required approval. Local rendering follows this bot's execution policy."
   ],
   "workflow": [
     {
       "step": 1,
       "name": "enter_local_studio",
       "action": "POST /api/bot-entry with bot_id, display_name, purpose, and task.",
-      "goal": "Create a local entry record and first heartbeat. Entry never grants render or publish approval."
+      "goal": "Create a local entry record and first heartbeat. A new bot receives auto_local for local rendering by default; it can choose approval_required instead. Entry never grants Instagram publishing approval."
     },
     {
       "step": 2,
@@ -43,14 +43,14 @@
     },
     {
       "step": 6,
-      "name": "request_review",
-      "action": "Record a heartbeat with action=await_human_approval and a concise decision summary.",
-      "goal": "Stop here until the owner records approval."
+      "name": "choose_execution_policy",
+      "action": "Read GET /api/bots/{bot_id}/execution-policy. Keep auto_local for automatic local rendering, or POST /api/bots/execution-policy with mode=approval_required before requesting review.",
+      "goal": "The bot chooses its own local-rendering gate. This choice is recorded in SQLite and shown in Bot Check."
     },
     {
       "step": 7,
-      "name": "render_after_approval",
-      "action": "Queue and run only an approved render job.",
+      "name": "render",
+      "action": "With auto_local, queue and run the local render. With approval_required, record a concise review request and use a human-approved render job.",
       "goal": "Check final job status and report output path or exact failure reason."
     },
     {
@@ -118,17 +118,27 @@
     "bootstrap": "python grok-crew.py contract",
     "purpose": "A dependency-free CLI for a bot running in a terminal on the same PC. It can use the Local Studio and Operations endpoints without browser interaction.",
     "token_rule": "If token protection is enabled, pass LOCAL_STUDIO_TOKEN through the bot terminal environment. Never read .env, browser storage, or SQLite for it.",
-    "approval_rule": "The CLI requires --human-approved for render, Instagram queue, and job run commands. Instagram publishing also needs the server publish switch and PUBLISH confirmation."
+    "approval_rule": "A connected bot starts in auto_local and can render with jobs render --bot-id. Use policy set --bot-id <id> --mode approval_required to require --human-approved for that bot's renders. Instagram queue and publish still require human approval; publishing also needs the server publish switch and PUBLISH confirmation."
+  },
+  "execution_policy": {
+    "on_entry": "Every bot that enters Local Studio receives auto_local unless it explicitly chooses approval_required.",
+    "read": "GET /api/bots/{bot_id}/execution-policy",
+    "write": "POST /api/bots/execution-policy with bot_id and mode.",
+    "modes": {
+      "auto_local": "The bot can queue and start its own local MP4 render after it is connected.",
+      "approval_required": "The bot can use every planning, inspection, project, and operations feature, but its render request requires approved: true or --human-approved."
+    },
+    "external_boundary": "Instagram publishing is intentionally separate: it always requires recorded human approval, the server publish switch, and confirmation=PUBLISH."
   },
   "approval_gates": [
-    "Human approval is required before queuing or running a render.",
     "Human approval is required before queuing an Instagram job.",
     "Instagram actual publishing requires approval, --allow-instagram-publish, and confirmation=PUBLISH."
   ],
   "allowed_endpoints": {
-    "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/bots", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits"],
-    "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits"],
-    "write_after_human_approval": ["POST /api/projects/{id}/render", "POST /api/jobs/{id}/run", "POST /api/projects/{id}/instagram"]
+    "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/bots", "GET /api/bots/{bot_id}/execution-policy", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits"],
+    "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/bots/execution-policy", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits"],
+    "local_render": ["POST /api/projects/{id}/render when the connected bot's policy is auto_local or a human approval is recorded."],
+    "write_after_human_approval": ["POST /api/projects/{id}/instagram"]
   },
   "never": [
     "Read or reveal LOCAL_STUDIO_TOKEN, INSTAGRAM_ACCESS_TOKEN, or .env contents.",

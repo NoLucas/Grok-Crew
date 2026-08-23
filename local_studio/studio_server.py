@@ -44,6 +44,7 @@ DEFAULT_EDIT_METHOD = {
 }
 BOT_ENTRY_SCHEMA = "noh.reel-forge.bot-entry/v1"
 ARTIFACT_TYPES = {"audio_plan", "bot_task", "brand_kit", "cut_map", "edit_variant", "media_inspection", "overlay_slots", "performance_note", "preflight_report", "project_memory", "quality_report"}
+EXECUTION_MODES = {"auto_local", "approval_required"}
 
 
 def utc_now() -> str:
@@ -99,6 +100,10 @@ def init_db() -> None:
             id TEXT PRIMARY KEY, bot_id TEXT NOT NULL, display_name TEXT NOT NULL,
             purpose TEXT NOT NULL, task TEXT NOT NULL, joined_at TEXT NOT NULL
         )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS bot_execution_policies (
+            bot_id TEXT PRIMARY KEY, mode TEXT NOT NULL, updated_by TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )""")
         conn.execute("""CREATE TABLE IF NOT EXISTS project_artifacts (
             id TEXT PRIMARY KEY, project_id TEXT, type TEXT NOT NULL, title TEXT NOT NULL,
             payload_json TEXT NOT NULL, created_by TEXT NOT NULL, created_at TEXT NOT NULL,
@@ -110,6 +115,7 @@ def init_db() -> None:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_sessions_last_seen ON bot_sessions(last_seen DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_activity_bot_created ON bot_activity(bot_id, created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_entries_joined ON bot_entries(joined_at DESC)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_execution_policies_updated ON bot_execution_policies(updated_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_project_artifacts_project_type_updated ON project_artifacts(project_id, type, updated_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_project_artifacts_type_updated ON project_artifacts(type, updated_at DESC)")
         conn.execute("PRAGMA optimize")
@@ -238,6 +244,8 @@ def record_bot_heartbeat(body: dict[str, Any]) -> dict[str, Any]:
 def list_bots() -> dict[str, Any]:
     with db() as conn:
         rows = conn.execute("SELECT * FROM bot_sessions ORDER BY last_seen DESC LIMIT 100").fetchall()
+        policy_rows = conn.execute("SELECT * FROM bot_execution_policies").fetchall()
+    policies = {str(row["bot_id"]): row_dict(row) or {} for row in policy_rows}
     now = datetime.now(timezone.utc)
     bots = []
     for row in rows:
@@ -246,6 +254,7 @@ def list_bots() -> dict[str, Any]:
         seconds_since_checkin = max(0, int((now - seen).total_seconds()))
         bot["seconds_since_checkin"] = seconds_since_checkin
         bot["presence"] = "active" if seconds_since_checkin <= 300 else "idle"
+        bot["execution_policy"] = policies.get(bot["bot_id"], {"bot_id": bot["bot_id"], "mode": "approval_required", "updated_by": "local_default", "updated_at": None, "is_default": True})
         bots.append(bot)
     return {"bots": bots, "summary": {"total_known": len(bots), "active_now": sum(bot["presence"] == "active" for bot in bots), "activity_rule": "active means a recorded check-in within the last 5 minutes"}}
 
@@ -254,6 +263,50 @@ def list_bot_activity() -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute("SELECT * FROM bot_activity ORDER BY created_at DESC LIMIT 80").fetchall()
     return [row_dict(row) or {} for row in rows]
+
+
+def execution_policy(bot_id: str) -> dict[str, Any]:
+    bot_id = valid_bot_id(bot_id)
+    with db() as conn:
+        row = conn.execute("SELECT * FROM bot_execution_policies WHERE bot_id = ?", (bot_id,)).fetchone()
+    if row:
+        return row_dict(row) or {}
+    return {"bot_id": bot_id, "mode": "approval_required", "updated_by": "local_default", "updated_at": None, "is_default": True}
+
+
+def set_execution_policy(body: dict[str, Any]) -> dict[str, Any]:
+    bot_id = valid_bot_id(body.get("bot_id"))
+    mode = str(body.get("mode", "")).strip()
+    if mode not in EXECUTION_MODES:
+        raise ValueError("mode must be auto_local or approval_required.")
+    updated_by = str(body.get("updated_by", bot_id)).strip()[:80] or bot_id
+    now = utc_now()
+    with db() as conn:
+        conn.execute("""INSERT INTO bot_execution_policies (bot_id, mode, updated_by, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(bot_id) DO UPDATE SET mode = excluded.mode, updated_by = excluded.updated_by, updated_at = excluded.updated_at""", (bot_id, mode, updated_by, now))
+        row = conn.execute("SELECT * FROM bot_execution_policies WHERE bot_id = ?", (bot_id,)).fetchone()
+    policy = row_dict(row) or {}
+    event(None, None, "bot_execution_policy_set", {"bot_id": bot_id, "mode": mode, "updated_by": updated_by})
+    record_bot_heartbeat({"bot_id": bot_id, "display_name": body.get("display_name", bot_id), "action": "execution_policy_set", "detail": {"mode": mode}})
+    return policy
+
+
+def ensure_execution_policy(bot_id: str, mode: Any = None) -> dict[str, Any]:
+    current = execution_policy(bot_id)
+    if current.get("is_default"):
+        return set_execution_policy({"bot_id": bot_id, "mode": str(mode or "auto_local"), "updated_by": bot_id})
+    if mode is not None:
+        return set_execution_policy({"bot_id": bot_id, "mode": mode, "updated_by": bot_id})
+    return current
+
+
+def bot_auto_executes(body: dict[str, Any]) -> tuple[bool, dict[str, Any] | None]:
+    bot_id = str(body.get("bot_id", "")).strip()
+    if not bot_id:
+        return False, None
+    policy = execution_policy(bot_id)
+    return policy.get("mode") == "auto_local", policy
 
 
 def artifact_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
@@ -454,10 +507,12 @@ def bot_entry_manifest() -> dict[str, Any]:
             "display_name": "Grok Editor",
             "purpose": "edit_video",
             "task": "Prepare a transcript-first local edit plan.",
+            "execution_mode": "auto_local | approval_required",
         },
-        "first_requests": ["GET /api/bot-guide", "GET /api/projects", "GET /api/jobs", "GET /api/edit-method"],
+        "first_requests": ["GET /api/bot-guide", "GET /api/projects", "GET /api/jobs", "GET /api/edit-method", "GET /api/bots/{bot_id}/execution-policy"],
         "keep_alive": "POST /api/bots/heartbeat at each meaningful state change and at least once every five minutes while active.",
-        "approval_boundary": "Entry does not grant render or publish approval. Those actions stay behind their existing human approval gates.",
+        "execution_policy": "On first entry, a bot receives auto_local for local project, inspection, planning, and rendering work. The bot can change its own policy to approval_required. Instagram publishing always keeps the server switch and PUBLISH confirmation.",
+        "approval_boundary": "auto_local can approve local render work for that bot. Instagram publishing still needs the server publish switch and PUBLISH confirmation.",
         "credential_rule": "If LOCAL_STUDIO_TOKEN is enabled, receive it from the bot runtime configuration. Never read .env, SQLite, or browser storage for a token.",
     }
 
@@ -475,11 +530,11 @@ def terminal_contract() -> dict[str, Any]:
         "bootstrap": "python grok-crew.py contract",
         "auth": "Set LOCAL_STUDIO_TOKEN in the bot terminal only when Local Studio token protection is enabled.",
         "commands": {
-            "start": ["health", "contract", "guide", "site --page production", "entry", "heartbeat", "bots list|activity|entries"],
+            "start": ["health", "contract", "guide", "site --page production", "entry", "policy get|set", "heartbeat", "bots list|activity|entries"],
             "editing": ["projects list|get|create", "method get|set", "ops show|inspect|cut-map|quality|artifact|update", "brand list|save"],
-            "delivery": ["jobs list|render|instagram|run"],
+            "delivery": ["jobs list|render [auto local or human approved]|instagram|run"],
         },
-        "approval_boundary": "The CLI requires --human-approved before it queues or runs render and Instagram actions. The server additionally enforces recorded approval, and publishing still needs --allow-instagram-publish plus confirmation=PUBLISH.",
+        "execution_policy": {"auto_local": "The connected bot can queue and run its own local render work automatically.", "approval_required": "The bot records a request and requires --human-approved for local render work.", "instagram": "Instagram publishing always needs the server publish switch and confirmation=PUBLISH."},
         "browser_pages": {
             "production": f"{SITE_BASE_URL}/production",
             "operations": f"{SITE_BASE_URL}/operations",
@@ -520,9 +575,10 @@ def enter_bot_workspace(body: dict[str, Any]) -> dict[str, Any]:
     with db() as conn:
         conn.execute("""INSERT INTO bot_entries (id, bot_id, display_name, purpose, task, joined_at)
             VALUES (?, ?, ?, ?, ?, ?)""", (entry_id, bot_id, display_name, purpose, task, now))
-    bot = record_bot_heartbeat({"bot_id": bot_id, "display_name": display_name, "action": "entered_local_studio", "detail": {"entry_id": entry_id, "purpose": purpose, "task": task, "next": "read local bot guide"}})
-    event(None, None, "bot_entered", {"entry_id": entry_id, "bot_id": bot_id, "purpose": purpose, "task": task})
-    return {"entry": {"id": entry_id, "bot_id": bot_id, "display_name": display_name, "purpose": purpose, "task": task, "joined_at": now}, "bot": bot, "next_requests": bot_entry_manifest()["first_requests"], "approval_boundary": bot_entry_manifest()["approval_boundary"]}
+    policy = ensure_execution_policy(bot_id, body.get("execution_mode"))
+    bot = record_bot_heartbeat({"bot_id": bot_id, "display_name": display_name, "action": "entered_local_studio", "detail": {"entry_id": entry_id, "purpose": purpose, "task": task, "execution_mode": policy["mode"], "next": "read local bot guide"}})
+    event(None, None, "bot_entered", {"entry_id": entry_id, "bot_id": bot_id, "purpose": purpose, "task": task, "execution_mode": policy["mode"]})
+    return {"entry": {"id": entry_id, "bot_id": bot_id, "display_name": display_name, "purpose": purpose, "task": task, "joined_at": now}, "bot": bot, "execution_policy": policy, "next_requests": bot_entry_manifest()["first_requests"], "execution_policy_note": bot_entry_manifest()["execution_policy"]}
 
 
 def bot_guide(language: str = "en") -> dict[str, Any]:
@@ -824,6 +880,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, {"projects": list_projects()})
             elif path == "/api/jobs":
                 self._json(200, {"jobs": list_jobs()})
+            elif path.startswith("/api/bots/") and path.endswith("/execution-policy"):
+                self._json(200, {"execution_policy": execution_policy(path.split("/")[3])})
             elif path == "/api/bots":
                 self._json(200, list_bots())
             elif path == "/api/bot-activity":
@@ -862,6 +920,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(201, {"project": new_project(body)})
             elif path == "/api/bots/heartbeat":
                 self._json(201, {"bot": record_bot_heartbeat(body)})
+            elif path == "/api/bots/execution-policy":
+                self._json(200, {"execution_policy": set_execution_policy(body)})
             elif path == "/api/bot-entry":
                 self._json(201, enter_bot_workspace(body))
             elif path == "/api/edit-method":
@@ -882,8 +942,21 @@ class StudioHandler(BaseHTTPRequestHandler):
                     raise ValueError("Use the dedicated endpoint for this project artifact type.")
                 self._json(201, {"artifact": save_artifact(project_id, kind, body.get("title"), body.get("payload", {}), body.get("created_by", "local_user"))})
             elif path.startswith("/api/projects/") and path.endswith("/render"):
-                project_id = path.split("/")[3]; job = create_job(project_id, "render", {"requested_by": body.get("requested_by", "local_user")}, bool(body.get("approved")))
-                self._json(201, {"job": job})
+                project_id = path.split("/")[3]
+                auto_local, policy = bot_auto_executes(body)
+                human_approved = bool(body.get("approved"))
+                if not human_approved and not auto_local:
+                    raise ValueError("This bot requires human approval before a local render. Set its execution policy to auto_local or send approved: true.")
+                authorization = "bot_auto_local" if auto_local and not human_approved else "human_approved"
+                job = create_job(project_id, "render", {
+                    "requested_by": body.get("requested_by", "local_user"),
+                    "bot_id": body.get("bot_id"),
+                    "execution_authorization": authorization,
+                }, human_approved or auto_local)
+                auto_run = auto_local and bool(body.get("run_immediately", True))
+                if auto_run:
+                    job = self._run_job(job["id"], {"bot_id": body.get("bot_id"), "execution_authorization": authorization})
+                self._json(201, {"job": job, "execution_policy": policy, "auto_run": auto_run})
             elif path.startswith("/api/projects/") and path.endswith("/instagram"):
                 project_id = path.split("/")[3]
                 if not body.get("approved"):
