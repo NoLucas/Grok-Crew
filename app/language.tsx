@@ -4,8 +4,8 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 
 export type AppLanguage = 'ko' | 'en';
 
-const storageKey = 'nohReelForgeLanguage';
-const changeEvent = 'noh:language-change';
+const storageKey = 'localVideoWorkspaceLanguage';
+const changeEvent = 'local-video-workspace-language-change';
 
 type LanguageValue = { language: AppLanguage; chooseLanguage: (language: AppLanguage) => void; t: (ko: string, en: string) => string };
 const LanguageContext = createContext<LanguageValue | null>(null);

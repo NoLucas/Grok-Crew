@@ -1,8 +1,8 @@
 {
-  "schema": "noh.reel-forge.bot-guide/v1",
-  "title": "NOH Reel Forge Local Editing Playbook",
-  "scope": "This guide is for a bot running on the same workstation as NOH Local Studio.",
-  "first_action": "Enter NOH Local Studio. Entry records the first heartbeat before any work starts.",
+  "schema": "local-video-workspace.bot-guide/v1",
+  "title": "Local Video Workspace Editing Playbook",
+  "scope": "This guide is for a bot running on the same workstation as Local Video Studio.",
+  "first_action": "Enter Local Video Studio. Entry records the first heartbeat before any work starts.",
   "non_negotiables": [
     "Use only files under local_studio/workspace.",
     "Keep the first useful idea or visible change within the first 1.5 seconds when possible.",
@@ -73,8 +73,8 @@
     "endpoint": "POST /api/edit-method",
     "write_rule": "A bot may set an edit method after checking local scope. The method can be applied to the Finish Rack by a person and never bypasses render or publish approval.",
     "body": {
-      "bot_id": "grok-editor-01",
-      "display_name": "Grok Editor",
+      "bot_id": "local-editor-bot",
+      "display_name": "Local Editor Bot",
       "method": {
         "hook_strategy": "payoff_first | question_first | chronological",
         "pacing": "tight | balanced | deliberate",
@@ -148,8 +148,8 @@
     "Change completed output files unless the owner requests a new edit."
   ],
   "heartbeat_example": {
-    "bot_id": "grok-editor-01",
-    "display_name": "Grok Editor",
+    "bot_id": "local-editor-bot",
+    "display_name": "Local Editor Bot",
     "action": "await_human_approval",
     "detail": {
       "project": "six-lines-reel",

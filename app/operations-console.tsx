@@ -36,11 +36,11 @@ export default function OperationsConsole() {
   const [outstanding, setOutstanding] = useState('사람 승인 전에는 렌더하지 않습니다.');
   const [taskTitle, setTaskTitle] = useState('대본 기준 컷 검토');
   const [taskDetail, setTaskDetail] = useState('침묵 구간과 filler 제안을 확인하고 EDL을 준비합니다.');
-  const [botId, setBotId] = useState('grok-editor-01');
+  const [botId, setBotId] = useState('local-editor-bot');
   const [audioPlan, setAudioPlan] = useState('무음 0.5초 이상 검토 · 컷 경계 30ms 페이드 · 필요 시 음량 표준화');
   const [variantName, setVariantName] = useState('A안 · payoff first');
   const [overlayPlan, setOverlayPlan] = useState('0:00–0:02 · 제목 카드 · safe zone 상단');
-  const [kitName, setKitName] = useState('NOH 기본 브랜드');
+  const [kitName, setKitName] = useState('기본 브랜드 키트');
   const [kitStyle, setKitStyle] = useState('노란 강조 · 굵은 자막 · 하단 안전 영역 · natural look');
   const [performanceNote, setPerformanceNote] = useState('게시 후 조회수·저장·댓글·반응이 좋은 훅을 기록합니다.');
 

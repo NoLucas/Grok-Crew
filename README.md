@@ -1,4 +1,4 @@
-# NOH Reel Forge — local Grok Crew workspace
+# Local Video Workspace — local bot editing workspace
 
 Each person can clone this repository and run the complete video-editing workspace, Local Studio, and bot CLI on their own computer. Projects, bot records, media paths, and render outputs remain on that person's device.
 
@@ -25,7 +25,7 @@ The bot CLI is included in every clone. A bot running on the same computer shoul
 
 ```sh
 python local_studio/grok_crew.py contract
-python local_studio/grok_crew.py entry --bot-id grok-editor-01 --display-name "Grok Editor" --purpose edit_video --task "Prepare a transcript-first edit plan." --execution-mode auto_local
+python local_studio/grok_crew.py entry --bot-id local-editor-bot --display-name "Local Editor Bot" --purpose edit_video --task "Prepare a transcript-first edit plan." --execution-mode auto_local
 ```
 
 The first command lists every available local feature: projects, shared edit method, media inspection, transcript cut maps, QA, project memory, task board, brand kits, overlays, A/B plans, local renders, and Instagram delivery queues. Entering connects the bot and gives it every local editing feature immediately; local rendering defaults to `auto_local`.
@@ -33,8 +33,8 @@ The first command lists every available local feature: projects, shared edit met
 The bot can choose its own local-render gate at any time:
 
 ```sh
-python local_studio/grok_crew.py policy set --bot-id grok-editor-01 --mode auto_local
-python local_studio/grok_crew.py policy set --bot-id grok-editor-01 --mode approval_required
+python local_studio/grok_crew.py policy set --bot-id local-editor-bot --mode auto_local
+python local_studio/grok_crew.py policy set --bot-id local-editor-bot --mode approval_required
 ```
 
 `auto_local` lets that connected bot queue and run its own local render. `approval_required` keeps all planning and editing features available but requires `--human-approved` for each render. Instagram publication is intentionally separate and always requires human approval, the local server switch, and `PUBLISH` confirmation.

@@ -1,5 +1,5 @@
 {
-  "schema": "noh.local-studio.bot-contract/v1",
+  "schema": "local-video-workspace.bot-contract/v1",
   "scope": "127.0.0.1 only",
   "allowed": [
     "create_project",

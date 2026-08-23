@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Start the complete NOH Reel Forge workspace on this computer only. */
+/** Start the complete local video workspace on this computer only. */
 
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -66,7 +66,7 @@ async function main() {
     await waitForStudio();
   }
 
-  console.log('\nNOH Reel Forge is ready at http://localhost:3000/production');
+  console.log('\nLocal Video Workspace is ready at http://localhost:3000/production');
   console.log('Bots in this cloned folder can use: python local_studio/grok_crew.py contract\n');
   const web = spawn(npm, ['run', 'dev', '--', '--host', '127.0.0.1', '--port', '3000', '--strictPort'], { cwd: root, stdio: 'inherit' });
   const close = () => { if (studio && !studio.killed) studio.kill(); if (!web.killed) web.kill(); };
@@ -74,4 +74,4 @@ async function main() {
   web.on('exit', (code) => { close(); process.exitCode = code ?? 1; });
 }
 
-main().catch((error) => { console.error(`\nCould not start NOH Reel Forge: ${error.message}`); process.exitCode = 1; });
+main().catch((error) => { console.error(`\nCould not start Local Video Workspace: ${error.message}`); process.exitCode = 1; });

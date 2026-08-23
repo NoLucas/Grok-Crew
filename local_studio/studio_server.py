@@ -1,4 +1,4 @@
-"""NOH Local Studio: local SQLite jobs, MoviePy rendering, and approval-gated Instagram publishing."""
+"""Local Video Studio: local SQLite jobs, MoviePy rendering, and approval-gated Instagram publishing."""
 
 from __future__ import annotations
 
@@ -28,9 +28,9 @@ BOT_GUIDE_KO_PATH = BASE_DIR / "bot-guide.ko.json"
 TERMINAL_CLI_PATH = BASE_DIR / "grok_crew.py"
 ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000"}
 SITE_BASE_URL = "http://localhost:3000"
-BROWSER_PAGE_PATHS = {"/production", "/operations", "/bots", "/bot-guide", "/terminal"}
+BROWSER_PAGE_PATHS = {"/production", "/operations", "/bots", "/bot-guide", "/terminal", "/privacy"}
 DEFAULT_EDIT_METHOD = {
-    "schema": "noh.reel-forge.edit-method/v1",
+    "schema": "local-video-workspace.edit-method/v1",
     "hook_strategy": "payoff_first",
     "pacing": "tight",
     "filler_policy": "remove",
@@ -42,7 +42,7 @@ DEFAULT_EDIT_METHOD = {
     "fps": 30,
     "quality": "balanced",
 }
-BOT_ENTRY_SCHEMA = "noh.reel-forge.bot-entry/v1"
+BOT_ENTRY_SCHEMA = "local-video-workspace.bot-entry/v1"
 ARTIFACT_TYPES = {"audio_plan", "bot_task", "brand_kit", "cut_map", "edit_variant", "media_inspection", "overlay_slots", "performance_note", "preflight_report", "project_memory", "quality_report"}
 EXECUTION_MODES = {"auto_local", "approval_required"}
 
@@ -176,9 +176,9 @@ def caption_font() -> str | None:
 
 
 def new_project(body: dict[str, Any]) -> dict[str, Any]:
-    title = str(body.get("title", "Untitled NOH project")).strip()[:120] or "Untitled NOH project"
+    title = str(body.get("title", "Untitled video project")).strip()[:120] or "Untitled video project"
     source = require_path(body.get("source_path"), "source_path")
-    output = require_path(body.get("output_path", "outputs/noh-final.mp4"), "output_path")
+    output = require_path(body.get("output_path", "outputs/final-video.mp4"), "output_path")
     timeline = body.get("timeline", {})
     if not isinstance(timeline, dict) or not isinstance(timeline.get("clips"), list):
         raise ValueError("timeline.clips must be a list.")
@@ -503,8 +503,8 @@ def bot_entry_manifest() -> dict[str, Any]:
         "scope": "Same workstation and 127.0.0.1 only.",
         "entry_endpoint": "POST /api/bot-entry",
         "entry_body": {
-            "bot_id": "grok-editor-01",
-            "display_name": "Grok Editor",
+            "bot_id": "local-editor-bot",
+            "display_name": "Local Editor Bot",
             "purpose": "edit_video",
             "task": "Prepare a transcript-first local edit plan.",
             "execution_mode": "auto_local | approval_required",
@@ -519,7 +519,7 @@ def bot_entry_manifest() -> dict[str, Any]:
 
 def terminal_contract() -> dict[str, Any]:
     return {
-        "schema": "noh.reel-forge.terminal-cli/v1",
+        "schema": "local-video-workspace.terminal-cli/v1",
         "scope": "Same workstation and loopback HTTP only.",
         "api_base_url": "http://127.0.0.1:7214",
         "browser_site_base_url": SITE_BASE_URL,
@@ -541,6 +541,7 @@ def terminal_contract() -> dict[str, Any]:
             "bot_check": f"{SITE_BASE_URL}/bots",
             "bot_guide": f"{SITE_BASE_URL}/bot-guide",
             "terminal": f"{SITE_BASE_URL}/terminal",
+            "privacy": f"{SITE_BASE_URL}/privacy",
         },
     }
 
@@ -819,7 +820,7 @@ def instagram_publish(project: dict[str, Any], payload: dict[str, Any]) -> dict[
 
 
 class StudioHandler(BaseHTTPRequestHandler):
-    server_version = "NOHLocalStudio/1.0"
+    server_version = "LocalVideoStudio/1.0"
 
     def _json(self, status: int, payload: Any) -> None:
         raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -875,7 +876,7 @@ class StudioHandler(BaseHTTPRequestHandler):
             if path in BROWSER_PAGE_PATHS:
                 self._redirect_to_browser_page(path)
             elif path == "/health":
-                self._json(200, {"service": "NOH Local Studio", "status": "ready", "bind": "127.0.0.1", "workspace": str(WORKSPACE_DIR), "database": str(DB_PATH), "moviepy_installed": self._moviepy_ready(), "instagram_publish_enabled": bool(getattr(self.server, "allow_instagram_publish", False)), "credentials_configured": bool(os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USER_ID") and os.getenv("INSTAGRAM_API_VERSION")), "bots": list_bots()["summary"]})
+                self._json(200, {"service": "Local Video Studio", "status": "ready", "bind": "127.0.0.1", "workspace": str(WORKSPACE_DIR), "database": str(DB_PATH), "moviepy_installed": self._moviepy_ready(), "instagram_publish_enabled": bool(getattr(self.server, "allow_instagram_publish", False)), "credentials_configured": bool(os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USER_ID") and os.getenv("INSTAGRAM_API_VERSION")), "bots": list_bots()["summary"]})
             elif path == "/api/projects":
                 self._json(200, {"projects": list_projects()})
             elif path == "/api/jobs":
@@ -1010,13 +1011,13 @@ class StudioHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run NOH Local Studio on loopback only.")
+    parser = argparse.ArgumentParser(description="Run Local Video Studio on loopback only.")
     parser.add_argument("--port", type=int, default=7214)
     parser.add_argument("--allow-instagram-publish", action="store_true", help="Allow explicitly approved Instagram publish jobs to run.")
     args = parser.parse_args(); load_dotenv(); init_db()
     server = ThreadingHTTPServer(("127.0.0.1", args.port), StudioHandler)
     server.allow_instagram_publish = args.allow_instagram_publish  # type: ignore[attr-defined]
-    print(f"NOH Local Studio listening at http://127.0.0.1:{args.port}")
+    print(f"Local Video Studio listening at http://127.0.0.1:{args.port}")
     print(f"Workspace: {WORKSPACE_DIR}")
     print("Instagram publishing is " + ("ENABLED" if args.allow_instagram_publish else "DISABLED") + ".")
     try:

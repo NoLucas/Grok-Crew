@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grok Crew CLI — a dependency-free local client for NOH Reel Forge."""
+"""Grok Crew CLI — a dependency-free local client for Local Video Studio."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ BROWSER_PAGES = {
     "bots": "http://localhost:3000/bots",
     "guide": "http://localhost:3000/bot-guide",
     "terminal": "http://localhost:3000/terminal",
+    "privacy": "http://localhost:3000/privacy",
 }
 
 for _stream in (sys.stdout, sys.stderr):
@@ -92,7 +93,7 @@ def require_human_approval(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Use every NOH Reel Forge Local Studio capability from a same-PC terminal.")
+    parser = argparse.ArgumentParser(description="Use every Local Video Studio capability from a same-PC terminal.")
     parser.add_argument("--server", default=os.getenv("GROK_CREW_SERVER", "http://127.0.0.1:7214"), help="Local Studio URL; loopback only.")
     parser.add_argument("--token", default=os.getenv("LOCAL_STUDIO_TOKEN", ""), help="Optional Local Studio token. Prefer the LOCAL_STUDIO_TOKEN environment variable.")
     commands = parser.add_subparsers(dest="group", required=True)
