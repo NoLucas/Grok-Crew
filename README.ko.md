@@ -143,7 +143,7 @@ python local_studio/grok_crew.py entry --bot-id editor-01 --display-name "Editor
 > - 4–8초: SIX LINES
 > - 1080×1920, 무음, 자막 있음
 
-![봇이 평범한 말 한마디로 처음부터 끝까지 로컬에서 편집한 결과](public/demo/bot-instructed-edit.gif)
+[![자연어로 요청한 봇 작업 흐름 전체 보기](public/demo/bot-plain-language-ko.gif)](public/demo/bot-plain-language-ko.mp4)
 
 무슨 기능을 썼는지 물어보면, 실제로 어떤 로컬 기능을 건드렸는지 정확히 설명해줍니다 — 이 경우엔 Production에서 프로젝트를 만들고 렌더했고, Bot Check로 `auto_local` 정책으로 입장했을 뿐, 브라우저 화면을 직접 클릭하거나 컷 로그·운영 센터·Instagram을 건드리지는 않았습니다.
 
