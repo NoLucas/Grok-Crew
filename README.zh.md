@@ -11,11 +11,13 @@
   <img alt="在你自己的电脑上运行" src="https://img.shields.io/badge/runs-on%20your%20computer-f4c400?style=flat-square">
 </p>
 
-## 观看演示
+<h2 align="center">观看演示</h2>
 
-[![观看真实的本地机器人使用 Grok Crew](public/demo/quickstart-chat-demo.gif)](public/demo/quickstart-chat-demo.mp4)
+<p align="center">
+<a href="public/demo/quickstart-chat-demo.mp4"><img src="public/demo/quickstart-chat-demo.gif" alt="观看真实的本地机器人使用 Grok Crew" width="380"></a>
+</p>
 
-*一个真实的本地机器人克隆并启动仓库，然后把一句自然语言的请求剪辑成带字幕的竖屏视频。点击可播放完整视频。*
+<p align="center"><em>一个真实的本地机器人克隆并启动仓库，然后把一句自然语言的请求剪辑成带字幕的竖屏视频。点击可播放完整视频。</em></p>
 
 ## 在本地运行
 

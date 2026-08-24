@@ -11,11 +11,13 @@
   <img alt="Runs on your computer" src="https://img.shields.io/badge/runs-on%20your%20computer-f4c400?style=flat-square">
 </p>
 
-## Watch it work
+<h2 align="center">Watch it work</h2>
 
-[![Watch a real local bot clone, run, and edit with Grok Crew](public/demo/quickstart-chat-demo.gif)](public/demo/quickstart-chat-demo.mp4)
+<p align="center">
+<a href="public/demo/quickstart-chat-demo.mp4"><img src="public/demo/quickstart-chat-demo.gif" alt="Watch a real local bot clone, run, and edit with Grok Crew" width="380"></a>
+</p>
 
-*A real local bot clones the repo, starts it, and turns a plain-language request into a captioned vertical cut. Click it to open the full MP4.*
+<p align="center"><em>A real local bot clones the repo, starts it, and turns a plain-language request into a captioned vertical cut. Click it to open the full MP4.</em></p>
 
 ## Run it locally
 

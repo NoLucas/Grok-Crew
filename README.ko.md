@@ -11,11 +11,13 @@
   <img alt="내 컴퓨터에서 실행" src="https://img.shields.io/badge/runs-on%20your%20computer-f4c400?style=flat-square">
 </p>
 
-## 작동 영상
+<h2 align="center">작동 영상</h2>
 
-[![Grok Crew를 실제로 사용하는 로컬 봇 보기](public/demo/quickstart-chat-demo.gif)](public/demo/quickstart-chat-demo.mp4)
+<p align="center">
+<a href="public/demo/quickstart-chat-demo.mp4"><img src="public/demo/quickstart-chat-demo.gif" alt="Grok Crew를 실제로 사용하는 로컬 봇 보기" width="380"></a>
+</p>
 
-*실제 로컬 봇이 저장소를 클론하고 실행한 뒤, 평범한 말로 된 요청을 자막이 들어간 세로 영상으로 편집합니다. 클릭하면 전체 MP4가 재생됩니다.*
+<p align="center"><em>실제 로컬 봇이 저장소를 클론하고 실행한 뒤, 평범한 말로 된 요청을 자막이 들어간 세로 영상으로 편집합니다. 클릭하면 전체 MP4가 재생됩니다.</em></p>
 
 ## 로컬에서 실행하기
 

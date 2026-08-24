@@ -11,11 +11,13 @@
   <img alt="お使いのパソコンで動作" src="https://img.shields.io/badge/runs-on%20your%20computer-f4c400?style=flat-square">
 </p>
 
-## 動作デモ
+<h2 align="center">動作デモ</h2>
 
-[![実際のローカルボットがGrok Crewを使う様子を見る](public/demo/quickstart-chat-demo.gif)](public/demo/quickstart-chat-demo.mp4)
+<p align="center">
+<a href="public/demo/quickstart-chat-demo.mp4"><img src="public/demo/quickstart-chat-demo.gif" alt="実際のローカルボットがGrok Crewを使う様子を見る" width="380"></a>
+</p>
 
-*実際のローカルボットがリポジトリをクローンして起動し、普通の言葉での依頼を字幕入りの縦型動画に編集します。クリックすると完全なMP4が再生されます。*
+<p align="center"><em>実際のローカルボットがリポジトリをクローンして起動し、普通の言葉での依頼を字幕入りの縦型動画に編集します。クリックすると完全なMP4が再生されます。</em></p>
 
 ## ローカルで実行する
 
