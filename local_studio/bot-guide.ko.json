@@ -39,7 +39,7 @@
     "platform": "render_settings.platform을 platform_presets의 키 중 하나로 설정합니다 (기본값 reels_tiktok_shorts, 1080x1920). feed_square(1080x1080)와 landscape_x(1920x1080)도 사용할 수 있습니다.",
     "caption_background": "render_settings.caption_bg=true와 caption_bg_color(16진수)를 설정하면 번인 자막 뒤에 배경 패널이 그려집니다.",
     "word_level_captions": "타임라인 클립에 선택적 word_timings 배열({text, start, end}, 초 단위이며 클립 자체 시작을 기준으로 함, 즉 0은 클립의 in 지점이 시작되는 순간)을 추가하면 해당 클립에서 하나의 고정 자막 대신 단어 단위로 순차 표시되는 자막을 렌더링합니다. 생략하면 기존의 단일 자막 동작이 유지됩니다.",
-    "background_music": "render_settings.music_track에 작업 공간 기준 상대 경로의 오디오 파일을 설정하면 원본 오디오 아래에 배경 음악을 믹싱합니다 (music_volume 0-100, 기본값 30; music_loop가 true면 렌더 길이에 맞춰 반복하고, false면 한 번만 자릅니다).",
+    "background_music": "render_settings.music_track에 작업 공간 기준 상대 경로의 오디오 파일을 설정하면 원본 오디오 아래에 배경 음악을 믹싱합니다 (music_volume 0-100, 기본값 30; music_loop가 true면 렌더 길이에 맞춰 반복하고, false면 한 번만 자릅니다). 클립에 자체 대사 오디오가 있으면 음악이 한 가지 고정된 레벨로 섞이는 대신 자동으로 그 아래로 덕킹됩니다 (music_ducking, 기본값 true; music_duck_floor 5-100, 기본값 35는 music_volume 대비 몇 %까지 낮출지입니다). 고정된 믹스를 원하면 music_ducking=false로 설정하세요.",
     "jobs_are_async": "/render, /instagram, 또는 /api/jobs/{id}/run으로 렌더나 Instagram 작업을 시작하면 즉시 queued 또는 running 상태의 작업이 반환됩니다. GET /api/jobs/{id}를 폴링해 status가 succeeded 또는 failed가 될 때까지 진행률(0-100)을 확인하거나, 요청 본문에 wait: true를 넣어 완료될 때까지 기다릴 수 있습니다. POST /api/jobs/{id}/cancel은 다음 클립이 처리되기 전에 취소를 요청합니다."
   },
   "operations_contract": {

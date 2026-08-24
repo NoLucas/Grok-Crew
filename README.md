@@ -188,16 +188,16 @@ Local Studio still never accepts a connection from another machine — that does
 - [x] Import/export portable project bundles
 - [x] More local render presets and caption layouts
 - [x] Cloud bot handoff through a dedicated git repository, with loopback still closed to the network
+- [x] Bundle an open-license caption font so rendering doesn't depend on finding a system font
+- [x] Surface render concurrency as a documented setting instead of a silent single-worker default
+- [x] Make the local CORS/Origin allow-list configurable instead of hardcoding port 3000
+- [x] Automated test suite for the render pipeline and app
+- [x] Automatic music ducking under dialogue instead of a flat volume mix
+- [x] GitHub Actions CI for lint/build/Python checks on every PR
+- [x] Harden the cloud bot handoff channel (media size cap, bundle size cap, max packages per cycle)
+- [x] Extend the live browser UI and bot guide to Chinese/Japanese to match the README translations
 - [ ] Community-maintained example edit packs
-- [ ] Bundle an open-license caption font so rendering doesn't depend on finding a system font
-- [ ] Surface render concurrency as a documented setting instead of a silent single-worker default
-- [ ] Make the local CORS/Origin allow-list configurable instead of hardcoding port 3000
 - [ ] Publish delivery beyond Instagram (TikTok, YouTube Shorts)
-- [ ] Automated test suite for the render pipeline and app
-- [ ] Automatic music ducking under dialogue instead of a flat volume mix
-- [ ] GitHub Actions CI for lint/build/Python checks on every PR
-- [ ] Extend the live browser UI and bot guide to Chinese/Japanese to match the README translations
-- [ ] Harden the cloud bot handoff channel (media size cap, bundle size cap, max packages per cycle)
 
 ## Feedback and contributions
 

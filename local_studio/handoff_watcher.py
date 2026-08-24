@@ -21,16 +21,6 @@ from typing import Any
 from grok_crew import LocalStudioClient
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-MIRROR_DIR = DATA_DIR / "handoff-mirror"
-STATE_PATH = DATA_DIR / "handoff_state.json"
-BUNDLE_SCHEMA = "local-video-workspace.project-bundle/v1"
-BOT_ID = "cloud-handoff"
-BOT_DISPLAY_NAME = "Cloud Handoff Watcher"
-ALLOWED_MEDIA_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm"}
-MAX_MEDIA_BYTES = int(os.getenv("HANDOFF_MAX_MEDIA_BYTES", str(2 * 1024 ** 3)))  # 2 GB
-MAX_BUNDLE_BYTES = int(os.getenv("HANDOFF_MAX_BUNDLE_BYTES", str(4 * 1024 * 1024)))  # 4 MB
-DEFAULT_MAX_PACKAGES_PER_CYCLE = 5
 
 
 def log(message: str) -> None:
@@ -46,6 +36,24 @@ def load_dotenv() -> None:
             continue
         key, value = line.split("=", 1)
         os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+# Must run before the os.getenv() defaults below are evaluated -- these are module-level
+# constants read once at import time, so main()'s later load_dotenv() call would be too
+# late for them (this script is also imported standalone via `python handoff_watcher.py`,
+# so this must not depend on studio_server having loaded .env first either).
+load_dotenv()
+
+DATA_DIR = BASE_DIR / "data"
+MIRROR_DIR = DATA_DIR / "handoff-mirror"
+STATE_PATH = DATA_DIR / "handoff_state.json"
+BUNDLE_SCHEMA = "local-video-workspace.project-bundle/v1"
+BOT_ID = "cloud-handoff"
+BOT_DISPLAY_NAME = "Cloud Handoff Watcher"
+ALLOWED_MEDIA_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm"}
+MAX_MEDIA_BYTES = int(os.getenv("HANDOFF_MAX_MEDIA_BYTES", str(2 * 1024 ** 3)))  # 2 GB
+MAX_BUNDLE_BYTES = int(os.getenv("HANDOFF_MAX_BUNDLE_BYTES", str(4 * 1024 * 1024)))  # 4 MB
+DEFAULT_MAX_PACKAGES_PER_CYCLE = 5
 
 
 def load_state() -> dict[str, Any]:

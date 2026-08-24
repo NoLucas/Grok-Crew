@@ -2,10 +2,67 @@
 
 from __future__ import annotations
 
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Any, Callable
 
 from config import PLATFORM_PRESETS, caption_font, workspace_path
+
+
+def _smooth_gain_targets(targets: list[float], attack: float, release: float) -> list[float]:
+    """Exponential envelope follower: eases the gain toward each step's target,
+    using the faster `attack` rate while dropping (dialogue just started -- duck
+    quickly) and the slower `release` rate while climbing back toward 1.0
+    (dialogue just ended), so the music bed doesn't audibly pump on every word
+    gap. Pure Python (no numpy) so it stays importable/testable without MoviePy
+    installed, matching the rest of this module's deferred-import convention."""
+    smoothed: list[float] = []
+    level = 1.0
+    for target in targets:
+        rate = attack if target < level else release
+        level += (target - level) * rate
+        smoothed.append(level)
+    return smoothed
+
+
+def _dialogue_duck_gain(dialogue_audio, duration: float, floor: float):
+    """Sample dialogue loudness at a coarse rate and return a vectorized gain(t)
+    function for the music bed: near `floor` while dialogue plays, eased back to
+    1.0 in the gaps. Requires MoviePy/numpy, so the import stays inside this
+    function rather than at module level."""
+    import numpy as np
+
+    sample_rate = 25  # Hz: coarse enough to be cheap, fine enough to track speech gaps
+    if duration <= 0:
+        return lambda t: np.ones_like(np.atleast_1d(t), dtype=float)
+    samples = dialogue_audio.to_soundarray(fps=sample_rate, quantize=False)
+    if samples.ndim == 2:
+        samples = samples.mean(axis=1)
+    loudness = np.abs(samples)
+    gate = max(float(loudness.max()) * 0.08, 1e-4) if loudness.size else 0.0
+    targets = np.where(loudness > gate, floor, 1.0)
+    envelope = np.array(_smooth_gain_targets(targets.tolist(), attack=0.35, release=0.12))
+
+    def gain_at(t):
+        t_arr = np.atleast_1d(t)
+        idx = np.clip((t_arr * sample_rate).astype(int), 0, len(envelope) - 1)
+        return envelope[idx]
+
+    return gain_at
+
+
+def _apply_music_ducking(music, gain_at):
+    import numpy as np
+
+    nchannels = music.nchannels
+
+    def duck(get_frame, t):
+        frame = get_frame(t)
+        gain = gain_at(t)
+        return frame * gain if nchannels == 1 else frame * np.array([gain for _ in range(nchannels)]).T
+
+    return music.transform(duck, keep_duration=True)
+
 
 def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] | None = None, should_cancel: Callable[[], bool] | None = None) -> dict[str, Any]:
     try:
@@ -70,7 +127,7 @@ def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] |
     clips_data = timeline.get("clips", [])
     cuts = []
     total_entries = max(len(clips_data), 1)
-    with VideoFileClip(str(source)) as source_clip:
+    with VideoFileClip(str(source)) as source_clip, ExitStack() as audio_stack:
         for position, entry in enumerate(clips_data):
             if should_cancel and should_cancel():
                 raise RuntimeError("Render cancelled.")
@@ -179,10 +236,16 @@ def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] |
             if not music_path.exists():
                 raise RuntimeError(f"Music track does not exist: {music_path}")
             music_gain = bounded("music_volume", 30, 0, 100) / 100
-            with AudioFileClip(str(music_path)) as music_clip:
-                music = music_clip.with_effects([afx.MultiplyVolume(music_gain)])
-                music = music.with_effects([afx.AudioLoop(duration=final.duration)]) if enabled("music_loop", True) else music.subclipped(0, min(music.duration, final.duration))
-                final = final.with_audio(CompositeAudioClip([final.audio, music]) if final.audio else music)
+            # Kept open via audio_stack (not a plain `with`) because write_videofile()
+            # below still needs to pull frames through this reader; a `with` here would
+            # close it as soon as this block ends, well before the frames are read.
+            music_clip = audio_stack.enter_context(AudioFileClip(str(music_path)))
+            music = music_clip.with_effects([afx.MultiplyVolume(music_gain)])
+            music = music.with_effects([afx.AudioLoop(duration=final.duration)]) if enabled("music_loop", True) else music.subclipped(0, min(music.duration, final.duration))
+            if final.audio and enabled("music_ducking", True):
+                duck_floor = bounded("music_duck_floor", 35, 5, 100) / 100
+                music = _apply_music_ducking(music, _dialogue_duck_gain(final.audio, final.duration, duck_floor))
+            final = final.with_audio(CompositeAudioClip([final.audio, music]) if final.audio else music)
         has_audio = bool(final.audio)
         if progress_cb:
             progress_cb(92)

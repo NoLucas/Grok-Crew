@@ -11,7 +11,15 @@ This companion service is a private, local production node for Local Video Works
 - Runs renders and uploads on a background worker: starting a job returns immediately with a `queued`/`running` status, `GET /api/jobs/{id}` reports live `progress` (0–100), and `POST /api/jobs/{id}/cancel` requests cancellation before the next clip is processed. Pass `wait: true` in the request body (or `--wait` on the CLI) to block until the job finishes instead. A job still `running` when Local Studio stops unexpectedly is marked `failed` on the next startup.
 - `GET /api/presets` lists quality, caption-layout, and platform presets (Reels/TikTok/Shorts 9:16, Feed square 1:1, Landscape/X 16:9); merge one into a project's `render_settings` instead of setting every field by hand.
 - Captions can carry a background panel (`caption_bg` / `caption_bg_color`) and, per clip, an optional `word_timings` array for sequential word-by-word captions instead of one static line. A render fails fast with a clear error if no local font can be found, instead of silently skipping captions.
-- `render_settings.music_track` mixes a workspace-relative audio file under the source audio (`music_volume`, `music_loop`).
+- `render_settings.music_track` mixes a workspace-relative audio file under the source audio (`music_volume`, `music_loop`). When the clip still has its own dialogue audio, the music bed automatically ducks under it (`music_ducking`, on by default; `music_duck_floor` sets how far it ducks, default 35%) instead of mixing in at one flat level.
+
+## Configuration (local_studio/.env)
+
+Copy `.env.example` to `local_studio/.env` to set any of these; all are optional and each falls back to a safe default when unset.
+
+- `LOCAL_STUDIO_RENDER_WORKERS` — how many render jobs run at once (default `1`, i.e. a single background worker; jobs beyond that queue). Raise this only if the machine has CPU/RAM headroom for concurrent encodes.
+- `LOCAL_STUDIO_ALLOWED_ORIGINS` — comma-separated browser origins allowed to call this API (default `http://localhost:3000,http://127.0.0.1:3000`). Change this only if the browser workspace is served from a different port or host.
+- `LOCAL_STUDIO_FONT`, `LOCAL_STUDIO_WORKSPACE`, `LOCAL_STUDIO_TOKEN` — see their mentions elsewhere in this file.
 
 ## Start
 

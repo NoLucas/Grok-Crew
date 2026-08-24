@@ -4,6 +4,17 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+### Added
+
+- Automatic music ducking under dialogue (`music_ducking`, on by default, and `music_duck_floor`): a background music bed now quiets automatically while a clip's own dialogue audio is present instead of mixing in at one flat level.
+- `LOCAL_STUDIO_RENDER_WORKERS` (render concurrency) and `LOCAL_STUDIO_ALLOWED_ORIGINS` (the CORS/Origin allow-list, previously hardcoded to port 3000) are now documented `.env` settings; both default to the previous behavior when unset.
+- The live browser workspace and bot guide now support Chinese and Japanese, matching the existing README translations. The language switcher (`app/language.tsx`) now offers `zh`/`ja` alongside `ko`/`en`, every page's UI text has zh/ja translations, and `local_studio/bot-guide.zh.json` / `bot-guide.ja.json` are served from `GET /api/bot-guide?lang=zh|ja`.
+
+### Fixed
+
+- `config.py` and `handoff_watcher.py` loaded `.env` too late: `LOCAL_STUDIO_WORKSPACE`, `LOCAL_STUDIO_RENDER_WORKERS`, `HANDOFF_MAX_MEDIA_BYTES`, and `HANDOFF_MAX_BUNDLE_BYTES` were read from the environment at import time, before `.env` was applied, so setting them in `local_studio/.env` silently had no effect (only a real process environment variable worked). `.env` now loads before any setting that depends on it.
+- Rendering a project with `render_settings.music_track` set closed the music file's reader before `write_videofile()` was done reading from it, so any render with background music crashed. The music file now stays open for the whole render.
+
 ## 0.2.0 — 2026-08-24
 
 ### Added

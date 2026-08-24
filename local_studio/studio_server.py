@@ -23,8 +23,10 @@ import config
 from config import (
     ARTIFACT_TYPES,
     BOT_ENTRY_SCHEMA,
+    BOT_GUIDE_JA_PATH,
     BOT_GUIDE_KO_PATH,
     BOT_GUIDE_PATH,
+    BOT_GUIDE_ZH_PATH,
     DEFAULT_EDIT_METHOD,
     EXECUTION_MODES,
     PROJECT_BUNDLE_SCHEMA,
@@ -532,9 +534,12 @@ def enter_bot_workspace(body: dict[str, Any]) -> dict[str, Any]:
     return {"entry": {"id": entry_id, "bot_id": bot_id, "display_name": display_name, "purpose": purpose, "task": task, "joined_at": now}, "bot": bot, "execution_policy": policy, "next_requests": bot_entry_manifest()["first_requests"], "execution_policy_note": bot_entry_manifest()["execution_policy"]}
 
 
+BOT_GUIDE_PATHS_BY_LANGUAGE = {"ko": BOT_GUIDE_KO_PATH, "zh": BOT_GUIDE_ZH_PATH, "ja": BOT_GUIDE_JA_PATH, "en": BOT_GUIDE_PATH}
+
+
 def bot_guide(language: str = "en") -> dict[str, Any]:
     try:
-        path = BOT_GUIDE_KO_PATH if language == "ko" else BOT_GUIDE_PATH
+        path = BOT_GUIDE_PATHS_BY_LANGUAGE.get(language, BOT_GUIDE_PATH)
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError("Local bot guide is unavailable or invalid JSON.") from exc

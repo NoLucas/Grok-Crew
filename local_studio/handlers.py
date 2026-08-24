@@ -141,7 +141,8 @@ class StudioHandler(BaseHTTPRequestHandler):
             elif path == "/api/bot-activity":
                 self._json(200, {"activity": list_bot_activity()})
             elif path == "/api/bot-guide":
-                language = "ko" if "lang=ko" in urlparse(self.path).query else "en"
+                query = urlparse(self.path).query
+                language = next((lang for lang in ("ko", "zh", "ja") if f"lang={lang}" in query), "en")
                 self._json(200, bot_guide(language))
             elif path == "/api/bot-entry":
                 self._json(200, bot_entry_manifest())

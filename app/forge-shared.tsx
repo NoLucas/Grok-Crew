@@ -314,9 +314,9 @@ export function sceneScale(scene: Scene, progress: number) {
   return 1 + progress * 0.22;
 }
 
-export function UiText({ ko, en }: { ko: string; en: string }) {
+export function UiText({ ko, en, zh, ja }: { ko: string; en: string; zh: string; ja: string }) {
   const { t } = useLanguage();
-  return <>{t(ko, en)}</>;
+  return <>{t(ko, en, zh, ja)}</>;
 }
 
 export function SceneCanvas({

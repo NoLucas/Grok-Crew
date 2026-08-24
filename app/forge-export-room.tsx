@@ -136,15 +136,17 @@ export function ExportRoom({ forge }: { forge: ReturnType<typeof useForge> }) {
     <main className="forge-main subpage export-room">
       <section className="page-intro">
         <p className="kicker">
-          <UiText ko="최종 확인" en="FINAL CHECK" />
+          <UiText ko="최종 확인" en="FINAL CHECK" zh="最终确认" ja="最終チェック" />
         </p>
         <h1>
-          <UiText ko="내보내기" en="Export room" />
+          <UiText ko="내보내기" en="Export room" zh="导出" ja="エクスポートルーム" />
         </h1>
         <p>
           <UiText
             ko="감정의 컷을 미리 보고, 모든 게이트가 통과일 때만 내보내세요."
             en="Preview the emotional cut. Export only when every gate is green."
+            zh="先预览情绪剪辑,只有所有关卡都通过才导出。"
+            ja="感情のカットをプレビューし、すべてのゲートが緑になったときだけ書き出しましょう。"
           />
         </p>
       </section>
@@ -152,25 +154,25 @@ export function ExportRoom({ forge }: { forge: ReturnType<typeof useForge> }) {
       <section className="export-grid">
         <div className="export-preview">
           <span>
-            <UiText ko="10초 모션 미리보기" en="10s MOTION PREVIEW" />
+            <UiText ko="10초 모션 미리보기" en="10s MOTION PREVIEW" zh="10 秒动效预览" ja="10 秒モーションプレビュー" />
           </span>
           <div className="export-monitor">
             <div className="monitor-a">
               <b>{project.sceneA.headline}</b>
               <small>
-                <UiText ko="확대" en="zoom in" />
+                <UiText ko="확대" en="zoom in" zh="放大" ja="ズームイン" />
               </small>
             </div>
             <div className="monitor-cut">HARD CUT</div>
             <div className="monitor-b">
               <b>{project.sceneB.headline}</b>
               <small>
-                {project.sceneB.motion} <UiText ko="카메라" en="camera" />
+                {project.sceneB.motion} <UiText ko="카메라" en="camera" zh="镜头" ja="カメラ" />
               </small>
             </div>
           </div>
           <p>
-            <UiText ko="오디오" en="Audio" />: <b>{project.audio}</b> · 30 fps ·
+            <UiText ko="오디오" en="Audio" zh="音频" ja="オーディオ" />: <b>{project.audio}</b> · 30 fps ·
             1080 × 1920
           </p>
         </div>
@@ -181,13 +183,15 @@ export function ExportRoom({ forge }: { forge: ReturnType<typeof useForge> }) {
             onClick={startExport}
           >
             {exporting ? (
-              <UiText ko="WebM 렌더링 중…" en="Rendering WebM…" />
+              <UiText ko="WebM 렌더링 중…" en="Rendering WebM…" zh="正在渲染 WebM…" ja="WebM をレンダー中…" />
             ) : allGreen ? (
-              <UiText ko="WebM 내보내기" en="Export WebM" />
+              <UiText ko="WebM 내보내기" en="Export WebM" zh="导出 WebM" ja="WebM を書き出す" />
             ) : (
               <UiText
                 ko="내보내기 (모든 게이트 통과 필요)"
                 en="Export (gates green only)"
+                zh="导出(需所有关卡通过)"
+                ja="書き出す(全ゲート通過が必要)"
               />
             )}
           </button>
@@ -197,11 +201,15 @@ export function ExportRoom({ forge }: { forge: ReturnType<typeof useForge> }) {
                 <UiText
                   ko="브라우저가 지원하는 경우 WebM을 만들 수 있습니다. 생성되지 않은 MP4를 만들었다고 표시하지 않습니다."
                   en="WebM is offered where your browser supports it. MP4 is never claimed unless created."
+                  zh="如果浏览器支持,会提供 WebM。系统不会在未生成 MP4 时谎称已生成。"
+                  ja="ブラウザが対応していれば WebM を用意します。生成していない MP4 を生成済みと表示することはありません。"
                 />
               ) : (
                 <UiText
                   ko="내보내기 전에 빨간 게이트를 해결하세요."
                   en="Fix the red gates before export."
+                  zh="导出前请先解决红色关卡。"
+                  ja="書き出す前に赤いゲートを解決してください。"
                 />
               ))}
           </p>
@@ -214,16 +222,18 @@ export function ExportRoom({ forge }: { forge: ReturnType<typeof useForge> }) {
             }}
           >
             {copied ? (
-              <UiText ko="레시피 복사됨" en="Recipe copied" />
+              <UiText ko="레시피 복사됨" en="Recipe copied" zh="配方已复制" ja="レシピをコピーしました" />
             ) : (
               <UiText
                 ko="ffmpeg 확대 + 컷 레시피 복사"
                 en="Copy ffmpeg zoom + cut recipe"
+                zh="复制 ffmpeg 放大 + 剪切配方"
+                ja="ffmpeg のズーム + カットレシピをコピー"
               />
             )}
           </button>
           <label className="permalink-label">
-            <UiText ko="Instagram 릴 고유 링크" en="Instagram reel permalink" />
+            <UiText ko="Instagram 릴 고유 링크" en="Instagram reel permalink" zh="Instagram Reel 永久链接" ja="Instagram リールのパーマリンク" />
             <input
               value={url}
               onChange={(event) => setUrl(event.target.value)}
@@ -235,7 +245,7 @@ export function ExportRoom({ forge }: { forge: ReturnType<typeof useForge> }) {
               {validReel ? (
                 "READY FOR /REEL/"
               ) : (
-                <UiText ko="고유 링크 확인" en="PERMALINK CHECK" />
+                <UiText ko="고유 링크 확인" en="PERMALINK CHECK" zh="永久链接检查" ja="パーマリンクチェック" />
               )}
             </b>
             <span>{permalinkText}</span>

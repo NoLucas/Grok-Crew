@@ -66,6 +66,38 @@ def test_caption_font_prefers_bundled_cjk_font(studio, monkeypatch):
     assert Path(font_path).is_file()
 
 
+# -- parse_allowed_origins: CORS allow-list is configurable via env, not hardcoded --
+
+def test_parse_allowed_origins_defaults_to_localhost_3000_when_blank():
+    assert config.parse_allowed_origins("") == frozenset({"http://localhost:3000", "http://127.0.0.1:3000"})
+
+
+def test_parse_allowed_origins_accepts_comma_separated_override():
+    origins = config.parse_allowed_origins("https://studio.example.com, http://localhost:5173")
+    assert origins == frozenset({"https://studio.example.com", "http://localhost:5173"})
+
+
+# -- render._smooth_gain_targets: the music-ducking envelope follower (pure Python,
+# -- no MoviePy/numpy needed, so it stays covered even though the rest of render.py
+# -- requires ffmpeg and isn't unit tested here) -------------------------------------
+
+def test_smooth_gain_targets_ducks_quickly_then_releases_slowly():
+    import render
+
+    targets = [0.35] * 5 + [1.0] * 5
+    smoothed = render._smooth_gain_targets(targets, attack=0.35, release=0.12)
+    assert smoothed[0] < 1.0, "should start ducking on the very first dialogue step"
+    assert smoothed[4] < smoothed[0], "should keep easing toward the floor while dialogue holds"
+    assert all(0.35 <= value <= 1.0 for value in smoothed)
+    assert smoothed[-1] < 1.0, "release is slower than attack, so 5 steps should not fully recover"
+
+
+def test_smooth_gain_targets_stays_at_full_volume_without_dialogue():
+    import render
+
+    assert render._smooth_gain_targets([1.0] * 4, attack=0.35, release=0.12) == [1.0, 1.0, 1.0, 1.0]
+
+
 # -- quality_report: regression test for the in/out vs start/end EDL bug -----
 
 def test_quality_report_reads_in_out_keys_not_start_end(studio):

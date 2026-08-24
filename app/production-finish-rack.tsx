@@ -50,27 +50,27 @@ export function FinishRack({
   ) => void;
   applyPreset: (patch: Partial<RenderSettings>) => void;
   presets: Presets | null;
-  t: (ko: string, en: string) => string;
+  t: (ko: string, en: string, zh: string, ja: string) => string;
 }) {
   return (
     <section className="finish-rack">
       <div className="finish-rack-head">
         <div>
-          <p className="kicker">{t("04 · 마무리 설정", "04 · FINISH RACK")}</p>
+          <p className="kicker">{t("04 · 마무리 설정", "04 · FINISH RACK", "04 · 收尾设置", "04 · 仕上げ設定")}</p>
           <h2>
-            {t("보이는 편집값을", "Apply visible edit values to the")} <span>{t("실제 로컬 렌더", "real local render")}</span>{t("에도 적용.", ".")}
+            {t("보이는 편집값을", "Apply visible edit values to the", "把界面上的编辑数值", "画面上の編集値を")} <span>{t("실제 로컬 렌더", "real local render", "应用到实际的本地渲染", "実際のローカルレンダー")}</span>{t("에도 적용.", ".", "。", "にも適用。")}
           </h2>
         </div>
         <p>
-          {t("이 설정은 다음에 만드는 프로젝트의 EDL 안에 저장됩니다. 미리보기용 버튼이 아니라 MoviePy 렌더에서 직접 사용됩니다.", "These settings are saved in the EDL for the next project and used directly by MoviePy rendering, not just for preview.")}
+          {t("이 설정은 다음에 만드는 프로젝트의 EDL 안에 저장됩니다. 미리보기용 버튼이 아니라 MoviePy 렌더에서 직접 사용됩니다.", "These settings are saved in the EDL for the next project and used directly by MoviePy rendering, not just for preview.", "这些设置会保存在下一个项目的 EDL 中,并非仅用于预览按钮,而是直接被 MoviePy 渲染使用。", "この設定は次に作るプロジェクトの EDL に保存され、プレビュー用のボタンではなく MoviePy レンダーで直接使用されます。")}
         </p>
       </div>
       <div className="finish-grid">
         <article>
-          <span>{t("세로 리프레임", "VERTICAL REFRAME")}</span>
-          <h3>{t("9:16 프레이밍", "9:16 framing")}</h3>
+          <span>{t("세로 리프레임", "VERTICAL REFRAME", "竖屏重构图", "縦型リフレーム")}</span>
+          <h3>{t("9:16 프레이밍", "9:16 framing", "9:16 取景", "9:16 フレーミング")}</h3>
           <label>
-            {t("출력 플랫폼", "Output platform")}
+            {t("출력 플랫폼", "Output platform", "输出平台", "出力プラットフォーム")}
             <select
               value={renderSettings.platform}
               onChange={(event) =>
@@ -93,7 +93,7 @@ export function FinishRack({
             </select>
           </label>
           <label>
-            {t("피사체 기준 위치", "Subject anchor")}
+            {t("피사체 기준 위치", "Subject anchor", "主体基准位置", "被写体アンカー")}
             <select
               value={renderSettings.crop_anchor}
               onChange={(event) =>
@@ -103,9 +103,9 @@ export function FinishRack({
                 )
               }
             >
-              <option value="left">{t("왼쪽 우선", "Left")}</option>
-              <option value="center">{t("가운데", "Center")}</option>
-              <option value="right">{t("오른쪽 우선", "Right")}</option>
+              <option value="left">{t("왼쪽 우선", "Left", "靠左", "左優先")}</option>
+              <option value="center">{t("가운데", "Center", "居中", "中央")}</option>
+              <option value="right">{t("오른쪽 우선", "Right", "靠右", "右優先")}</option>
             </select>
           </label>
           <label className="finish-toggle">
@@ -116,17 +116,17 @@ export function FinishRack({
                 patchSettings("mirror", event.target.checked)
               }
             />{" "}
-            {t("좌우 반전", "Mirror horizontally")}
+            {t("좌우 반전", "Mirror horizontally", "水平镜像", "左右反転")}
           </label>
           <p>
-            {t("가로 영상을 세로 1080×1920으로 채울 때 어느 쪽을 유지할지 정합니다.", "Choose which side to preserve when filling a vertical 1080×1920 frame from horizontal footage.")}
+            {t("가로 영상을 세로 1080×1920으로 채울 때 어느 쪽을 유지할지 정합니다.", "Choose which side to preserve when filling a vertical 1080×1920 frame from horizontal footage.", "决定把横屏素材填满竖屏 1080×1920 画面时保留哪一侧。", "横型の映像を縦 1080×1920 に収めるとき、どちら側を残すかを決めます。")}
           </p>
         </article>
         <article>
-          <span>{t("움직임 + 오디오", "MOTION + AUDIO")}</span>
-          <h3>{t("속도와 음량", "Speed and volume")}</h3>
+          <span>{t("움직임 + 오디오", "MOTION + AUDIO", "动作 + 音频", "モーション + オーディオ")}</span>
+          <h3>{t("속도와 음량", "Speed and volume", "速度与音量", "速度と音量")}</h3>
           <label>
-            {t("전체 속도", "Overall speed")} <output>{renderSettings.speed.toFixed(2)}×</output>
+            {t("전체 속도", "Overall speed", "整体速度", "全体速度")} <output>{renderSettings.speed.toFixed(2)}×</output>
             <input
               type="range"
               min="0.5"
@@ -139,10 +139,10 @@ export function FinishRack({
             />
           </label>
           <label>
-            {t("원본 음량", "Source volume")} {" "}
+            {t("원본 음량", "Source volume", "原始音量", "ソース音量")} {" "}
             <output>
               {renderSettings.mute_audio
-                ? t("음소거", "mute")
+                ? t("음소거", "mute", "静音", "ミュート")
                 : `${renderSettings.volume}%`}
             </output>
             <input
@@ -158,7 +158,7 @@ export function FinishRack({
           </label>
           <div className="finish-pair">
             <label>
-              {t("시작 페이드", "Fade in")}
+              {t("시작 페이드", "Fade in", "淡入", "フェードイン")}
               <input
                 type="number"
                 min="0"
@@ -171,7 +171,7 @@ export function FinishRack({
               />
             </label>
             <label>
-              {t("끝 페이드", "Fade out")}
+              {t("끝 페이드", "Fade out", "淡出", "フェードアウト")}
               <input
                 type="number"
                 min="0"
@@ -192,7 +192,7 @@ export function FinishRack({
                 patchSettings("normalize_audio", event.target.checked)
               }
             />{" "}
-            {t("음량 정규화", "Normalize volume")}
+            {t("음량 정규화", "Normalize volume", "音量归一化", "音量ノーマライズ")}
           </label>
           <label className="finish-toggle">
             <input
@@ -202,10 +202,10 @@ export function FinishRack({
                 patchSettings("mute_audio", event.target.checked)
               }
             />{" "}
-            {t("원본 오디오 제거", "Mute source audio")}
+            {t("원본 오디오 제거", "Mute source audio", "移除原始音频", "ソース音声をミュート")}
           </label>
           <label>
-            {t("배경 음악 (작업 공간 내부 경로)", "Background music (path inside workspace)")}
+            {t("배경 음악 (작업 공간 내부 경로)", "Background music (path inside workspace)", "背景音乐(工作区内部路径)", "BGM(ワークスペース内のパス)")}
             <input
               value={renderSettings.music_track}
               onChange={(event) =>
@@ -215,7 +215,7 @@ export function FinishRack({
             />
           </label>
           <label>
-            {t("음악 음량", "Music volume")} <output>{renderSettings.music_volume}%</output>
+            {t("음악 음량", "Music volume", "音乐音量", "音楽音量")} <output>{renderSettings.music_volume}%</output>
             <input
               type="range"
               min="0"
@@ -236,14 +236,14 @@ export function FinishRack({
                 patchSettings("music_loop", event.target.checked)
               }
             />{" "}
-            {t("영상 길이에 맞춰 반복 재생", "Loop to match the video length")}
+            {t("영상 길이에 맞춰 반복 재생", "Loop to match the video length", "循环播放以匹配视频长度", "動画の長さに合わせてループ再生")}
           </label>
         </article>
         <article>
-          <span>{t("색상 + 룩", "COLOR + LOOK")}</span>
-          <h3>{t("색감 보정", "Color correction")}</h3>
+          <span>{t("색상 + 룩", "COLOR + LOOK", "色彩 + 风格", "カラー + ルック")}</span>
+          <h3>{t("색감 보정", "Color correction", "色彩校正", "カラー補正")}</h3>
           <label>
-            {t("룩 프리셋", "Look preset")}
+            {t("룩 프리셋", "Look preset", "风格预设", "ルックプリセット")}
             <select
               value={renderSettings.look}
               onChange={(event) =>
@@ -253,15 +253,15 @@ export function FinishRack({
                 )
               }
             >
-              <option value="natural">{t("자연스러움", "Natural")}</option>
-              <option value="punchy">{t("강한 대비", "Punchy contrast")}</option>
-              <option value="mono">{t("흑백", "Black & white")}</option>
-              <option value="night">{t("야간 보정", "Night lift")}</option>
+              <option value="natural">{t("자연스러움", "Natural", "自然", "ナチュラル")}</option>
+              <option value="punchy">{t("강한 대비", "Punchy contrast", "强对比", "パンチの効いたコントラスト")}</option>
+              <option value="mono">{t("흑백", "Black & white", "黑白", "白黒")}</option>
+              <option value="night">{t("야간 보정", "Night lift", "夜景提亮", "夜間補正")}</option>
             </select>
           </label>
           <div className="finish-pair">
             <label>
-              {t("밝기", "Brightness")} {" "}
+              {t("밝기", "Brightness", "亮度", "明るさ")} {" "}
               <output>
                 {renderSettings.brightness > 0 ? "+" : ""}
                 {renderSettings.brightness}
@@ -277,7 +277,7 @@ export function FinishRack({
               />
             </label>
             <label>
-              {t("대비", "Contrast")} {" "}
+              {t("대비", "Contrast", "对比度", "コントラスト")} {" "}
               <output>
                 {renderSettings.contrast > 0 ? "+" : ""}
                 {renderSettings.contrast}
@@ -294,7 +294,7 @@ export function FinishRack({
             </label>
           </div>
           <label>
-            {t("감마", "Gamma")} <output>{renderSettings.gamma.toFixed(2)}</output>
+            {t("감마", "Gamma", "伽马", "ガンマ")} <output>{renderSettings.gamma.toFixed(2)}</output>
             <input
               type="range"
               min="0.65"
@@ -308,8 +308,8 @@ export function FinishRack({
           </label>
         </article>
         <article>
-          <span>{t("자막 + 전달", "CAPTION + DELIVERY")}</span>
-          <h3>{t("읽히는 최종본", "A readable final")}</h3>
+          <span>{t("자막 + 전달", "CAPTION + DELIVERY", "字幕 + 交付", "キャプション + 配信")}</span>
+          <h3>{t("읽히는 최종본", "A readable final", "易读的成片", "読みやすい最終版")}</h3>
           <label className="finish-toggle">
             <input
               type="checkbox"
@@ -318,11 +318,11 @@ export function FinishRack({
                 patchSettings("captions_enabled", event.target.checked)
               }
             />{" "}
-            {t("선택 구간 자막 번인", "Burn captions into kept clips")}
+            {t("선택 구간 자막 번인", "Burn captions into kept clips", "为保留片段烧录字幕", "採用クリップに字幕を焼き込む")}
           </label>
           <div className="finish-pair">
             <label>
-              {t("자막 색상", "Caption color")}
+              {t("자막 색상", "Caption color", "字幕颜色", "キャプションカラー")}
               <input
                 type="color"
                 value={renderSettings.caption_color}
@@ -332,7 +332,7 @@ export function FinishRack({
               />
             </label>
             <label>
-              {t("테두리", "Outline")} <output>{renderSettings.caption_stroke}px</output>
+              {t("테두리", "Outline", "描边", "縁取り")} <output>{renderSettings.caption_stroke}px</output>
               <input
                 type="range"
                 min="0"
@@ -356,10 +356,10 @@ export function FinishRack({
                   patchSettings("caption_bg", event.target.checked)
                 }
               />{" "}
-              {t("자막 배경 패널", "Caption background panel")}
+              {t("자막 배경 패널", "Caption background panel", "字幕背景面板", "キャプション背景パネル")}
             </label>
             <label>
-              {t("배경 색상", "Background color")}
+              {t("배경 색상", "Background color", "背景颜色", "背景色")}
               <input
                 type="color"
                 value={renderSettings.caption_bg_color.slice(0, 7)}
@@ -371,7 +371,7 @@ export function FinishRack({
             </label>
           </div>
           <label>
-            {t("자막 크기", "Caption size")} <output>{renderSettings.caption_size}px</output>
+            {t("자막 크기", "Caption size", "字幕大小", "キャプションサイズ")} <output>{renderSettings.caption_size}px</output>
             <input
               type="range"
               min="38"
@@ -383,7 +383,7 @@ export function FinishRack({
             />
           </label>
           <label>
-            {t("자막 세로 위치", "Caption vertical position")} <output>{renderSettings.caption_y}%</output>
+            {t("자막 세로 위치", "Caption vertical position", "字幕垂直位置", "キャプションの縦位置")} <output>{renderSettings.caption_y}%</output>
             <input
               type="range"
               min="48"
@@ -395,7 +395,7 @@ export function FinishRack({
             />
           </label>
           <label>
-            {t("출력 품질", "Output quality")}
+            {t("출력 품질", "Output quality", "输出质量", "出力品質")}
             <select
               value={renderSettings.quality}
               onChange={(event) =>
@@ -405,13 +405,13 @@ export function FinishRack({
                 )
               }
             >
-              <option value="compact">{t("간단 · 빠른 검토", "Compact · quick review")}</option>
-              <option value="balanced">{t("균형 · 일반 게시", "Balanced · normal publishing")}</option>
-              <option value="high">{t("고품질 · 보관/게시", "High · archive/publish")}</option>
+              <option value="compact">{t("간단 · 빠른 검토", "Compact · quick review", "精简 · 快速预览", "コンパクト · 素早い確認")}</option>
+              <option value="balanced">{t("균형 · 일반 게시", "Balanced · normal publishing", "均衡 · 常规发布", "バランス · 通常公開")}</option>
+              <option value="high">{t("고품질 · 보관/게시", "High · archive/publish", "高质量 · 存档/发布", "高品質 · アーカイブ/公開")}</option>
             </select>
           </label>
           <label>
-            {t("프레임레이트", "Frame rate")}
+            {t("프레임레이트", "Frame rate", "帧率", "フレームレート")}
             <select
               value={renderSettings.fps}
               onChange={(event) =>
@@ -421,14 +421,14 @@ export function FinishRack({
                 )
               }
             >
-              <option value="24">{t("24 fps · 시네마틱", "24 fps · cinematic")}</option>
-              <option value="30">{t("30 fps · 릴 기본", "30 fps · reel standard")}</option>
-              <option value="60">{t("60 fps · 빠른 동작", "60 fps · fast action")}</option>
+              <option value="24">{t("24 fps · 시네마틱", "24 fps · cinematic", "24 fps · 电影感", "24 fps · シネマティック")}</option>
+              <option value="30">{t("30 fps · 릴 기본", "30 fps · reel standard", "30 fps · Reel 标准", "30 fps · リール標準")}</option>
+              <option value="60">{t("60 fps · 빠른 동작", "60 fps · fast action", "60 fps · 快速动作", "60 fps · 高速アクション")}</option>
             </select>
           </label>
           {presets && (
             <label>
-              {t("품질 프리셋", "Quality preset")}
+              {t("품질 프리셋", "Quality preset", "质量预设", "品質プリセット")}
               <select
                 defaultValue=""
                 onChange={(event) => {
@@ -438,7 +438,7 @@ export function FinishRack({
                 }}
               >
                 <option value="" disabled>
-                  {t("프리셋 선택…", "Choose a preset…")}
+                  {t("프리셋 선택…", "Choose a preset…", "选择预设…", "プリセットを選択…")}
                 </option>
                 {Object.keys(presets.quality_presets).map((key) => (
                   <option key={key} value={key}>
@@ -450,7 +450,7 @@ export function FinishRack({
           )}
           {presets && (
             <label>
-              {t("자막 레이아웃 프리셋", "Caption layout preset")}
+              {t("자막 레이아웃 프리셋", "Caption layout preset", "字幕排版预设", "キャプションレイアウトプリセット")}
               <select
                 defaultValue=""
                 onChange={(event) => {
@@ -460,7 +460,7 @@ export function FinishRack({
                 }}
               >
                 <option value="" disabled>
-                  {t("프리셋 선택…", "Choose a preset…")}
+                  {t("프리셋 선택…", "Choose a preset…", "选择预设…", "プリセットを選択…")}
                 </option>
                 {Object.keys(presets.caption_layout_presets).map((key) => (
                   <option key={key} value={key}>
@@ -473,17 +473,17 @@ export function FinishRack({
         </article>
       </div>
       <div className="finish-readout">
-        <b>{t("다음 렌더", "Next render")}</b>
+        <b>{t("다음 렌더", "Next render", "下一次渲染", "次のレンダー")}</b>
         <span>
           {renderSettings.crop_anchor} crop ·{" "}
           {renderSettings.speed.toFixed(2)}× · {renderSettings.look} ·{" "}
           {renderSettings.mute_audio
-            ? t("원본 오디오 끔", "source audio off")
-            : t(`${renderSettings.volume}% 음량`, `${renderSettings.volume}% audio`)}{" "}
+            ? t("원본 오디오 끔", "source audio off", "原始音频关闭", "ソース音声オフ")
+            : t(`${renderSettings.volume}% 음량`, `${renderSettings.volume}% audio`, `${renderSettings.volume}% 音量`, `${renderSettings.volume}% 音声`)}{" "}
           ·{" "}
           {renderSettings.captions_enabled
-            ? t("자막 번인", "burn-in captions")
-            : t("자막 없음", "no captions")}{" "}
+            ? t("자막 번인", "burn-in captions", "字幕烧录", "字幕焼き込み")
+            : t("자막 없음", "no captions", "无字幕", "字幕なし")}{" "}
           · {renderSettings.fps}fps · {renderSettings.quality}
         </span>
       </div>

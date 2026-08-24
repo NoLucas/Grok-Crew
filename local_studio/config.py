@@ -8,14 +8,44 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
+
+
+def load_dotenv() -> None:
+    env_path = BASE_DIR / ".env"
+    if not env_path.exists():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        if not line or line.lstrip().startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+# Must run before any os.getenv() default below is evaluated -- these are module-level
+# constants read once at import time, so a caller loading .env later (e.g. in main())
+# would be too late for them.
+load_dotenv()
+
 BUNDLED_CAPTION_FONT = BASE_DIR / "assets" / "fonts" / "NotoSansKR-Bold.ttf"
 DATA_DIR = BASE_DIR / "data"
 WORKSPACE_DIR = Path(os.getenv("LOCAL_STUDIO_WORKSPACE", BASE_DIR / "workspace")).resolve()
 DB_PATH = DATA_DIR / "studio.db"
 BOT_GUIDE_PATH = BASE_DIR / "bot-guide.json"
 BOT_GUIDE_KO_PATH = BASE_DIR / "bot-guide.ko.json"
+BOT_GUIDE_ZH_PATH = BASE_DIR / "bot-guide.zh.json"
+BOT_GUIDE_JA_PATH = BASE_DIR / "bot-guide.ja.json"
 TERMINAL_CLI_PATH = BASE_DIR / "grok_crew.py"
-ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000"}
+
+
+def parse_allowed_origins(raw: str) -> frozenset[str]:
+    """Comma-separated LOCAL_STUDIO_ALLOWED_ORIGINS override, falling back to the
+    stock localhost:3000 pair so a blank/unset value stays exactly as restrictive
+    as before this was configurable."""
+    origins = {origin.strip() for origin in raw.split(",") if origin.strip()}
+    return frozenset(origins) if origins else frozenset({"http://localhost:3000", "http://127.0.0.1:3000"})
+
+
+ALLOWED_ORIGINS = parse_allowed_origins(os.getenv("LOCAL_STUDIO_ALLOWED_ORIGINS", ""))
 SITE_BASE_URL = "http://localhost:3000"
 BROWSER_PAGE_PATHS = {"/", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy"}
 PUBLIC_GET_PATHS = frozenset({"/health", "/api/terminal-contract", "/api/bot-guide", "/api/bot-entry", "/downloads/grok-crew.py"})
@@ -57,17 +87,6 @@ CAPTION_LAYOUT_PRESETS = {
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-
-def load_dotenv() -> None:
-    env_path = BASE_DIR / ".env"
-    if not env_path.exists():
-        return
-    for line in env_path.read_text(encoding="utf-8").splitlines():
-        if not line or line.lstrip().startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
 def workspace_path(value: str) -> Path:
