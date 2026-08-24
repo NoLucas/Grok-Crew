@@ -8,14 +8,15 @@ Use this before the first public GitHub release.
 - [x] Add a license (Business Source License 1.1 — source-available, not open source; converts to MIT on 2030-08-23).
 - [ ] Add a concise repository description: `Local-first video editing workspace for people and same-PC bots.`
 - [ ] Add relevant GitHub topics: `video-editing`, `local-first`, `moviepy`, `ai-agents`, `grok`, `reels`, `instagram`, `automation`.
-- [ ] Create a `v0.1.0` release using the changelog notes.
-- [ ] Review `npm audit` before release. Do not use a forced dependency upgrade without rebuilding and testing the workspace.
+- [x] Create a `v0.1.0` release using the changelog notes. (Published 2026-08-23 as "First public demo".)
+- [x] Create a `v0.2.0` release using the changelog notes. (2026-08-24: the render/QA/security fixes and file-split work in this pass.)
+- [x] Review `npm audit` before release. Do not use a forced dependency upgrade without rebuilding and testing the workspace. (2026-08-24: 13 findings, 1 low / 12 high, all in dev-only build tooling -- Cloudflare Workers preview stack (`wrangler`/`miniflare`/`ws`/`undici`/`sharp`), `next`, `vite`, `vinext`, `react-server-dom-webpack`, `postcss`, `esbuild`. None are semver-major fixes, but the `vinext` fix bumps `1.0.0-beta.3` → `1.0.0-beta.8`, which is exactly the kind of beta jump this project deliberately exact-pins against without testing first -- so this needs a deliberate, tested upgrade pass, not `npm audit fix`, and not folded into an unrelated change.)
 
 ## First experience
 
-- [ ] Run the Quick Start from a fresh clone on Windows, macOS, or Linux.
+- [x] Run the Quick Start from a fresh clone on Windows, macOS, or Linux. (2026-08-24, Windows: `npm ci`, `npm run dev`, and `python local_studio/studio_server.py` all verified working individually this session; the full `npm run local` one-command orchestration itself was not re-run end-to-end.)
 - [ ] Confirm the production preview image still matches the current interface.
-- [ ] Confirm `python local_studio/grok_crew.py contract` works from a fresh terminal.
+- [x] Confirm `python local_studio/grok_crew.py contract` works from a fresh terminal. (2026-08-24, Windows)
 - [ ] Add one short example project or safe sample media only if you have rights to share it.
 
 ## Announcement

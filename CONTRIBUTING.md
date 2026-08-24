@@ -30,6 +30,10 @@ Describe the editing problem first, then the smallest workflow that solves it. G
 - Run `npm run build` and Python syntax validation before requesting review.
 - Do not add a cloud dependency, remote bot service, or credential collection without an explicit design discussion. (`local_studio/handoff_watcher.py`'s git-branch handoff is not an exception to this: it grants no network access to Local Studio — it only lets an operator-approved script running on this PC pull an offline package and replay it through the existing local API.)
 
+## Dependency notes
+
+The web workspace runs on `vinext` (`1.0.0-beta.3`), a beta Next.js-on-Vite runtime, pinned to an exact version in `package.json` (every dependency here is exact-pinned, not range-pinned) precisely because it's beta software that could introduce breaking changes between releases. If a `vinext` upgrade breaks the build, first try reverting to the currently pinned version rather than chasing the latest beta. `vinext` isn't just a CLI wrapper here — `vite.config.ts` imports it directly as a Vite plugin (`vinext()`) and uses `vinext/server/app-router-entry` as the app's own entry point, so if `vinext` becomes unmaintained, migrating off it means replacing that plugin and entry point, not just swapping a script command. That migration hasn't been scoped or attempted, so budget real time for it rather than assuming it's a drop-in swap.
+
 ## Code of conduct
 
 Be concise, constructive, and respectful. Focus feedback on the workflow and the implementation, never the contributor.

@@ -157,7 +157,7 @@ def build_parser() -> argparse.ArgumentParser:
     jobs_sub = jobs.add_subparsers(dest="command", required=True)
     jobs_list = jobs_sub.add_parser("list", help="List all jobs."); jobs_list.add_argument("--project")
     render = jobs_sub.add_parser("render", help="Queue a render; auto_local bots also run it immediately by default."); render.add_argument("--project", required=True); render.add_argument("--bot-id", required=True); render.add_argument("--human-approved", action="store_true"); render.add_argument("--requested-by", default=""); render.add_argument("--queue-only", action="store_true"); render.add_argument("--wait", action="store_true", help="Poll until the render finishes before printing the result.")
-    instagram = jobs_sub.add_parser("instagram", help="Queue Instagram upload, or upload immediately when requested."); instagram.add_argument("--project", required=True); instagram.add_argument("--file", required=True); instagram.add_argument("--auto-upload", action="store_true"); instagram.add_argument("--wait", action="store_true", help="Poll until the upload finishes before printing the result.")
+    instagram = jobs_sub.add_parser("instagram", help="Queue Instagram upload, or upload immediately when requested."); instagram.add_argument("--project", required=True); instagram.add_argument("--file", required=True); instagram.add_argument("--bot-id", default=""); instagram.add_argument("--human-approved", action="store_true"); instagram.add_argument("--auto-upload", action="store_true", help="Only takes effect immediately if the bot's execution policy is auto_local, or --human-approved is set; otherwise the job is queued."); instagram.add_argument("--wait", action="store_true", help="Poll until the upload finishes before printing the result.")
     run = jobs_sub.add_parser("run", help="Run a queued job."); run.add_argument("--job", required=True); run.add_argument("--wait", action="store_true", help="Poll until the job finishes before printing the result.")
     jobs_cancel = jobs_sub.add_parser("cancel", help="Request cancellation of a queued or running job."); jobs_cancel.add_argument("--job", required=True)
 
@@ -237,6 +237,10 @@ def main() -> None:
             print_json(response)
         elif args.command == "instagram":
             payload = read_json_file(args.file); payload["auto_upload"] = args.auto_upload
+            if args.bot_id:
+                payload["bot_id"] = args.bot_id
+            if args.human_approved:
+                payload["approved"] = True
             response = client.request(f"/api/projects/{args.project}/instagram", payload)
             job = response.get("job") if isinstance(response, dict) else None
             if args.wait and isinstance(job, dict) and job.get("id"):

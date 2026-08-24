@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-html-link-for-pages */
 
 import { ChangeEvent, useEffect, useState } from 'react';
 import { LocalizedText } from './language';

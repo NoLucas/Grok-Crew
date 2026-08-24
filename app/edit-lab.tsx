@@ -15,10 +15,14 @@ const defaultLab: LabState = { active: 'A', playhead: 0, playing: false, loop: t
 function readLab<T>(key: string, fallback: T): T { try { const raw = window.localStorage.getItem(key); return raw ? JSON.parse(raw) as T : fallback; } catch { return fallback; } }
 const numbers = (value: string) => Number.isFinite(Number(value)) ? Number(value) : 0;
 
+function loadLab(): LabState {
+  const saved = readLab<LabState>('localVideoEditLab', defaultLab);
+  return { ...defaultLab, ...saved, scenes: { ...defaultLab.scenes, ...saved.scenes } };
+}
+
 export default function EditLab() {
-  const [lab, setLab] = useState<LabState>(defaultLab); const [loaded, setLoaded] = useState(false); const [markerLabel, setMarkerLabel] = useState(''); const [copied, setCopied] = useState(false);
-  useEffect(() => { setLab({ ...defaultLab, ...readLab<LabState>('localVideoEditLab', defaultLab), scenes: { ...defaultLab.scenes, ...readLab<LabState>('localVideoEditLab', defaultLab).scenes } }); setLoaded(true); }, []);
-  useEffect(() => { if (loaded) window.localStorage.setItem('localVideoEditLab', JSON.stringify(lab)); }, [lab, loaded]);
+  const [lab, setLab] = useState<LabState>(loadLab); const [markerLabel, setMarkerLabel] = useState(''); const [copied, setCopied] = useState(false);
+  useEffect(() => { window.localStorage.setItem('localVideoEditLab', JSON.stringify(lab)); }, [lab]);
   useEffect(() => { if (!lab.playing) return; const frame = window.setInterval(() => setLab((current) => { const next = current.playhead + 1 / current.frameRate; if (next > 10) return { ...current, playhead: current.loop ? 0 : 10, playing: current.loop }; return { ...current, playhead: next }; }), 1000 / lab.frameRate); return () => window.clearInterval(frame); }, [lab.playing, lab.frameRate, lab.loop]);
   const scene = lab.scenes[lab.active]; const progress = Math.max(0, Math.min(1, (lab.playhead - scene.start) / Math.max(.1, scene.end - scene.start))); const scale = (scene.zoomStart + (scene.zoomEnd - scene.zoomStart) * progress) / 100; const reviewCount = Object.values(lab.review).filter(Boolean).length;
   const patchScene = (key: keyof SceneEdit, value: string | number | boolean) => setLab((current) => ({ ...current, scenes: { ...current.scenes, [current.active]: { ...current.scenes[current.active], [key]: value } as SceneEdit } }));

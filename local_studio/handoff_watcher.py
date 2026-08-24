@@ -27,6 +27,10 @@ STATE_PATH = DATA_DIR / "handoff_state.json"
 BUNDLE_SCHEMA = "local-video-workspace.project-bundle/v1"
 BOT_ID = "cloud-handoff"
 BOT_DISPLAY_NAME = "Cloud Handoff Watcher"
+ALLOWED_MEDIA_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm"}
+MAX_MEDIA_BYTES = int(os.getenv("HANDOFF_MAX_MEDIA_BYTES", str(2 * 1024 ** 3)))  # 2 GB
+MAX_BUNDLE_BYTES = int(os.getenv("HANDOFF_MAX_BUNDLE_BYTES", str(4 * 1024 * 1024)))  # 4 MB
+DEFAULT_MAX_PACKAGES_PER_CYCLE = 5
 
 
 def log(message: str) -> None:
@@ -115,6 +119,11 @@ def copy_media(folder: Path, workspace: Path, relative_path: str) -> None:
     source = folder / Path(relative_path).name
     if not source.is_file():
         raise RuntimeError(f"Media file '{source.name}' referenced by bundle.project.source_path was not found in the package.")
+    if source.suffix.lower() not in ALLOWED_MEDIA_EXTENSIONS:
+        raise RuntimeError(f"Media file '{source.name}' has an unsupported extension. Allowed: {', '.join(sorted(ALLOWED_MEDIA_EXTENSIONS))}.")
+    size = source.stat().st_size
+    if size > MAX_MEDIA_BYTES:
+        raise RuntimeError(f"Media file '{source.name}' is {size} bytes, over the {MAX_MEDIA_BYTES}-byte handoff limit (set HANDOFF_MAX_MEDIA_BYTES to change it).")
     destination = (workspace / relative_path).resolve()
     if destination != workspace and workspace not in destination.parents:
         raise RuntimeError(f"Refusing to write outside the workspace: {relative_path}")
@@ -135,6 +144,10 @@ def process_folder(client: LocalStudioClient, folder: Path, workspace: Path, *, 
     bundle_path = folder / "bundle.json"
     if not bundle_path.exists():
         log(f"Skipping {folder.name}: no bundle.json.")
+        return
+    bundle_size = bundle_path.stat().st_size
+    if bundle_size > MAX_BUNDLE_BYTES:
+        log(f"Skipping {folder.name}: bundle.json is {bundle_size} bytes, over the {MAX_BUNDLE_BYTES}-byte limit.")
         return
     try:
         bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
@@ -204,6 +217,9 @@ def run_once(args: argparse.Namespace) -> None:
     if not folders:
         log("No new handoff packages.")
         return
+    if len(folders) > args.max_per_cycle:
+        log(f"{len(folders)} package(s) pending; processing the oldest {args.max_per_cycle} this cycle, the rest will follow on the next cycle.")
+        folders = folders[: args.max_per_cycle]
     for folder in folders:
         process_folder(client, folder, workspace, allow_auto_upload=args.allow_auto_upload)
         heartbeat(client, "handoff_processed", {"package": folder.name})
@@ -223,6 +239,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--interval", type=float, default=60.0, help="Seconds between polls.")
     parser.add_argument("--once", action="store_true", help="Run a single pass instead of polling forever.")
     parser.add_argument("--allow-auto-upload", action="store_true", help="Allow a package that requests it to publish to Instagram immediately. Off by default; otherwise Instagram jobs stay queued for a human to run.")
+    parser.add_argument("--max-per-cycle", type=int, default=int(os.getenv("HANDOFF_MAX_PACKAGES_PER_CYCLE", str(DEFAULT_MAX_PACKAGES_PER_CYCLE))), help=f"Maximum number of pending packages to process per poll cycle (default {DEFAULT_MAX_PACKAGES_PER_CYCLE}); the rest wait for the next cycle.")
     cleanup_group = parser.add_mutually_exclusive_group()
     cleanup_group.add_argument("--cleanup", dest="cleanup", action="store_true", help="Remove processed packages from the handoff branch (default).")
     cleanup_group.add_argument("--no-cleanup", dest="cleanup", action="store_false", help="Keep processed packages on the handoff branch.")

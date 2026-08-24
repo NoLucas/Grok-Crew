@@ -1,217 +1,43 @@
-"""Local Video Studio: local SQLite jobs, MoviePy rendering, and optional automatic Instagram upload."""
+"""Local Video Studio: local SQLite jobs, MoviePy rendering, and optional
+automatic Instagram upload -- project/job/bot/artifact domain logic and the
+process entrypoint. See config.py (shared constants/paths), db.py (SQLite),
+render.py (MoviePy), instagram.py (Meta upload), and handlers.py (the HTTP
+routing layer that calls into this module) for the rest of the server."""
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import shutil
 import sqlite3
 import subprocess
-import time
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
-from contextlib import contextmanager
 from datetime import datetime, timezone
-from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Callable, Iterator
-from urllib.parse import urlparse
+from typing import Any
 
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-WORKSPACE_DIR = Path(os.getenv("LOCAL_STUDIO_WORKSPACE", BASE_DIR / "workspace")).resolve()
-DB_PATH = DATA_DIR / "studio.db"
-BOT_GUIDE_PATH = BASE_DIR / "bot-guide.json"
-BOT_GUIDE_KO_PATH = BASE_DIR / "bot-guide.ko.json"
-TERMINAL_CLI_PATH = BASE_DIR / "grok_crew.py"
-ALLOWED_ORIGINS = {"http://localhost:3000", "http://127.0.0.1:3000"}
-SITE_BASE_URL = "http://localhost:3000"
-BROWSER_PAGE_PATHS = {"/", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy"}
-PUBLIC_GET_PATHS = frozenset({"/health", "/api/terminal-contract", "/api/bot-guide", "/api/bot-entry", "/downloads/grok-crew.py"})
-DEFAULT_EDIT_METHOD = {
-    "schema": "local-video-workspace.edit-method/v1",
-    "hook_strategy": "payoff_first",
-    "pacing": "tight",
-    "filler_policy": "remove",
-    "caption_mode": "burn_in",
-    "reframe_anchor": "center",
-    "look": "natural",
-    "audio_policy": "normalize",
-    "speed": 1.0,
-    "fps": 30,
-    "quality": "balanced",
-}
-BOT_ENTRY_SCHEMA = "local-video-workspace.bot-entry/v1"
-PROJECT_BUNDLE_SCHEMA = "local-video-workspace.project-bundle/v1"
-ARTIFACT_TYPES = {"audio_plan", "bot_task", "brand_kit", "cut_map", "edit_variant", "media_inspection", "overlay_slots", "performance_note", "preflight_report", "project_memory", "quality_report"}
-EXECUTION_MODES = {"auto_local", "approval_required"}
-RENDER_EXECUTOR = ThreadPoolExecutor(max_workers=max(1, int(os.getenv("LOCAL_STUDIO_RENDER_WORKERS", "1"))))
-PLATFORM_PRESETS = {
-    "reels_tiktok_shorts": {"width": 1080, "height": 1920, "label": "Reels / TikTok / Shorts (9:16)"},
-    "feed_square": {"width": 1080, "height": 1080, "label": "Feed / Square (1:1)"},
-    "landscape_x": {"width": 1920, "height": 1080, "label": "Landscape / X (16:9)"},
-}
-QUALITY_PRESETS = {
-    "fast_draft": {"quality": "compact", "fps": 24},
-    "balanced": {"quality": "balanced", "fps": 30},
-    "high_quality": {"quality": "high", "fps": 30},
-    "archive": {"quality": "high", "fps": 60},
-}
-CAPTION_LAYOUT_PRESETS = {
-    "bottom_bold": {"caption_y": 78, "caption_size": 84, "caption_stroke": 4, "caption_bg": True, "caption_bg_color": "#000000"},
-    "top_minimal": {"caption_y": 48, "caption_size": 52, "caption_stroke": 1, "caption_bg": False},
-    "subtitle_classic": {"caption_y": 80, "caption_size": 58, "caption_stroke": 2, "caption_bg": True, "caption_bg_color": "#00000090"},
-}
-
-
-def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-
-def load_dotenv() -> None:
-    env_path = BASE_DIR / ".env"
-    if not env_path.exists():
-        return
-    for line in env_path.read_text(encoding="utf-8").splitlines():
-        if not line or line.lstrip().startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
-
-
-def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
-    try:
-        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
-    except sqlite3.OperationalError as exc:
-        if "duplicate column" not in str(exc).lower():
-            raise
-
-
-def init_db() -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    for folder in (WORKSPACE_DIR / "inputs", WORKSPACE_DIR / "outputs"):
-        folder.mkdir(parents=True, exist_ok=True)
-    with db() as conn:
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("""CREATE TABLE IF NOT EXISTS projects (
-            id TEXT PRIMARY KEY, title TEXT NOT NULL, source_path TEXT NOT NULL,
-            output_path TEXT NOT NULL, timeline_json TEXT NOT NULL, caption TEXT NOT NULL,
-            created_at TEXT NOT NULL, updated_at TEXT NOT NULL
-        )""")
-        conn.execute("""CREATE TABLE IF NOT EXISTS jobs (
-            id TEXT PRIMARY KEY, project_id TEXT NOT NULL, kind TEXT NOT NULL,
-            status TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 0,
-            payload_json TEXT NOT NULL, result_json TEXT, error_text TEXT,
-            created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-            FOREIGN KEY(project_id) REFERENCES projects(id)
-        )""")
-        _ensure_column(conn, "jobs", "progress", "INTEGER NOT NULL DEFAULT 0")
-        _ensure_column(conn, "jobs", "cancel_requested", "INTEGER NOT NULL DEFAULT 0")
-        conn.execute("""CREATE TABLE IF NOT EXISTS events (
-            id TEXT PRIMARY KEY, project_id TEXT, job_id TEXT, type TEXT NOT NULL,
-            detail_json TEXT NOT NULL, created_at TEXT NOT NULL
-        )""")
-        conn.execute("""CREATE TABLE IF NOT EXISTS bot_sessions (
-            bot_id TEXT PRIMARY KEY, display_name TEXT NOT NULL,
-            last_action TEXT NOT NULL, last_detail_json TEXT NOT NULL,
-            last_seen TEXT NOT NULL, created_at TEXT NOT NULL
-        )""")
-        conn.execute("""CREATE TABLE IF NOT EXISTS bot_activity (
-            id TEXT PRIMARY KEY, bot_id TEXT NOT NULL, action TEXT NOT NULL,
-            detail_json TEXT NOT NULL, created_at TEXT NOT NULL
-        )""")
-        conn.execute("""CREATE TABLE IF NOT EXISTS edit_method (
-            id TEXT PRIMARY KEY, method_json TEXT NOT NULL, updated_by TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )""")
-        conn.execute("""CREATE TABLE IF NOT EXISTS bot_entries (
-            id TEXT PRIMARY KEY, bot_id TEXT NOT NULL, display_name TEXT NOT NULL,
-            purpose TEXT NOT NULL, task TEXT NOT NULL, joined_at TEXT NOT NULL
-        )""")
-        conn.execute("""CREATE TABLE IF NOT EXISTS bot_execution_policies (
-            bot_id TEXT PRIMARY KEY, mode TEXT NOT NULL, updated_by TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )""")
-        conn.execute("""CREATE TABLE IF NOT EXISTS project_artifacts (
-            id TEXT PRIMARY KEY, project_id TEXT, type TEXT NOT NULL, title TEXT NOT NULL,
-            payload_json TEXT NOT NULL, created_by TEXT NOT NULL, created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL, FOREIGN KEY(project_id) REFERENCES projects(id)
-        )""")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_project_created ON jobs(project_id, created_at DESC)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_open_status ON jobs(status, created_at DESC) WHERE status NOT IN ('succeeded', 'failed')")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_events_project_created ON events(project_id, created_at DESC)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_sessions_last_seen ON bot_sessions(last_seen DESC)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_activity_bot_created ON bot_activity(bot_id, created_at DESC)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_entries_joined ON bot_entries(joined_at DESC)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_execution_policies_updated ON bot_execution_policies(updated_at DESC)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_project_artifacts_project_type_updated ON project_artifacts(project_id, type, updated_at DESC)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_project_artifacts_type_updated ON project_artifacts(type, updated_at DESC)")
-        conn.execute("PRAGMA optimize")
-
-
-@contextmanager
-def db() -> Iterator[sqlite3.Connection]:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
-
-
-def row_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
-    if row is None:
-        return None
-    value = dict(row)
-    for key in ("timeline_json", "payload_json", "result_json", "detail_json"):
-        if key in value and value[key]:
-            value[key] = json.loads(value[key])
-    return value
-
-
-def event(project_id: str | None, job_id: str | None, kind: str, detail: dict[str, Any]) -> None:
-    with db() as conn:
-        conn.execute("INSERT INTO events (id, project_id, job_id, type, detail_json, created_at) VALUES (?, ?, ?, ?, ?, ?)", (str(uuid.uuid4()), project_id, job_id, kind, json.dumps(detail), utc_now()))
-
-
-def workspace_path(value: str) -> Path:
-    candidate = Path(value)
-    resolved = (WORKSPACE_DIR / candidate).resolve() if not candidate.is_absolute() else candidate.resolve()
-    if resolved != WORKSPACE_DIR and WORKSPACE_DIR not in resolved.parents:
-        raise ValueError("Paths must stay inside local_studio/workspace.")
-    return resolved
-
-
-def require_path(value: Any, field: str) -> Path:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{field} is required.")
-    return workspace_path(value)
-
-
-def caption_font() -> str | None:
-    """Find a usable local font without downloading or relying on a font name."""
-    windir = Path(os.environ.get("WINDIR", "C:/Windows"))
-    candidates = [
-        os.getenv("LOCAL_STUDIO_FONT", ""),
-        str(windir / "Fonts" / "arialbd.ttf"),
-        str(windir / "Fonts" / "arial.ttf"),
-        str(windir / "Fonts" / "segoeuib.ttf"),
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
-        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
-        "/Library/Fonts/Arial Bold.ttf",
-        "/Library/Fonts/Arial.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-    ]
-    return next((candidate for candidate in candidates if candidate and Path(candidate).exists()), None)
+import config
+from config import (
+    ARTIFACT_TYPES,
+    BOT_ENTRY_SCHEMA,
+    BOT_GUIDE_KO_PATH,
+    BOT_GUIDE_PATH,
+    DEFAULT_EDIT_METHOD,
+    EXECUTION_MODES,
+    PROJECT_BUNDLE_SCHEMA,
+    RENDER_EXECUTOR,
+    SITE_BASE_URL,
+    load_dotenv,
+    require_path,
+    utc_now,
+    workspace_path,
+)
+from db import db, event, init_db, row_dict
+from instagram import instagram_publish
+from render import render_moviepy
 
 
 def new_project(body: dict[str, Any]) -> dict[str, Any]:
@@ -516,9 +342,9 @@ def quality_report(project_id: str, stage: str, body: dict[str, Any]) -> dict[st
     source = Path(project["source_path"]); output = Path(project["output_path"])
     checks.append({"level": "pass" if source.exists() else "error", "rule": "source_file", "detail": "Source file is available." if source.exists() else "Source file is missing from the local workspace."})
     checks.append({"level": "pass" if clips else "error", "rule": "timeline", "detail": f"{len(clips)} EDL clip(s) are ready." if clips else "No EDL clips are available."})
-    invalid_clips = [clip for clip in clips if not isinstance(clip, dict) or float(clip.get("end", 0)) <= float(clip.get("start", 0))]
+    invalid_clips = [clip for clip in clips if not isinstance(clip, dict) or float(clip.get("out", 0)) <= float(clip.get("in", 0))]
     checks.append({"level": "pass" if not invalid_clips else "error", "rule": "clip_ranges", "detail": "All clip ranges have positive duration." if not invalid_clips else f"{len(invalid_clips)} clip range(s) need correction."})
-    total_duration = round(sum(max(0, float(clip.get("end", 0)) - float(clip.get("start", 0))) for clip in clips if isinstance(clip, dict)), 3)
+    total_duration = round(sum(max(0, float(clip.get("out", 0)) - float(clip.get("in", 0))) for clip in clips if isinstance(clip, dict)), 3)
     checks.append({"level": "pass" if 3 <= total_duration <= 90 else "warning", "rule": "duration", "detail": f"Estimated edit duration: {total_duration}s."})
     settings = timeline.get("render_settings", {}) if isinstance(timeline.get("render_settings"), dict) else {}
     checks.append({"level": "pass" if settings.get("captions_enabled", True) else "warning", "rule": "captions", "detail": "Captions are enabled." if settings.get("captions_enabled", True) else "Captions are disabled; confirm this is intentional."})
@@ -543,7 +369,7 @@ def project_operations(project_id: str) -> dict[str, Any]:
 
 def _relative_workspace_path(value: str) -> str:
     try:
-        return str(Path(value).resolve().relative_to(WORKSPACE_DIR))
+        return str(Path(value).resolve().relative_to(config.WORKSPACE_DIR))
     except ValueError:
         return value
 
@@ -816,233 +642,6 @@ def request_job_cancel(job_id: str) -> dict[str, Any]:
     return row_dict(updated) or {}
 
 
-def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] | None = None, should_cancel: Callable[[], bool] | None = None) -> dict[str, Any]:
-    try:
-        from moviepy import AudioFileClip, ColorClip, CompositeAudioClip, CompositeVideoClip, TextClip, VideoFileClip, afx, concatenate_videoclips, vfx
-    except ImportError as exc:
-        raise RuntimeError("MoviePy is not installed. Install local_studio/requirements.txt first.") from exc
-    timeline = project["timeline_json"]
-    raw_settings = timeline.get("render_settings", {})
-    settings = raw_settings if isinstance(raw_settings, dict) else {}
-
-    def bounded(name: str, default: float, minimum: float, maximum: float) -> float:
-        try:
-            return min(max(float(settings.get(name, default)), minimum), maximum)
-        except (TypeError, ValueError):
-            return default
-
-    def enabled(name: str, default: bool = False) -> bool:
-        value = settings.get(name, default)
-        return value if isinstance(value, bool) else default
-
-    fps = int(bounded("fps", 30, 24, 60))
-    if fps not in {24, 30, 60}:
-        fps = 30
-    quality = str(settings.get("quality", "balanced"))
-    bitrate = {"compact": "3500k", "balanced": "6000k", "high": "9000k"}.get(quality, "6000k")
-    crop_anchor = str(settings.get("crop_anchor", "center"))
-    if crop_anchor not in {"left", "center", "right"}:
-        crop_anchor = "center"
-    speed = bounded("speed", 1, .5, 2)
-    volume = bounded("volume", 100, 0, 200) / 100
-    fade_in, fade_out = bounded("fade_in", .08, 0, 2), bounded("fade_out", .08, 0, 2)
-    look = str(settings.get("look", "natural"))
-    if look not in {"natural", "punchy", "mono", "night"}:
-        look = "natural"
-    brightness, contrast, gamma = bounded("brightness", 0, -40, 40), bounded("contrast", 0, -40, 55), bounded("gamma", 1, .65, 1.55)
-    platform = str(settings.get("platform", "reels_tiktok_shorts"))
-    dims = PLATFORM_PRESETS.get(platform, PLATFORM_PRESETS["reels_tiktok_shorts"])
-    target_w, target_h = int(dims["width"]), int(dims["height"])
-    captions_enabled = enabled("captions_enabled", True)
-    caption_color = str(settings.get("caption_color", "#FFFFFF"))
-    if not (caption_color.startswith("#") and len(caption_color) in {4, 7, 9}):
-        caption_color = "#FFFFFF"
-    caption_size = int(bounded("caption_size", 78, 38, 110))
-    caption_center_y = int(bounded("caption_y", 74, 48, 84) * target_h / 100)
-    caption_stroke = int(bounded("caption_stroke", 3, 0, 8))
-    caption_bg = enabled("caption_bg", False)
-    caption_bg_color = str(settings.get("caption_bg_color", "#000000"))
-    if not (caption_bg_color.startswith("#") and len(caption_bg_color) in {4, 7, 9}):
-        caption_bg_color = "#000000"
-    font_path = caption_font()
-    if captions_enabled and not font_path:
-        raise RuntimeError("No usable local font was found for captions. Set LOCAL_STUDIO_FONT to a .ttf/.otf file path, install a system font, or disable captions for this render.")
-    source = Path(project["source_path"])
-    output = Path(project["output_path"])
-    if not source.exists():
-        raise RuntimeError(f"Source file does not exist: {source}")
-    output.parent.mkdir(parents=True, exist_ok=True)
-    clips_data = timeline.get("clips", [])
-    cuts = []
-    total_entries = max(len(clips_data), 1)
-    with VideoFileClip(str(source)) as source_clip:
-        for position, entry in enumerate(clips_data):
-            if should_cancel and should_cancel():
-                raise RuntimeError("Render cancelled.")
-            if not entry.get("keep", True):
-                continue
-            start, end = float(entry["in"]), float(entry["out"])
-            if end <= start or start < 0 or end > source_clip.duration + .05:
-                continue
-            cut = source_clip.subclipped(start, end)
-            effects = []
-            if speed != 1:
-                effects.append(vfx.MultiplySpeed(speed))
-            if look == "punchy":
-                effects.append(vfx.LumContrast(lum=4, contrast=24))
-            elif look == "night":
-                effects.append(vfx.LumContrast(lum=11, contrast=-8))
-            elif look == "mono":
-                effects.append(vfx.BlackAndWhite())
-            if brightness or contrast:
-                effects.append(vfx.LumContrast(lum=brightness, contrast=contrast))
-            if gamma != 1:
-                effects.append(vfx.GammaCorrection(gamma))
-            if enabled("mirror"):
-                effects.append(vfx.MirrorX())
-            if fade_in:
-                effects.append(vfx.FadeIn(fade_in))
-            if fade_out:
-                effects.append(vfx.FadeOut(fade_out))
-            if effects:
-                cut = cut.with_effects(effects)
-            if (int(cut.w), int(cut.h)) != (target_w, target_h):
-                scale = min(target_w / float(cut.w), target_h / float(cut.h))
-                new_w = max(2, int(cut.w * scale) // 2 * 2)
-                new_h = max(2, int(cut.h * scale) // 2 * 2)
-                cut = cut.resized(new_size=(new_w, new_h))
-                if (new_w, new_h) != (target_w, target_h):
-                    x = 0 if crop_anchor == "left" else (target_w - new_w) if crop_anchor == "right" else (target_w - new_w) // 2
-                    y = (target_h - new_h) // 2
-                    bg = ColorClip(size=(target_w, target_h), color=(0, 0, 0)).with_duration(cut.duration)
-                    cut = CompositeVideoClip([bg, cut.with_position((x, y))], size=(target_w, target_h))
-            if cut.audio:
-                if enabled("mute_audio"):
-                    cut = cut.without_audio()
-                else:
-                    audio_effects = [afx.AudioFadeIn(fade_in), afx.AudioFadeOut(fade_out)]
-                    if enabled("normalize_audio"):
-                        audio_effects.insert(0, afx.AudioNormalize())
-                    if volume != 1:
-                        audio_effects.append(afx.MultiplyVolume(volume))
-                    cut = cut.with_audio(cut.audio.with_effects(audio_effects))
-            caption = str(entry.get("caption", "")).strip()
-            word_timings = entry.get("word_timings")
-            caption_layers = []
-
-            def caption_layer(text: str, duration: float, start: float = 0) -> TextClip:
-                horizontal_margin = max(8, int(caption_size * .18))
-                vertical_margin = max(6, int(caption_size * .14))
-                text_width = max(200, int(target_w * .85) - horizontal_margin * 2)
-                text_height = max(int(caption_size * 1.45), int(target_h * .055))
-                layer = TextClip(
-                    font=font_path,
-                    text=text,
-                    font_size=caption_size,
-                    color=caption_color,
-                    bg_color=caption_bg_color if caption_bg else None,
-                    stroke_color="black",
-                    stroke_width=caption_stroke,
-                    size=(text_width, text_height),
-                    margin=(horizontal_margin, vertical_margin),
-                    method="caption",
-                    vertical_align="center",
-                )
-                top = max(0, min(int(caption_center_y - layer.h / 2), target_h - int(layer.h)))
-                return layer.with_start(start).with_duration(duration).with_position(("center", top))
-
-            if captions_enabled and isinstance(word_timings, list) and word_timings:
-                for word_entry in word_timings[:200]:
-                    if not isinstance(word_entry, dict):
-                        continue
-                    word_text = str(word_entry.get("text", "")).strip()
-                    try:
-                        word_start, word_end = float(word_entry.get("start")), float(word_entry.get("end"))
-                    except (TypeError, ValueError):
-                        continue
-                    if not word_text or word_end <= word_start or word_start < 0 or word_start > cut.duration:
-                        continue
-                    word_duration = min(word_end, cut.duration) - word_start
-                    if word_duration <= 0:
-                        continue
-                    caption_layers.append(caption_layer(word_text, word_duration, word_start))
-            elif caption and captions_enabled:
-                caption_layers.append(caption_layer(caption, cut.duration))
-            if caption_layers:
-                cut = CompositeVideoClip([cut, *caption_layers], size=(target_w, target_h))
-            cuts.append(cut)
-            if progress_cb:
-                progress_cb(min(90, int(90 * (position + 1) / total_entries)))
-        if not cuts:
-            raise RuntimeError("No valid kept clips are available to render.")
-        if should_cancel and should_cancel():
-            raise RuntimeError("Render cancelled.")
-        final = concatenate_videoclips(cuts, method="compose")
-        music_value = str(settings.get("music_track", "")).strip()
-        if music_value:
-            music_path = workspace_path(music_value)
-            if not music_path.exists():
-                raise RuntimeError(f"Music track does not exist: {music_path}")
-            music_gain = bounded("music_volume", 30, 0, 100) / 100
-            with AudioFileClip(str(music_path)) as music_clip:
-                music = music_clip.with_effects([afx.MultiplyVolume(music_gain)])
-                music = music.with_effects([afx.AudioLoop(duration=final.duration)]) if enabled("music_loop", True) else music.subclipped(0, min(music.duration, final.duration))
-                final = final.with_audio(CompositeAudioClip([final.audio, music]) if final.audio else music)
-        has_audio = bool(final.audio)
-        if progress_cb:
-            progress_cb(92)
-        final.write_videofile(str(output), fps=fps, codec="libx264", audio_codec="aac", bitrate=bitrate, threads=4, logger=None, ffmpeg_params=["-movflags", "+faststart"])
-        final.close()
-    if progress_cb:
-        progress_cb(100)
-    return {"output_path": str(output), "format": "mp4", "video": "H.264", "audio": "AAC" if has_audio else "none", "width": target_w, "height": target_h, "platform": platform, "fps": fps, "bitrate": bitrate, "render_settings": {"crop_anchor": crop_anchor, "speed": speed, "look": look, "captions_enabled": captions_enabled, "quality": quality}}
-
-
-def instagram_publish(project: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
-    try:
-        import requests
-    except ImportError as exc:
-        raise RuntimeError("Requests is not installed. Install local_studio/requirements.txt first.") from exc
-    token = os.getenv("INSTAGRAM_ACCESS_TOKEN", "").strip()
-    user_id = os.getenv("INSTAGRAM_USER_ID", "").strip()
-    version = os.getenv("INSTAGRAM_API_VERSION", "").strip()
-    if not token or not user_id or not version:
-        raise RuntimeError("Instagram credentials are not configured locally. Set INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_USER_ID, and INSTAGRAM_API_VERSION in local_studio/.env.")
-    media_path = require_path(payload.get("render_path", project["output_path"]), "render_path")
-    if not media_path.exists():
-        raise RuntimeError(f"Approved render does not exist: {media_path}")
-    if media_path.stat().st_size > 1024 * 1024 * 1024:
-        raise RuntimeError("Instagram Reel file exceeds the 1 GB local upload limit.")
-    if media_path.suffix.lower() not in {".mp4", ".mov", ".mkv", ".avi"}:
-        raise RuntimeError("Instagram upload expects a supported local video format.")
-    caption = str(payload.get("caption", project.get("caption", "")))[:2200]
-    api = f"https://graph.instagram.com/{version}/{user_id}"
-    container = requests.post(f"{api}/media", data={"media_type": "REELS", "upload_type": "resumable", "caption": caption, "share_to_feed": str(bool(payload.get("share_to_feed", False))).lower()}, headers={"Authorization": f"Bearer {token}"}, timeout=45)
-    container.raise_for_status()
-    container_data = container.json()
-    container_id, upload_uri = container_data.get("id"), container_data.get("uri")
-    if not container_id or not upload_uri:
-        raise RuntimeError("Instagram did not return a resumable upload container URI.")
-    with media_path.open("rb") as media:
-        upload = requests.post(upload_uri, headers={"Authorization": f"OAuth {token}", "offset": "0", "file_size": str(media_path.stat().st_size), "Content-Type": "application/octet-stream"}, data=media, timeout=900)
-        upload.raise_for_status()
-    deadline = time.time() + 90
-    status_data: dict[str, Any] = {}
-    while time.time() < deadline:
-        status = requests.get(f"https://graph.instagram.com/{version}/{container_id}", params={"fields": "status_code,status"}, headers={"Authorization": f"Bearer {token}"}, timeout=30)
-        status.raise_for_status(); status_data = status.json()
-        if status_data.get("status_code") == "FINISHED":
-            break
-        if status_data.get("status_code") in {"ERROR", "EXPIRED"}:
-            raise RuntimeError(f"Instagram container failed: {status_data}")
-        time.sleep(3)
-    else:
-        raise RuntimeError("Instagram processing did not finish within 90 seconds.")
-    published = requests.post(f"{api}/media_publish", data={"creation_id": container_id}, headers={"Authorization": f"Bearer {token}"}, timeout=45)
-    published.raise_for_status()
-    return {"container_id": container_id, "container_status": status_data, "instagram_media_id": published.json().get("id"), "source_path": str(media_path)}
-
-
 def _validate_runnable(job: dict[str, Any]) -> dict[str, Any]:
     if job["kind"] == "render" and not job["approved"]:
         raise ValueError("Job has no recorded human approval.")
@@ -1086,204 +685,16 @@ def start_job(job_id: str, *, wait: bool) -> dict[str, Any]:
     return get_job(job_id) or job
 
 
-class StudioHandler(BaseHTTPRequestHandler):
-    server_version = "LocalVideoStudio/1.0"
-
-    def _json(self, status: int, payload: Any) -> None:
-        raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-        self.send_response(status); self.send_header("Content-Type", "application/json; charset=utf-8"); self.send_header("Content-Length", str(len(raw)))
-        origin = self.headers.get("Origin")
-        if origin in ALLOWED_ORIGINS:
-            self.send_header("Access-Control-Allow-Origin", origin); self.send_header("Vary", "Origin")
-        self.end_headers(); self.wfile.write(raw)
-
-    def _download(self, path: Path, filename: str) -> None:
-        if not path.is_file():
-            raise RuntimeError("Local terminal CLI download is unavailable.")
-        raw = path.read_bytes()
-        self.send_response(HTTPStatus.OK); self.send_header("Content-Type", "text/x-python; charset=utf-8"); self.send_header("Content-Length", str(len(raw)))
-        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
-        origin = self.headers.get("Origin")
-        if origin in ALLOWED_ORIGINS:
-            self.send_header("Access-Control-Allow-Origin", origin); self.send_header("Vary", "Origin")
-        self.end_headers(); self.wfile.write(raw)
-
-    def _redirect_to_browser_page(self, path: str) -> None:
-        self.send_response(HTTPStatus.FOUND)
-        self.send_header("Location", f"{SITE_BASE_URL}{path}")
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-
-    def _body(self) -> dict[str, Any]:
-        length = int(self.headers.get("Content-Length", "0"))
-        if length > 8_000_000:
-            raise ValueError("Request body is too large.")
-        value = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
-        if not isinstance(value, dict):
-            raise ValueError("JSON object required.")
-        return value
-
-    def _origin_allowed(self) -> bool:
-        origin = self.headers.get("Origin")
-        return origin is None or origin in ALLOWED_ORIGINS
-
-    def _token_ok(self) -> bool:
-        expected = os.getenv("LOCAL_STUDIO_TOKEN", "").strip()
-        return not expected or self.headers.get("Authorization") == f"Bearer {expected}"
-
-    def do_OPTIONS(self) -> None:  # noqa: N802
-        self.send_response(HTTPStatus.NO_CONTENT)
-        origin = self.headers.get("Origin")
-        if origin in ALLOWED_ORIGINS:
-            self.send_header("Access-Control-Allow-Origin", origin)
-            self.send_header("Vary", "Origin")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        self.end_headers()
-
-    def do_GET(self) -> None:  # noqa: N802
-        if not self._origin_allowed():
-            self._json(403, {"error": "Cross-origin requests are not allowed."}); return
-        try:
-            path = urlparse(self.path).path.rstrip("/") or "/"
-            if path not in PUBLIC_GET_PATHS and path not in BROWSER_PAGE_PATHS and not self._token_ok():
-                self._json(401, {"error": "Invalid local studio token."}); return
-            if path in BROWSER_PAGE_PATHS:
-                self._redirect_to_browser_page(path)
-            elif path == "/health":
-                instagram_ready = bool(os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USER_ID") and os.getenv("INSTAGRAM_API_VERSION"))
-                self._json(200, {"service": "Local Video Studio", "status": "ready", "bind": "127.0.0.1", "workspace": str(WORKSPACE_DIR), "database": str(DB_PATH), "moviepy_installed": self._moviepy_ready(), "instagram_publish_enabled": instagram_ready, "credentials_configured": instagram_ready, "bots": list_bots()["summary"]})
-            elif path == "/api/projects":
-                self._json(200, {"projects": list_projects()})
-            elif path == "/api/jobs":
-                self._json(200, {"jobs": list_jobs()})
-            elif path.startswith("/api/jobs/"):
-                job = get_job(path.rsplit("/", 1)[-1])
-                self._json(200, {"job": job} if job else {"error": "Job not found"})
-            elif path.startswith("/api/bots/") and path.endswith("/execution-policy"):
-                self._json(200, {"execution_policy": execution_policy(path.split("/")[3])})
-            elif path == "/api/bots":
-                self._json(200, list_bots())
-            elif path == "/api/bot-activity":
-                self._json(200, {"activity": list_bot_activity()})
-            elif path == "/api/bot-guide":
-                language = "ko" if "lang=ko" in urlparse(self.path).query else "en"
-                self._json(200, bot_guide(language))
-            elif path == "/api/bot-entry":
-                self._json(200, bot_entry_manifest())
-            elif path == "/api/terminal-contract":
-                self._json(200, terminal_contract())
-            elif path == "/downloads/grok-crew.py":
-                self._download(TERMINAL_CLI_PATH, "grok-crew.py")
-            elif path == "/api/bot-entries":
-                self._json(200, {"entries": list_bot_entries()})
-            elif path == "/api/edit-method":
-                self._json(200, current_edit_method())
-            elif path == "/api/presets":
-                self._json(200, {"quality_presets": QUALITY_PRESETS, "caption_layout_presets": CAPTION_LAYOUT_PRESETS, "platform_presets": PLATFORM_PRESETS})
-            elif path == "/api/brand-kits":
-                self._json(200, {"brand_kits": list_artifacts(None, "brand_kit")})
-            elif path.startswith("/api/projects/") and path.endswith("/operations"):
-                self._json(200, project_operations(path.split("/")[3]))
-            elif path.startswith("/api/projects/") and path.endswith("/export"):
-                self._json(200, {"bundle": export_project_bundle(path.split("/")[3])})
-            elif path.startswith("/api/projects/"):
-                project = get_project(path.rsplit("/", 1)[-1])
-                self._json(200, {"project": project, "jobs": list_jobs(project["id"])} if project else {"error": "Project not found"})
-            else:
-                self._json(404, {"error": "Not found"})
-        except Exception as exc:  # noqa: BLE001
-            self._json(500, {"error": str(exc)})
-
-    def do_POST(self) -> None:  # noqa: N802
-        if not self._origin_allowed():
-            self._json(403, {"error": "Cross-origin requests are not allowed."}); return
-        if not self._token_ok():
-            self._json(401, {"error": "Invalid local studio token."}); return
-        try:
-            path = urlparse(self.path).path.rstrip("/"); body = self._body()
-            if path == "/api/projects":
-                self._json(201, {"project": new_project(body)})
-            elif path == "/api/projects/import":
-                self._json(201, import_project_bundle(body))
-            elif path == "/api/bots/heartbeat":
-                self._json(201, {"bot": record_bot_heartbeat(body)})
-            elif path == "/api/bots/execution-policy":
-                self._json(200, {"execution_policy": set_execution_policy(body)})
-            elif path == "/api/bot-entry":
-                self._json(201, enter_bot_workspace(body))
-            elif path == "/api/edit-method":
-                self._json(200, {"edit_method": set_edit_method(body)})
-            elif path == "/api/brand-kits":
-                self._json(201, {"brand_kit": save_artifact(None, "brand_kit", body.get("title", body.get("name", "Brand kit")), body.get("payload", body), body.get("created_by", "local_user"))})
-            elif path.startswith("/api/artifacts/") and path.endswith("/update"):
-                self._json(200, {"artifact": update_artifact(path.split("/")[3], body)})
-            elif path.startswith("/api/projects/") and path.endswith("/cut-map"):
-                self._json(201, {"cut_map": build_cut_map(path.split("/")[3], body)})
-            elif path.startswith("/api/projects/") and path.endswith("/inspect"):
-                self._json(201, {"inspection": inspect_project_media(path.split("/")[3], body)})
-            elif path.startswith("/api/projects/") and path.endswith("/quality-check"):
-                self._json(201, {"quality_report": quality_report(path.split("/")[3], str(body.get("stage", "pre_render")), body)})
-            elif path.startswith("/api/projects/") and path.endswith("/artifacts"):
-                project_id, kind = path.split("/")[3], str(body.get("type", ""))
-                if kind not in {"audio_plan", "bot_task", "edit_variant", "overlay_slots", "performance_note", "project_memory"}:
-                    raise ValueError("Use the dedicated endpoint for this project artifact type.")
-                self._json(201, {"artifact": save_artifact(project_id, kind, body.get("title"), body.get("payload", {}), body.get("created_by", "local_user"))})
-            elif path.startswith("/api/projects/") and path.endswith("/render"):
-                project_id = path.split("/")[3]
-                auto_local, policy = bot_auto_executes(body)
-                human_approved = bool(body.get("approved"))
-                if not human_approved and not auto_local:
-                    raise ValueError("This bot requires human approval before a local render. Set its execution policy to auto_local or send approved: true.")
-                authorization = "bot_auto_local" if auto_local and not human_approved else "human_approved"
-                job = create_job(project_id, "render", {
-                    "requested_by": body.get("requested_by", "local_user"),
-                    "bot_id": body.get("bot_id"),
-                    "execution_authorization": authorization,
-                }, human_approved or auto_local)
-                auto_run = auto_local and bool(body.get("run_immediately", True))
-                if auto_run:
-                    job = start_job(job["id"], wait=bool(body.get("wait", False)))
-                self._json(201, {"job": job, "execution_policy": policy, "auto_run": auto_run})
-            elif path.startswith("/api/projects/") and path.endswith("/instagram"):
-                project_id = path.split("/")[3]
-                auto_upload = bool(body.get("auto_upload", False))
-                job = create_job(project_id, "instagram_publish", {"render_path": body.get("render_path"), "caption": body.get("caption", ""), "share_to_feed": bool(body.get("share_to_feed", False)), "requested_by": body.get("requested_by", "local_user"), "auto_upload": auto_upload}, True)
-                if auto_upload:
-                    job = start_job(job["id"], wait=bool(body.get("wait", False)))
-                self._json(201, {"job": job, "auto_upload": auto_upload})
-            elif path.startswith("/api/jobs/") and path.endswith("/cancel"):
-                self._json(200, {"job": request_job_cancel(path.split("/")[3])})
-            elif path.startswith("/api/jobs/") and path.endswith("/run"):
-                job_id = path.split("/")[3]; self._json(200, {"job": start_job(job_id, wait=bool(body.get("wait", False)))})
-            else:
-                self._json(404, {"error": "Not found"})
-        except ValueError as exc:
-            self._json(400, {"error": str(exc)})
-        except Exception as exc:  # noqa: BLE001
-            self._json(500, {"error": str(exc)})
-
-    @staticmethod
-    def _moviepy_ready() -> bool:
-        try:
-            import moviepy  # noqa: F401
-            return True
-        except ImportError:
-            return False
-
-    def log_message(self, fmt: str, *args: Any) -> None:
-        print(f"[{utc_now()}] {self.address_string()} {fmt % args}")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Local Video Studio on loopback only.")
     parser.add_argument("--port", type=int, default=7214)
     args = parser.parse_args(); load_dotenv(); init_db()
+    from handlers import StudioHandler  # deferred: handlers.py imports this module, so avoid a top-level cycle
     with db() as conn:
         conn.execute("UPDATE jobs SET status = 'failed', error_text = ?, updated_at = ? WHERE status = 'running'", ("Interrupted by an unclean Local Studio shutdown.", utc_now()))
     server = ThreadingHTTPServer(("127.0.0.1", args.port), StudioHandler)
     print(f"Local Video Studio listening at http://127.0.0.1:{args.port}")
-    print(f"Workspace: {WORKSPACE_DIR}")
+    print(f"Workspace: {config.WORKSPACE_DIR}")
     print("Instagram upload runs when a queued job is started or auto_upload is enabled.")
     try:
         server.serve_forever()

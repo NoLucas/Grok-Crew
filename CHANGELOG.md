@@ -4,6 +4,8 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 0.2.0 — 2026-08-24
+
 ### Added
 
 - A public-ready README with quick start, workflow, use cases, roadmap, and local workspace preview.
@@ -14,18 +16,30 @@ All notable changes to Grok Crew are documented here.
 - Background music mixing (`music_track`, `music_volume`, `music_loop`) mixed under the source audio.
 - Renders and Instagram publishes now run on a background worker: starting a job returns immediately, `GET /api/jobs/{id}` reports live progress and supports `wait: true` to block until done, and `POST /api/jobs/{id}/cancel` requests cancellation. A job left `running` after an unclean shutdown is reconciled to `failed` on the next start.
 - `local_studio/handoff_watcher.py` lets a remote or cloud-hosted bot that cannot reach this PC's loopback address hand off a finished edit through a dedicated git repository instead. It polls the repository, copies media into the local workspace, and applies the package through the existing `/api/projects/import` and job endpoints — no server changes and no open port. See `local_studio/handoff-guide.json` (or `handoff-guide.ko.json`) for the package format handed to that bot.
+- Handoff channel safeguards: a media file extension allow-list, a media size cap, a `bundle.json` size cap, and a per-cycle package limit, all documented in both language handoff guides.
+- Bundled an OFL-licensed, Korean-capable bold font (`local_studio/assets/fonts/`) so caption burn-in always has CJK glyph coverage regardless of what's installed on the OS; captions are back on by default now that the font gap that motivated turning them off is closed.
+- `local_studio/tests/`: a pytest suite covering workspace path validation, job lifecycle, project bundle import/export, bot execution policy, quality checks, the Instagram auto_upload gate, and HTTP status codes, plus `.github/workflows/ci.yml` running it (and `tsc`/`eslint`) on every push and PR.
+- A "LIVE" badge in the site header marks the only two pages where a render, publish, or bot check-in actually happens (Production, Bot Check), matching the existing README table.
 
 ### Changed
 
 - Bot Guide now maps every workspace page and explains 18 bot-usable production functions.
 - Same-PC bot CLI can print URLs for every workspace page.
 - Rendering fails fast with a clear error when no local font can be found for captions, instead of silently skipping them.
+- `local_studio/studio_server.py` split into `config.py`, `db.py`, `render.py`, `instagram.py`, and `handlers.py`; `studio_server.py` now holds the project/job/bot/artifact domain logic and the process entrypoint.
+- `app/production-console.tsx` and `app/forge.tsx` split: the Finish Rack render-settings form and the Export Room view moved into their own files, cutting both source files roughly in half.
+- Render presets pick a faster libx264 encoder preset for compact/draft-quality renders.
 
 ### Fixed
 
 - Local Studio now requires the configured `LOCAL_STUDIO_TOKEN` on GET requests as well as POST requests (previously only writes were gated), and rejects any request whose browser `Origin` header is outside `http://localhost:3000` / `http://127.0.0.1:3000`, closing a local cross-site request forgery gap that let an open browser tab drive the service.
 - `npm run local` no longer fails with `spawn EINVAL` on Windows when starting the browser dev server — spawning a `.cmd` file (`npm.cmd`) now sets `shell: true`, which recent Node.js versions require on Windows.
 - Rendered MP4s now write with `-movflags +faststart`, so the metadata needed to play or seek is at the start of the file instead of the end. Without it, a rendered Reel (or a demo video linked from the README) could appear to stop partway through or fail to play at all in a browser or player that streams the file progressively.
+- Pre-render quality checks (`quality_report`) now read the EDL's actual `in`/`out` keys instead of `start`/`end`, so a valid project no longer always fails `clip_ranges`/`duration` checks with `0s`/`error`.
+- Queuing an Instagram `auto_upload` now requires the requesting bot's `auto_local` execution policy or an explicit human `approved: true`, matching the gate `render` already had. Previously any process on the PC could force an immediate publish regardless of policy.
+- `GET /api/jobs/{id}` and `GET /api/projects/{id}` return 404 for a missing resource instead of 200 with an error body; invalid input on a `GET` route (like a malformed `bot_id`) now returns 400 instead of 500.
+- Korean (and other non-Latin-script) captions pulled from Cut Log into a new Production project no longer collapse to the placeholder caption "VIDEO" — the word-extraction regex now matches Unicode letters, not just ASCII.
+- The local `Authorization` token check uses a constant-time comparison (`hmac.compare_digest`) instead of `==`.
 
 ## 0.1.0 — Initial local workspace
 

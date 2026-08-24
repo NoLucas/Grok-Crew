@@ -5555,6 +5555,18 @@ select {
   color: var(--text);
   border-color: var(--yellow);
 }
+.nav-live-dot {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(184, 248, 90, 0.14);
+  color: var(--lime);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  vertical-align: 1px;
+}
 .header-more {
   position: relative;
   display: grid;

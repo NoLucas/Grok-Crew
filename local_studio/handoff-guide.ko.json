@@ -9,6 +9,15 @@
     "rule": "오직 이 저장소의 main 브랜치에만 커밋을 push하세요. 로컬 운영자 PC의 IP나 호스트명에 접속을 시도하지 마세요 — 이 저장소만이 허용된 채널입니다.",
     "folder_naming": "제출 하나당 최상위 폴더 하나, 이름은 '<UTC 타임스탬프>-<짧은 슬러그>' 형식입니다 (예: 2026-08-23T07-19-00Z-payoff-hook). 폴더명은 제출마다 고유해야 하며 중복 감지에 사용됩니다."
   },
+  "limits": {
+    "media_extensions": [".mp4", ".mov", ".mkv", ".avi", ".webm"],
+    "media_max_bytes": 2147483648,
+    "media_max_bytes_note": "기본값 2GB. 운영자가 local_studio/.env의 HANDOFF_MAX_MEDIA_BYTES로 올리거나 낮출 수 있습니다. 허용되지 않는 확장자나 크기 초과 파일은 잘라내지 않고 패키지 전체를 건너뜁니다.",
+    "bundle_max_bytes": 4194304,
+    "bundle_max_bytes_note": "기본값 4MB(HANDOFF_MAX_BUNDLE_BYTES). bundle.json은 메타데이터·EDL·아티팩트일 뿐이라 이만큼 클 필요가 없습니다.",
+    "packages_per_cycle": 5,
+    "packages_per_cycle_note": "워처는 폴링 1회당 이 개수만큼만 대기 중인 폴더를 처리합니다(HANDOFF_MAX_PACKAGES_PER_CYCLE 또는 운영자가 바꾼 --max-per-cycle). 나머지는 다음 주기에 처리되니, 지연됐다고 재제출하거나 실패로 간주하지 마세요."
+  },
   "package_contents": {
     "bundle_json": "폴더 최상위에 bundle.json 파일을 두며, Local Studio 자체의 프로젝트 번들 export/import가 이미 쓰는 스키마(local-video-workspace.project-bundle/v1)를 그대로 사용합니다.",
     "bundle_json_shape": {

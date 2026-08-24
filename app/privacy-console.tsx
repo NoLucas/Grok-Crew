@@ -14,7 +14,13 @@ export default function PrivacyConsole() {
   const [workspaceName, setWorkspaceName] = useState(profile.workspaceName);
   const [botLabel, setBotLabel] = useState(profile.defaultBotLabel);
   const [message, setMessage] = useState("");
+  // profile loads asynchronously (from localStorage, possibly via another
+  // browser tab's edit) after this component's own initial render, and these
+  // two fields are an independently-editable draft copy of it -- so this
+  // effect intentionally re-syncs the draft whenever the upstream value
+  // changes, rather than mirroring it once at mount.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setWorkspaceName(profile.workspaceName);
     setBotLabel(profile.defaultBotLabel);
   }, [profile]);
