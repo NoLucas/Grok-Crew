@@ -35,16 +35,21 @@ Keep `npm run local` running. In a second terminal from this repository, run `np
 
 ## Tell a Grok bot what to do
 
-Start Grok Crew with `npm run local`, then send this to a bot that is running on the **same PC**:
+Hand any local agent on the **same PC** these three lines:
 
 ```text
-Use Grok Crew on this PC to turn inputs/source.mp4 into a vertical 9:16 social edit.
-Keep the strongest lines, add captions, and render outputs/final.mp4. Do not upload it.
-First read the local Bot Guide if you need details. When finished, report the changes
-you made and the output path.
+1. git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
+2. cd grok-crew
+3. npm run local
 ```
 
-Name the source, format, editing goal, delivery path, and upload preference. The bot reads the local guide, checks in, records its work, and returns the local file. A bot on another computer or in a cloud sandbox cannot open this PC's loopback workspace directly; use the [cloud bot handoff](#cloud-bot-handoff-for-a-bot-that-isnt-on-this-pc) for that case.
+Then ask it to actually edit something. Here's a real local bot doing both, start to finish:
+
+<p align="center">
+<a href="public/demo/quickstart-chat-demo.mp4"><img src="public/demo/quickstart-chat-demo.gif" width="380" alt="A local bot clones Grok Crew, starts it, then turns a plain-language request into a captioned vertical cut"></a>
+</p>
+
+Nothing was uploaded — the bot only used the local API. Name the source, format, editing goal, delivery path, and upload preference and the bot reads the local Bot Guide and turns it into the right local calls itself. A bot on another computer or in a cloud sandbox cannot open this PC's loopback workspace directly; use the [cloud bot handoff](#cloud-bot-handoff-for-a-bot-that-isnt-on-this-pc) for that case.
 
 ## Why Grok Crew?
 
