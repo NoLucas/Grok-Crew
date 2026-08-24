@@ -13,9 +13,9 @@
 
 ## 動作デモ
 
-[![20秒のGrok Crewワークフローデモを見る](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
+[![実際のローカルボットがGrok Crewを使う様子を見る](public/demo/quickstart-chat-demo.gif)](public/demo/quickstart-chat-demo.mp4)
 
-*プレビューはこのREADME内でそのまま再生されます。クリックするとフルのMP4が開きます。*
+*実際のローカルボットがリポジトリをクローンして起動し、普通の言葉での依頼を字幕入りの縦型動画に編集します。クリックすると完全なMP4が再生されます。*
 
 ## ローカルで実行する
 

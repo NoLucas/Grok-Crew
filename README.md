@@ -13,9 +13,9 @@
 
 ## Watch it work
 
-[![Watch the 20-second Grok Crew workflow demo](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
+[![Watch a real local bot clone, run, and edit with Grok Crew](public/demo/quickstart-chat-demo.gif)](public/demo/quickstart-chat-demo.mp4)
 
-*The preview plays directly in this README. Click it to open the full MP4.*
+*A real local bot clones the repo, starts it, and turns a plain-language request into a captioned vertical cut. Click it to open the full MP4.*
 
 ## Run it locally
 
@@ -43,11 +43,7 @@ Hand any local agent on the **same PC** these three lines:
 3. npm run local
 ```
 
-Then ask it to actually edit something. Here's a real local bot doing both, start to finish:
-
-<p align="center">
-<a href="public/demo/quickstart-chat-demo.mp4"><img src="public/demo/quickstart-chat-demo.gif" width="380" alt="A local bot clones Grok Crew, starts it, then turns a plain-language request into a captioned vertical cut"></a>
-</p>
+Then ask it to actually edit something — see the demo at the top of this page for what that looks like end to end.
 
 Nothing was uploaded — the bot only used the local API. Name the source, format, editing goal, delivery path, and upload preference and the bot reads the local Bot Guide and turns it into the right local calls itself. A bot on another computer or in a cloud sandbox cannot open this PC's loopback workspace directly; use the [cloud bot handoff](#cloud-bot-handoff-for-a-bot-that-isnt-on-this-pc) for that case.
 

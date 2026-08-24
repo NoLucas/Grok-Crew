@@ -13,9 +13,9 @@
 
 ## 观看演示
 
-[![观看 20 秒的 Grok Crew 工作流程演示](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
+[![观看真实的本地机器人使用 Grok Crew](public/demo/quickstart-chat-demo.gif)](public/demo/quickstart-chat-demo.mp4)
 
-*预览会直接在本 README 中播放。点击可打开完整 MP4。*
+*一个真实的本地机器人克隆并启动仓库，然后把一句自然语言的请求剪辑成带字幕的竖屏视频。点击可播放完整视频。*
 
 ## 在本地运行
 

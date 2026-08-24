@@ -13,9 +13,9 @@
 
 ## 작동 영상
 
-[![20초 Grok Crew 작업 흐름 데모 보기](public/demo/grok-crew-workflow.gif)](public/demo/grok-crew-workflow.mp4)
+[![Grok Crew를 실제로 사용하는 로컬 봇 보기](public/demo/quickstart-chat-demo.gif)](public/demo/quickstart-chat-demo.mp4)
 
-*미리보기는 이 README에서 바로 재생됩니다. 클릭하면 원본 MP4를 엽니다.*
+*실제 로컬 봇이 저장소를 클론하고 실행한 뒤, 평범한 말로 된 요청을 자막이 들어간 세로 영상으로 편집합니다. 클릭하면 전체 MP4가 재생됩니다.*
 
 ## 로컬에서 실행하기
 
