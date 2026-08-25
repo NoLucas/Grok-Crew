@@ -104,6 +104,14 @@ def pending_folders(mirror: Path, processed: set[str]) -> list[Path]:
     return [folder for folder in folders if folder.name not in processed]
 
 
+def folders_for_cycle(folders: list[Path], max_per_cycle: int) -> list[Path]:
+    """Cap pending folders to at most max_per_cycle for this poll; the rest wait for the next one."""
+    if len(folders) > max_per_cycle:
+        log(f"{len(folders)} package(s) pending; processing the oldest {max_per_cycle} this cycle, the rest will follow on the next cycle.")
+        return folders[:max_per_cycle]
+    return folders
+
+
 def ensure_bot_entered(client: LocalStudioClient, state: dict[str, Any]) -> None:
     if state.get("entered"):
         return
@@ -225,9 +233,7 @@ def run_once(args: argparse.Namespace) -> None:
     if not folders:
         log("No new handoff packages.")
         return
-    if len(folders) > args.max_per_cycle:
-        log(f"{len(folders)} package(s) pending; processing the oldest {args.max_per_cycle} this cycle, the rest will follow on the next cycle.")
-        folders = folders[: args.max_per_cycle]
+    folders = folders_for_cycle(folders, args.max_per_cycle)
     for folder in folders:
         process_folder(client, folder, workspace, allow_auto_upload=args.allow_auto_upload)
         heartbeat(client, "handoff_processed", {"package": folder.name})
