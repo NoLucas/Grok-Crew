@@ -75,3 +75,29 @@ def test_pending_folders_excludes_git_dir_and_processed(tmp_path):
     (tmp_path / "pkg-b").mkdir()
     result = [p.name for p in hw.pending_folders(tmp_path, processed={"pkg-a"})]
     assert result == ["pkg-b"]
+
+
+# -- folders_for_cycle(): caps packages processed per poll (frequency limit) -
+
+def test_folders_for_cycle_caps_to_max_per_cycle(tmp_path):
+    folders = [tmp_path / f"pkg-{i}" for i in range(7)]
+    result = hw.folders_for_cycle(folders, 5)
+    assert result == folders[:5]
+
+
+def test_folders_for_cycle_keeps_oldest_first_when_capping(tmp_path):
+    folders = [tmp_path / "20260101-pkg", tmp_path / "20260102-pkg", tmp_path / "20260103-pkg"]
+    result = hw.folders_for_cycle(folders, 2)
+    assert [f.name for f in result] == ["20260101-pkg", "20260102-pkg"]
+
+
+def test_folders_for_cycle_returns_all_when_under_limit(tmp_path):
+    folders = [tmp_path / f"pkg-{i}" for i in range(3)]
+    result = hw.folders_for_cycle(folders, 5)
+    assert result == folders
+
+
+def test_folders_for_cycle_returns_all_when_exactly_at_limit(tmp_path):
+    folders = [tmp_path / f"pkg-{i}" for i in range(5)]
+    result = hw.folders_for_cycle(folders, 5)
+    assert result == folders

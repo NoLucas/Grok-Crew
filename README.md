@@ -108,7 +108,7 @@ Then open [Bot Check](http://localhost:3000/bots). The bot appears only after it
 - Project memory, bot task board, audio plan, A/B variants, brand kits, and overlay slots
 - Failure notes and performance notes for the next edit
 - Bot Check with real entry, heartbeat, edit, render, and upload progress
-- Korean and English interfaces plus a machine-readable bot guide
+- Korean, English, Chinese, and Japanese interfaces plus a machine-readable bot guide
 
 ## What works now vs. planning and preview
 
@@ -171,7 +171,7 @@ Instagram delivery is optional. It needs the owner's locally configured Meta cre
 
 ## Cloud bot handoff (for a bot that isn't on this PC)
 
-Local Studio still never accepts a connection from another machine — that does not change for a bot running in a cloud sandbox or a different computer. Instead, such a bot hands off a finished edit through a dedicated git repository, and `local_studio/handoff_watcher.py` (running on the owner's own PC) polls that repository and applies the handoff through the same local API a same-PC bot already uses. See [the local bot manual](local_studio/README.md) for setup, and `local_studio/handoff-guide.json` (or `handoff-guide.ko.json`) for the exact package format to hand that bot.
+Local Studio still never accepts a connection from another machine — that does not change for a bot running in a cloud sandbox or a different computer. Instead, such a bot hands off a finished edit through a dedicated git repository, and `local_studio/handoff_watcher.py` (running on the owner's own PC) polls that repository and applies the handoff through the same local API a same-PC bot already uses. See [the local bot manual](local_studio/README.md) for setup, and `local_studio/handoff-guide.json` (or `handoff-guide.ko.json`, `handoff-guide.zh.json`, `handoff-guide.ja.json`) for the exact package format to hand that bot.
 
 ## Use cases
 
@@ -182,20 +182,6 @@ Local Studio still never accepts a connection from another machine — that does
 
 ## Roadmap
 
-- [x] Local project desk, bot entry, task memory, rendering, and optional Instagram delivery
-- [x] Transcript cut maps, media preflight, render QA, A/B variants, audio plans, overlays, and brand kits
-- [x] Korean/English bot guide and browser-page map
-- [x] Import/export portable project bundles
-- [x] More local render presets and caption layouts
-- [x] Cloud bot handoff through a dedicated git repository, with loopback still closed to the network
-- [x] Bundle an open-license caption font so rendering doesn't depend on finding a system font
-- [x] Surface render concurrency as a documented setting instead of a silent single-worker default
-- [x] Make the local CORS/Origin allow-list configurable instead of hardcoding port 3000
-- [x] Automated test suite for the render pipeline and app
-- [x] Automatic music ducking under dialogue instead of a flat volume mix
-- [x] GitHub Actions CI for lint/build/Python checks on every PR
-- [x] Harden the cloud bot handoff channel (media size cap, bundle size cap, max packages per cycle)
-- [x] Extend the live browser UI and bot guide to Chinese/Japanese to match the README translations
 - [ ] Community-maintained example edit packs
 - [ ] Publish delivery beyond Instagram (TikTok, YouTube Shorts)
 
@@ -204,7 +190,3 @@ Local Studio still never accepts a connection from another machine — that does
 Found a rough edge or have an editing workflow worth preserving? Please start with [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports, feature requests, small focused pull requests, and reproducible local job failures are especially useful.
 
 This repository is source-available under the [Business Source License 1.1](LICENSE) (`BUSL-1.1`), not a permissive open-source license. You may use, copy, and modify it for personal, educational, or internal business purposes, including running it locally to produce and publish your own content — see the license's Additional Use Grant for the exact terms. Offering it, or a derivative of it, to third parties as a hosted or competing commercial product requires a separate license from the copyright holder. It converts to the MIT License on 2030-08-23.
-
-## Maintainer launch checklist
-
-The repository includes a practical [launch checklist](docs/LAUNCH.md), [announcement kit](docs/ANNOUNCEMENT.md), and [changelog](CHANGELOG.md). Before announcing it, add GitHub topics and publish a tagged first release.
