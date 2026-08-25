@@ -14,17 +14,64 @@ import json
 import os
 import shutil
 import subprocess
+import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any
 
-from grok_crew import LocalStudioClient
+from grok_crew import LocalStudioClient, poll_job
 
 BASE_DIR = Path(__file__).resolve().parent
 
 
 def log(message: str) -> None:
     print(f"[handoff] {message}", flush=True)
+
+
+_notify_warned = False
+_notify_lock = threading.Lock()
+
+
+def _warn_notify_unavailable(exc: Exception) -> None:
+    global _notify_warned
+    with _notify_lock:
+        if _notify_warned:
+            return
+        _notify_warned = True
+    log(f"Desktop notifications unavailable (shown once, non-fatal): {exc}")
+
+
+def _show_toast(title: str, message: str) -> None:
+    try:
+        if sys.platform == "win32":
+            from win11toast import toast  # imported lazily: a missing/broken install must never block startup
+            toast(title, message, duration="short")
+        elif sys.platform == "darwin":
+            script = f'display notification {json.dumps(message)} with title {json.dumps(title)}'
+            subprocess.run(["osascript", "-e", script], capture_output=True, timeout=4, check=True)
+        else:
+            subprocess.run(["notify-send", title, message], capture_output=True, timeout=4, check=True)
+    except Exception as exc:  # noqa: BLE001 -- best-effort notification, must never affect the watcher
+        _warn_notify_unavailable(exc)
+
+
+def notify(title: str, message: str, *, enabled: bool) -> None:
+    if not enabled:
+        return
+    try:
+        thread = threading.Thread(target=_show_toast, args=(title, message), daemon=True)
+        thread.start()
+        thread.join(timeout=5.0)  # bounded wait; a daemon thread still running after this is simply abandoned
+    except Exception as exc:  # noqa: BLE001 -- defence in depth, _show_toast already catches its own errors
+        _warn_notify_unavailable(exc)
+
+
+def _caption_preview(caption: str, limit: int = 100) -> str:
+    caption = (caption or "").strip()
+    if not caption:
+        return "(no caption)"
+    return caption if len(caption) <= limit else caption[:limit].rstrip() + "…"
 
 
 def load_dotenv() -> None:
@@ -54,6 +101,13 @@ ALLOWED_MEDIA_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm"}
 MAX_MEDIA_BYTES = int(os.getenv("HANDOFF_MAX_MEDIA_BYTES", str(2 * 1024 ** 3)))  # 2 GB
 MAX_BUNDLE_BYTES = int(os.getenv("HANDOFF_MAX_BUNDLE_BYTES", str(4 * 1024 * 1024)))  # 4 MB
 DEFAULT_MAX_PACKAGES_PER_CYCLE = 5
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None or value.strip() == "":
+        return default
+    return value.strip().lower() not in {"0", "false", "no", "off"}
 
 
 def load_state() -> dict[str, Any]:
@@ -147,49 +201,73 @@ def copy_media(folder: Path, workspace: Path, relative_path: str) -> None:
     shutil.copyfile(source, destination)
 
 
-def run_job(client: LocalStudioClient, job_id: str, folder_name: str, kind: str) -> None:
+_KIND_LABEL = {"render": "Render", "instagram_publish": "Instagram upload"}
+
+
+def run_job(client: LocalStudioClient, job_id: str, folder_name: str, kind: str, *, notify_enabled: bool) -> None:
+    label = _KIND_LABEL.get(kind, kind)
     try:
-        result = client.request(f"/api/jobs/{job_id}/run", {})
-        status = result.get("job", {}).get("status")
+        client.request(f"/api/jobs/{job_id}/run", {})
+        # The run request doesn't wait for completion, so poll for the real terminal status
+        # instead of logging/notifying whatever transient queued/running state comes back.
+        job = poll_job(client, job_id).get("job") or {}
+        status = job.get("status")
         log(f"{folder_name}: ran {kind} job {job_id} -> {status}")
+        if status == "succeeded":
+            result = job.get("result_json") or {}
+            if kind == "render":
+                detail = f"saved to {result.get('output_path', 'unknown path')}"
+            else:
+                detail = f"published (media id {result.get('instagram_media_id', 'unknown')})"
+            notify(f"Handoff: {label} succeeded", f"{folder_name}: {detail}", enabled=notify_enabled)
+        elif status == "failed":
+            notify(f"Handoff: {label} failed", f"{folder_name}: {job.get('error_text') or 'unknown error'}", enabled=notify_enabled)
     except RuntimeError as exc:
         log(f"{folder_name}: could not run {kind} job {job_id}: {exc}")
+        notify(f"Handoff: {label} failed to start", f"{folder_name}: {exc}", enabled=notify_enabled)
 
 
-def process_folder(client: LocalStudioClient, folder: Path, workspace: Path, *, allow_auto_upload: bool) -> None:
+def skip(folder_name: str, reason: str, *, notify_enabled: bool) -> None:
+    log(f"Skipping {folder_name}: {reason}")
+    notify("Handoff: package skipped", f"{folder_name}: {reason}", enabled=notify_enabled)
+
+
+def process_folder(client: LocalStudioClient, folder: Path, workspace: Path, *, allow_auto_upload: bool, notify_enabled: bool) -> None:
     bundle_path = folder / "bundle.json"
     if not bundle_path.exists():
-        log(f"Skipping {folder.name}: no bundle.json.")
+        skip(folder.name, "no bundle.json.", notify_enabled=notify_enabled)
         return
     bundle_size = bundle_path.stat().st_size
     if bundle_size > MAX_BUNDLE_BYTES:
-        log(f"Skipping {folder.name}: bundle.json is {bundle_size} bytes, over the {MAX_BUNDLE_BYTES}-byte limit.")
+        skip(folder.name, f"bundle.json is {bundle_size} bytes, over the {MAX_BUNDLE_BYTES}-byte limit.", notify_enabled=notify_enabled)
         return
     try:
         bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        log(f"Skipping {folder.name}: invalid bundle.json ({exc}).")
+        skip(folder.name, f"invalid bundle.json ({exc}).", notify_enabled=notify_enabled)
         return
     if not isinstance(bundle, dict) or bundle.get("schema") != BUNDLE_SCHEMA:
-        log(f"Skipping {folder.name}: bundle.json must use schema {BUNDLE_SCHEMA}.")
+        skip(folder.name, f"bundle.json must use schema {BUNDLE_SCHEMA}.", notify_enabled=notify_enabled)
         return
     project = bundle.get("project")
     if not isinstance(project, dict) or not project.get("source_path"):
-        log(f"Skipping {folder.name}: bundle.project.source_path is required.")
+        skip(folder.name, "bundle.project.source_path is required.", notify_enabled=notify_enabled)
         return
     try:
         copy_media(folder, workspace, str(project["source_path"]))
     except RuntimeError as exc:
-        log(f"Skipping {folder.name}: {exc}")
+        skip(folder.name, str(exc), notify_enabled=notify_enabled)
         return
     auto_upload_requested = bool(project.get("handoff_auto_upload_requested"))
     try:
         response = client.request("/api/projects/import", {"bundle": bundle})
     except RuntimeError as exc:
-        log(f"Skipping {folder.name}: import failed ({exc}).")
+        skip(folder.name, f"import failed ({exc}).", notify_enabled=notify_enabled)
         return
     jobs = response.get("jobs") if isinstance(response.get("jobs"), list) else []
-    log(f"Imported {folder.name} as project {(response.get('project') or {}).get('id')} with {len(jobs)} job(s).")
+    resp_project = response.get("project") or {}
+    log(f"Imported {folder.name} as project {resp_project.get('id')} with {len(jobs)} job(s).")
+    notify("Handoff: package imported", f"{resp_project.get('title', 'Untitled video project')} — {_caption_preview(resp_project.get('caption', ''))}", enabled=notify_enabled)
     for job in jobs:
         if not isinstance(job, dict) or job.get("status") != "queued":
             continue
@@ -197,12 +275,13 @@ def process_folder(client: LocalStudioClient, folder: Path, workspace: Path, *, 
         if not job_id:
             continue
         if kind == "render":
-            run_job(client, job_id, folder.name, "render")
+            run_job(client, job_id, folder.name, "render", notify_enabled=notify_enabled)
         elif kind == "instagram_publish":
             if allow_auto_upload and auto_upload_requested:
-                run_job(client, job_id, folder.name, "instagram_publish")
+                run_job(client, job_id, folder.name, "instagram_publish", notify_enabled=notify_enabled)
             else:
                 log(f"{folder.name}: leaving Instagram job {job_id} queued for a human to run.")
+                notify("Handoff: Instagram queued", f"{folder.name}: open Production to publish when you're ready.", enabled=notify_enabled)
 
 
 def cleanup_folder(mirror: Path, folder: Path, branch: str) -> None:
@@ -235,7 +314,7 @@ def run_once(args: argparse.Namespace) -> None:
         return
     folders = folders_for_cycle(folders, args.max_per_cycle)
     for folder in folders:
-        process_folder(client, folder, workspace, allow_auto_upload=args.allow_auto_upload)
+        process_folder(client, folder, workspace, allow_auto_upload=args.allow_auto_upload, notify_enabled=args.notify)
         heartbeat(client, "handoff_processed", {"package": folder.name})
         processed.add(folder.name)
         state["processed"] = sorted(processed)
@@ -258,6 +337,10 @@ def build_parser() -> argparse.ArgumentParser:
     cleanup_group.add_argument("--cleanup", dest="cleanup", action="store_true", help="Remove processed packages from the handoff branch (default).")
     cleanup_group.add_argument("--no-cleanup", dest="cleanup", action="store_false", help="Keep processed packages on the handoff branch.")
     parser.set_defaults(cleanup=True)
+    notify_group = parser.add_mutually_exclusive_group()
+    notify_group.add_argument("--notify", dest="notify", action="store_true", help="Show a native desktop notification for each imported package, job outcome, and skipped/rejected package (default).")
+    notify_group.add_argument("--no-notify", dest="notify", action="store_false", help="Disable desktop notifications; rely on the console log only.")
+    parser.set_defaults(notify=_env_flag("HANDOFF_NOTIFY", True))
     return parser
 
 

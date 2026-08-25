@@ -64,7 +64,7 @@ def test_process_folder_skips_oversized_bundle_without_touching_network(tmp_path
     folder.mkdir()
     (folder / "bundle.json").write_text('{"schema": "x", "padding": "' + ("a" * 100) + '"}', encoding="utf-8")
     # Should return quietly (logged, not raised) without ever calling the client.
-    hw.process_folder(_NeverCalledClient(), folder, tmp_path / "workspace", allow_auto_upload=False)
+    hw.process_folder(_NeverCalledClient(), folder, tmp_path / "workspace", allow_auto_upload=False, notify_enabled=False)
 
 
 # -- pending_folders(): excludes .git and already-processed packages ---------
