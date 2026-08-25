@@ -82,7 +82,8 @@
     {"id":"12","url":"/packet","name":"패킷","purpose":"패키지화된 창작 브리프와 전달 준비 콘텐츠 정보를 다룹니다.","bot_use":"캡션이나 최종 전달을 준비할 때 제약 조건을 읽고 유지합니다."},
     {"id":"13","url":"/gates","name":"게이트","purpose":"프로젝트 준비 상태와 품질 확인 지점을 보여 줍니다.","bot_use":"프로젝트가 준비됐다고 말하기 전에 미완료 검사를 확인합니다."},
     {"id":"14","url":"/export","name":"내보내기","purpose":"출력 형식·크기·캡션 패키지·최종 전달 정보를 다룹니다.","bot_use":"선택한 플랫폼 요구 사항에 맞춰 최종 로컬 렌더와 전달 설정을 맞춥니다."},
-    {"id":"15","url":"/privacy","name":"개인정보·설정","purpose":"이 기기의 로컬 작업 공간 이름과 개인정보 경계를 설정합니다.","bot_use":"현재 로컬 범위를 존중하고, 브라우저 저장소나 설정 파일에서 비밀값을 읽지 않습니다."}
+    {"id":"15","url":"/privacy","name":"개인정보·설정","purpose":"이 기기의 로컬 작업 공간 이름과 개인정보 경계를 설정합니다.","bot_use":"현재 로컬 범위를 존중하고, 브라우저 저장소나 설정 파일에서 비밀값을 읽지 않습니다."},
+    {"id":"16","url":"/handoff","name":"인계 모니터","purpose":"클라우드 인계 브리지의 연결 상태와, 그것이 가져온 프로젝트들의 EDL·렌더 설정 요약, 작업 결과를 보여주는 읽기 전용 화면입니다.","bot_use":"같은 PC의 봇이 여기 쓸 일은 없습니다. 사람이 콘솔 로그를 보지 않고도 원격 봇의 활동을 확인하는 용도입니다."}
   ],
   "terminal_cli_contract": {
     "api_base_url": "http://127.0.0.1:7214",
@@ -90,7 +91,7 @@
     "browser_rule": "7214 포트는 CLI 다운로드와 JSON API 전용입니다. 브라우저 사용이나 스크린샷은 python grok-crew.py site --page production을 실행해 출력된 http://localhost:3000 주소에서 합니다. 7214 포트에 /production을 열지 마세요.",
     "clone_cli_path": "local_studio/grok_crew.py",
     "clone_bootstrap": "python local_studio/grok_crew.py contract",
-    "browser_pages": { "studio": "http://localhost:3000/", "edit": "http://localhost:3000/edit", "cut": "http://localhost:3000/cut", "production": "http://localhost:3000/production", "operations": "http://localhost:3000/operations", "bot_check": "http://localhost:3000/bots", "bot_guide": "http://localhost:3000/bot-guide", "terminal": "http://localhost:3000/terminal", "library": "http://localhost:3000/library", "agent_desk": "http://localhost:3000/agent", "local_desk": "http://localhost:3000/connect", "packet": "http://localhost:3000/packet", "gate_board": "http://localhost:3000/gates", "export": "http://localhost:3000/export", "privacy": "http://localhost:3000/privacy" },
+    "browser_pages": { "studio": "http://localhost:3000/", "edit": "http://localhost:3000/edit", "cut": "http://localhost:3000/cut", "production": "http://localhost:3000/production", "operations": "http://localhost:3000/operations", "bot_check": "http://localhost:3000/bots", "handoff": "http://localhost:3000/handoff", "bot_guide": "http://localhost:3000/bot-guide", "terminal": "http://localhost:3000/terminal", "library": "http://localhost:3000/library", "agent_desk": "http://localhost:3000/agent", "local_desk": "http://localhost:3000/connect", "packet": "http://localhost:3000/packet", "gate_board": "http://localhost:3000/gates", "export": "http://localhost:3000/export", "privacy": "http://localhost:3000/privacy" },
     "download": "GET /downloads/grok-crew.py",
     "bootstrap": "python grok-crew.py contract",
     "purpose": "같은 PC의 터미널에서 실행되는 봇을 위한 의존성 없는 CLI입니다. 브라우저 조작 없이 Local Studio와 Operations 엔드포인트를 사용할 수 있습니다.",

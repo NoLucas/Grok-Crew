@@ -24,6 +24,7 @@ const sections = [
   { id: 'gates', href: '/gates', ko: '게이트', en: 'Gate board', zh: '关卡看板', ja: 'ゲートボード' },
   { id: 'export', href: '/export', ko: '내보내기', en: 'Export', zh: '导出', ja: 'エクスポート' },
   { id: 'privacy', href: '/privacy', ko: '개인정보·설정', en: 'Privacy & settings', zh: '隐私与设置', ja: 'プライバシー・設定' },
+  { id: 'handoff', href: '/handoff', ko: '인계 모니터', en: 'Handoff monitor', zh: '交接监视器', ja: '引き継ぎモニター' },
 ];
 
 const primarySections = sections.slice(0, 8);

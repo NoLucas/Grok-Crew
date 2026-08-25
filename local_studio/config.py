@@ -47,7 +47,7 @@ def parse_allowed_origins(raw: str) -> frozenset[str]:
 
 ALLOWED_ORIGINS = parse_allowed_origins(os.getenv("LOCAL_STUDIO_ALLOWED_ORIGINS", ""))
 SITE_BASE_URL = "http://localhost:3000"
-BROWSER_PAGE_PATHS = {"/", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy"}
+BROWSER_PAGE_PATHS = {"/", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy", "/handoff"}
 PUBLIC_GET_PATHS = frozenset({"/health", "/api/terminal-contract", "/api/bot-guide", "/api/bot-entry", "/downloads/grok-crew.py"})
 DEFAULT_EDIT_METHOD = {
     "schema": "local-video-workspace.edit-method/v1",

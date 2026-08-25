@@ -232,38 +232,38 @@ def skip(folder_name: str, reason: str, *, notify_enabled: bool) -> None:
     notify("Handoff: package skipped", f"{folder_name}: {reason}", enabled=notify_enabled)
 
 
-def process_folder(client: LocalStudioClient, folder: Path, workspace: Path, *, allow_auto_upload: bool, notify_enabled: bool) -> None:
+def process_folder(client: LocalStudioClient, folder: Path, workspace: Path, *, allow_auto_upload: bool, notify_enabled: bool) -> dict[str, Any] | None:
     bundle_path = folder / "bundle.json"
     if not bundle_path.exists():
         skip(folder.name, "no bundle.json.", notify_enabled=notify_enabled)
-        return
+        return None
     bundle_size = bundle_path.stat().st_size
     if bundle_size > MAX_BUNDLE_BYTES:
         skip(folder.name, f"bundle.json is {bundle_size} bytes, over the {MAX_BUNDLE_BYTES}-byte limit.", notify_enabled=notify_enabled)
-        return
+        return None
     try:
         bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         skip(folder.name, f"invalid bundle.json ({exc}).", notify_enabled=notify_enabled)
-        return
+        return None
     if not isinstance(bundle, dict) or bundle.get("schema") != BUNDLE_SCHEMA:
         skip(folder.name, f"bundle.json must use schema {BUNDLE_SCHEMA}.", notify_enabled=notify_enabled)
-        return
+        return None
     project = bundle.get("project")
     if not isinstance(project, dict) or not project.get("source_path"):
         skip(folder.name, "bundle.project.source_path is required.", notify_enabled=notify_enabled)
-        return
+        return None
     try:
         copy_media(folder, workspace, str(project["source_path"]))
     except RuntimeError as exc:
         skip(folder.name, str(exc), notify_enabled=notify_enabled)
-        return
+        return None
     auto_upload_requested = bool(project.get("handoff_auto_upload_requested"))
     try:
         response = client.request("/api/projects/import", {"bundle": bundle})
     except RuntimeError as exc:
         skip(folder.name, f"import failed ({exc}).", notify_enabled=notify_enabled)
-        return
+        return None
     jobs = response.get("jobs") if isinstance(response.get("jobs"), list) else []
     resp_project = response.get("project") or {}
     log(f"Imported {folder.name} as project {resp_project.get('id')} with {len(jobs)} job(s).")
@@ -282,6 +282,7 @@ def process_folder(client: LocalStudioClient, folder: Path, workspace: Path, *, 
             else:
                 log(f"{folder.name}: leaving Instagram job {job_id} queued for a human to run.")
                 notify("Handoff: Instagram queued", f"{folder.name}: open Production to publish when you're ready.", enabled=notify_enabled)
+    return resp_project
 
 
 def cleanup_folder(mirror: Path, folder: Path, branch: str) -> None:
@@ -314,8 +315,12 @@ def run_once(args: argparse.Namespace) -> None:
         return
     folders = folders_for_cycle(folders, args.max_per_cycle)
     for folder in folders:
-        process_folder(client, folder, workspace, allow_auto_upload=args.allow_auto_upload, notify_enabled=args.notify)
-        heartbeat(client, "handoff_processed", {"package": folder.name})
+        project = process_folder(client, folder, workspace, allow_auto_upload=args.allow_auto_upload, notify_enabled=args.notify)
+        detail: dict[str, Any] = {"package": folder.name}
+        if project:
+            detail["project_id"] = project.get("id")
+            detail["project_title"] = project.get("title")
+        heartbeat(client, "handoff_processed", detail)
         processed.add(folder.name)
         state["processed"] = sorted(processed)
         save_state(state)

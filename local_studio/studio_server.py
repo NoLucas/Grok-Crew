@@ -485,6 +485,7 @@ def terminal_contract() -> dict[str, Any]:
             "production": f"{SITE_BASE_URL}/production",
             "operations": f"{SITE_BASE_URL}/operations",
             "bot_check": f"{SITE_BASE_URL}/bots",
+            "handoff": f"{SITE_BASE_URL}/handoff",
             "bot_guide": f"{SITE_BASE_URL}/bot-guide",
             "terminal": f"{SITE_BASE_URL}/terminal",
             "library": f"{SITE_BASE_URL}/library",

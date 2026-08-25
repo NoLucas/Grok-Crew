@@ -144,7 +144,8 @@
     {"id":"12","url":"/packet","name":"Packet","purpose":"A packaged creative brief and delivery-ready content details.","bot_use":"Inspect and preserve its constraints when preparing captions or a final handoff."},
     {"id":"13","url":"/gates","name":"Gate Board","purpose":"Project readiness and quality checkpoints.","bot_use":"Use it to identify unfinished checks instead of claiming a project is ready early."},
     {"id":"14","url":"/export","name":"Export","purpose":"Output format, size, caption package, and final delivery details.","bot_use":"Match the final local render and delivery settings to the selected platform requirements."},
-    {"id":"15","url":"/privacy","name":"Privacy & Settings","purpose":"Device-local workspace identity and privacy boundaries.","bot_use":"Respect the current local scope; never read secret values from browser storage or configuration files."}
+    {"id":"15","url":"/privacy","name":"Privacy & Settings","purpose":"Device-local workspace identity and privacy boundaries.","bot_use":"Respect the current local scope; never read secret values from browser storage or configuration files."},
+    {"id":"16","url":"/handoff","name":"Handoff Monitor","purpose":"Read-only view of the cloud handoff bridge's connection status and the projects it has imported, with EDL and render settings summaries and job outcomes.","bot_use":"A same-PC bot has no reason to write here; a human uses it to confirm a remote bot's activity without watching console logs."}
   ],
   "terminal_cli_contract": {
     "api_base_url": "http://127.0.0.1:7214",
@@ -159,6 +160,7 @@
       "production": "http://localhost:3000/production",
       "operations": "http://localhost:3000/operations",
       "bot_check": "http://localhost:3000/bots",
+      "handoff": "http://localhost:3000/handoff",
       "bot_guide": "http://localhost:3000/bot-guide",
       "terminal": "http://localhost:3000/terminal",
       "library": "http://localhost:3000/library",

@@ -82,7 +82,8 @@
     {"id":"12","url":"/packet","name":"数据包","purpose":"打包好的创作简报和可供交付的内容细节。","bot_use":"在准备字幕或最终交接时,查看并保持其约束条件。"},
     {"id":"13","url":"/gates","name":"关卡看板","purpose":"项目就绪状态和质量检查点。","bot_use":"用它来识别尚未完成的检查项,而不是提前宣称项目已就绪。"},
     {"id":"14","url":"/export","name":"导出","purpose":"输出格式、大小、字幕包和最终交付细节。","bot_use":"根据所选平台的要求,匹配最终的本地渲染和交付设置。"},
-    {"id":"15","url":"/privacy","name":"隐私与设置","purpose":"设备本地的工作区身份和隐私边界。","bot_use":"尊重当前的本地范围;绝不从浏览器存储或配置文件中读取机密值。"}
+    {"id":"15","url":"/privacy","name":"隐私与设置","purpose":"设备本地的工作区身份和隐私边界。","bot_use":"尊重当前的本地范围;绝不从浏览器存储或配置文件中读取机密值。"},
+    {"id":"16","url":"/handoff","name":"交接监视器","purpose":"只读视图,显示云端交接桥接程序的连接状态,以及它导入的项目的 EDL、渲染设置摘要和任务结果。","bot_use":"同一台电脑上的机器人没有理由在此写入;人类用它来在不查看控制台日志的情况下确认远程机器人的活动。"}
   ],
   "terminal_cli_contract": {
     "api_base_url": "http://127.0.0.1:7214",
@@ -90,7 +91,7 @@
     "browser_rule": "7214 端口仅用于 CLI 下载和 JSON API 请求。浏览器使用或截图请运行 python grok-crew.py site --page production,并打开输出的 http://localhost:3000 地址。切勿在 7214 端口打开 /production。",
     "clone_cli_path": "local_studio/grok_crew.py",
     "clone_bootstrap": "python local_studio/grok_crew.py contract",
-    "browser_pages": { "studio": "http://localhost:3000/", "edit": "http://localhost:3000/edit", "cut": "http://localhost:3000/cut", "production": "http://localhost:3000/production", "operations": "http://localhost:3000/operations", "bot_check": "http://localhost:3000/bots", "bot_guide": "http://localhost:3000/bot-guide", "terminal": "http://localhost:3000/terminal", "library": "http://localhost:3000/library", "agent_desk": "http://localhost:3000/agent", "local_desk": "http://localhost:3000/connect", "packet": "http://localhost:3000/packet", "gate_board": "http://localhost:3000/gates", "export": "http://localhost:3000/export", "privacy": "http://localhost:3000/privacy" },
+    "browser_pages": { "studio": "http://localhost:3000/", "edit": "http://localhost:3000/edit", "cut": "http://localhost:3000/cut", "production": "http://localhost:3000/production", "operations": "http://localhost:3000/operations", "bot_check": "http://localhost:3000/bots", "handoff": "http://localhost:3000/handoff", "bot_guide": "http://localhost:3000/bot-guide", "terminal": "http://localhost:3000/terminal", "library": "http://localhost:3000/library", "agent_desk": "http://localhost:3000/agent", "local_desk": "http://localhost:3000/connect", "packet": "http://localhost:3000/packet", "gate_board": "http://localhost:3000/gates", "export": "http://localhost:3000/export", "privacy": "http://localhost:3000/privacy" },
     "download": "GET /downloads/grok-crew.py",
     "bootstrap": "python grok-crew.py contract",
     "purpose": "面向在同一台电脑终端上运行的机器人的零依赖 CLI。它可以在不进行浏览器操作的情况下使用 Local Studio 和 Operations 端点。",

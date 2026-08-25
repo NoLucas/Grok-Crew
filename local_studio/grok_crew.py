@@ -23,6 +23,7 @@ BROWSER_PAGES = {
     "production": "http://localhost:3000/production",
     "operations": "http://localhost:3000/operations",
     "bots": "http://localhost:3000/bots",
+    "handoff": "http://localhost:3000/handoff",
     "guide": "http://localhost:3000/bot-guide",
     "terminal": "http://localhost:3000/terminal",
     "library": "http://localhost:3000/library",
