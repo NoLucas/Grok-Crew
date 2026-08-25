@@ -9,6 +9,14 @@ All notable changes to Grok Crew are documented here.
 - Automatic music ducking under dialogue (`music_ducking`, on by default, and `music_duck_floor`): a background music bed now quiets automatically while a clip's own dialogue audio is present instead of mixing in at one flat level.
 - `LOCAL_STUDIO_RENDER_WORKERS` (render concurrency) and `LOCAL_STUDIO_ALLOWED_ORIGINS` (the CORS/Origin allow-list, previously hardcoded to port 3000) are now documented `.env` settings; both default to the previous behavior when unset.
 - The live browser workspace and bot guide now support Chinese and Japanese, matching the existing README translations. The language switcher (`app/language.tsx`) now offers `zh`/`ja` alongside `ko`/`en`, every page's UI text has zh/ja translations, and `local_studio/bot-guide.zh.json` / `bot-guide.ja.json` are served from `GET /api/bot-guide?lang=zh|ja`.
+- `local_studio/handoff-guide.zh.json` and `handoff-guide.ja.json` bring the offline cloud-bot handoff contract up to the same four languages as the rest of this release; every place that references the guide (`bot-contract.json`, all four `README.*.md`, `local_studio/README.md`) now points to all four language files.
+- Unit tests for the handoff watcher's per-cycle package limit (`folders_for_cycle`), completing test coverage of all three handoff safeguards (media size cap, bundle size cap, and packages-per-cycle).
+
+### Changed
+
+- All four `README.*.md` files now say "Korean, English, Chinese, and Japanese interfaces" instead of the stale "Korean and English" left over from before the zh/ja UI expansion.
+- Removed the "Maintainer launch checklist" section from all four `README.*.md` files — it told readers to "publish a tagged first release" before announcing, but `v0.1.0` and `v0.2.0` were already tagged and released; `docs/LAUNCH.md` remains as the internal checklist.
+- Trimmed the Roadmap in all four `README.*.md` files down to the two still-open items; the fourteen already-shipped items are already recorded in this changelog and no longer need to be duplicated as checked roadmap boxes.
 
 ### Fixed
 
