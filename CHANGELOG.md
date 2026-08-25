@@ -4,6 +4,8 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 0.2.1 — 2026-08-25
+
 ### Added
 
 - Automatic music ducking under dialogue (`music_ducking`, on by default, and `music_duck_floor`): a background music bed now quiets automatically while a clip's own dialogue audio is present instead of mixing in at one flat level.
