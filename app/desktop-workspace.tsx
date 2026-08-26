@@ -1230,21 +1230,6 @@ export default function DesktopWorkspace() {
                 </div>}
               </section>
               <section className="desktop-card desktop-settings-card"><div className="desktop-card-title"><span>02</span><div><b>{t('편집 Agent 설정', 'Editor Agent controls', '剪辑 Agent 设置', '編集 Agent 設定')}</b><small>{t('채팅 없이 명확한 선택으로 전달합니다.', 'Clear controls, no prompt writing.', '无需编写提示词。', 'プロンプト入力は不要です。')}</small></div></div>
-              {specLocked ? (
-                <details
-                  className="desktop-lock-note"
-                  open={folds.lock}
-                  onToggle={(event) => setFold('lock', event.currentTarget.open)}
-                >
-                  <summary>{t('봇이 지키는 값', 'Values the bot must keep', '机器人必须遵守的值', 'ボットが守る値')}</summary>
-                  <p>{t(
-                    `화질 ${method.quality}만 이 책상에서 정한 규격입니다. 봇은 화질을 바꾸지 않습니다. 화면비와 자막은 여기서 바꿀 수 있습니다. 템포·룩·B-roll·훅·오디오도 필요할 때 바꿉니다.`,
-                    `Only quality ${method.quality} is locked on this desk. The bot must keep that. Change aspect ratio and captions here. You can also change pacing, look, b-roll, hook, and audio if needed.`,
-                    `只有画质 ${method.quality} 在此工作台锁定。机器人不得改画质。画面比例和字幕可在此改。节奏、风格、B-roll、开场和音频也可按需调整。`,
-                    `画質 ${method.quality} だけがこのデスクでロックされています。ボットは画質を変えません。画面比と字幕はここで変えられます。テンポ・ルック・B-roll・フック・音声も必要なら変えられます。`,
-                  )}</p>
-                </details>
-              ) : null}
               <DesktopEditPresetControls
                 method={method}
                 lockQuality={specLocked}
@@ -1265,7 +1250,24 @@ export default function DesktopWorkspace() {
                 <label>FPS<select value={method.fps} onChange={(e) => setMethod({ ...method, fps: Number(e.target.value) })}><option>24</option><option>30</option><option>60</option></select></label>
                 <label className={specLocked ? 'is-locked' : undefined}>{t('품질', 'Quality', '质量', '品質')}<select disabled={specLocked} value={method.quality} onChange={(e) => setMethod({ ...method, quality: e.target.value })}><option value="compact">Compact</option><option value="balanced">Balanced</option><option value="high">High</option></select>{specLocked ? <em>{t('규격 잠금', 'Locked by spec', '规格锁定', '仕様ロック')}</em> : null}</label>
                 <label className="desktop-wide">{t('전체 속도', 'Overall speed', '整体速度', '全体速度')}<div className="desktop-range"><input type="range" min="0.5" max="2" step="0.05" value={method.speed} onChange={(e) => setMethod({ ...method, speed: Number(e.target.value) })} /><output>{Number(method.speed).toFixed(2)}×</output></div></label>
-              </div><button className="desktop-secondary" disabled={busy} onClick={() => void saveSettings()}>{t('설정만 저장', 'Save controls', '保存设置', '設定を保存')}</button></section>
+              </div>
+              <button className="desktop-secondary" disabled={busy} onClick={() => void saveSettings()}>{t('설정만 저장', 'Save controls', '保存设置', '設定を保存')}</button>
+              {specLocked ? (
+                <details
+                  className="desktop-lock-note"
+                  open={folds.lock}
+                  onToggle={(event) => setFold('lock', event.currentTarget.open)}
+                >
+                  <summary>{t('봇이 지키는 값', 'Values the bot must keep', '机器人必须遵守的值', 'ボットが守る値')}</summary>
+                  <p>{t(
+                    `화질 ${method.quality}만 이 책상에서 정한 규격입니다. 봇은 화질을 바꾸지 않습니다. 화면비와 자막은 여기서 바꿀 수 있습니다. 템포·룩·B-roll·훅·오디오도 필요할 때 바꿉니다.`,
+                    `Only quality ${method.quality} is locked on this desk. The bot must keep that. Change aspect ratio and captions here. You can also change pacing, look, b-roll, hook, and audio if needed.`,
+                    `只有画质 ${method.quality} 在此工作台锁定。机器人不得改画质。画面比例和字幕可在此改。节奏、风格、B-roll、开场和音频也可按需调整。`,
+                    `画質 ${method.quality} だけがこのデスクでロックされています。ボットは画質を変えません。画面比と字幕はここで変えられます。テンポ・ルック・B-roll・フック・音声も必要なら変えられます。`,
+                  )}</p>
+                </details>
+              ) : null}
+              </section>
               <section className="desktop-card desktop-policy-card"><div className="desktop-card-title"><span>03</span><div><b>{t('자동화 범위', 'Automation', '自动化范围', '自動化範囲')}</b><small>{t('렌더와 게시 권한을 각각 정합니다.', 'Choose render and publishing authority.', '分别设置渲染和发布权限。', 'レンダーと公開を個別に設定。')}</small></div></div><label className="desktop-radio"><input type="radio" checked={executionPolicy === 'auto_edit_render'} onChange={() => setExecutionPolicy('auto_edit_render')} /><span><b>{t('자동 편집 + 렌더', 'Auto edit + render', '自动编辑和渲染', '自動編集＋レンダー')}</b><small>{t('새 버전을 만들고 바로 렌더합니다.', 'Create a new version and render it.', '创建新版本并渲染。', '新しいバージョンを作成してレンダー。')}</small></span></label><label className="desktop-radio"><input type="radio" checked={executionPolicy === 'review_before_render'} onChange={() => setExecutionPolicy('review_before_render')} /><span><b>{t('편집안 먼저 검토', 'Review before render', '渲染前审核', 'レンダー前に確認')}</b><small>{t('타임라인 변경을 확인할 때 멈춥니다.', 'Pause when the proposal is ready.', '编辑方案完成后暂停。', '提案の準備後に一時停止。')}</small></span></label></section>
             </div>}
 

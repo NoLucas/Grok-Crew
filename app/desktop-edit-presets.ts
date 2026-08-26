@@ -36,13 +36,17 @@ export type EditPresetsStore = {
 
 export type LocalizedEditCopy = Record<AppLanguage, string>;
 
+export type EditPresetKind = 'custom' | 'builtin' | 'saved';
+
 export type EditPresetOption = {
   id: string;
-  kind: 'builtin' | 'saved';
+  kind: EditPresetKind;
   name: LocalizedEditCopy;
   hint: LocalizedEditCopy;
   method: EditMethodSnapshot;
 };
+
+export const CUSTOM_EDIT_PRESET_ID = 'custom';
 
 const CONTENT_TYPES = ['talking_head', 'vlog', 'product', 'tutorial'] as const;
 const LENGTHS = [15, 30, 45, 60, 90] as const;
@@ -92,6 +96,19 @@ export const DEFAULT_EDIT_METHOD: EditMethodSnapshot = {
   speed: 1,
   fps: 30,
   quality: 'balanced',
+};
+
+export const CUSTOM_EDIT_PRESET: EditPresetOption = {
+  id: CUSTOM_EDIT_PRESET_ID,
+  kind: 'custom',
+  name: named('사용자 지정', 'Custom', '自定义', 'ユーザー指定'),
+  hint: named(
+    '지금 아래 값이 사용자 지정입니다. 지정은 고른 스타일을 넣고, 저장은 지금 값을 이름으로 남깁니다.',
+    'These knobs are custom. Assign applies a picked style. Save stores the current knobs under a name.',
+    '当前为自定义。指定会套用所选风格，保存会把当前选项记下名字。',
+    '今の値はユーザー指定です。指定は選んだスタイルを入れ、保存は今の値を名前で残します。',
+  ),
+  method: { ...DEFAULT_EDIT_METHOD },
 };
 
 export const BUILTIN_EDIT_PRESETS: EditPresetOption[] = [
@@ -279,6 +296,17 @@ export function applyEditPreset(
   return next;
 }
 
+export function methodsMatch(
+  left: EditMethodSnapshot,
+  right: EditMethodSnapshot,
+  options: { lockQuality?: boolean } = {},
+): boolean {
+  const a = normalizeEditMethod(left);
+  const b = normalizeEditMethod(right);
+  const keys = Object.keys(DEFAULT_EDIT_METHOD) as Array<keyof EditMethodSnapshot>;
+  return keys.every((key) => (key === 'quality' && options.lockQuality ? true : a[key] === b[key]));
+}
+
 export function builtinEditPreset(id: string): EditPresetOption | null {
   return BUILTIN_EDIT_PRESETS.find((item) => item.id === id) ?? null;
 }
@@ -298,7 +326,7 @@ export function listEditPresetOptions(store: EditPresetsStore): EditPresetOption
 }
 
 export function findEditPreset(store: EditPresetsStore, id: string): EditPresetOption | null {
-  if (!id) return null;
+  if (!id || id === CUSTOM_EDIT_PRESET_ID) return CUSTOM_EDIT_PRESET;
   return builtinEditPreset(id) ?? store.saved.map(savedPresetOption).find((item) => item.id === id) ?? null;
 }
 
@@ -317,16 +345,16 @@ export function upsertSavedEditPreset(store: EditPresetsStore, preset: SavedEdit
   const saved = [...store.saved];
   if (existing >= 0) {
     saved[existing] = { ...preset, id: saved[existing].id };
-    return normalizeEditPresetsStore({ saved, lastSelectedId: saved[existing].id });
+    return normalizeEditPresetsStore({ saved, lastSelectedId: store.lastSelectedId });
   }
   if (saved.length >= MAX_SAVED_EDIT_PRESETS) saved.shift();
   saved.push(preset);
-  return normalizeEditPresetsStore({ saved, lastSelectedId: preset.id });
+  return normalizeEditPresetsStore({ saved, lastSelectedId: store.lastSelectedId });
 }
 
 export function removeSavedEditPreset(store: EditPresetsStore, id: string): EditPresetsStore {
   const saved = store.saved.filter((item) => item.id !== id);
-  const lastSelectedId = store.lastSelectedId === id ? '' : store.lastSelectedId;
+  const lastSelectedId = store.lastSelectedId === id ? CUSTOM_EDIT_PRESET_ID : store.lastSelectedId;
   return { saved, lastSelectedId };
 }
 

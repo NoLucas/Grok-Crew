@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   BUILTIN_EDIT_PRESETS,
+  CUSTOM_EDIT_PRESET_ID,
   DEFAULT_EDIT_METHOD,
   MAX_SAVED_EDIT_PRESETS,
   applyEditPreset,
   createSavedEditPreset,
   findEditPreset,
+  methodsMatch,
   normalizeEditMethod,
   normalizeEditPresetsStore,
   parseEditPresetsStore,
@@ -58,6 +60,17 @@ test("normalize coerces stored strings and drops unknown enums", () => {
   assert.equal(next.speed, 1.25);
 });
 
+test("custom is a first-class style and save does not assign it", () => {
+  const empty = { saved: [], lastSelectedId: "youtube_short" };
+  assert.equal(findEditPreset(empty, CUSTOM_EDIT_PRESET_ID)?.kind, "custom");
+  assert.equal(findEditPreset(empty, "")?.kind, "custom");
+  const saved = upsertSavedEditPreset(empty, createSavedEditPreset("밤 컷", DEFAULT_EDIT_METHOD, 3));
+  assert.equal(saved.lastSelectedId, "youtube_short");
+  assert.equal(saved.saved[0].name, "밤 컷");
+  assert.equal(methodsMatch(DEFAULT_EDIT_METHOD, { ...DEFAULT_EDIT_METHOD, quality: "high" }, { lockQuality: true }), true);
+  assert.equal(methodsMatch(DEFAULT_EDIT_METHOD, { ...DEFAULT_EDIT_METHOD, pacing: "balanced" }), false);
+});
+
 test("saved presets upsert by name and drop the oldest past the cap", () => {
   let store = { saved: [], lastSelectedId: "" };
   const first = createSavedEditPreset("내 컷", DEFAULT_EDIT_METHOD, 1);
@@ -82,7 +95,7 @@ test("delete clears the selection and parse ignores junk", () => {
     "saved_9",
   );
   assert.equal(store.saved.length, 0);
-  assert.equal(store.lastSelectedId, "");
+  assert.equal(store.lastSelectedId, CUSTOM_EDIT_PRESET_ID);
   assert.equal(parseEditPresetsStore("nope").saved.length, 0);
   assert.equal(normalizeEditPresetsStore({ saved: [{ id: "bad", name: "x" }] }).saved.length, 0);
   assert.equal(createSavedEditPreset("   ", DEFAULT_EDIT_METHOD), null);

@@ -7589,6 +7589,7 @@ select {
 .desktop-range input { padding: 0; }
 .desktop-range output { color: var(--desktop-text); font-size: 13px; text-align: right; }
 .desktop-settings-card > .desktop-secondary { margin: 0 10px 10px; }
+.desktop-settings-card > .desktop-lock-note { margin: 0 10px 10px; }
 .desktop-edit-presets {
   display: grid;
   gap: 8px;
@@ -7598,7 +7599,17 @@ select {
   border-radius: 9px;
   background: var(--desktop-wash);
 }
-.desktop-edit-presets-row label,
+.desktop-edit-presets-apply,
+.desktop-edit-presets-save {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: end;
+}
+.desktop-edit-presets-apply {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.desktop-edit-presets-apply label,
 .desktop-edit-presets-save label {
   display: grid;
   gap: 5px;
@@ -7622,12 +7633,6 @@ select {
   color: var(--desktop-muted);
   font-size: 12px;
   line-height: 1.4;
-}
-.desktop-edit-presets-save {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 8px;
-  align-items: end;
 }
 .desktop-edit-presets .desktop-secondary,
 .desktop-edit-presets .desktop-danger {
@@ -8103,6 +8108,7 @@ select {
   }
   .desktop-projects-toggle { display: inline-flex; align-items: center; }
   .desktop-form-grid { grid-template-columns: 1fr 1fr; }
+  .desktop-edit-presets-apply,
   .desktop-edit-presets-save { grid-template-columns: 1fr; }
   .desktop-edit-presets .desktop-secondary,
   .desktop-edit-presets .desktop-danger { width: 100%; }
