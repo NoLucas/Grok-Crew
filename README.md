@@ -24,14 +24,14 @@ You do not need an account to start.
 
 ## What you see
 
-The first screen is short: a title, a drop zone, and **Copy this for the bot**. That save is one bot (`source_mode: bot`). A Cursor agent on this PC can check in; a remote Cursor agent only drops a folder in the editor inbox from the invite. Style recipes and a two-bot crew stay behind **More detail**. Incoming cuts on the editor door open on their own. Files the bot saved — the package under `inputs/handoff/` and clips in the materials box — stay in one collapsed row. Open it and the list sits beside the preview. Right-click a file to preview, enlarge, show the original, or delete it. Aspect, quality, and captions stay locked to the spec; the other edit knobs stay yours. This desk does not scrape websites.
+The first screen is short: a title, a drop zone, and **Copy this for the bot**. That save is one bot (`source_mode: bot`). A Cursor agent on this PC can check in; a remote Cursor agent only drops a folder in the editor inbox from the invite. Style recipes and a two-bot crew stay behind **More detail**. Incoming cuts on the editor door open on their own. Files the bot saved — the package under `inputs/handoff/` and clips in the materials box — stay in one collapsed row. Open it and the list sits beside the preview. Right-click a file to preview, enlarge, show the original, or delete it. Aspect, quality, and captions stay locked to the spec; the other edit knobs stay yours. Light, dark, LOW, and type live in the gear at the top-left corner. This desk does not scrape websites.
 
 Then you work in three tabs:
 
 | Tab | What it is for |
 | --- | --- |
 | **Edit** | Watch the preview, cut on the timeline |
-| **Setup** | Look, captions, speed, display (light / dark / LOW) and type |
+| **Setup** | Look, captions, speed |
 | **Export** | Save an MP4 here, or post after it asks |
 
 The preview is a fast draft. The file you save is made from the footage the bot sent. Opening a file already on this computer is optional and tucked under the brief.

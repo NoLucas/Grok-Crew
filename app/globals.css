@@ -6856,13 +6856,14 @@ select {
 .desktop-titlebar {
   z-index: 20;
   display: grid;
-  grid-template-columns: 260px 1fr auto;
+  grid-template-columns: 36px minmax(160px, 260px) 1fr auto;
   align-items: center;
   min-height: 46px;
-  padding: 4px 12px;
+  padding: 4px 12px 4px 4px;
   border-bottom: 1px solid var(--desktop-line);
   background: var(--desktop-titlebar-bg);
   backdrop-filter: blur(18px);
+  overflow: visible;
 }
 .desktop-brand { display: flex; align-items: center; gap: 10px; }
 .desktop-logo {
@@ -7460,27 +7461,31 @@ select {
   color: var(--desktop-accent-ink);
 }
 .desktop-appearance-toggle { justify-self: start; }
-.desktop-appearance-menu { position: relative; }
+.desktop-appearance-menu { position: relative; justify-self: start; align-self: center; }
 .desktop-appearance-menu > summary {
+  display: grid;
+  place-items: center;
   list-style: none;
-  min-height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--desktop-line);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
   border-radius: 8px;
-  background: var(--desktop-panel);
-  color: var(--desktop-text);
-  font-size: var(--desktop-fs-sm);
-  font-weight: var(--desktop-weight-strong);
+  background: transparent;
+  color: var(--desktop-ink);
   cursor: pointer;
 }
+.desktop-appearance-menu > summary svg { width: 18px; height: 18px; }
 .desktop-appearance-menu > summary::-webkit-details-marker { display: none; }
-.desktop-appearance-menu[open] > summary { border-color: var(--desktop-ink); }
+.desktop-appearance-menu > summary:hover,
+.desktop-appearance-menu[open] > summary { background: var(--desktop-hover); }
 .desktop-appearance-pop {
   position: absolute;
   top: calc(100% + 6px);
-  right: 0;
+  left: 0;
+  right: auto;
   z-index: 30;
-  width: min(360px, 86vw);
+  width: min(360px, calc(100vw - 16px));
   padding: 10px;
   border: 1px solid var(--desktop-line);
   border-radius: 12px;
@@ -7925,8 +7930,7 @@ select {
   justify-self: center;
 }
 @media (max-width: 720px) {
-  .desktop-appearance-pop { left: 0; right: auto; width: min(360px, calc(100vw - 24px)); }
-  .desktop-simple-wrap .desktop-appearance-card { width: 100%; }
+  .desktop-appearance-pop { width: min(360px, calc(100vw - 16px)); }
 }
 @media (max-width: 1050px) {
   .desktop-body { grid-template-columns: 205px minmax(460px, 1fr); }
@@ -7938,19 +7942,19 @@ select {
     width: min(320px, 88vw); background: var(--desktop-panel-2); box-shadow: -12px 0 32px rgba(20, 21, 24, .12);
   }
   .desktop-status-toggle { display: inline-flex; align-items: center; }
-  .desktop-titlebar { grid-template-columns: 205px 1fr auto; }
+  .desktop-titlebar { grid-template-columns: 36px 205px 1fr auto; }
   .desktop-setup-grid { grid-template-columns: 1fr; }
   .desktop-settings-card { grid-row: auto; }
 }
 @media (max-width: 860px) {
-  .desktop-titlebar { grid-template-columns: 1fr auto; grid-template-rows: auto auto; row-gap: 4px; }
+  .desktop-titlebar { grid-template-columns: 36px 1fr auto; grid-template-rows: auto auto; row-gap: 4px; }
   .desktop-titlebar nav { grid-column: 1 / -1; justify-content: stretch; }
   .desktop-titlebar nav button { flex: 1; min-width: 0; }
 }
 @media (max-width: 760px) {
   .desktop-shell { grid-template-rows: auto minmax(0, 1fr) auto auto; }
   .desktop-shell.is-form { grid-template-rows: auto minmax(0, 1fr) auto; }
-  .desktop-titlebar { grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
+  .desktop-titlebar { grid-template-columns: 36px 1fr auto; grid-template-rows: auto auto; }
   .desktop-connection { display: none; }
   .desktop-body { grid-template-columns: 1fr; }
   .desktop-sidebar { display: none; }
