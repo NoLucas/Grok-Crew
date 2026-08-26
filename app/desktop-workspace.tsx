@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import { LanguageSwitcher, useLanguage } from './language';
 import { AudioMixer } from './timeline/AudioMixer';
 import { ClipLookPanel } from './timeline/ClipLookPanel';
@@ -19,6 +19,14 @@ import { SimpleDesk } from './desktop-simple-desk';
 import { HandoffFolderBoard, type HandoffFolder } from './desktop-handoff-folder';
 import { appearanceDataAttrs, useDesktopAppearance } from './desktop-appearance';
 import { DesktopAppearanceControls } from './desktop-appearance-controls';
+import {
+  INSPECTOR_MAX,
+  INSPECTOR_MIN,
+  SIDEBAR_MAX,
+  SIDEBAR_MIN,
+  columnStyleVars,
+  useDesktopColumnWidths,
+} from './desktop-column-widths';
 
 type UpdateStatus = {
   status: string;
@@ -407,6 +415,7 @@ export default function DesktopWorkspace() {
   });
   const unclaimedJobs = projectJobs.filter((job) => isUnclaimedHold(job.status) && !job.runner_id);
   const hideInspectorColumn = specDeskOpen || !project || !timeline;
+  const columns = useDesktopColumnWidths(!hideInspectorColumn);
   const editToolsOpen = Boolean(project && timeline && !specDeskOpen && activePanel === 'edit');
   const handoffFolders = workspace.handoff_folders ?? [];
   const projectFolders = useMemo(() => {
@@ -1043,7 +1052,11 @@ export default function DesktopWorkspace() {
       </header>
       {drawer !== 'none' ? <button type="button" className="desktop-drawer-backdrop" aria-label={t('패널 닫기', 'Close panel', '关闭面板', 'パネルを閉じる')} onClick={() => setDrawer('none')} /> : null}
 
-      <div className={`desktop-body${hideInspectorColumn ? ' local-first' : ''}`}>
+      <div
+        ref={columns.bodyRef}
+        className={`desktop-body${hideInspectorColumn ? ' local-first' : ''}${columns.dragging ? ' is-resizing' : ''}`}
+        style={columnStyleVars(columns.widths) as CSSProperties}
+      >
         <aside className={`desktop-sidebar ${drawer === 'projects' ? 'open' : ''}`}>
           <div className="desktop-side-head"><b>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</b><div className="desktop-side-head-actions"><button type="button" className={specDeskOpen || !project ? 'active' : ''} onClick={() => { setSpecDeskOpen(true); setAdvancedSpecOpen(false); setDrawer('none'); }}>{t('새 규격', 'New brief', '新规格', '新しい仕様')}</button><button type="button" aria-label={t('새 프로젝트', 'New project', '新建项目', '新規プロジェクト')} onClick={() => setCreateOpen((value) => !value)}>＋</button></div></div>
           {createOpen && <section className="desktop-create-card">{sampleAvailable ? <button type="button" className="desktop-primary" disabled={busy} onClick={() => void openSampleProject()}>{t('샘플로 시작', 'Start with the sample', '从示例开始', 'サンプルで始める')}</button> : null}<input value={newProject.title} onChange={(event) => setNewProject({ ...newProject, title: event.target.value })} placeholder={t('프로젝트 이름', 'Project name', '项目名称', 'プロジェクト名')} /><select value={newProject.source_path} onChange={(event) => setNewProject({ ...newProject, source_path: event.target.value })}><option value="">{t('원본 선택', 'Choose source', '选择素材', '素材を選択')}</option>{workspace.media.filter((item) => item.kind === 'video' && item.area === 'inputs').map((item) => <option value={item.path} key={item.path}>{item.name}</option>)}</select><button className="desktop-secondary" disabled={busy} onClick={() => void importMedia()}>{t('내 컴퓨터에서 가져오기', 'Import from computer', '从电脑导入', 'コンピュータから読み込む')}</button><input value={newProject.output_path} onChange={(event) => setNewProject({ ...newProject, output_path: event.target.value })} /><button className="desktop-primary" disabled={busy} onClick={() => void createProject()}>{t('만들기', 'Create', '创建', '作成')}</button></section>}
@@ -1079,6 +1092,21 @@ export default function DesktopWorkspace() {
           ))}</div>
           <a className="desktop-legacy" href="/production">{t('고급·레거시 도구', 'Advanced & legacy tools', '高级与旧版工具', '高度・レガシーツール')} ↗</a>
         </aside>
+        <div
+          className={`desktop-column-handle${columns.dragging === 'sidebar' ? ' is-dragging' : ''}`}
+          role="separator"
+          aria-orientation="vertical"
+          tabIndex={0}
+          aria-label={t('프로젝트 목록 너비', 'Project list width', '项目列表宽度', 'プロジェクト一覧の幅')}
+          aria-valuemin={SIDEBAR_MIN}
+          aria-valuemax={SIDEBAR_MAX}
+          aria-valuenow={columns.widths.sidebar}
+          onPointerDown={columns.onHandlePointerDown('sidebar')}
+          onPointerMove={columns.onHandlePointerMove}
+          onPointerUp={columns.onHandlePointerUp}
+          onPointerCancel={columns.onHandlePointerUp}
+          onKeyDown={columns.onHandleKeyDown('sidebar')}
+        />
 
         <section className="desktop-stage">
           {studioState === 'error' && project ? <div className="desktop-banner error" role="alert"><div><b>{t('Local Studio에 연결하지 못했습니다', 'Could not reach Local Studio', '无法连接 Local Studio', 'Local Studio に接続できません')}</b><p>{t('사이드카가 꺼져 있으면 프로젝트와 렌더를 읽을 수 없습니다.', 'The sidecar is offline, so projects and renders cannot load.', '侧车离线时无法读取项目和渲染。', 'サイドカーが停止しているとプロジェクトとレンダーを読めません。')}</p></div><button type="button" className="desktop-secondary" onClick={() => void refreshWorkspace()}>{t('다시 연결', 'Reconnect', '重新连接', '再接続')}</button></div> : null}
@@ -1315,6 +1343,23 @@ export default function DesktopWorkspace() {
             {activePanel === 'export' && <div className="desktop-export-grid"><section className="desktop-card"><div className="desktop-card-title"><span>01</span><div><b>{t('플랫폼 게시 정책', 'Publishing policy', '发布策略', '公開ポリシー')}</b><small>{t('기본은 확인 후 게시입니다.', 'Default: ask before publishing.', '默认发布前确认。', '初期値は公開前に確認。')}</small></div></div>{(['instagram', 'tiktok', 'youtube'] as const).map((platform) => <div className="desktop-publish-row" key={platform}><b>{platform === 'youtube' ? 'YouTube Shorts' : platform[0].toUpperCase() + platform.slice(1)}</b><select aria-label={`${platform} publish policy`} value={publishPolicy[platform]} onChange={(e) => setPublishPolicy({ ...publishPolicy, [platform]: e.target.value as PublishMode })}><option value="export_only">{t('파일만 내보내기', 'Export only', '仅导出', '書き出しのみ')}</option><option value="ask">{t('게시 전 확인', 'Ask before posting', '发布前确认', '公開前に確認')}</option><option value="auto">{t('자동 게시', 'Auto publish', '自动发布', '自動公開')}</option></select><button disabled={busy || !outputReady || publishPolicy[platform] === 'export_only'} onClick={() => void publishNow(platform)}>{t('게시', 'Publish', '发布', '公開')}</button></div>)}</section><section className="desktop-card desktop-render-card"><div className="desktop-card-title"><span>02</span><div><b>{t('최종 파일', 'Final render', '最终文件', '最終ファイル')}</b><small>{relativeWorkspacePath(project.output_path)}</small></div></div><div className={`desktop-render-state ${outputReady ? 'ready' : ''}`}><span>{outputReady ? '✓' : '○'}</span><div><b>{outputReady ? t('렌더 파일 준비됨', 'Render ready', '渲染文件已就绪', 'レンダー準備完了') : t('아직 렌더되지 않음', 'Not rendered yet', '尚未渲染', '未レンダー')}</b><small>{timeline.settings.quality} · {timeline.settings.fps}fps</small></div></div><button className="desktop-primary" disabled={busy} onClick={() => void runLocalRender()}>{t('지금 로컬 렌더', 'Render locally now', '立即本地渲染', '今すぐローカルレンダー')}</button><button className="desktop-secondary" disabled={busy} onClick={() => void enqueueQueuedRender()}>{t('대기열에 넣기', 'Add to queue', '加入队列', 'キューに追加')}</button>{queueJobs.length ? <small>{queueJobs.length} {t('개 대기', 'queued', '个排队', '件待機')}</small> : null}</section><section className="desktop-card"><div className="desktop-card-title"><span>03</span><div><b>{t('교환 파일', 'Exchange', '交换文件', '交換')}</b><small>EDL · OTIO</small></div></div><div className="desktop-relay-actions"><button onClick={() => void exportExchange('edl')}>EDL</button><button onClick={() => void exportExchange('otio')}>OTIO</button></div>{exchangeText ? <textarea className="desktop-exchange" readOnly value={exchangeText} /> : null}</section><section className="desktop-card desktop-receipts-card"><div className="desktop-card-title"><span>04</span><div><b>{t('게시 영수증', 'Publish receipts', '发布回执', '公開レシート')}</b><small>{t('실패와 중단된 게시는 재시도할 수 있습니다. 중단 후 재시도는 플랫폼에 한 번 더 올라갈 수 있습니다.', 'Failed or interrupted publishes can be retried. Retrying an interrupted upload may create a second copy.', '失败或中断的发布可以重试。中断后重试可能在平台上再上传一份。', '失敗と中断した公開は再試行できます。中断後の再試行はもう1本増えることがあります。')}</small></div></div>{confirmReceipt && confirmReceipt.project_id === selectedProjectId ? <div className="desktop-receipt-confirm" role="alertdialog" aria-labelledby="receipt-confirm-title"><b id="receipt-confirm-title">{t('중단된 게시', 'Interrupted publish', '已中断的发布', '中断された公開')}</b><p>{t('플랫폼이 이미 첫 업로드를 받았다면 영상이 하나 더 올라갈 수 있습니다. 그래도 다시 올리겠습니까?', 'If the platform already accepted the first upload, a second copy may appear. Retry anyway?', '如果平台已接受第一次上传，可能会再出现一份。仍要重试吗？', '最初のアップロードが受理済みなら、もう1本増えることがあります。それでも再試行しますか？')}</p><div><button type="button" disabled={busy} onClick={() => void retryReceipt(confirmReceipt, true)}>{t('그래도 재시도', 'Retry anyway', '仍要重试', 'それでも再試行')}</button><button type="button" className="desktop-secondary" disabled={busy} onClick={() => setConfirmReceipt(null)}>{t('취소', 'Cancel', '取消', 'キャンセル')}</button></div></div> : null}{visibleReceipts.length ? visibleReceipts.map((receipt) => <div className={`desktop-receipt ${receipt.status}`} key={receipt.id}><div><b>{receipt.platform} · {receipt.status}</b><small>{receipt.error_text || receipt.idempotency_key}</small></div><button disabled={busy || (receipt.status !== 'failed' && receipt.status !== 'interrupted')} onClick={() => void retryReceipt(receipt)}>{receipt.status === 'interrupted' ? t('중복 확인', 'Confirm retry', '确认重试', '重複を確認') : t('재시도', 'Retry', '重试', '再試行')}</button></div>) : <div className="desktop-receipt-empty"><b>{t('아직 게시 영수증이 없습니다', 'No publish receipts yet', '暂无发布回执', '公開レシートはまだありません')}</b><p>{outputReady ? t('위에서 플랫폼을 고른 뒤 게시하면 성공·실패가 여기에 남습니다.', 'Publish a platform above to keep success and failure here.', '在上方选择平台并发布后，成功和失败会记录在这里。', '上でプラットフォームを選んで公開すると、成功と失敗がここに残ります。') : t('먼저 로컬 렌더를 만든 다음 Instagram, TikTok, YouTube에 게시하세요.', 'Render locally first, then publish to Instagram, TikTok, or YouTube.', '请先完成本地渲染，再发布到 Instagram、TikTok 或 YouTube。', '先にローカルレンダーを作り、Instagram・TikTok・YouTube に公開してください。')}</p></div>}</section></div>}
           </>}
         </section>
+        {hideInspectorColumn ? null : (
+          <div
+            className={`desktop-column-handle desktop-column-handle-inspector${columns.dragging === 'inspector' ? ' is-dragging' : ''}`}
+            role="separator"
+            aria-orientation="vertical"
+            tabIndex={0}
+            aria-label={t('원격 봇 너비', 'Remote bot width', '远程机器人宽度', 'リモートボットの幅')}
+            aria-valuemin={INSPECTOR_MIN}
+            aria-valuemax={INSPECTOR_MAX}
+            aria-valuenow={columns.widths.inspector}
+            onPointerDown={columns.onHandlePointerDown('inspector')}
+            onPointerMove={columns.onHandlePointerMove}
+            onPointerUp={columns.onHandlePointerUp}
+            onPointerCancel={columns.onHandlePointerUp}
+            onKeyDown={columns.onHandleKeyDown('inspector')}
+          />
+        )}
 
         <aside className={`desktop-inspector ${drawer === 'status' ? 'open' : ''}`}>
           {showRemoteDesk ? (

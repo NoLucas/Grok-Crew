@@ -5,6 +5,7 @@ All notable changes to Grok Crew are documented here.
 ## Unreleased
 
 - Aspect ratio and captions are no longer locked when a spec or imported cut is open. Quality stays locked. Setup, briefs, invites, and bot/handoff guides say the same.
+- The project list and the remote-bot column can be dragged a little wider or narrower. The center project pane stays usable. Widths persist.
 
 ## 1.0.0 - 2026-08-26
 
