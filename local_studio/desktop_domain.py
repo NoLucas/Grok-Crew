@@ -1210,8 +1210,11 @@ def media_catalog() -> list[dict[str, Any]]:
 
 
 def workspace_v2() -> dict[str, Any]:
+    from project_library import library_payload, purge_expired_trash
+
+    purge_expired_trash()
     with db() as conn:
-        projects = [row_dict(row) or {} for row in conn.execute("SELECT * FROM projects ORDER BY updated_at DESC LIMIT 80").fetchall()]
+        projects = [row_dict(row) or {} for row in conn.execute("SELECT * FROM projects WHERE trashed_at IS NULL ORDER BY updated_at DESC LIMIT 80").fetchall()]
     for project in projects:
         version = ensure_timeline_version(project["id"])
         project["current_revision"] = version["revision"]
@@ -1221,6 +1224,7 @@ def workspace_v2() -> dict[str, Any]:
     from handoff_inbox import handoff_status
     from style_recipes import list_recipes
 
+    library = library_payload()
     return {
         "schema": "grok-crew.desktop-workspace/v1",
         "projects": projects,
@@ -1234,4 +1238,6 @@ def workspace_v2() -> dict[str, Any]:
         "handoff_folders": workspace_handoff_folders()["folders"],
         "style_recipes": list_recipes(),
         "crew_roster": crew_roster(),
+        "project_folders": library["folders"],
+        "trash": library["trash"],
     }

@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Projects can be renamed, grouped into folders (drag or right-click), and moved to a trash that restores, empties, or auto-deletes after 30 days. Handoff files can be renamed or sent to the same trash.
 - Setup can apply YouTube Shorts, Instagram Reels, TikTok, and other edit styles, and save the current knobs as a named local preset. Quality stays locked when a spec is open.
 - The Setup style list includes Custom. Assigning a style and saving a named style are separate. The bot-lock note sits at the bottom of Editor Agent controls.
 - Aspect ratio and captions are no longer locked when a spec or imported cut is open. Quality stays locked. Setup, briefs, invites, and bot/handoff guides say the same.

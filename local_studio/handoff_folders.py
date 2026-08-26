@@ -10,7 +10,6 @@ Inbox and outbox folders are not listed. Paths stay workspace-relative.
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -85,7 +84,7 @@ def _projects() -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute(
             "SELECT id, title, source_path, edit_spec_id, handoff_agent, handoff_door, updated_at "
-            "FROM projects ORDER BY updated_at DESC LIMIT 80"
+            "FROM projects WHERE trashed_at IS NULL ORDER BY updated_at DESC LIMIT 80"
         ).fetchall()
     return [row_dict(row) or {} for row in rows]
 
@@ -350,14 +349,10 @@ def _open_in_file_manager(target: Path) -> bool:
 
 
 def delete_handoff_file(rel_path: str) -> dict[str, Any]:
-    target, parts = _resolve_handoff_file(rel_path)
-    if target in _source_paths():
-        raise ValueError("file is the project's source and cannot be deleted.")
-    name = target.name
-    os.unlink(target)
-    if parts[0] == "handoff-materials":
-        _drop_clip_from_manifest(config.WORKSPACE_DIR / MATERIALS_ROOT / parts[1], name)
-    return {"ok": True, "deleted": "/".join(parts)}
+    from project_library import trash_workspace_file
+
+    item = trash_workspace_file(rel_path)
+    return {"ok": True, "deleted": item.get("original_path"), "trashed": True, "trash_id": item.get("id")}
 
 
 def reveal_handoff_file(rel_path: str) -> dict[str, Any]:

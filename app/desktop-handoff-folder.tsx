@@ -232,6 +232,37 @@ export function HandoffFolderBoard({
     }
   };
 
+  const renameFile = async (file: HandoffFolderFile) => {
+    if (isProtected(file)) {
+      onMessage?.(t('이 파일은 프로젝트 원본이라 이름을 바꿀 수 없습니다.', 'This file is the project source and cannot be renamed.', '这是项目原片，不能改名。', 'このファイルはプロジェクトの原本なので名前を変えられません。'));
+      setMenu(null);
+      return;
+    }
+    const next = typeof window !== 'undefined' ? window.prompt(t('새 파일 이름', 'New file name', '新文件名', '新しいファイル名'), file.name) : null;
+    if (!next || next.trim() === file.name) {
+      setMenu(null);
+      return;
+    }
+    if (!request) {
+      onMessage?.(t('이 화면에서는 이름을 바꿀 수 없습니다.', 'Rename is not available on this screen.', '此画面无法重命名。', 'この画面では名前を変えられません。'));
+      return;
+    }
+    setBusyPath(file.path);
+    try {
+      const result = await request('/api/v2/handoff/files/rename', {
+        method: 'POST',
+        body: JSON.stringify({ path: file.path, name: next.trim() }),
+      }) as { path?: string; name?: string };
+      onMessage?.(t(`${result.name || next}으로 바꿨습니다.`, `Renamed to ${result.name || next}.`, `已改为 ${result.name || next}。`, `${result.name || next} に変えました。`));
+      await onRefresh?.();
+    } catch (error) {
+      onMessage?.(error instanceof Error ? error.message : t('이름을 바꾸지 못했습니다.', 'Could not rename the file.', '无法重命名。', '名前を変えられませんでした。'));
+    } finally {
+      setBusyPath('');
+      setMenu(null);
+    }
+  };
+
   const deleteFile = async (file: HandoffFolderFile) => {
     if (isProtected(file)) {
       onMessage?.(t('이 파일은 프로젝트 원본이라 지울 수 없습니다.', 'This file is the project source and cannot be deleted.', '这是项目原片，不能删除。', 'このファイルはプロジェクトの原本なので削除できません。'));
@@ -260,7 +291,7 @@ export function HandoffFolderBoard({
         return next;
       });
       if (lightbox?.path === file.path) setLightbox(null);
-      onMessage?.(t(`${file.name}을 삭제했습니다.`, `Deleted ${file.name}.`, `已删除 ${file.name}。`, `${file.name} を削除しました。`));
+      onMessage?.(t(`${file.name}을 휴지통으로 보냈습니다.`, `Moved ${file.name} to the trash.`, `已将 ${file.name} 移到废纸篓。`, `${file.name} をゴミ箱へ移しました。`));
       await onRefresh?.();
     } catch (error) {
       onMessage?.(error instanceof Error ? error.message : t('삭제하지 못했습니다.', 'Could not delete the file.', '无法删除文件。', '削除できませんでした。'));
@@ -347,7 +378,7 @@ export function HandoffFolderBoard({
               ) : null}
             </summary>
             <div className="desktop-handoff-body">
-              <p className="desktop-handoff-path">{folder.relative_dir} · {t('오른쪽 클릭으로 미리보기·삭제·크게 보기·원본', 'Right-click to preview, delete, enlarge, or open the original', '右键可预览、删除、放大或打开原片', '右クリックでプレビュー・削除・拡大・原本')}</p>
+              <p className="desktop-handoff-path">{folder.relative_dir} · {t('오른쪽 클릭으로 미리보기·이름 변경·휴지통·크게 보기·원본', 'Right-click to preview, rename, trash, enlarge, or open the original', '右键可预览、重命名、移到废纸篓、放大或打开原片', '右クリックでプレビュー・名前変更・ゴミ箱・拡大・原本')}</p>
               {folder.notes ? <p className="desktop-handoff-notes">{folder.notes}</p> : null}
               <div className="desktop-handoff-open">
                 <ul className="desktop-handoff-list">
@@ -433,6 +464,16 @@ export function HandoffFolderBoard({
           <button
             type="button"
             role="menuitem"
+            disabled={isProtected(menu.file) || busyPath === menu.file.path}
+            onClick={() => void renameFile(menu.file)}
+          >
+            {isProtected(menu.file)
+              ? t('원본은 이름 변경 불가', 'Source cannot be renamed', '原片不可重命名', '原本は名前を変えられません')
+              : t('이름 변경', 'Rename', '重命名', '名前を変更')}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
             className="is-danger"
             disabled={isProtected(menu.file) || busyPath === menu.file.path}
             onClick={() => void deleteFile(menu.file)}
@@ -440,8 +481,8 @@ export function HandoffFolderBoard({
             {isProtected(menu.file)
               ? t('원본은 삭제 불가', 'Source cannot be deleted', '原片不可删除', '原本は削除不可')
               : confirmDelete === menu.file.path
-                ? t('정말 삭제?', 'Delete for sure?', '确认删除？', '本当に削除？')
-                : t('삭제', 'Delete', '删除', '削除')}
+                ? t('휴지통으로 보낼까요?', 'Send to trash?', '移到废纸篓？', 'ゴミ箱へ移しますか？')
+                : t('휴지통으로', 'Move to trash', '移到废纸篓', 'ゴミ箱へ')}
           </button>
         </div>
       ) : null}

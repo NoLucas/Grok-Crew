@@ -86,7 +86,7 @@ def sample_manifest() -> dict[str, Any]:
 
 def _projects() -> list[dict[str, Any]]:
     with db() as conn:
-        rows = conn.execute("SELECT * FROM projects ORDER BY updated_at DESC").fetchall()
+        rows = conn.execute("SELECT * FROM projects WHERE trashed_at IS NULL ORDER BY updated_at DESC").fetchall()
     return [row_dict(row) or {} for row in rows]
 
 

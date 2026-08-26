@@ -89,7 +89,7 @@ def get_project(project_id: str) -> dict[str, Any] | None:
 
 def list_projects() -> list[dict[str, Any]]:
     with db() as conn:
-        return [row_dict(row) or {} for row in conn.execute("SELECT * FROM projects ORDER BY updated_at DESC LIMIT 50")]
+        return [row_dict(row) or {} for row in conn.execute("SELECT * FROM projects WHERE trashed_at IS NULL ORDER BY updated_at DESC LIMIT 50")]
 
 
 def list_jobs(project_id: str | None = None) -> list[dict[str, Any]]:

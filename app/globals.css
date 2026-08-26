@@ -6986,6 +6986,81 @@ select {
 .desktop-project-list b { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .desktop-project-list small { color: var(--desktop-muted); font-size: 12px; }
 .desktop-project-list p { padding: 15px 9px; color: var(--desktop-muted); font-size: 13px; line-height: 1.5; }
+.desktop-library { display: grid; gap: 8px; }
+.desktop-library-toolbar { display: flex; justify-content: flex-end; padding: 0 8px; }
+.desktop-library-toolbar .desktop-secondary { padding: 5px 8px; font-size: 12px; }
+.desktop-library-add { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 0 8px; }
+.desktop-library-add input,
+.desktop-library-item input,
+.desktop-library-folder summary input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 7px;
+  background: var(--desktop-input);
+  color: var(--desktop-text);
+  font-size: 12px;
+}
+.desktop-library-folder { border-radius: 9px; }
+.desktop-library-folder.is-drop,
+.desktop-library-unfiled.is-drop { outline: 1px dashed var(--desktop-blue); background: color-mix(in srgb, var(--desktop-blue) 8%, transparent); }
+.desktop-library-folder > summary {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 8px;
+  list-style: none;
+  cursor: pointer;
+}
+.desktop-library-folder > summary::-webkit-details-marker { display: none; }
+.desktop-library-folder > summary span { color: var(--desktop-muted); font-size: 11px; transition: transform .12s ease; }
+.desktop-library-folder[open] > summary span { transform: rotate(90deg); }
+.desktop-library-folder > summary b { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.desktop-library-folder > summary em { color: var(--desktop-muted); font-size: 11px; font-style: normal; }
+.desktop-library-label,
+.desktop-library-empty { padding: 6px 8px; color: var(--desktop-muted); font-size: 12px; }
+.desktop-library-item { border-radius: 9px; }
+.desktop-library-item.is-active { background: var(--desktop-active); }
+.desktop-library-open {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 5px;
+  align-items: center;
+  width: 100%;
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+}
+.desktop-library-open:hover { background: var(--desktop-hover); }
+.desktop-library-trash { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--desktop-line); }
+.desktop-library-trash > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  list-style: none;
+  cursor: pointer;
+}
+.desktop-library-trash > summary::-webkit-details-marker { display: none; }
+.desktop-library-trash > summary b { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+.desktop-library-trash > p { margin: 0 8px 6px; color: var(--desktop-muted); font-size: 11px; line-height: 1.4; }
+.desktop-library-trash-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+}
+.desktop-library-trash-item b { display: block; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.desktop-library-trash-item small { display: block; color: var(--desktop-muted); font-size: 11px; }
+.desktop-library-trash-item .desktop-secondary,
+.desktop-library-trash-item .desktop-danger { width: auto; margin: 0; padding: 5px 7px; font-size: 11px; }
+.desktop-library-trash > .desktop-danger { width: calc(100% - 16px); margin: 4px 8px 8px; }
+.desktop-library-submenu { display: grid; margin: 2px 0 2px 8px; padding: 4px; border-left: 1px solid var(--desktop-line); }
 .desktop-version-head { margin-top: 12px; border-top: 1px solid var(--desktop-line); padding-top: 10px; }
 .desktop-version-list { display: grid; gap: 2px; }
 .desktop-version-list button { display: grid; grid-template-columns: 28px 1fr auto; gap: 5px; align-items: center; padding: 7px 8px; border: 0; border-radius: 7px; background: transparent; text-align: left; }

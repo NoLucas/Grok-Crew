@@ -139,6 +139,8 @@ def init_db() -> None:
         _ensure_column(conn, "projects", "edit_spec_id", "TEXT")
         _ensure_column(conn, "projects", "handoff_door", "TEXT")
         _ensure_column(conn, "projects", "handoff_agent", "TEXT")
+        from project_library import ensure_library_schema
+        ensure_library_schema(conn)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_project_created ON jobs(project_id, created_at DESC)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_jobs_open_status ON jobs(status, created_at DESC) WHERE status NOT IN ('succeeded', 'failed')")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_events_project_created ON events(project_id, created_at DESC)")

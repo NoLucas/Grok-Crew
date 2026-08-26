@@ -29,6 +29,7 @@ import {
 } from './desktop-column-widths';
 import { statusNoteOpen, useDesktopNoteFolds } from './desktop-note-folds';
 import { DesktopEditPresetControls } from './desktop-edit-presets-controls';
+import { DesktopProjectLibrary } from './desktop-project-library';
 
 type UpdateStatus = {
   status: string;
@@ -70,7 +71,9 @@ function studioBase() {
   return typeof window !== 'undefined' && window.grokCrew?.apiBase ? window.grokCrew.apiBase : 'http://127.0.0.1:7214';
 }
 type PublishMode = 'export_only' | 'ask' | 'auto';
-type Project = { id: string; title: string; source_path: string; output_path: string; updated_at: string; current_revision: number; handoff_door?: string | null; handoff_agent?: string | null; edit_spec_id?: string | null };
+type Project = { id: string; title: string; source_path: string; output_path: string; updated_at: string; current_revision: number; folder_id?: string | null; handoff_door?: string | null; handoff_agent?: string | null; edit_spec_id?: string | null };
+type ProjectFolder = { id: string; title: string };
+type TrashItem = { id: string; kind: string; title: string; original_path?: string | null; trashed_at: string; purge_after: string };
 type TimelineConflict = { schema: string; reason: string; expected_revision: number; current_revision: number; timeline_patch?: { operations?: unknown[] } };
 type ControlJob = { id: string; project_id: string; status: string; execution_policy: string; updated_at: string; error_text?: string; result_revision?: number; attempt?: number; control_sequence?: number; runner_id?: string; render_job_id?: string; conflict_json?: TimelineConflict };
 type RunnerEvent = { id: string; control_job_id: string; runner_id: string; sequence: number; stage: string; status: string; detail_json: Record<string, unknown>; verified_at: string };
@@ -135,7 +138,7 @@ type CrewRoster = {
   suggested_collector?: string;
   suggested_editor?: string;
 };
-type Workspace = { projects: Project[]; control_jobs: ControlJob[]; runner_events: RunnerEvent[]; runners: Runner[]; media: MediaItem[]; first_run?: FirstRun; edit_specs?: EditSpec[]; handoff?: HandoffStatus; handoff_folders?: HandoffFolder[]; style_recipes?: StyleRecipe[]; crew_roster?: CrewRoster };
+type Workspace = { projects: Project[]; control_jobs: ControlJob[]; runner_events: RunnerEvent[]; runners: Runner[]; media: MediaItem[]; first_run?: FirstRun; edit_specs?: EditSpec[]; handoff?: HandoffStatus; handoff_folders?: HandoffFolder[]; style_recipes?: StyleRecipe[]; crew_roster?: CrewRoster; project_folders?: ProjectFolder[]; trash?: { items?: TrashItem[] } };
 type GitHubStatus = { authenticated: boolean; login?: string | null; oauth_available?: boolean; relay_connected?: boolean; remote?: string | null };
 type JsonObject = Record<string, unknown>;
 type AnalysisScene = { id: string; at: number; size_bytes: number };
@@ -1064,7 +1067,28 @@ export default function DesktopWorkspace() {
         <aside className={`desktop-sidebar ${drawer === 'projects' ? 'open' : ''}`}>
           <div className="desktop-side-head"><b>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</b><div className="desktop-side-head-actions"><button type="button" className={specDeskOpen || !project ? 'active' : ''} onClick={() => { setSpecDeskOpen(true); setAdvancedSpecOpen(false); setDrawer('none'); }}>{t('새 규격', 'New brief', '新规格', '新しい仕様')}</button><button type="button" aria-label={t('새 프로젝트', 'New project', '新建项目', '新規プロジェクト')} onClick={() => setCreateOpen((value) => !value)}>＋</button></div></div>
           {createOpen && <section className="desktop-create-card">{sampleAvailable ? <button type="button" className="desktop-primary" disabled={busy} onClick={() => void openSampleProject()}>{t('샘플로 시작', 'Start with the sample', '从示例开始', 'サンプルで始める')}</button> : null}<input value={newProject.title} onChange={(event) => setNewProject({ ...newProject, title: event.target.value })} placeholder={t('프로젝트 이름', 'Project name', '项目名称', 'プロジェクト名')} /><select value={newProject.source_path} onChange={(event) => setNewProject({ ...newProject, source_path: event.target.value })}><option value="">{t('원본 선택', 'Choose source', '选择素材', '素材を選択')}</option>{workspace.media.filter((item) => item.kind === 'video' && item.area === 'inputs').map((item) => <option value={item.path} key={item.path}>{item.name}</option>)}</select><button className="desktop-secondary" disabled={busy} onClick={() => void importMedia()}>{t('내 컴퓨터에서 가져오기', 'Import from computer', '从电脑导入', 'コンピュータから読み込む')}</button><input value={newProject.output_path} onChange={(event) => setNewProject({ ...newProject, output_path: event.target.value })} /><button className="desktop-primary" disabled={busy} onClick={() => void createProject()}>{t('만들기', 'Create', '创建', '作成')}</button></section>}
-          <div className="desktop-project-list">{workspace.projects.map((item) => <button className={!specDeskOpen && item.id === selectedProjectId ? 'active' : ''} key={item.id} onClick={() => { setSpecDeskOpen(false); setSelectedProjectId(item.id); setDrawer('none'); }}><span>▣</span><div><b>{item.title}</b><small>{handoffSenderLabel(item, t)} · v{item.current_revision} · {new Date(item.updated_at).toLocaleDateString()}</small></div></button>)}{studioState === 'loading' && !workspace.projects.length ? <p className="desktop-side-empty">{t('Local Studio에 연결하는 중…', 'Connecting to Local Studio…', '正在连接本地工作室…', 'Local Studio に接続しています…')}</p> : null}{studioState === 'error' && !workspace.projects.length ? <p className="desktop-side-empty">{t('연결하지 못했습니다. 다시 시도하세요.', 'Could not connect. Retry from the banner.', '无法连接。请从横幅重试。', '接続できません。バナーから再試行してください。')}</p> : null}{studioState === 'ready' && !workspace.projects.length ? <div className="desktop-side-empty"><p>{t('아직 컷이 없습니다. 가운데에서 제목을 적거나 영상을 놓으세요.', 'No cut yet. Write a title in the middle, or drop a video.', '还没有剪辑。请在中间写标题，或放进视频。', 'カットはまだありません。中央にタイトルを書くか、映像を置いてください。')}</p></div> : null}</div>
+          <DesktopProjectLibrary
+            projects={workspace.projects}
+            folders={workspace.project_folders ?? []}
+            trash={workspace.trash?.items ?? []}
+            selectedId={selectedProjectId}
+            specDeskOpen={specDeskOpen}
+            studioState={studioState}
+            senderLabel={(item) => handoffSenderLabel(item, t)}
+            request={api}
+            onSelect={(projectId) => {
+              if (!projectId) {
+                setSelectedProjectId('');
+                setSpecDeskOpen(true);
+                return;
+              }
+              setSpecDeskOpen(false);
+              setSelectedProjectId(projectId);
+              setDrawer('none');
+            }}
+            onRefresh={() => refreshWorkspace(true)}
+            onMessage={setMessage}
+          />
           <div className="desktop-side-head desktop-version-head"><b>{t('버전 기록', 'Versions', '版本', 'バージョン')}</b><span>{versions.length}</span></div>
           <div className="desktop-version-list">{!versions.length ? <p className="desktop-side-empty">{project ? t('이 프로젝트의 버전은 아직 없습니다.', 'No versions for this project yet.', '此项目还没有版本。', 'このプロジェクトのバージョンはまだありません。') : t('프로젝트를 열면 버전 기록이 여기에 쌓입니다.', 'Open a project to collect version history here.', '打开项目后版本会显示在这里。', 'プロジェクトを開くと履歴がここに残ります。')}</p> : null}{versions.slice(0, 8).map((version, index) => (
             <button

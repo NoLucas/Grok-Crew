@@ -74,6 +74,19 @@ from first_run import first_run_status, open_sample_project
 from bot_pack import bot_pack_bytes
 from edit_spec import create_spec, get_spec, list_specs, spec_brief, spec_invite
 from handoff_folders import delete_handoff_file, reveal_handoff_file, workspace_handoff_folders
+from project_library import (
+    create_project_folder,
+    delete_project_folder,
+    empty_trash,
+    list_trash,
+    move_project,
+    purge_trash_item,
+    rename_project,
+    rename_project_folder,
+    rename_workspace_file,
+    restore_trash_item,
+    trash_project,
+)
 from handoff_inbox import handoff_status, pull_handoff
 from handoff_materials import materials_status, pull_materials, write_owned_materials
 from style_recipes import list_recipes
@@ -289,6 +302,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, outbox_status())
             elif path == "/api/v2/handoff/materials":
                 self._json(200, materials_status())
+            elif path == "/api/v2/trash":
+                self._json(200, list_trash())
             elif path == "/api/v2/handoff/folders":
                 query = parse_qs(urlparse(self.path).query)
                 kind = str((query.get("kind") or [""])[0] or "").strip() or None
@@ -440,8 +455,28 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, write_owned_materials(str(body.get("edit_spec_id") or ""), body.get("paths") or body.get("owned_paths") or []))
             elif path == "/api/v2/handoff/files/delete":
                 self._json(200, delete_handoff_file(str(body.get("path") or "")))
+            elif path == "/api/v2/handoff/files/rename":
+                self._json(200, rename_workspace_file(str(body.get("path") or ""), str(body.get("name") or "")))
             elif path == "/api/v2/handoff/files/reveal":
                 self._json(200, reveal_handoff_file(str(body.get("path") or "")))
+            elif path == "/api/v2/project-folders":
+                self._json(201, {"folder": create_project_folder(str(body.get("title") or ""))})
+            elif path.startswith("/api/v2/project-folders/") and path.endswith("/rename"):
+                self._json(200, {"folder": rename_project_folder(path.split("/")[4], str(body.get("title") or ""))})
+            elif path.startswith("/api/v2/project-folders/") and path.endswith("/delete"):
+                self._json(200, delete_project_folder(path.split("/")[4]))
+            elif path == "/api/v2/trash/empty":
+                self._json(200, empty_trash())
+            elif path.startswith("/api/v2/trash/") and path.endswith("/restore"):
+                self._json(200, restore_trash_item(path.split("/")[4]))
+            elif path.startswith("/api/v2/trash/") and path.endswith("/purge"):
+                self._json(200, purge_trash_item(path.split("/")[4]))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/rename"):
+                self._json(200, {"project": rename_project(path.split("/")[4], str(body.get("title") or ""))})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/move"):
+                self._json(200, {"project": move_project(path.split("/")[4], body.get("folder_id"))})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/trash"):
+                self._json(200, {"project": trash_project(path.split("/")[4])})
             elif path == "/api/v2/runners/pair":
                 self._json(201, {"runner": pair_runner(body)})
             elif path == "/api/v2/runner-events":
