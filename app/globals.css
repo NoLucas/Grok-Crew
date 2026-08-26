@@ -7252,7 +7252,24 @@ select {
   border-radius: 10px;
   background: #fffbeb;
 }
-.desktop-lock-note b { display: block; font-size: 12px; }
+.desktop-lock-note summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+.desktop-lock-note summary::-webkit-details-marker { display: none; }
+.desktop-lock-note summary::after {
+  content: '▾';
+  color: #8a7040;
+  font-size: 12px;
+  font-weight: 700;
+}
+.desktop-lock-note:not([open]) summary::after { content: '▸'; }
 .desktop-lock-note p { margin: 4px 0 0; color: #5c5740; font-size: 13px; line-height: 1.45; }
 .desktop-form-grid label.is-locked select { background: var(--desktop-wash); color: var(--desktop-muted); cursor: not-allowed; }
 .desktop-form-grid label.is-locked em {
@@ -7932,10 +7949,15 @@ select {
 }
 .desktop-command-bar { z-index: 20; display: grid; grid-template-columns: minmax(260px, 1fr) auto; align-items: center; gap: 10px; padding: 6px 12px; border-top: 1px solid var(--desktop-line); background: rgba(250, 250, 251, .98); box-shadow: 0 -6px 22px rgba(20, 21, 24, .05); }
 .desktop-message { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.desktop-message-icon { display: grid; flex: 0 0 auto; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: var(--desktop-blue); background: #e9e7ff; font-size: 13px; font-weight: 800; }
+.desktop-message-icon {
+  display: grid; flex: 0 0 auto; place-items: center; width: 22px; height: 22px; padding: 0;
+  border: 0; border-radius: 50%; color: var(--desktop-blue); background: #e9e7ff;
+  font-size: 13px; font-weight: 800; cursor: pointer;
+}
 .desktop-message.error .desktop-message-icon { color: #fff; background: var(--desktop-red); }
 .desktop-message.loading .desktop-message-icon { color: #9a6b12; background: #f6e7c4; }
-.desktop-message p { overflow: hidden; margin: 0; color: var(--desktop-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.desktop-message p { flex: 1; overflow: hidden; margin: 0; color: var(--desktop-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.desktop-message.is-folded { max-width: max-content; }
 .desktop-command-summary { display: flex; align-items: center; gap: 9px; }
 .desktop-command-summary > span { padding: 6px 8px; border: 1px solid var(--desktop-line); border-radius: 7px; color: var(--desktop-muted); background: var(--desktop-panel); font-size: 13px; white-space: nowrap; }
 .desktop-start { display: flex; align-items: center; gap: 12px; min-width: 174px; justify-content: space-between; padding: 8px 12px; background: var(--desktop-accent); color: white !important; font-size: 13px; }

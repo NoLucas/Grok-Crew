@@ -27,6 +27,7 @@ import {
   columnStyleVars,
   useDesktopColumnWidths,
 } from './desktop-column-widths';
+import { statusNoteOpen, useDesktopNoteFolds } from './desktop-note-folds';
 
 type UpdateStatus = {
   status: string;
@@ -416,6 +417,8 @@ export default function DesktopWorkspace() {
   const unclaimedJobs = projectJobs.filter((job) => isUnclaimedHold(job.status) && !job.runner_id);
   const hideInspectorColumn = specDeskOpen || !project || !timeline;
   const columns = useDesktopColumnWidths(!hideInspectorColumn);
+  const { folds, setFold, toggleFold } = useDesktopNoteFolds();
+  const statusOpen = statusNoteOpen(folds.status, studioState);
   const editToolsOpen = Boolean(project && timeline && !specDeskOpen && activePanel === 'edit');
   const handoffFolders = workspace.handoff_folders ?? [];
   const projectFolders = useMemo(() => {
@@ -1227,15 +1230,19 @@ export default function DesktopWorkspace() {
               </section>
               <section className="desktop-card desktop-settings-card"><div className="desktop-card-title"><span>02</span><div><b>{t('편집 Agent 설정', 'Editor Agent controls', '剪辑 Agent 设置', '編集 Agent 設定')}</b><small>{t('채팅 없이 명확한 선택으로 전달합니다.', 'Clear controls, no prompt writing.', '无需编写提示词。', 'プロンプト入力は不要です。')}</small></div></div>
               {specLocked ? (
-                <div className="desktop-lock-note" role="note">
-                  <b>{t('봇이 지키는 값', 'Values the bot must keep', '机器人必须遵守的值', 'ボットが守る値')}</b>
+                <details
+                  className="desktop-lock-note"
+                  open={folds.lock}
+                  onToggle={(event) => setFold('lock', event.currentTarget.open)}
+                >
+                  <summary>{t('봇이 지키는 값', 'Values the bot must keep', '机器人必须遵守的值', 'ボットが守る値')}</summary>
                   <p>{t(
                     `화질 ${method.quality}만 이 책상에서 정한 규격입니다. 봇은 화질을 바꾸지 않습니다. 화면비와 자막은 여기서 바꿀 수 있습니다. 템포·룩·B-roll·훅·오디오도 필요할 때 바꿉니다.`,
                     `Only quality ${method.quality} is locked on this desk. The bot must keep that. Change aspect ratio and captions here. You can also change pacing, look, b-roll, hook, and audio if needed.`,
                     `只有画质 ${method.quality} 在此工作台锁定。机器人不得改画质。画面比例和字幕可在此改。节奏、风格、B-roll、开场和音频也可按需调整。`,
                     `画質 ${method.quality} だけがこのデスクでロックされています。ボットは画質を変えません。画面比と字幕はここで変えられます。テンポ・ルック・B-roll・フック・音声も必要なら変えられます。`,
                   )}</p>
-                </div>
+                </details>
               ) : null}
               <div className="desktop-form-grid">
                 <label>{t('콘텐츠 유형', 'Content type', '内容类型', 'コンテンツ種別')}<select value={method.content_type} onChange={(e) => setMethod({ ...method, content_type: e.target.value })}><option value="talking_head">{t('토킹헤드', 'Talking head', '口播', 'トーキングヘッド')}</option><option value="vlog">Vlog</option><option value="product">{t('제품·서비스', 'Product / service', '产品服务', '製品・サービス')}</option><option value="tutorial">{t('튜토리얼', 'Tutorial', '教程', 'チュートリアル')}</option></select></label>
@@ -1378,8 +1385,20 @@ export default function DesktopWorkspace() {
           </section>
           ) : (
           <section className="desktop-inspector-section desktop-remote-collapsed">
-            <div className="desktop-inspector-head"><b>{t('원격 봇', 'Remote bot', '远程机器人', 'リモートボット')}</b></div>
-            <p>{t('로컬에서 바로 자를 수 있습니다. Runner와 GitHub는 편집 Agent에 넘길 때만 연결하세요.', 'Cut locally first. Connect a Runner and GitHub only when you hand work to Editor Agent.', '可以先在本地剪辑。仅在交给剪辑 Agent 时再连接 Runner 和 GitHub。', 'まずはローカルで切れます。編集 Agent に渡すときだけ Runner と GitHub を接続してください。')}</p>
+            <div className="desktop-inspector-head">
+              <b>{t('원격 봇', 'Remote bot', '远程机器人', 'リモートボット')}</b>
+              <button
+                type="button"
+                className="desktop-inspector-fold"
+                aria-expanded={folds.remote}
+                onClick={() => toggleFold('remote')}
+              >
+                {folds.remote ? t('접기', 'Hide', '收起', '閉じる') : t('펼치기', 'Show', '展开', '開く')}
+              </button>
+            </div>
+            {folds.remote ? (
+              <p>{t('로컬에서 바로 자를 수 있습니다. Runner와 GitHub는 편집 Agent에 넘길 때만 연결하세요.', 'Cut locally first. Connect a Runner and GitHub only when you hand work to Editor Agent.', '可以先在本地剪辑。仅在交给剪辑 Agent 时再连接 Runner 和 GitHub。', 'まずはローカルで切れます。編集 Agent に渡すときだけ Runner と GitHub を接続してください。')}</p>
+            ) : null}
             {unclaimedJobs.length ? (
               <div className="desktop-unclaimed-jobs">
                 <b>{t(`대기 중인 편집 Agent 작업 ${unclaimedJobs.length}개`, `${unclaimedJobs.length} waiting Editor Agent job(s)`, `${unclaimedJobs.length} 个等待中的剪辑 Agent 任务`, `待機中の編集 Agent ジョブ ${unclaimedJobs.length} 件`)}</b>
@@ -1483,7 +1502,31 @@ export default function DesktopWorkspace() {
         />
       ) : null}
 
-      <footer className="desktop-command-bar"><div className={`desktop-message ${studioState === 'error' ? 'error' : studioState === 'loading' ? 'loading' : ''}`}><span className="desktop-message-icon">{studioState === 'error' ? '!' : studioState === 'loading' ? '…' : 'i'}</span><p>{message}</p></div><div className="desktop-command-summary"><span>{executionPolicy === 'auto_edit_render' ? t('자동 편집·렌더', 'Auto edit & render', '自动编辑和渲染', '自動編集・レンダー') : t('검토 우선', 'Review first', '审核优先', '確認優先')}</span><span>{Object.values(publishPolicy).filter((value) => value === 'auto').length} {t('개 자동 게시', 'auto publish', '个自动发布', '件の自動公開')}</span><button className="desktop-start" disabled={busy || !project || studioState !== 'ready'} onClick={() => void startGrok()}>{busy ? t('처리 중…', 'Working…', '处理中…', '処理中…') : t('편집 Agent로 제작 시작', 'Start with Editor Agent', '使用剪辑 Agent 开始制作', '編集 Agent で制作開始')} <b>→</b></button></div></footer>
+      <footer className="desktop-command-bar">
+        <div className={`desktop-message ${studioState === 'error' ? 'error' : studioState === 'loading' ? 'loading' : ''}${statusOpen ? '' : ' is-folded'}`}>
+          <button
+            type="button"
+            className="desktop-message-icon"
+            aria-expanded={statusOpen}
+            title={message}
+            onClick={() => { if (studioState !== 'error' && studioState !== 'loading') toggleFold('status'); }}
+          >
+            {studioState === 'error' ? '!' : studioState === 'loading' ? '…' : 'i'}
+          </button>
+          {statusOpen ? <p>{message}</p> : null}
+          {studioState === 'error' || studioState === 'loading' ? null : (
+            <button
+              type="button"
+              className="desktop-inspector-fold"
+              aria-expanded={statusOpen}
+              onClick={() => toggleFold('status')}
+            >
+              {statusOpen ? t('접기', 'Hide', '收起', '閉じる') : t('펼치기', 'Show', '展开', '開く')}
+            </button>
+          )}
+        </div>
+        <div className="desktop-command-summary"><span>{executionPolicy === 'auto_edit_render' ? t('자동 편집·렌더', 'Auto edit & render', '自动编辑和渲染', '自動編集・レンダー') : t('검토 우선', 'Review first', '审核优先', '確認優先')}</span><span>{Object.values(publishPolicy).filter((value) => value === 'auto').length} {t('개 자동 게시', 'auto publish', '个自动发布', '件の自動公開')}</span><button className="desktop-start" disabled={busy || !project || studioState !== 'ready'} onClick={() => void startGrok()}>{busy ? t('처리 중…', 'Working…', '处理中…', '処理中…') : t('편집 Agent로 제작 시작', 'Start with Editor Agent', '使用剪辑 Agent 开始制作', '編集 Agent で制作開始')} <b>→</b></button></div>
+      </footer>
     </main>
   );
 }
