@@ -26,8 +26,8 @@
     {
       "step": 3,
       "name": "set_edit_method",
-      "action": "Read the edit spec first. Keep the operator's aspect, quality, and captions. POST /api/edit-method only for hook, pacing, filler, reframe, look, audio, speed, and FPS. Inspect GET /api/v2/handoff/folders; the operator right-clicks a file to preview, enlarge, reveal the original, or delete it.",
-      "goal": "Follow the saved spec. Do not change the three locked controls. The operator may later change the other knobs on the desk."
+      "action": "Read the edit spec first. Keep the operator's quality. Aspect and captions follow the current desk settings — the operator may change them in Setup. POST /api/edit-method may set hook, pacing, filler, reframe, look, audio, speed, FPS, aspect, and captions. Inspect GET /api/v2/handoff/folders; the operator right-clicks a file to preview, enlarge, reveal the original, or delete it.",
+      "goal": "Follow the saved spec quality. Do not change quality. The operator may change aspect, captions, and the other knobs on the desk."
     },
     {
       "step": 4,
@@ -38,7 +38,7 @@
     {
       "step": 5,
       "name": "prepare_finish",
-      "action": "Set reframe anchor, speed, audio, look, and FPS in render_settings. Keep the operator's captions, quality, and aspect.",
+      "action": "Set reframe anchor, speed, audio, look, and FPS in render_settings. Keep the operator's quality. Follow the current desk aspect and captions.",
       "goal": "Choose the smallest changes that solve the communication problem; avoid effect stacking."
     },
     {
@@ -71,7 +71,7 @@
   },
   "edit_method_contract": {
     "endpoint": "POST /api/edit-method",
-    "write_rule": "A bot may set an edit method after checking local scope. If a spec exists, do not change caption_mode or quality. Aspect lives on the timeline and the spec — keep it. The method can be applied to the Finish Rack and does not itself start rendering or upload.",
+    "write_rule": "A bot may set an edit method after checking local scope. If a spec exists, do not change quality. Aspect and captions follow the current desk settings; the operator may change them in Setup. The method can be applied to the Finish Rack and does not itself start rendering or upload.",
     "body": {
       "bot_id": "local-editor-bot",
       "display_name": "Local Editor Bot",
@@ -90,9 +90,9 @@
     }
   },
   "operator_locks": {
-    "locked": ["aspect", "quality", "captions"],
-    "operator_may_change": ["pacing", "look", "broll_policy", "hook_strategy", "audio_policy", "filler_policy", "reframe_anchor", "speed", "fps", "content_type", "target_length"],
-    "reason": "The operator set aspect, quality, and captions on the desk. Keep those three. The operator may later change the other knobs and must be able to see why the three are locked."
+    "locked": ["quality"],
+    "operator_may_change": ["aspect_ratio", "caption_mode", "pacing", "look", "broll_policy", "hook_strategy", "audio_policy", "filler_policy", "reframe_anchor", "speed", "fps", "content_type", "target_length"],
+    "reason": "Only quality is locked on the desk. Keep quality. The operator may change aspect and captions in Setup, plus the other knobs."
   },
   "folder_board": {
     "same_pc": "GET /api/v2/handoff/folders lists inputs/handoff/ packages and handoff-materials/ clips. POST /api/v2/handoff/files/reveal opens the original. POST /api/v2/handoff/files/delete removes a non-source file.",
@@ -121,7 +121,7 @@
   },
   "site_features": [
     {"id":"01","area":"PRODUCTION","name":"Project setup","use_when":"Starting a new video or checking its source/output paths.","bot_action":"Create or select the project, then read its saved settings and job history.","result":"A clear local project scope without overwriting another active job."},
-    {"id":"02","area":"EDIT METHOD","name":"Shared edit method","use_when":"The bot needs to establish the creative approach before making cuts.","bot_action":"Keep the spec aspect, quality, and captions. Set hook, pace, filler, reframe, look, audio, speed, and FPS through /api/edit-method.","result":"A reusable plan that can be applied to the Finish Rack. The three locked controls stay as the operator set them."},
+    {"id":"02","area":"EDIT METHOD","name":"Shared edit method","use_when":"The bot needs to establish the creative approach before making cuts.","bot_action":"Keep the spec quality. Follow the current desk aspect and captions. Set hook, pace, filler, reframe, look, audio, speed, and FPS through /api/edit-method.","result":"A reusable plan that can be applied to the Finish Rack. Quality stays as the operator set it."},
     {"id":"02b","area":"DESK","name":"Bot folder board","use_when":"Saved packages or materials clips need to be inspected or removed.","bot_action":"On the same PC read GET /api/v2/handoff/folders. Delete only non-source files with POST /api/v2/handoff/files/delete. Remote bots let the operator use the right-click menu.","result":"The list sits beside the preview. A deleted file is gone."},
     {"id":"03","area":"CUT LOG","name":"Transcript cut map","use_when":"A spoken source has filler, silence, retakes, or a weak opening.","bot_action":"Save kept timestamped segments with /api/projects/{id}/cut-map before changing the EDL.","result":"A non-destructive, reviewable map of the proposed edit."},
     {"id":"04","area":"FINISH RACK","name":"Frame, captions, and sound","use_when":"The visual finish needs reframing, readable captions, audio cleanup, or export settings.","bot_action":"Set render settings in Production; keep the subject inside the vertical safe area and select only necessary effects.","result":"A ready-to-render local MP4 specification."},

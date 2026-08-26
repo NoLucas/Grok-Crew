@@ -434,18 +434,21 @@ def operator_locks_of(spec: dict[str, Any] | None, quality: str = "balanced") ->
         "quality": quality,
         "captions": captions,
         "caption_mode": "burn_in" if captions else "off",
-        "locked": ["aspect", "quality", "captions"],
+        "locked": ["quality"],
         "operator_may_change": [
+            "aspect_ratio", "caption_mode",
             "pacing", "look", "broll_policy", "hook_strategy", "audio_policy",
             "filler_policy", "reframe_anchor", "speed", "fps", "content_type", "target_length",
         ],
         "reason_ko": (
-            f"화면 비율 {aspect}, 화질 {quality}, 자막 {'켜짐' if captions else '꺼짐'}은 운영자가 규격에서 정한 값입니다. "
-            "봇은 이 세 가지를 바꾸지 않습니다. 템포·룩·B-roll·훅·오디오는 운영자가 책상에서 필요할 때 바꿀 수 있습니다."
+            f"화질 {quality}만 운영자가 규격에서 정한 값입니다. 봇은 화질을 바꾸지 않습니다. "
+            f"화면 비율({aspect})과 자막({'켜짐' if captions else '꺼짐'})은 설정에서 바꿀 수 있습니다. "
+            "템포·룩·B-roll·훅·오디오도 필요할 때 책상에서 바꿉니다."
         ),
         "reason_en": (
-            f"Aspect {aspect}, quality {quality}, and captions {'on' if captions else 'off'} were set by the operator. "
-            "Do not change those three. The operator may later change pacing, look, b-roll, hook, and audio on the desk."
+            f"Only quality {quality} is locked by the operator. Do not change quality. "
+            f"Aspect ({aspect}) and captions ({'on' if captions else 'off'}) can be changed in Setup. "
+            "The operator may also change pacing, look, b-roll, hook, and audio on the desk."
         ),
     }
 
@@ -802,7 +805,7 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
             f"같은 컴퓨터에서 명령할 수 있으면:\n"
             f"  python grok-crew.py entry --bot-id desk-bot --display-name \"당신의 이름\" --purpose edit_video\n"
             f"  (스크립트는 http://127.0.0.1:7214/downloads/grok-crew.py)\n\n"
-            f"화면 비율·화질·자막은 이 규격 그대로 두세요. 템포·룩·B-roll은 운영자가 나중에 바꿀 수 있습니다.\n"
+            f"화질은 이 규격 그대로 두세요. 화면비와 자막은 운영자가 설정에서 바꿀 수 있습니다. 템포·룩·B-roll도 나중에 바꿀 수 있습니다.\n"
             f"끝난 패키지는 이 폴더에 둡니다:\n"
             f"  {inbox}\n"
             f"이 PC 책장에서 그 폴더를 오른쪽 클릭해 미리보기·삭제합니다. 127.0.0.1 말고는 붙지 마세요."
@@ -816,7 +819,7 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
             f"If you can run a command on this computer:\n"
             f"  python grok-crew.py entry --bot-id desk-bot --display-name \"your name\" --purpose edit_video\n"
             f"  (script: http://127.0.0.1:7214/downloads/grok-crew.py)\n\n"
-            f"Keep the spec aspect, quality, and captions. The operator may later change pacing, look, and b-roll.\n"
+            f"Keep the spec quality. The operator may change aspect and captions in Setup, and later change pacing, look, and b-roll.\n"
             f"Put the finished package in this folder:\n"
             f"  {inbox}\n"
             f"The desk right-clicks that folder to preview or delete. Do not connect anywhere except 127.0.0.1."

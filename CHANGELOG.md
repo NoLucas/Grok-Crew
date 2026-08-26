@@ -4,6 +4,8 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Aspect ratio and captions are no longer locked when a spec or imported cut is open. Quality stays locked. Setup, briefs, invites, and bot/handoff guides say the same.
+
 ## 1.0.0 - 2026-08-26
 
 Local 1.0. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.0` GitHub Release. Notes: `docs/RELEASE_NOTES.v1.0.md`.
@@ -11,7 +13,7 @@ Local 1.0. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.0` GitHub Rele
 - Desktop shows the saved folder after a bot drop: media under `inputs/handoff/` and clips in `handoff-materials/`, with previews. Listing stays inside those two roots.
 - The folder board stays collapsed to one row until the operator opens it. The file list sits beside the preview. Right-click a file to preview, enlarge, reveal the original, or delete it. Source files stay locked.
 - `POST /api/v2/handoff/files/delete` and `POST /api/v2/handoff/files/reveal` stay inside those two roots.
-- When a spec or imported cut is open, aspect, quality, and captions stay locked to the operator values. The Setup tab explains why. Bots get the same lock in the brief, invite, and bot/handoff guides. Other knobs stay editable.
+- When a spec or imported cut is open, quality stays locked to the operator value. Aspect and captions can be changed in Setup. The Setup tab explains why. Bots get the same lock in the brief, invite, and bot/handoff guides. Other knobs stay editable.
 
 ### Security
 
