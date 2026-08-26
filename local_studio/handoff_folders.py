@@ -80,12 +80,16 @@ def _package_id_from_source(source_path: str) -> str | None:
     return None
 
 
-def _projects() -> list[dict[str, Any]]:
+def _projects(*, include_trashed: bool = False) -> list[dict[str, Any]]:
+    query = (
+        "SELECT id, title, source_path, edit_spec_id, handoff_agent, handoff_door, updated_at "
+        "FROM projects"
+    )
+    if not include_trashed:
+        query += " WHERE trashed_at IS NULL"
+    query += " ORDER BY updated_at DESC LIMIT 80"
     with db() as conn:
-        rows = conn.execute(
-            "SELECT id, title, source_path, edit_spec_id, handoff_agent, handoff_door, updated_at "
-            "FROM projects WHERE trashed_at IS NULL ORDER BY updated_at DESC LIMIT 80"
-        ).fetchall()
+        rows = conn.execute(query).fetchall()
     return [row_dict(row) or {} for row in rows]
 
 
@@ -134,15 +138,25 @@ def _scan_child_dirs(relative_root: Path) -> list[Path]:
     return found[:MAX_FOLDERS]
 
 
-def describe_package_folder(name: str, project: dict[str, Any] | None = None) -> dict[str, Any]:
+def describe_package_folder(
+    name: str,
+    project: dict[str, Any] | None = None,
+    *,
+    source_paths: set[Path] | None = None,
+) -> dict[str, Any]:
     folder = _safe_child_dir((config.WORKSPACE_DIR / PACKAGE_ROOT).resolve(), name)
     relative_dir = f"{PACKAGE_ROOT.as_posix()}/{folder.name}"
     source_name = ""
     if project and project.get("source_path"):
         source_name = Path(workspace_relative(str(project["source_path"]))).name.lower()
+    source_abs = source_paths if source_paths is not None else _source_paths()
+    listed = _list_media_files(folder, relative_dir)
+    has_source = bool(source_name) or any((folder / item["name"]).resolve() in source_abs for item in listed)
     files: list[dict[str, Any]] = []
-    for item in _list_media_files(folder, relative_dir):
-        role = "source" if source_name and item["name"].lower() == source_name else "broll" if source_name else "clip"
+    for item in listed:
+        abs_file = (folder / item["name"]).resolve()
+        is_source = (bool(source_name) and item["name"].lower() == source_name) or abs_file in source_abs
+        role = "source" if is_source else "broll" if has_source else "clip"
         files.append({**item, "role": role})
     return {
         "kind": "package",
@@ -241,9 +255,12 @@ def workspace_handoff_folders(
                 materials_owner[spec_id] = match
 
     folders: list[dict[str, Any]] = []
+    source_abs = _source_paths()
     if wanted_kind in (None, "package"):
         for folder in _scan_child_dirs(PACKAGE_ROOT):
-            described = describe_package_folder(folder.name, package_owner.get(folder.name))
+            described = describe_package_folder(
+                folder.name, package_owner.get(folder.name), source_paths=source_abs,
+            )
             if described["file_count"]:
                 folders.append(described)
     if wanted_kind in (None, "materials"):
@@ -262,7 +279,7 @@ def workspace_handoff_folders(
 
 def _source_paths() -> set[Path]:
     found: set[Path] = set()
-    for project in _projects():
+    for project in _projects(include_trashed=True):
         raw = str(project.get("source_path") or "").strip()
         if not raw:
             continue
@@ -276,7 +293,7 @@ def _source_paths() -> set[Path]:
     return found
 
 
-def _resolve_handoff_file(rel_path: str) -> tuple[Path, tuple[str, ...]]:
+def parse_handoff_rel(rel_path: str) -> tuple[str, ...]:
     text = str(rel_path or "").strip().replace("\\", "/")
     if not text:
         raise ValueError("path is required.")
@@ -286,27 +303,80 @@ def _resolve_handoff_file(rel_path: str) -> tuple[Path, tuple[str, ...]]:
     parts = rel.parts
     if len(parts) == 4 and parts[0] == "inputs" and parts[1] == "handoff":
         _safe_leaf_name(parts[2])
+        _safe_leaf_name(parts[3])
+        return parts
+    if len(parts) == 3 and parts[0] == "handoff-materials":
+        _safe_leaf_name(parts[1])
+        name = _safe_leaf_name(parts[2])
+        if name.lower() in RESERVED_FILES:
+            raise ValueError("reserved file")
+        return parts
+    raise ValueError("only files in the handoff inbox or materials box can be used.")
+
+
+def resolve_handoff_destination(parts: tuple[str, ...]) -> Path:
+    """A write path that must sit in a real handoff or materials leaf folder."""
+    workspace = config.WORKSPACE_DIR.resolve()
+    if len(parts) == 4 and parts[0] == "inputs" and parts[1] == "handoff":
+        root = (workspace / PACKAGE_ROOT).resolve()
+        if root.parent != (workspace / "inputs").resolve():
+            raise ValueError("path leaves the allowed root.")
+        leaf = _safe_leaf_name(parts[2])
         name = _safe_leaf_name(parts[3])
     elif len(parts) == 3 and parts[0] == "handoff-materials":
-        _safe_leaf_name(parts[1])
+        root = (workspace / MATERIALS_ROOT).resolve()
+        if root.parent != workspace:
+            raise ValueError("path leaves the allowed root.")
+        leaf = _safe_leaf_name(parts[1])
         name = _safe_leaf_name(parts[2])
         if name.lower() in RESERVED_FILES:
             raise ValueError("reserved file")
     else:
         raise ValueError("only files in the handoff inbox or materials box can be used.")
-    workspace = config.WORKSPACE_DIR.resolve()
-    expected_parent = (workspace.joinpath(*parts[:-1])).resolve()
-    target = (workspace / rel).resolve()
-    if workspace not in target.parents:
-        raise ValueError("path leaves the workspace.")
-    if target.parent != expected_parent:
+    parent = (root / leaf).resolve()
+    if parent.parent != root:
         raise ValueError("path leaves the allowed root.")
+    dest = (parent / name).resolve()
+    if dest.parent != parent:
+        raise ValueError("path leaves the allowed root.")
+    return dest
+
+
+def _resolve_handoff_file(rel_path: str) -> tuple[Path, tuple[str, ...]]:
+    parts = parse_handoff_rel(rel_path)
+    target = resolve_handoff_destination(parts)
     if not target.is_file():
         raise ValueError("file not found.")
     return target, parts
 
 
-def _drop_clip_from_manifest(folder: Path, name: str) -> None:
+def _pop_clip_from_manifest(folder: Path, name: str) -> dict[str, Any] | None:
+    from handoff_materials import _read_manifest
+
+    manifest = _read_manifest(folder)
+    if not isinstance(manifest, dict):
+        return None
+    clips = manifest.get("clips")
+    if not isinstance(clips, list):
+        return None
+    kept: list[Any] = []
+    found: dict[str, Any] | None = None
+    for raw in clips:
+        if isinstance(raw, dict) and Path(str(raw.get("file") or "")).name.lower() == name.lower():
+            found = raw
+            continue
+        kept.append(raw)
+    if found is None:
+        return None
+    manifest["clips"] = kept
+    (folder / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return found
+
+
+def _restore_clip_to_manifest(folder: Path, name: str, clip: dict[str, Any] | None) -> None:
     from handoff_materials import _read_manifest
 
     manifest = _read_manifest(folder)
@@ -314,21 +384,24 @@ def _drop_clip_from_manifest(folder: Path, name: str) -> None:
         return
     clips = manifest.get("clips")
     if not isinstance(clips, list):
+        clips = []
+        manifest["clips"] = clips
+    if any(
+        isinstance(raw, dict) and Path(str(raw.get("file") or "")).name.lower() == name.lower()
+        for raw in clips
+    ):
         return
-    kept: list[Any] = []
-    removed = False
-    for raw in clips:
-        if isinstance(raw, dict) and Path(str(raw.get("file") or "")).name.lower() == name.lower():
-            removed = True
-            continue
-        kept.append(raw)
-    if not removed:
-        return
-    manifest["clips"] = kept
+    entry = dict(clip) if isinstance(clip, dict) else {}
+    entry["file"] = name
+    clips.append(entry)
     (folder / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+
+
+def _drop_clip_from_manifest(folder: Path, name: str) -> None:
+    _pop_clip_from_manifest(folder, name)
 
 
 def _open_in_file_manager(target: Path) -> bool:

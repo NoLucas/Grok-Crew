@@ -18,4 +18,5 @@ test("groups projects into folders and leaves the rest unfiled", () => {
 test("trash days left never go below zero", () => {
   assert.equal(trashDaysLeft("2020-01-01T00:00:00+00:00", Date.parse("2026-08-26")), 0);
   assert.ok(trashDaysLeft("2099-01-01T00:00:00+00:00", Date.parse("2026-08-26")) > 30);
+  assert.equal(trashDaysLeft("not-a-date", Date.parse("2026-08-26")), 30);
 });

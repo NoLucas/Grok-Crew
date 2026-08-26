@@ -236,6 +236,15 @@ class StudioHandler(BaseHTTPRequestHandler):
         expected_digest = hashlib.sha256(expected_header.encode("utf-8")).digest()
         return hmac.compare_digest(provided_digest, expected_digest)
 
+    @staticmethod
+    def _route_id(path: str, prefix: str, suffix: str) -> str:
+        if not path.startswith(prefix) or not path.endswith(suffix):
+            raise ValueError("path is not allowed.")
+        mid = path[len(prefix): -len(suffix) if suffix else None]
+        if not mid or "/" in mid or "\\" in mid or ".." in mid or "\x00" in mid:
+            raise ValueError("id is not allowed.")
+        return mid
+
     def _internal_error(self, exc: Exception) -> None:
         print(f"[{utc_now()}] local studio error: {exc}")
         self._json(500, {"error": "The local studio could not complete that request."})
@@ -462,21 +471,21 @@ class StudioHandler(BaseHTTPRequestHandler):
             elif path == "/api/v2/project-folders":
                 self._json(201, {"folder": create_project_folder(str(body.get("title") or ""))})
             elif path.startswith("/api/v2/project-folders/") and path.endswith("/rename"):
-                self._json(200, {"folder": rename_project_folder(path.split("/")[4], str(body.get("title") or ""))})
+                self._json(200, {"folder": rename_project_folder(self._route_id(path, "/api/v2/project-folders/", "/rename"), str(body.get("title") or ""))})
             elif path.startswith("/api/v2/project-folders/") and path.endswith("/delete"):
-                self._json(200, delete_project_folder(path.split("/")[4]))
+                self._json(200, delete_project_folder(self._route_id(path, "/api/v2/project-folders/", "/delete")))
             elif path == "/api/v2/trash/empty":
                 self._json(200, empty_trash())
             elif path.startswith("/api/v2/trash/") and path.endswith("/restore"):
-                self._json(200, restore_trash_item(path.split("/")[4]))
+                self._json(200, restore_trash_item(self._route_id(path, "/api/v2/trash/", "/restore")))
             elif path.startswith("/api/v2/trash/") and path.endswith("/purge"):
-                self._json(200, purge_trash_item(path.split("/")[4]))
+                self._json(200, purge_trash_item(self._route_id(path, "/api/v2/trash/", "/purge")))
             elif path.startswith("/api/v2/projects/") and path.endswith("/rename"):
-                self._json(200, {"project": rename_project(path.split("/")[4], str(body.get("title") or ""))})
+                self._json(200, {"project": rename_project(self._route_id(path, "/api/v2/projects/", "/rename"), str(body.get("title") or ""))})
             elif path.startswith("/api/v2/projects/") and path.endswith("/move"):
-                self._json(200, {"project": move_project(path.split("/")[4], body.get("folder_id"))})
+                self._json(200, {"project": move_project(self._route_id(path, "/api/v2/projects/", "/move"), body.get("folder_id"))})
             elif path.startswith("/api/v2/projects/") and path.endswith("/trash"):
-                self._json(200, {"project": trash_project(path.split("/")[4])})
+                self._json(200, {"project": trash_project(self._route_id(path, "/api/v2/projects/", "/trash"))})
             elif path == "/api/v2/runners/pair":
                 self._json(201, {"runner": pair_runner(body)})
             elif path == "/api/v2/runner-events":

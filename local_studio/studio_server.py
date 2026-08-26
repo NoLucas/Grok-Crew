@@ -82,9 +82,12 @@ def new_project(body: dict[str, Any]) -> dict[str, Any]:
     return row_dict(row) or {}
 
 
-def get_project(project_id: str) -> dict[str, Any] | None:
+def get_project(project_id: str, *, include_trashed: bool = False) -> dict[str, Any] | None:
     with db() as conn:
-        return row_dict(conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone())
+        value = row_dict(conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone())
+    if value and value.get("trashed_at") and not include_trashed:
+        return None
+    return value
 
 
 def list_projects() -> list[dict[str, Any]]:

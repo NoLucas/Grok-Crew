@@ -266,13 +266,43 @@ export function DesktopProjectLibrary({
             <button type="button" className="desktop-secondary" disabled={busy} onClick={() => void run(`/api/v2/trash/${item.id}/restore`, {}, t('복원했습니다.', 'Restored.', '已还原。', '復元しました。'))}>
               {t('복원', 'Restore', '还原', '復元')}
             </button>
-            <button type="button" className="desktop-danger" disabled={busy} onClick={() => void run(`/api/v2/trash/${item.id}/purge`, {}, t('완전히 지웠습니다.', 'Deleted for good.', '已永久删除。', '完全に削除しました。'))}>
+            <button
+              type="button"
+              className="desktop-danger"
+              disabled={busy}
+              onClick={() => {
+                if (typeof window !== 'undefined' && !window.confirm(
+                  t(
+                    `${item.title}을 완전히 지울까요? 되돌릴 수 없습니다.`,
+                    `Delete ${item.title} for good? This cannot be undone.`,
+                    `要永久删除 ${item.title} 吗？无法恢复。`,
+                    `${item.title} を完全に削除しますか？元に戻せません。`,
+                  ),
+                )) return;
+                void run(`/api/v2/trash/${item.id}/purge`, {}, t('완전히 지웠습니다.', 'Deleted for good.', '已永久删除。', '完全に削除しました。'));
+              }}
+            >
               {t('지금 삭제', 'Delete now', '立即删除', '今すぐ削除')}
             </button>
           </div>
         ))}
         {trash.length ? (
-          <button type="button" className="desktop-danger" disabled={busy} onClick={() => void run('/api/v2/trash/empty', {}, t('휴지통을 비웠습니다.', 'Emptied the trash.', '已清空废纸篓。', 'ゴミ箱を空にしました。'))}>
+          <button
+            type="button"
+            className="desktop-danger"
+            disabled={busy}
+            onClick={() => {
+              if (typeof window !== 'undefined' && !window.confirm(
+                t(
+                  `휴지통 ${trash.length}개를 모두 완전히 지울까요? 되돌릴 수 없습니다.`,
+                  `Permanently delete all ${trash.length} trash items? This cannot be undone.`,
+                  `要永久清空废纸篓中的 ${trash.length} 项吗？无法恢复。`,
+                  `ゴミ箱の ${trash.length} 件を完全に削除しますか？元に戻せません。`,
+                ),
+              )) return;
+              void run('/api/v2/trash/empty', {}, t('휴지통을 비웠습니다.', 'Emptied the trash.', '已清空废纸篓。', 'ゴミ箱を空にしました。'));
+            }}
+          >
             {t('휴지통 비우기', 'Empty trash', '清空废纸篓', 'ゴミ箱を空にする')}
           </button>
         ) : null}

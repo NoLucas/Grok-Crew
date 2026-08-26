@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import config
-from config import utc_now, workspace_relative
+from config import utc_now
 from db import db, event, row_dict
 
 LIBRARY_SCHEMA = "grok-crew.project-library/v1"
@@ -45,12 +45,18 @@ def _parse_iso(value: str) -> datetime:
 
 
 def _purge_after(trashed_at: str) -> str:
-    return (_parse_iso(trashed_at) + timedelta(days=PURGE_DAYS)).isoformat(timespec="seconds")
+    try:
+        return (_parse_iso(trashed_at) + timedelta(days=PURGE_DAYS)).isoformat(timespec="seconds")
+    except ValueError:
+        return (_parse_iso(utc_now()) + timedelta(days=PURGE_DAYS)).isoformat(timespec="seconds")
 
 
 def _expired(purge_after: str, now: datetime | None = None) -> bool:
     stamp = now or datetime.now(timezone.utc)
-    return _parse_iso(purge_after) <= stamp
+    try:
+        return _parse_iso(purge_after) <= stamp
+    except ValueError:
+        return False
 
 
 def _safe_title(title: str) -> str:
@@ -60,13 +66,48 @@ def _safe_title(title: str) -> str:
     return text[:TITLE_MAX]
 
 
+_WINDOWS_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
+
+
+def _safe_id(value: str) -> str:
+    text = str(value or "").strip()
+    if not text or len(text) > 64 or "/" in text or "\\" in text or "\x00" in text or ".." in text:
+        raise ValueError("id is not allowed.")
+    return text
+
+
 def _safe_file_name(name: str) -> str:
-    text = str(name or "").strip()
-    if not text or text in {".", ".."} or "/" in text or "\\" in text or "\x00" in text or ".." in text:
+    text = str(name or "").strip().replace("\x00", "").rstrip(" .")
+    if not text or text in {".", ".."} or "/" in text or "\\" in text or text.startswith("."):
         raise ValueError("file name is not allowed.")
-    if text.startswith("."):
+    if Path(text).name != text:
+        raise ValueError("file name is not allowed.")
+    if Path(text).stem.upper() in _WINDOWS_RESERVED:
         raise ValueError("file name is not allowed.")
     return text[:120]
+
+
+def _resolve_stored_trash(item_id: str, trash_rel: str) -> Path:
+    item_id = _safe_id(item_id)
+    rel = Path(str(trash_rel or "").replace("\\", "/"))
+    if rel.is_absolute() or ".." in rel.parts or len(rel.parts) != 3:
+        raise ValueError("path is not allowed.")
+    if rel.parts[0] != TRASH_ROOT.as_posix() or rel.parts[1] != item_id:
+        raise ValueError("path is not allowed.")
+    name = rel.parts[2]
+    if not name or name in {".", ".."} or "/" in name or "\\" in name or "\x00" in name:
+        raise ValueError("path is not allowed.")
+    workspace = config.WORKSPACE_DIR.resolve()
+    trash_root = (workspace / TRASH_ROOT).resolve()
+    if trash_root.parent != workspace:
+        raise ValueError("path is not allowed.")
+    expected = (trash_root / item_id).resolve()
+    if expected.parent != trash_root:
+        raise ValueError("path leaves the allowed root.")
+    target = (expected / name).resolve()
+    if target.parent != expected:
+        raise ValueError("path leaves the allowed root.")
+    return target
 
 
 def _trash_dir() -> Path:
@@ -123,6 +164,7 @@ def create_project_folder(title: str) -> dict[str, Any]:
 
 
 def rename_project_folder(folder_id: str, title: str) -> dict[str, Any]:
+    folder_id = _safe_id(folder_id)
     name = _safe_title(title)
     with db() as conn:
         exists = conn.execute("SELECT id FROM project_folders WHERE id = ?", (folder_id,)).fetchone()
@@ -137,6 +179,7 @@ def rename_project_folder(folder_id: str, title: str) -> dict[str, Any]:
 
 
 def delete_project_folder(folder_id: str) -> dict[str, Any]:
+    folder_id = _safe_id(folder_id)
     with db() as conn:
         exists = conn.execute("SELECT id FROM project_folders WHERE id = ?", (folder_id,)).fetchone()
         if not exists:
@@ -147,10 +190,13 @@ def delete_project_folder(folder_id: str) -> dict[str, Any]:
     return {"ok": True, "id": folder_id}
 
 
-def _require_live_project(conn: Any, project_id: str) -> Any:
+def _require_live_project(conn: Any, project_id: str, *, allow_trashed: bool = False) -> Any:
+    project_id = _safe_id(project_id)
     row = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
     if not row:
         raise ValueError("project not found.")
+    if row["trashed_at"] and not allow_trashed:
+        raise ValueError("project is in the trash.")
     return row
 
 
@@ -168,7 +214,7 @@ def rename_project(project_id: str, title: str) -> dict[str, Any]:
 
 
 def move_project(project_id: str, folder_id: str | None) -> dict[str, Any]:
-    target = str(folder_id or "").strip() or None
+    target = _safe_id(str(folder_id)) if str(folder_id or "").strip() else None
     with db() as conn:
         _require_live_project(conn, project_id)
         if target:
@@ -201,7 +247,7 @@ def trash_project(project_id: str) -> dict[str, Any]:
 
 def restore_project(project_id: str) -> dict[str, Any]:
     with db() as conn:
-        row = _require_live_project(conn, project_id)
+        row = _require_live_project(conn, project_id, allow_trashed=True)
         if not row["trashed_at"]:
             raise ValueError("project is not in the trash.")
         conn.execute(
@@ -220,7 +266,7 @@ def _purge_project_row(conn: Any, project_id: str) -> None:
 
 def purge_project(project_id: str) -> dict[str, Any]:
     with db() as conn:
-        row = _require_live_project(conn, project_id)
+        row = _require_live_project(conn, project_id, allow_trashed=True)
         if not row["trashed_at"]:
             raise ValueError("empty the trash or wait 30 days to delete a project for good.")
         _purge_project_row(conn, project_id)
@@ -229,7 +275,7 @@ def purge_project(project_id: str) -> dict[str, Any]:
 
 
 def trash_workspace_file(rel_path: str) -> dict[str, Any]:
-    from handoff_folders import MATERIALS_ROOT, _drop_clip_from_manifest, _resolve_handoff_file, _source_paths
+    from handoff_folders import MATERIALS_ROOT, _pop_clip_from_manifest, _resolve_handoff_file, _restore_clip_to_manifest, _source_paths
 
     target, parts = _resolve_handoff_file(rel_path)
     if target in _source_paths():
@@ -237,33 +283,46 @@ def trash_workspace_file(rel_path: str) -> dict[str, Any]:
     original = "/".join(parts)
     now = utc_now()
     item_id = f"trs_{uuid.uuid4().hex[:16]}"
-    dest_dir = _trash_dir() / item_id
+    dest_dir = (_trash_dir() / item_id).resolve()
     dest_dir.mkdir(parents=True, exist_ok=True)
-    dest = dest_dir / target.name
-    shutil.move(str(target), str(dest))
-    if parts[0] == "handoff-materials":
-        _drop_clip_from_manifest(config.WORKSPACE_DIR / MATERIALS_ROOT / parts[1], target.name)
-    payload = {
-        "kind": "file",
-        "original_path": original,
-        "name": target.name,
-        "parts": list(parts),
-    }
-    with db() as conn:
-        conn.execute(
-            "INSERT INTO trash_items (id, kind, title, original_path, trash_path, payload_json, trashed_at, purge_after) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                item_id,
-                "file",
-                target.name,
-                original,
-                workspace_relative(dest),
-                json.dumps(payload),
-                now,
-                _purge_after(now),
-            ),
-        )
-        row = conn.execute("SELECT * FROM trash_items WHERE id = ?", (item_id,)).fetchone()
+    dest = (dest_dir / target.name).resolve()
+    if dest.parent != dest_dir:
+        raise ValueError("path leaves the allowed root.")
+    clip_meta = None
+    moved = False
+    try:
+        shutil.move(str(target), str(dest))
+        moved = True
+        if parts[0] == "handoff-materials":
+            clip_meta = _pop_clip_from_manifest(config.WORKSPACE_DIR / MATERIALS_ROOT / parts[1], target.name)
+        payload = {
+            "kind": "file",
+            "original_path": original,
+            "name": target.name,
+            "parts": list(parts),
+            "clip": clip_meta,
+        }
+        with db() as conn:
+            conn.execute(
+                "INSERT INTO trash_items (id, kind, title, original_path, trash_path, payload_json, trashed_at, purge_after) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    item_id,
+                    "file",
+                    target.name,
+                    original,
+                    f"{TRASH_ROOT.as_posix()}/{item_id}/{target.name}",
+                    json.dumps(payload),
+                    now,
+                    _purge_after(now),
+                ),
+            )
+            row = conn.execute("SELECT * FROM trash_items WHERE id = ?", (item_id,)).fetchone()
+    except Exception:
+        if moved and dest.is_file() and not target.exists():
+            shutil.move(str(dest), str(target))
+            if clip_meta is not None:
+                _restore_clip_to_manifest(config.WORKSPACE_DIR / MATERIALS_ROOT / parts[1], target.name, clip_meta)
+        raise
     event(None, None, "file_trashed", {"path": original, "id": item_id})
     return row_dict(row) or {}
 
@@ -313,24 +372,34 @@ def _rename_clip_in_manifest(folder: Path, old_name: str, new_name: str) -> None
 
 
 def _restore_file_item(item: dict[str, Any]) -> dict[str, Any]:
-    original = str(item.get("original_path") or "")
-    trash_rel = str(item.get("trash_path") or "")
-    if not original or not trash_rel:
-        raise ValueError("trash item is incomplete.")
-    workspace = config.WORKSPACE_DIR.resolve()
-    trash_abs = (config.WORKSPACE_DIR / trash_rel).resolve()
-    dest = (config.WORKSPACE_DIR / original).resolve()
-    if workspace not in trash_abs.parents or workspace not in dest.parents:
-        raise ValueError("path leaves the workspace.")
+    from handoff_folders import MATERIALS_ROOT, parse_handoff_rel, resolve_handoff_destination, _restore_clip_to_manifest
+
+    original_parts = parse_handoff_rel(str(item.get("original_path") or ""))
+    original = "/".join(original_parts)
+    trash_abs = _resolve_stored_trash(str(item.get("id") or ""), str(item.get("trash_path") or ""))
+    dest = resolve_handoff_destination(original_parts)
     if dest.exists():
         raise ValueError("the original path already has a file.")
-    dest.parent.mkdir(parents=True, exist_ok=True)
     if not trash_abs.is_file():
         raise ValueError("trashed file is missing.")
+    parent = dest.parent
+    if not parent.exists():
+        parent.mkdir(exist_ok=True)
     shutil.move(str(trash_abs), str(dest))
     leftover = trash_abs.parent
     if leftover.is_dir() and not any(leftover.iterdir()):
         leftover.rmdir()
+    payload = item.get("payload_json")
+    clip_meta = None
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            payload = {}
+    if isinstance(payload, dict):
+        clip_meta = payload.get("clip") if isinstance(payload.get("clip"), dict) else None
+    if original_parts[0] == "handoff-materials":
+        _restore_clip_to_manifest(config.WORKSPACE_DIR / MATERIALS_ROOT / original_parts[1], dest.name, clip_meta)
     with db() as conn:
         conn.execute("DELETE FROM trash_items WHERE id = ?", (item["id"],))
     event(None, None, "file_restored", {"path": original, "id": item["id"]})
@@ -340,9 +409,11 @@ def _restore_file_item(item: dict[str, Any]) -> dict[str, Any]:
 def _purge_file_item(item: dict[str, Any]) -> None:
     trash_rel = str(item.get("trash_path") or "")
     if trash_rel:
-        trash_abs = (config.WORKSPACE_DIR / trash_rel).resolve()
-        workspace = config.WORKSPACE_DIR.resolve()
-        if workspace in trash_abs.parents and trash_abs.is_file():
+        try:
+            trash_abs = _resolve_stored_trash(str(item.get("id") or ""), trash_rel)
+        except ValueError:
+            trash_abs = None
+        if trash_abs is not None and trash_abs.is_file():
             trash_abs.unlink()
             leftover = trash_abs.parent
             if leftover.is_dir() and not any(leftover.iterdir()):
@@ -394,6 +465,7 @@ def list_trash() -> dict[str, Any]:
 
 
 def restore_trash_item(item_id: str) -> dict[str, Any]:
+    item_id = _safe_id(item_id)
     with db() as conn:
         project = conn.execute("SELECT id, trashed_at FROM projects WHERE id = ?", (item_id,)).fetchone()
         file_row = conn.execute("SELECT * FROM trash_items WHERE id = ?", (item_id,)).fetchone()
@@ -406,6 +478,7 @@ def restore_trash_item(item_id: str) -> dict[str, Any]:
 
 
 def purge_trash_item(item_id: str) -> dict[str, Any]:
+    item_id = _safe_id(item_id)
     with db() as conn:
         project = conn.execute("SELECT id, trashed_at FROM projects WHERE id = ?", (item_id,)).fetchone()
         file_row = conn.execute("SELECT * FROM trash_items WHERE id = ?", (item_id,)).fetchone()
@@ -420,20 +493,30 @@ def purge_trash_item(item_id: str) -> dict[str, Any]:
 def empty_trash() -> dict[str, Any]:
     listed = list_trash()
     count = 0
+    errors = 0
     for item in listed["items"]:
-        purge_trash_item(item["id"])
-        count += 1
-    return {"ok": True, "purged": count}
+        try:
+            purge_trash_item(item["id"])
+            count += 1
+        except Exception:
+            errors += 1
+    return {"ok": errors == 0, "purged": count}
 
 
 def purge_expired_trash() -> dict[str, Any]:
     now = datetime.now(timezone.utc)
-    listed = list_trash()
+    try:
+        listed = list_trash()
+    except Exception:
+        return {"ok": False, "purged": 0}
     count = 0
     for item in listed["items"]:
-        if _expired(str(item.get("purge_after") or ""), now):
-            purge_trash_item(item["id"])
-            count += 1
+        try:
+            if _expired(str(item.get("purge_after") or ""), now):
+                purge_trash_item(str(item["id"]))
+                count += 1
+        except Exception:
+            continue
     return {"ok": True, "purged": count}
 
 

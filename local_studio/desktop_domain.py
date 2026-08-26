@@ -80,6 +80,13 @@ def _project(project_id: str) -> dict[str, Any]:
     return value
 
 
+def _assert_live_project(project_id: str) -> dict[str, Any]:
+    project = _project(project_id)
+    if str(project.get("trashed_at") or "").strip():
+        raise TimelinePatchError("project_trashed", "project is in the trash.", status=409)
+    return project
+
+
 def _safe_identifier(value: Any, field: str) -> str:
     identifier = str(value or "").strip()[:120]
     if not identifier or not all(character.isalnum() or character in "-_." for character in identifier):
@@ -517,6 +524,7 @@ def _same_track(
 
 
 def apply_timeline_patch(project_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    _assert_live_project(project_id)
     if not isinstance(body, dict):
         raise TimelinePatchError("invalid_patch", "Timeline patch must be an object.")
     if body.get("schema") != PATCH_SCHEMA:
@@ -815,6 +823,7 @@ def apply_timeline_patch(project_id: str, body: dict[str, Any]) -> dict[str, Any
 
 
 def restore_timeline_version(project_id: str, revision: int, created_by: str = "operator") -> dict[str, Any]:
+    _assert_live_project(project_id)
     current = get_timeline(project_id)
     current_revision = int(current["timeline"]["revision"])
     with db() as conn:
@@ -852,6 +861,7 @@ def restore_timeline_version(project_id: str, revision: int, created_by: str = "
 
 
 def apply_timeline_history_action(project_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    _assert_live_project(project_id)
     if not isinstance(body, dict) or body.get("schema") != HISTORY_SCHEMA:
         raise TimelinePatchError("invalid_history_schema", f"schema must be {HISTORY_SCHEMA}.")
     action = body.get("action")
@@ -952,6 +962,8 @@ def validate_publish_policy(value: Any) -> dict[str, str]:
 
 
 def create_control_job(project_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    if str(_project(project_id).get("trashed_at") or "").strip():
+        raise ValueError("project is in the trash.")
     timeline = get_timeline(project_id)["timeline"]
     base_revision = int(body.get("base_revision", timeline["revision"]))
     if base_revision != int(timeline["revision"]):
@@ -1212,7 +1224,10 @@ def media_catalog() -> list[dict[str, Any]]:
 def workspace_v2() -> dict[str, Any]:
     from project_library import library_payload, purge_expired_trash
 
-    purge_expired_trash()
+    try:
+        purge_expired_trash()
+    except Exception:
+        pass
     with db() as conn:
         projects = [row_dict(row) or {} for row in conn.execute("SELECT * FROM projects WHERE trashed_at IS NULL ORDER BY updated_at DESC LIMIT 80").fetchall()]
     for project in projects:
