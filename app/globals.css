@@ -7719,9 +7719,15 @@ select {
 .desktop-timeline.is-collapsed .desktop-timeline-feedback,
 .desktop-timeline.is-collapsed .desktop-timeline-body { display: none; }
 .desktop-timeline-handle {
+  position: relative;
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  min-height: 32px; border-bottom: 1px solid #2b2d33; background: #1a1c21;
+  min-height: 32px; padding-top: 6px; border-bottom: 1px solid #2b2d33; background: #1a1c21;
   cursor: ns-resize; user-select: none; touch-action: none;
+}
+.desktop-timeline-handle::before {
+  content: '';
+  position: absolute; top: 5px; left: 50%; width: 36px; height: 3px;
+  border-radius: 99px; background: #4a4d56; transform: translateX(-50%);
 }
 .desktop-timeline-handle button {
   width: 36px; min-height: 24px; padding: 0; border: 0; border-radius: 6px;
