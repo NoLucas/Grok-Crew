@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { groupLibraryProjects, trashDaysLeft } from "./desktop-project-library.ts";
+import { groupLibraryProjects, trashDaysLeft } from "./desktop-project-library-model.ts";
 
 test("groups projects into folders and leaves the rest unfiled", () => {
   const grouped = groupLibraryProjects(

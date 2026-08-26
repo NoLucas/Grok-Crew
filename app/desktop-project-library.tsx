@@ -7,7 +7,7 @@ import {
   type LibraryFolder,
   type LibraryProject,
   type TrashItem,
-} from './desktop-project-library';
+} from './desktop-project-library-model';
 import { useLanguage } from './language';
 
 type StudioRequest = (path: string, init?: RequestInit) => Promise<unknown>;
