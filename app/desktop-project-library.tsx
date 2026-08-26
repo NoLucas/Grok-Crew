@@ -50,6 +50,7 @@ export function DesktopProjectLibrary({
   const [folderName, setFolderName] = useState('');
   const [dropId, setDropId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [folded, setFolded] = useState<Record<string, boolean>>({});
   const menuRef = useRef<HTMLDivElement | null>(null);
   const grouped = groupLibraryProjects(projects, folders);
 
@@ -201,7 +202,11 @@ export function DesktopProjectLibrary({
           <details
             key={folder.id}
             className={dropId === folder.id ? 'desktop-library-folder is-drop' : 'desktop-library-folder'}
-            defaultOpen
+            open={!folded[folder.id]}
+            onToggle={(event) => {
+              const nextOpen = event.currentTarget.open;
+              setFolded((current) => ({ ...current, [folder.id]: !nextOpen }));
+            }}
             onDragOver={onDragOver(folder.id)}
             onDragLeave={() => setDropId((current) => (current === folder.id ? null : current))}
             onDrop={onDrop(folder.id)}
