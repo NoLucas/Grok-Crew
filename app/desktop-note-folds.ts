@@ -5,12 +5,13 @@ import { useCallback, useEffect, useState } from 'react';
 export const NOTE_FOLDS_KEY = 'grokCrewDesktopNoteFolds';
 
 export type NoteFoldId = 'lock' | 'status' | 'remote';
-export type NoteFolds = Record<NoteFoldId, boolean>;
+export type NoteFolds = Record<NoteFoldId, boolean> & { lockHidden: boolean };
 
 export const DEFAULT_NOTE_FOLDS: NoteFolds = {
   lock: false,
   status: false,
   remote: false,
+  lockHidden: false,
 };
 
 export function normalizeNoteFolds(value: unknown): NoteFolds {
@@ -20,6 +21,7 @@ export function normalizeNoteFolds(value: unknown): NoteFolds {
     lock: typeof raw.lock === 'boolean' ? raw.lock : DEFAULT_NOTE_FOLDS.lock,
     status: typeof raw.status === 'boolean' ? raw.status : DEFAULT_NOTE_FOLDS.status,
     remote: typeof raw.remote === 'boolean' ? raw.remote : DEFAULT_NOTE_FOLDS.remote,
+    lockHidden: typeof raw.lockHidden === 'boolean' ? raw.lockHidden : DEFAULT_NOTE_FOLDS.lockHidden,
   };
 }
 
@@ -67,5 +69,13 @@ export function useDesktopNoteFolds() {
     });
   }, []);
 
-  return { folds, setFold, toggleFold };
+  const hideLockNote = useCallback(() => {
+    setFolds((current) => {
+      const next = normalizeNoteFolds({ ...current, lockHidden: true });
+      saveNoteFolds(next);
+      return next;
+    });
+  }, []);
+
+  return { folds, setFold, toggleFold, hideLockNote };
 }

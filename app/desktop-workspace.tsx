@@ -418,7 +418,7 @@ export default function DesktopWorkspace() {
   const unclaimedJobs = projectJobs.filter((job) => isUnclaimedHold(job.status) && !job.runner_id);
   const hideInspectorColumn = specDeskOpen || !project || !timeline;
   const columns = useDesktopColumnWidths(!hideInspectorColumn);
-  const { folds, setFold, toggleFold } = useDesktopNoteFolds();
+  const { folds, setFold, toggleFold, hideLockNote } = useDesktopNoteFolds();
   const statusOpen = statusNoteOpen(folds.status, studioState);
   const editToolsOpen = Boolean(project && timeline && !specDeskOpen && activePanel === 'edit');
   const handoffFolders = workspace.handoff_folders ?? [];
@@ -1252,13 +1252,27 @@ export default function DesktopWorkspace() {
                 <label className="desktop-wide">{t('전체 속도', 'Overall speed', '整体速度', '全体速度')}<div className="desktop-range"><input type="range" min="0.5" max="2" step="0.05" value={method.speed} onChange={(e) => setMethod({ ...method, speed: Number(e.target.value) })} /><output>{Number(method.speed).toFixed(2)}×</output></div></label>
               </div>
               <button className="desktop-secondary" disabled={busy} onClick={() => void saveSettings()}>{t('설정만 저장', 'Save controls', '保存设置', '設定を保存')}</button>
-              {specLocked ? (
+              {specLocked && !folds.lockHidden ? (
                 <details
                   className="desktop-lock-note"
                   open={folds.lock}
                   onToggle={(event) => setFold('lock', event.currentTarget.open)}
                 >
-                  <summary>{t('봇이 지키는 값', 'Values the bot must keep', '机器人必须遵守的值', 'ボットが守る値')}</summary>
+                  <summary>
+                    <span>{t('봇이 지키는 값', 'Values the bot must keep', '机器人必须遵守的值', 'ボットが守る値')}</span>
+                    <button
+                      type="button"
+                      className="desktop-lock-note-dismiss"
+                      onPointerDown={(event) => event.preventDefault()}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        hideLockNote();
+                      }}
+                    >
+                      {t('더 이상 표시하지 않음', 'Don\'t show again', '不再显示', '今後表示しない')}
+                    </button>
+                  </summary>
                   <p>{t(
                     `화질 ${method.quality}만 이 책상에서 정한 규격입니다. 봇은 화질을 바꾸지 않습니다. 화면비와 자막은 여기서 바꿀 수 있습니다. 템포·룩·B-roll·훅·오디오도 필요할 때 바꿉니다.`,
                     `Only quality ${method.quality} is locked on this desk. The bot must keep that. Change aspect ratio and captions here. You can also change pacing, look, b-roll, hook, and audio if needed.`,

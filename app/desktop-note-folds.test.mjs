@@ -12,13 +12,20 @@ const {
 
 describe('desktop note folds', () => {
   it('starts with the three helper notes folded', () => {
-    assert.deepEqual(DEFAULT_NOTE_FOLDS, { lock: false, status: false, remote: false });
+    assert.deepEqual(DEFAULT_NOTE_FOLDS, { lock: false, status: false, remote: false, lockHidden: false });
     assert.deepEqual(normalizeNoteFolds(null), DEFAULT_NOTE_FOLDS);
     assert.deepEqual(normalizeNoteFolds({ lock: true, extra: 1 }), {
       lock: true,
       status: false,
       remote: false,
+      lockHidden: false,
     });
+  });
+
+  it('can hide the lock note for good without dropping fold prefs', () => {
+    assert.equal(normalizeNoteFolds({ lock: true, lockHidden: true }).lockHidden, true);
+    assert.equal(normalizeNoteFolds({ lock: true, lockHidden: true }).lock, true);
+    assert.equal(normalizeNoteFolds({ lockHidden: 'yes' }).lockHidden, false);
   });
 
   it('keeps error and loading status visible even when the note is folded', () => {
