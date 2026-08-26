@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Setup can apply YouTube Shorts, Instagram Reels, TikTok, and other edit styles, and save the current knobs as a named local preset. Quality stays locked when a spec is open.
 - Aspect ratio and captions are no longer locked when a spec or imported cut is open. Quality stays locked. Setup, briefs, invites, and bot/handoff guides say the same.
 - The project list and the remote-bot column can be dragged a little wider or narrower. The center project pane stays usable. Widths persist.
 - Helper copy under “values the bot must keep”, the status line, and Remote bot can be folded. Error and loading status stay visible.

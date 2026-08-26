@@ -7589,6 +7589,57 @@ select {
 .desktop-range input { padding: 0; }
 .desktop-range output { color: var(--desktop-text); font-size: 13px; text-align: right; }
 .desktop-settings-card > .desktop-secondary { margin: 0 10px 10px; }
+.desktop-edit-presets {
+  display: grid;
+  gap: 8px;
+  margin: 0 10px 2px;
+  padding: 9px;
+  border: 1px solid var(--desktop-line-soft);
+  border-radius: 9px;
+  background: var(--desktop-wash);
+}
+.desktop-edit-presets-row label,
+.desktop-edit-presets-save label {
+  display: grid;
+  gap: 5px;
+  color: var(--desktop-ink);
+  font-size: var(--desktop-fs);
+  font-weight: var(--desktop-weight-strong);
+}
+.desktop-edit-presets select,
+.desktop-edit-presets input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--desktop-line);
+  background: var(--desktop-input);
+  color: var(--desktop-text);
+  font-size: var(--desktop-fs-sm);
+  font-weight: var(--desktop-weight);
+}
+.desktop-edit-presets p {
+  margin: 0;
+  color: var(--desktop-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.desktop-edit-presets-save {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: end;
+}
+.desktop-edit-presets .desktop-secondary,
+.desktop-edit-presets .desktop-danger {
+  width: auto;
+  margin: 0;
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+.desktop-edit-presets .desktop-secondary:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
 .desktop-policy-card { align-self: start; }
 .desktop-radio { display: grid; grid-template-columns: 18px 1fr; gap: 6px; align-items: start; margin: 6px 10px; padding: 8px; border: 1px solid var(--desktop-line-soft); border-radius: 9px; }
 .desktop-radio input { margin: 2px 0 0; accent-color: var(--desktop-blue); }
@@ -8006,6 +8057,7 @@ select {
 .desktop-shell[data-emphasize="off"] .desktop-primary,
 .desktop-shell[data-emphasize="off"] .desktop-secondary,
 .desktop-shell[data-emphasize="off"] .desktop-chip,
+.desktop-shell[data-emphasize="off"] .desktop-edit-presets label,
 .desktop-shell[data-emphasize="off"] .desktop-form-grid label,
 .desktop-shell[data-emphasize="off"] .desktop-spec-desk .desktop-spec-field > span {
   font-weight: var(--desktop-weight-strong);
@@ -8051,6 +8103,9 @@ select {
   }
   .desktop-projects-toggle { display: inline-flex; align-items: center; }
   .desktop-form-grid { grid-template-columns: 1fr 1fr; }
+  .desktop-edit-presets-save { grid-template-columns: 1fr; }
+  .desktop-edit-presets .desktop-secondary,
+  .desktop-edit-presets .desktop-danger { width: 100%; }
   .desktop-export-grid { grid-template-columns: 1fr; }
   .desktop-command-bar { grid-template-columns: 1fr; gap: 8px; }
   .desktop-message p { white-space: normal; }

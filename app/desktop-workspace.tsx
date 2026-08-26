@@ -28,6 +28,7 @@ import {
   useDesktopColumnWidths,
 } from './desktop-column-widths';
 import { statusNoteOpen, useDesktopNoteFolds } from './desktop-note-folds';
+import { DesktopEditPresetControls } from './desktop-edit-presets-controls';
 
 type UpdateStatus = {
   status: string;
@@ -1244,6 +1245,11 @@ export default function DesktopWorkspace() {
                   )}</p>
                 </details>
               ) : null}
+              <DesktopEditPresetControls
+                method={method}
+                lockQuality={specLocked}
+                onApply={(next) => setMethod(next)}
+              />
               <div className="desktop-form-grid">
                 <label>{t('콘텐츠 유형', 'Content type', '内容类型', 'コンテンツ種別')}<select value={method.content_type} onChange={(e) => setMethod({ ...method, content_type: e.target.value })}><option value="talking_head">{t('토킹헤드', 'Talking head', '口播', 'トーキングヘッド')}</option><option value="vlog">Vlog</option><option value="product">{t('제품·서비스', 'Product / service', '产品服务', '製品・サービス')}</option><option value="tutorial">{t('튜토리얼', 'Tutorial', '教程', 'チュートリアル')}</option></select></label>
                 <label>{t('목표 길이', 'Target length', '目标时长', '目標尺')}<select value={method.target_length} onChange={(e) => setMethod({ ...method, target_length: Number(e.target.value) })}><option value="15">15s</option><option value="30">30s</option><option value="45">45s</option><option value="60">60s</option><option value="90">90s</option></select></label>
