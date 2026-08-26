@@ -7730,11 +7730,11 @@ select {
   border-radius: 99px; background: #4a4d56; transform: translateX(-50%);
 }
 .desktop-timeline-handle button {
-  width: 36px; min-height: 24px; padding: 0; border: 0; border-radius: 6px;
-  background: #2a2d34; color: #eceef2; font-size: 14px; line-height: 1; cursor: pointer;
+  width: 44px; min-height: 24px; padding: 0; border: 0; border-radius: 6px;
+  background: #2a2d34; color: #eceef2; font-size: 16px; line-height: 1; cursor: pointer;
 }
-.desktop-timeline-handle button:hover:not(:disabled) { background: #353842; }
-.desktop-timeline-handle button:disabled { opacity: .35; cursor: default; }
+.desktop-timeline-handle button:hover { background: #353842; }
+.desktop-timeline-handle button[aria-pressed='false'] { color: #c9cad0; }
 .desktop-timeline :focus-visible { outline: 2px solid #a79dff; outline-offset: 1px; }
 .desktop-timeline-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 38px; padding: 4px 11px; border-bottom: 1px solid #2b2d33; }
 .desktop-timeline-tools > div { display: flex; align-items: center; gap: 8px; }
