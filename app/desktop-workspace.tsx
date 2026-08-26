@@ -17,6 +17,8 @@ import { isUnclaimedHold, remoteDeskVisible, remoteNeedsAttention } from './desk
 import { SpecDesk } from './desktop-spec-desk';
 import { SimpleDesk } from './desktop-simple-desk';
 import { HandoffFolderBoard, type HandoffFolder } from './desktop-handoff-folder';
+import { appearanceDataAttrs, useDesktopAppearance } from './desktop-appearance';
+import { DesktopAppearanceControls } from './desktop-appearance-controls';
 
 type UpdateStatus = {
   status: string;
@@ -236,6 +238,7 @@ function statusTone(status: string) {
 
 export default function DesktopWorkspace() {
   const { t } = useLanguage();
+  const { appearance, updateAppearance } = useDesktopAppearance();
   const [workspace, setWorkspace] = useState<Workspace>({ projects: [], control_jobs: [], runner_events: [], runners: [], media: [] });
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [specDeskOpen, setSpecDeskOpen] = useState(false);
@@ -993,7 +996,7 @@ export default function DesktopWorkspace() {
   };
 
   return (
-    <main className={`desktop-shell${editToolsOpen ? ' has-timeline' : ' is-form'}`}>
+    <main className={`desktop-shell${editToolsOpen ? ' has-timeline' : ' is-form'}`} {...appearanceDataAttrs(appearance)}>
       <header className="desktop-titlebar">
         <div className="desktop-brand"><span className="desktop-logo">G</span><div><b>Grok Crew</b><small>{t('로컬 제작 데스크', 'Desktop Production', '本地制作台', 'デスクトップ制作')}</small></div></div>
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
@@ -1009,6 +1012,10 @@ export default function DesktopWorkspace() {
           <span className={`desktop-connection ${runnerPaired ? 'connected' : ''}`}>● {runnerPaired ? t('Runner 페어링됨', 'Runner paired', 'Runner 已配对', 'Runner ペアリング済み') : t('로컬 편집', 'Local edit', '本地编辑', 'ローカル編集')}</span>
           <button type="button" className="desktop-chrome-btn desktop-projects-toggle" aria-expanded={drawer === 'projects'} onClick={() => setDrawer((value) => value === 'projects' ? 'none' : 'projects')}>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</button>
           <button type="button" className="desktop-chrome-btn desktop-status-toggle" aria-expanded={drawer === 'status'} onClick={() => { setRemoteOpen(true); setDrawer((value) => value === 'status' ? 'none' : 'status'); }}>{t('상태', 'Status', '状态', '状態')}</button>
+          <details className="desktop-appearance-menu">
+            <summary>{t('화면', 'Display', '画面', '画面')}</summary>
+            <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="menu" />
+          </details>
           <LanguageSwitcher />
         </div>
       </header>
@@ -1058,6 +1065,7 @@ export default function DesktopWorkspace() {
           : specDeskOpen || !project ? (
             advancedSpecOpen ? (
               <div className="desktop-simple-wrap">
+                <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="compact" />
                 <button type="button" className="desktop-secondary" onClick={() => setAdvancedSpecOpen(false)}>{t('짧은 화면으로', 'Back to the short desk', '回到简短工作台', '短い画面へ')}</button>
                 <HandoffFolderBoard
                   folders={handoffFolders}
@@ -1091,6 +1099,7 @@ export default function DesktopWorkspace() {
               </div>
             ) : (
               <div className="desktop-simple-wrap">
+              <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="compact" />
               <SimpleDesk
                 recipes={workspace.style_recipes ?? []}
                 busy={busy}
@@ -1141,6 +1150,7 @@ export default function DesktopWorkspace() {
           : <>
             <div className="desktop-project-bar"><div><small>{t('현재 프로젝트', 'CURRENT PROJECT', '当前项目', '現在のプロジェクト')}</small><h1>{project.title}</h1></div><div className="desktop-project-chips">{project.handoff_agent ? <span className={project.handoff_door === 'editor' || project.handoff_door === 'grok' ? 'is-editor' : 'is-collector'}>{project.handoff_door === 'editor' || project.handoff_door === 'grok' ? t('편집 문', 'Editor door', '剪辑门', '編集ドア') : t('수집 문', 'Collector door', '收集门', '収集ドア')} · {handoffSenderLabel(project, t)}</span> : null}<span>v{timeline.revision}</span><span>{timeline.settings.width}×{timeline.settings.height}</span><span>{timeline.settings.fps}fps</span></div></div>
             {activePanel === 'setup' && <div className="desktop-setup-grid">
+              <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} />
               <HandoffFolderBoard
                 folders={projectFolders}
                 studioState={studioState}

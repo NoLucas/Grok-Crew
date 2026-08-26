@@ -31,7 +31,7 @@ Then you work in three tabs:
 | Tab | What it is for |
 | --- | --- |
 | **Edit** | Watch the preview, cut on the timeline |
-| **Setup** | Look, captions, speed |
+| **Setup** | Look, captions, speed, display (light / dark / LOW) and type |
 | **Export** | Save an MP4 here, or post after it asks |
 
 The preview is a fast draft. The file you save is made from the footage the bot sent. Opening a file already on this computer is optional and tucked under the brief.
