@@ -7712,9 +7712,23 @@ select {
 .desktop-clip-actions button { padding: 7px; border: 1px solid var(--desktop-line); border-radius: 7px; background: var(--desktop-panel); font-size: 12px; }
 .desktop-clip-actions button.danger { color: var(--desktop-red); }
 /* Timeline direct editing (P1-01): select, move, trim, split, ripple, roll, slip, slide */
-.desktop-timeline { display: grid; grid-template-rows: auto auto minmax(0, 1fr); height: var(--desktop-timeline-h, 280px); min-height: 168px; max-height: min(62vh, 520px); overflow: hidden; border-top: 1px solid var(--desktop-line); background: #17181c; color: #e8e8eb; }
-.desktop-timeline-lift { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
-.desktop-timeline-lift button { min-width: 26px; }
+.desktop-timeline { display: grid; grid-template-rows: 32px auto auto minmax(0, 1fr); height: var(--desktop-timeline-h, 280px); min-height: 32px; max-height: min(62vh, 520px); overflow: hidden; border-top: 1px solid var(--desktop-line); background: #17181c; color: #e8e8eb; }
+.desktop-timeline:not(.is-dragging) { transition: height .16s ease; }
+.desktop-timeline.is-collapsed { grid-template-rows: 32px; height: 32px; max-height: 32px; }
+.desktop-timeline.is-collapsed .desktop-timeline-tools,
+.desktop-timeline.is-collapsed .desktop-timeline-feedback,
+.desktop-timeline.is-collapsed .desktop-timeline-body { display: none; }
+.desktop-timeline-handle {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 32px; border-bottom: 1px solid #2b2d33; background: #1a1c21;
+  cursor: ns-resize; user-select: none; touch-action: none;
+}
+.desktop-timeline-handle button {
+  width: 36px; min-height: 24px; padding: 0; border: 0; border-radius: 6px;
+  background: #2a2d34; color: #eceef2; font-size: 14px; line-height: 1; cursor: pointer;
+}
+.desktop-timeline-handle button:hover:not(:disabled) { background: #353842; }
+.desktop-timeline-handle button:disabled { opacity: .35; cursor: default; }
 .desktop-timeline :focus-visible { outline: 2px solid #a79dff; outline-offset: 1px; }
 .desktop-timeline-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; min-height: 38px; padding: 4px 11px; border-bottom: 1px solid #2b2d33; }
 .desktop-timeline-tools > div { display: flex; align-items: center; gap: 8px; }

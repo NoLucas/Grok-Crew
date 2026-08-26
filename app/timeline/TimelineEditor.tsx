@@ -62,10 +62,16 @@ import type { Timeline, TimelineClip, TimelineTrack, TrackType } from './types';
 import type { TimelineEditingController } from './use-timeline-editing';
 import {
   DEFAULT_TIMELINE_HEIGHT,
-  TIMELINE_HEIGHT_STEPS,
+  TIMELINE_HIDDEN,
+  TIMELINE_MAX_OPEN,
+  applyTimelineDelta,
+  commitTimelineHeight,
+  hideTimelineHeight,
+  isTimelineHidden,
+  loadLastOpenHeight,
   loadTimelineHeight,
+  raiseTimelineHeight,
   saveTimelineHeight,
-  stepTimelineHeight,
 } from './timeline-height';
 
 export type EditTool = 'select' | 'ripple' | 'slip' | 'slide';
@@ -140,20 +146,35 @@ export function TimelineEditor({
   const selected = useMemo(() => findClip(timeline, selectedClipId), [timeline, selectedClipId]);
   const locked = editing.pending || !editing.available;
   const [timelineHeight, setTimelineHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
-  const minTimelineHeight = TIMELINE_HEIGHT_STEPS[0];
-  const maxTimelineHeight = TIMELINE_HEIGHT_STEPS[TIMELINE_HEIGHT_STEPS.length - 1];
+  const [lifting, setLifting] = useState(false);
+  const lastOpenHeight = useRef(DEFAULT_TIMELINE_HEIGHT);
+  const liftDrag = useRef<{ pointerId: number; startY: number; startHeight: number } | null>(null);
+  const handleRef = useRef<HTMLDivElement | null>(null);
+  const heightRef = useRef(DEFAULT_TIMELINE_HEIGHT);
+  const timelineHidden = isTimelineHidden(timelineHeight);
 
   useEffect(() => {
-    setTimelineHeight(loadTimelineHeight());
+    const stored = loadTimelineHeight();
+    lastOpenHeight.current = loadLastOpenHeight();
+    heightRef.current = stored;
+    setTimelineHeight(stored);
   }, []);
 
-  const raiseTimeline = useCallback((direction: -1 | 1) => {
-    setTimelineHeight((current) => {
-      const next = stepTimelineHeight(current, direction);
-      saveTimelineHeight(next);
-      return next;
-    });
+  const commitHeight = useCallback((next: number) => {
+    const height = commitTimelineHeight(next);
+    heightRef.current = height;
+    setTimelineHeight(height);
+    saveTimelineHeight(height);
+    if (!isTimelineHidden(height)) lastOpenHeight.current = height;
   }, []);
+
+  const hideTimeline = useCallback(() => {
+    commitHeight(hideTimelineHeight());
+  }, [commitHeight]);
+
+  const raiseTimeline = useCallback(() => {
+    commitHeight(raiseTimelineHeight(timelineHeight, lastOpenHeight.current));
+  }, [commitHeight, timelineHeight]);
 
   useEffect(() => {
     const onHistoryKey = (event: KeyboardEvent) => {
@@ -185,11 +206,56 @@ export function TimelineEditor({
       if (target?.isContentEditable || target?.closest('input, textarea, select, [contenteditable="true"]')) return;
       if (target?.closest('.desktop-timeline-clip, .desktop-clip-handle, .desktop-clip-seam')) return;
       event.preventDefault();
-      raiseTimeline(event.key === 'ArrowUp' ? 1 : -1);
+      if (event.key === 'ArrowDown') hideTimeline();
+      else raiseTimeline();
     };
     window.addEventListener('keydown', onLiftKey);
     return () => window.removeEventListener('keydown', onLiftKey);
-  }, [raiseTimeline]);
+  }, [hideTimeline, raiseTimeline]);
+
+  useEffect(() => {
+    const handle = handleRef.current;
+    if (!handle) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const next = applyTimelineDelta(heightRef.current, -event.deltaY);
+      heightRef.current = next;
+      setTimelineHeight(next);
+      const committed = commitTimelineHeight(next);
+      saveTimelineHeight(committed);
+      if (!isTimelineHidden(committed)) lastOpenHeight.current = committed;
+    };
+    handle.addEventListener('wheel', onWheel, { passive: false });
+    return () => handle.removeEventListener('wheel', onWheel);
+  }, []);
+
+  const onHandlePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    if ((event.target as HTMLElement | null)?.closest('button')) return;
+    event.preventDefault();
+    liftDrag.current = { pointerId: event.pointerId, startY: event.clientY, startHeight: timelineHeight };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setLifting(true);
+  }, [timelineHeight]);
+
+  const onHandlePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = liftDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const next = applyTimelineDelta(drag.startHeight, drag.startY - event.clientY);
+    heightRef.current = next;
+    setTimelineHeight(next);
+  }, []);
+
+  const onHandlePointerUp = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = liftDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    liftDrag.current = null;
+    setLifting(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    commitHeight(applyTimelineDelta(drag.startHeight, drag.startY - event.clientY));
+  }, [commitHeight]);
 
   // Selecting a clip pulls the playhead into it when it sits elsewhere, so the
   // split and trim shortcuts always start from a point inside the clip.
@@ -793,33 +859,46 @@ export function TimelineEditor({
 
   return (
     <section
-      className="desktop-timeline"
+      className={`desktop-timeline${timelineHidden ? ' is-collapsed' : ''}${lifting ? ' is-dragging' : ''}`}
       aria-busy={editing.pending}
       style={{ '--desktop-timeline-h': `${timelineHeight}px` } as CSSProperties}
     >
+      <div
+        ref={handleRef}
+        className="desktop-timeline-handle"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label={t('타임라인 높이', 'Timeline height', '时间线高度', 'タイムラインの高さ')}
+        aria-valuemin={TIMELINE_HIDDEN}
+        aria-valuemax={TIMELINE_MAX_OPEN}
+        aria-valuenow={timelineHeight}
+        onPointerDown={onHandlePointerDown}
+        onPointerMove={onHandlePointerMove}
+        onPointerUp={onHandlePointerUp}
+        onPointerCancel={onHandlePointerUp}
+      >
+        <button
+          type="button"
+          disabled={!timelineHidden && timelineHeight >= TIMELINE_MAX_OPEN}
+          title={t('타임라인 올리기', 'Raise the timeline', '升高时间线', 'タイムラインを上げる')}
+          aria-label={t('타임라인 올리기', 'Raise the timeline', '升高时间线', 'タイムラインを上げる')}
+          onClick={raiseTimeline}
+        >
+          ↑
+        </button>
+        <button
+          type="button"
+          disabled={timelineHidden}
+          title={t('타임라인 숨기기', 'Hide the timeline', '隐藏时间线', 'タイムラインを隠す')}
+          aria-label={t('타임라인 숨기기', 'Hide the timeline', '隐藏时间线', 'タイムラインを隠す')}
+          onClick={hideTimeline}
+        >
+          ↓
+        </button>
+      </div>
       <div className="desktop-timeline-tools">
         <div>
           <b>{t('타임라인 편집', 'Timeline editing', '时间线编辑', 'タイムライン編集')}</b>
-          <div className="desktop-timeline-lift" role="group" aria-label={t('타임라인 높이', 'Timeline height', '时间线高度', 'タイムラインの高さ')}>
-            <button
-              type="button"
-              disabled={timelineHeight >= maxTimelineHeight}
-              title={t('타임라인 올리기 (↑)', 'Raise the timeline (↑)', '升高时间线 (↑)', 'タイムラインを上げる (↑)')}
-              aria-label={t('타임라인 올리기', 'Raise the timeline', '升高时间线', 'タイムラインを上げる')}
-              onClick={() => raiseTimeline(1)}
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              disabled={timelineHeight <= minTimelineHeight}
-              title={t('타임라인 내리기 (↓)', 'Lower the timeline (↓)', '降低时间线 (↓)', 'タイムラインを下げる (↓)')}
-              aria-label={t('타임라인 내리기', 'Lower the timeline', '降低时间线', 'タイムラインを下げる')}
-              onClick={() => raiseTimeline(-1)}
-            >
-              ↓
-            </button>
-          </div>
           <span>{formatTimecode(timelineDuration(timeline))}</span>
           <span className="desktop-timeline-revision">v{timeline.revision}</span>
           <button
@@ -1048,10 +1127,10 @@ export function TimelineEditor({
           <p id="desktop-timeline-help" className="desktop-timeline-help">
             {activeHint}{' '}
             {t(
-              'Ctrl/⌘ 클릭은 다중 선택, Shift 클릭은 범위 선택입니다. ← → 이동, 클립에 포커스가 있으면 ↑ ↓ 트랙 이동, 편집 화면에서는 ↑ ↓ 로 타임라인을 올리고 내립니다. [ 와 ] 자르기, Shift + ] 리플, S 분할.',
-              'Ctrl/⌘ click adds to selection; Shift click selects a range. ← → moves, ↑ ↓ changes track when a clip is focused, and raises or lowers the timeline in Edit. [ and ] trim, Shift + ] ripples, S splits.',
-              'Ctrl/⌘ 点击可多选，Shift 点击可范围选择。← → 移动；片段聚焦时 ↑ ↓ 换轨道，编辑页用 ↑ ↓ 升降时间线。[ 和 ] 裁剪，Shift + ] 波纹，S 分割。',
-              'Ctrl/⌘ クリックで複数選択、Shift クリックで範囲選択。← → 移動。クリップにフォーカスがあれば ↑ ↓ でトラック変更、編集画面では ↑ ↓ でタイムラインを上げ下げ。[ と ] トリム、Shift + ] リップル、S 分割。',
+              'Ctrl/⌘ 클릭은 다중 선택, Shift 클릭은 범위 선택입니다. ← → 이동, 클립에 포커스가 있으면 ↑ ↓ 트랙 이동. 가운데 위 화살표·드래그·휠로 타임라인을 숨기거나 올립니다. [ 와 ] 자르기, Shift + ] 리플, S 분할.',
+              'Ctrl/⌘ click adds to selection; Shift click selects a range. ← → moves, ↑ ↓ changes track when a clip is focused. The top-center arrows, drag, and wheel hide or raise the timeline. [ and ] trim, Shift + ] ripples, S splits.',
+              'Ctrl/⌘ 点击可多选，Shift 点击可范围选择。← → 移动；片段聚焦时 ↑ ↓ 换轨道。顶部中央箭头、拖动和滚轮可隐藏或升起时间线。[ 和 ] 裁剪，Shift + ] 波纹，S 分割。',
+              'Ctrl/⌘ クリックで複数選択、Shift クリックで範囲選択。← → 移動。クリップにフォーカスがあれば ↑ ↓ でトラック変更。中央上の矢印・ドラッグ・ホイールでタイムラインを隠すか上げる。[ と ] トリム、Shift + ] リップル、S 分割。',
             )}
           </p>
         </div>

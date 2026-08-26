@@ -1,35 +1,76 @@
 export const TIMELINE_HEIGHT_KEY = 'grokCrewTimelineHeight';
-export const TIMELINE_HEIGHT_STEPS = [168, 224, 280, 360, 460] as const;
+export const TIMELINE_OPEN_HEIGHT_KEY = 'grokCrewTimelineHeightOpen';
+export const TIMELINE_HANDLE_HEIGHT = 32;
+export const TIMELINE_HIDDEN = TIMELINE_HANDLE_HEIGHT;
+export const TIMELINE_MIN_OPEN = 168;
+export const TIMELINE_MAX_OPEN = 520;
+export const TIMELINE_SNAP_HIDE = 120;
+export const TIMELINE_STEP = 56;
 export const DEFAULT_TIMELINE_HEIGHT = 280;
 
-export type TimelineHeight = (typeof TIMELINE_HEIGHT_STEPS)[number];
+export function isTimelineHidden(height: number): boolean {
+  return height <= TIMELINE_HANDLE_HEIGHT + 2;
+}
 
-export function normalizeTimelineHeight(value: unknown): TimelineHeight {
-  if (value == null || value === '') return DEFAULT_TIMELINE_HEIGHT;
+export function liveTimelineHeight(value: unknown): number {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return DEFAULT_TIMELINE_HEIGHT;
-  return TIMELINE_HEIGHT_STEPS.reduce((best, step) => (
-    Math.abs(step - numeric) < Math.abs(best - numeric) ? step : best
-  ));
+  return Math.round(Math.min(TIMELINE_MAX_OPEN, Math.max(TIMELINE_HIDDEN, numeric)));
 }
 
-export function stepTimelineHeight(current: unknown, direction: -1 | 1): TimelineHeight {
-  const now = normalizeTimelineHeight(current);
-  const index = TIMELINE_HEIGHT_STEPS.indexOf(now);
-  const next = Math.max(0, Math.min(TIMELINE_HEIGHT_STEPS.length - 1, index + direction));
-  return TIMELINE_HEIGHT_STEPS[next];
+export function commitTimelineHeight(value: unknown): number {
+  const live = liveTimelineHeight(value);
+  if (live < TIMELINE_SNAP_HIDE) return TIMELINE_HIDDEN;
+  return live;
 }
 
-export function loadTimelineHeight(): TimelineHeight {
+export function normalizeTimelineHeight(value: unknown): number {
+  if (value == null || value === '') return DEFAULT_TIMELINE_HEIGHT;
+  return commitTimelineHeight(value);
+}
+
+export function raiseTimelineHeight(current: number, lastOpen = DEFAULT_TIMELINE_HEIGHT): number {
+  if (isTimelineHidden(current)) {
+    return commitTimelineHeight(Math.max(TIMELINE_MIN_OPEN, lastOpen));
+  }
+  return commitTimelineHeight(current + TIMELINE_STEP);
+}
+
+export function hideTimelineHeight(): number {
+  return TIMELINE_HIDDEN;
+}
+
+export function applyTimelineDelta(current: number, deltaPx: number): number {
+  return liveTimelineHeight(current + deltaPx);
+}
+
+export function loadLastOpenHeight(): number {
   if (typeof window === 'undefined') return DEFAULT_TIMELINE_HEIGHT;
   try {
-    return normalizeTimelineHeight(window.localStorage.getItem(TIMELINE_HEIGHT_KEY));
+    const stored = window.localStorage.getItem(TIMELINE_OPEN_HEIGHT_KEY);
+    if (stored == null || stored === '') return DEFAULT_TIMELINE_HEIGHT;
+    return commitTimelineHeight(Math.max(TIMELINE_MIN_OPEN, Number(stored)));
   } catch {
     return DEFAULT_TIMELINE_HEIGHT;
   }
 }
 
-export function saveTimelineHeight(next: TimelineHeight): void {
+export function loadTimelineHeight(): number {
+  if (typeof window === 'undefined') return DEFAULT_TIMELINE_HEIGHT;
+  try {
+    const raw = window.localStorage.getItem(TIMELINE_HEIGHT_KEY);
+    if (raw == null || raw === '') return DEFAULT_TIMELINE_HEIGHT;
+    return commitTimelineHeight(raw);
+  } catch {
+    return DEFAULT_TIMELINE_HEIGHT;
+  }
+}
+
+export function saveTimelineHeight(next: number): void {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(TIMELINE_HEIGHT_KEY, String(normalizeTimelineHeight(next)));
+  const height = commitTimelineHeight(next);
+  window.localStorage.setItem(TIMELINE_HEIGHT_KEY, String(height));
+  if (!isTimelineHidden(height)) {
+    window.localStorage.setItem(TIMELINE_OPEN_HEIGHT_KEY, String(height));
+  }
 }
