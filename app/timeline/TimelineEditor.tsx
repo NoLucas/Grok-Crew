@@ -5,7 +5,7 @@
 // numbers in the side panel.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { useLanguage } from '../language';
 import { TimelineFeedback } from './TimelineFeedback';
 import { TimelinePrecisionPanel } from './TimelinePrecisionPanel';
@@ -60,6 +60,13 @@ import {
 import type { SelectionMode } from './track-editing';
 import type { Timeline, TimelineClip, TimelineTrack, TrackType } from './types';
 import type { TimelineEditingController } from './use-timeline-editing';
+import {
+  DEFAULT_TIMELINE_HEIGHT,
+  TIMELINE_HEIGHT_STEPS,
+  loadTimelineHeight,
+  saveTimelineHeight,
+  stepTimelineHeight,
+} from './timeline-height';
 
 export type EditTool = 'select' | 'ripple' | 'slip' | 'slide';
 
@@ -132,6 +139,21 @@ export function TimelineEditor({
   const anySolo = useMemo(() => tracks.some((track) => Boolean(track.solo)), [tracks]);
   const selected = useMemo(() => findClip(timeline, selectedClipId), [timeline, selectedClipId]);
   const locked = editing.pending || !editing.available;
+  const [timelineHeight, setTimelineHeight] = useState(DEFAULT_TIMELINE_HEIGHT);
+  const minTimelineHeight = TIMELINE_HEIGHT_STEPS[0];
+  const maxTimelineHeight = TIMELINE_HEIGHT_STEPS[TIMELINE_HEIGHT_STEPS.length - 1];
+
+  useEffect(() => {
+    setTimelineHeight(loadTimelineHeight());
+  }, []);
+
+  const raiseTimeline = useCallback((direction: -1 | 1) => {
+    setTimelineHeight((current) => {
+      const next = stepTimelineHeight(current, direction);
+      saveTimelineHeight(next);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const onHistoryKey = (event: KeyboardEvent) => {
@@ -155,6 +177,19 @@ export function TimelineEditor({
     window.addEventListener('keydown', onHistoryKey);
     return () => window.removeEventListener('keydown', onHistoryKey);
   }, [history.can_redo, history.can_undo, onHistoryAction]);
+
+  useEffect(() => {
+    const onLiftKey = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+      const target = event.target as HTMLElement | null;
+      if (target?.isContentEditable || target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (target?.closest('.desktop-timeline-clip, .desktop-clip-handle, .desktop-clip-seam')) return;
+      event.preventDefault();
+      raiseTimeline(event.key === 'ArrowUp' ? 1 : -1);
+    };
+    window.addEventListener('keydown', onLiftKey);
+    return () => window.removeEventListener('keydown', onLiftKey);
+  }, [raiseTimeline]);
 
   // Selecting a clip pulls the playhead into it when it sits elsewhere, so the
   // split and trim shortcuts always start from a point inside the clip.
@@ -757,10 +792,34 @@ export function TimelineEditor({
   };
 
   return (
-    <section className="desktop-timeline" aria-busy={editing.pending}>
+    <section
+      className="desktop-timeline"
+      aria-busy={editing.pending}
+      style={{ '--desktop-timeline-h': `${timelineHeight}px` } as CSSProperties}
+    >
       <div className="desktop-timeline-tools">
         <div>
           <b>{t('타임라인 편집', 'Timeline editing', '时间线编辑', 'タイムライン編集')}</b>
+          <div className="desktop-timeline-lift" role="group" aria-label={t('타임라인 높이', 'Timeline height', '时间线高度', 'タイムラインの高さ')}>
+            <button
+              type="button"
+              disabled={timelineHeight >= maxTimelineHeight}
+              title={t('타임라인 올리기 (↑)', 'Raise the timeline (↑)', '升高时间线 (↑)', 'タイムラインを上げる (↑)')}
+              aria-label={t('타임라인 올리기', 'Raise the timeline', '升高时间线', 'タイムラインを上げる')}
+              onClick={() => raiseTimeline(1)}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              disabled={timelineHeight <= minTimelineHeight}
+              title={t('타임라인 내리기 (↓)', 'Lower the timeline (↓)', '降低时间线 (↓)', 'タイムラインを下げる (↓)')}
+              aria-label={t('타임라인 내리기', 'Lower the timeline', '降低时间线', 'タイムラインを下げる')}
+              onClick={() => raiseTimeline(-1)}
+            >
+              ↓
+            </button>
+          </div>
           <span>{formatTimecode(timelineDuration(timeline))}</span>
           <span className="desktop-timeline-revision">v{timeline.revision}</span>
           <button
@@ -989,10 +1048,10 @@ export function TimelineEditor({
           <p id="desktop-timeline-help" className="desktop-timeline-help">
             {activeHint}{' '}
             {t(
-              'Ctrl/⌘ 클릭은 다중 선택, Shift 클릭은 범위 선택입니다. ← → 이동, ↑ ↓ 트랙 이동, [ 와 ] 자르기, Shift + ] 리플, S 분할.',
-              'Ctrl/⌘ click adds to selection; Shift click selects a range. ← → moves, ↑ ↓ changes track, [ and ] trim, Shift + ] ripples, S splits.',
-              'Ctrl/⌘ 点击可多选，Shift 点击可范围选择。← → 移动，↑ ↓ 换轨道，[ 和 ] 裁剪，Shift + ] 波纹，S 分割。',
-              'Ctrl/⌘ クリックで複数選択、Shift クリックで範囲選択。← → 移動、↑ ↓ トラック変更、[ と ] トリム、Shift + ] リップル、S 分割。',
+              'Ctrl/⌘ 클릭은 다중 선택, Shift 클릭은 범위 선택입니다. ← → 이동, 클립에 포커스가 있으면 ↑ ↓ 트랙 이동, 편집 화면에서는 ↑ ↓ 로 타임라인을 올리고 내립니다. [ 와 ] 자르기, Shift + ] 리플, S 분할.',
+              'Ctrl/⌘ click adds to selection; Shift click selects a range. ← → moves, ↑ ↓ changes track when a clip is focused, and raises or lowers the timeline in Edit. [ and ] trim, Shift + ] ripples, S splits.',
+              'Ctrl/⌘ 点击可多选，Shift 点击可范围选择。← → 移动；片段聚焦时 ↑ ↓ 换轨道，编辑页用 ↑ ↓ 升降时间线。[ 和 ] 裁剪，Shift + ] 波纹，S 分割。',
+              'Ctrl/⌘ クリックで複数選択、Shift クリックで範囲選択。← → 移動。クリップにフォーカスがあれば ↑ ↓ でトラック変更、編集画面では ↑ ↓ でタイムラインを上げ下げ。[ と ] トリム、Shift + ] リップル、S 分割。',
             )}
           </p>
         </div>

@@ -2,6 +2,7 @@
 
 import { useLanguage } from './language';
 import {
+  THEME_COPY,
   THEME_OPTIONS,
   TYPE_SIZE_OPTIONS,
   type DesktopAppearance,
@@ -20,13 +21,8 @@ type Props = {
 export function DesktopAppearanceControls({ appearance, onChange, variant = 'card' }: Props) {
   const { t } = useLanguage();
   const selectedTheme = THEME_OPTIONS.find((option) => option.id === appearance.theme) ?? THEME_OPTIONS[0];
-
-  const themeHint = {
-    light: t('지금 기본. 흰 바탕, 진한 글자.', 'Current default. White desk, dark type.', '当前默认。白底深字。', 'いまの初期値。白い机、濃い文字。'),
-    dark: t('어두운 바탕, 밝은 글자.', 'Dark desk, light type.', '深色桌面，浅色文字。', '暗い机、明るい文字。'),
-    'low-light': t('덜 눈부신 베이지 라이트.', 'Softer beige light, less glare.', '低眩光米色浅色。', 'まぶしさを抑えたベージュのライト。'),
-    'low-dark': t('대비를 낮춘 밤 화면.', 'Dim night desk, lower contrast.', '低对比夜间深色。', 'コントラストを抑えた夜の画面。'),
-  }[appearance.theme];
+  const themeName = (id: DesktopTheme) => t(...THEME_COPY[id].label);
+  const themeHint = t(...THEME_COPY[appearance.theme].hint);
 
   const body = (
     <div className="desktop-appearance-body">
@@ -42,12 +38,7 @@ export function DesktopAppearanceControls({ appearance, onChange, variant = 'car
               className={appearance.theme === option.id ? 'is-on' : undefined}
               onClick={() => onChange({ theme: option.id as DesktopTheme })}
             >
-              {t(
-                option.label,
-                option.id === 'light' ? 'Light' : option.id === 'dark' ? 'Dark' : option.id === 'low-light' ? 'LOW light' : 'LOW dark',
-                option.id === 'light' ? '浅色' : option.id === 'dark' ? '深色' : option.id === 'low-light' ? 'LOW 浅色' : 'LOW 深色',
-                option.id === 'light' ? 'ライト' : option.id === 'dark' ? 'ダーク' : option.id === 'low-light' ? 'LOW ライト' : 'LOW ダーク',
-              )}
+              {themeName(option.id)}
             </button>
           ))}
         </div>
@@ -102,12 +93,7 @@ export function DesktopAppearanceControls({ appearance, onChange, variant = 'car
 
   const pop = (
     <div className="desktop-appearance-pop">
-      <p className="desktop-appearance-pop-kicker">{t('화면', 'Display', '画面', '画面')} · {t(
-        selectedTheme.label,
-        selectedTheme.id === 'light' ? 'Light' : selectedTheme.id === 'dark' ? 'Dark' : selectedTheme.id === 'low-light' ? 'LOW light' : 'LOW dark',
-        selectedTheme.id === 'light' ? '浅色' : selectedTheme.id === 'dark' ? '深色' : selectedTheme.id === 'low-light' ? 'LOW 浅色' : 'LOW 深色',
-        selectedTheme.id === 'light' ? 'ライト' : selectedTheme.id === 'dark' ? 'ダーク' : selectedTheme.id === 'low-light' ? 'LOW ライト' : 'LOW ダーク',
-      )}</p>
+      <p className="desktop-appearance-pop-kicker">{t('화면', 'Display', '画面', '画面')} · {themeName(selectedTheme.id)}</p>
       {body}
     </div>
   );
@@ -135,7 +121,7 @@ export function DesktopAppearanceControls({ appearance, onChange, variant = 'car
         <span>Aa</span>
         <div>
           <b>{t('화면', 'Display', '画面', '画面')}</b>
-          <small>{t('라이트·다크·글자. 이 컴퓨터에만 기억합니다.', 'Light, dark, and type. Remembered on this computer.', '浅色、深色和文字。只记在这台电脑。', 'ライト・ダーク・文字。このPCだけに覚えます。')}</small>
+          <small>{t('낮·밤과 글자. 이 컴퓨터에만 기억합니다.', 'Day, night, and type. Remembered on this computer.', '昼夜和文字。只记在这台电脑。', '昼・夜と文字。このPCだけに覚えます。')}</small>
         </div>
       </div>
       {body}

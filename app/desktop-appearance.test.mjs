@@ -7,6 +7,7 @@ register('./timeline/ts-resolver.helper.mjs', import.meta.url);
 const {
   APPEARANCE_STORAGE_KEY,
   DEFAULT_APPEARANCE,
+  THEME_COPY,
   appearanceDataAttrs,
   loadAppearance,
   normalizeAppearance,
@@ -14,6 +15,13 @@ const {
 } = await import('./desktop-appearance.ts');
 
 describe('desktop appearance', () => {
+  it('names the four themes as a day and night set', () => {
+    assert.equal(THEME_COPY.light.label[0], '밝은 낮');
+    assert.equal(THEME_COPY.dark.label[0], '어두운 밤');
+    assert.equal(THEME_COPY['low-light'].label[0], '부드러운 낮');
+    assert.equal(THEME_COPY['low-dark'].label[0], '부드러운 밤');
+  });
+
   it('keeps the current light desk as the default', () => {
     assert.deepEqual(DEFAULT_APPEARANCE, { theme: 'light', emphasize: true, typeSize: 'm' });
     assert.deepEqual(normalizeAppearance(null), DEFAULT_APPEARANCE);

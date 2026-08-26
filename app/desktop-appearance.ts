@@ -20,12 +20,34 @@ export const DEFAULT_APPEARANCE: DesktopAppearance = {
   typeSize: "m",
 };
 
-export const THEME_OPTIONS: Array<{ id: DesktopTheme; label: string; hint: string }> = [
-  { id: "light", label: "라이트", hint: "지금 기본. 흰 바탕, 진한 글자." },
-  { id: "dark", label: "다크", hint: "어두운 바탕, 밝은 글자." },
-  { id: "low-light", label: "LOW 라이트", hint: "덜 눈부신 베이지 라이트." },
-  { id: "low-dark", label: "LOW 다크", hint: "대비를 낮춘 밤 화면." },
-];
+export type LocalizedQuad = readonly [string, string, string, string];
+
+export const THEME_COPY: Record<DesktopTheme, { label: LocalizedQuad; hint: LocalizedQuad }> = {
+  light: {
+    label: ["밝은 낮", "Bright day", "晴昼", "明るい昼"],
+    hint: ["흰 바탕, 진한 글자. 지금 기본입니다.", "White desk, dark type. The current default.", "白底深字。当前默认。", "白い机、濃い文字。いまの初期値。"],
+  },
+  dark: {
+    label: ["어두운 밤", "Deep night", "暗夜", "暗い夜"],
+    hint: ["어두운 바탕, 밝은 글자.", "Dark desk, light type.", "深色桌面，浅色文字。", "暗い机、明るい文字。"],
+  },
+  "low-light": {
+    label: ["부드러운 낮", "Soft day", "柔昼", "やわらかい昼"],
+    hint: ["덜 눈부신 베이지 낮.", "Softer beige day, less glare.", "低眩光米色浅色。", "まぶしさを抑えたベージュの昼。"],
+  },
+  "low-dark": {
+    label: ["부드러운 밤", "Soft night", "柔夜", "やわらかい夜"],
+    hint: ["대비를 낮춘 옅은 밤.", "Dimmer night, lower contrast.", "低对比柔和夜色。", "コントラストを抑えた淡い夜。"],
+  },
+};
+
+export const THEME_OPTIONS: Array<{ id: DesktopTheme; label: string; hint: string }> = (
+  Object.keys(THEME_COPY) as DesktopTheme[]
+).map((id) => ({
+  id,
+  label: THEME_COPY[id].label[0],
+  hint: THEME_COPY[id].hint[0],
+}));
 
 export const TYPE_SIZE_OPTIONS: Array<{ id: DesktopTypeSize; label: string }> = [
   { id: "s", label: "작게" },
