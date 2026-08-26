@@ -1124,8 +1124,8 @@ export function TimelineEditor({
             {t(
               'Ctrl/⌘ 클릭은 다중 선택, Shift 클릭은 범위 선택입니다. ← → 이동, 클립에 포커스가 있으면 ↑ ↓ 트랙 이동. 가운데 위 화살표 하나·드래그·휠로 타임라인을 숨기거나 올립니다. [ 와 ] 자르기, Shift + ] 리플, S 분할.',
               'Ctrl/⌘ click adds to selection; Shift click selects a range. ← → moves, ↑ ↓ changes track when a clip is focused. The one top-center arrow, drag, and wheel hide or raise the timeline. [ and ] trim, Shift + ] ripples, S splits.',
-              'Ctrl/⌘ 点击可多选，Shift 点击可范围选择。← → 移动；片段聚焦时 ↑ ↓ 换轨道。顶部中央箭头、拖动和滚轮可隐藏或升起时间线。[ 和 ] 裁剪，Shift + ] 波纹，S 分割。',
-              'Ctrl/⌘ クリックで複数選択、Shift クリックで範囲選択。← → 移動。クリップにフォーカスがあれば ↑ ↓ でトラック変更。中央上の矢印・ドラッグ・ホイールでタイムラインを隠すか上げる。[ と ] トリム、Shift + ] リップル、S 分割。',
+              'Ctrl/⌘ 点击可多选，Shift 点击可范围选择。← → 移动；片段聚焦时 ↑ ↓ 换轨道。顶部正中一个箭头、拖动和滚轮可隐藏或升起时间线。[ 和 ] 裁剪，Shift + ] 波纹，S 分割。',
+              'Ctrl/⌘ クリックで複数選択、Shift クリックで範囲選択。← → 移動。クリップにフォーカスがあれば ↑ ↓ でトラック変更。中央上の矢印1つ・ドラッグ・ホイールでタイムラインを隠すか上げる。[ と ] トリム、Shift + ] リップル、S 分割。',
             )}
           </p>
         </div>
