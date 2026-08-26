@@ -404,6 +404,7 @@ export default function DesktopWorkspace() {
   });
   const unclaimedJobs = projectJobs.filter((job) => isUnclaimedHold(job.status) && !job.runner_id);
   const hideInspectorColumn = specDeskOpen || !project || !timeline;
+  const editToolsOpen = Boolean(project && timeline && !specDeskOpen && activePanel === 'edit');
   const handoffFolders = workspace.handoff_folders ?? [];
   const projectFolders = useMemo(() => {
     if (!project) return [];
@@ -992,7 +993,7 @@ export default function DesktopWorkspace() {
   };
 
   return (
-    <main className="desktop-shell">
+    <main className={`desktop-shell${editToolsOpen ? ' has-timeline' : ' is-form'}`}>
       <header className="desktop-titlebar">
         <div className="desktop-brand"><span className="desktop-logo">G</span><div><b>Grok Crew</b><small>{t('로컬 제작 데스크', 'Desktop Production', '本地制作台', 'デスクトップ制作')}</small></div></div>
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
@@ -1319,6 +1320,7 @@ export default function DesktopWorkspace() {
             )}
           </section>
           )}
+          {editToolsOpen ? <>
           <section className="desktop-inspector-section desktop-proxy-list">
             <div className="desktop-inspector-head">
               <b>{t('미리보기 프록시', 'Preview proxies', '预览代理', 'プレビュープロキシ')}</b>
@@ -1389,10 +1391,11 @@ export default function DesktopWorkspace() {
             </section>
           ) : null}
           <section className="desktop-inspector-section"><div className="desktop-inspector-head"><b>{t('클립 속성', 'Clip inspector', '片段属性', 'クリップ属性')}</b>{selectedClipIds.length > 1 ? <span>{selectedClipIds.length} {t('개 선택', 'selected', '个已选', '件選択')}</span> : null}</div>{selected ? <div className="desktop-clip-form"><label>ID<input value={selected.clip.id} disabled /></label><label>{t('시작', 'Start', '开始', '開始')}<input type="number" min="0" step=".1" value={selected.clip.timeline_start} onChange={(e) => void updateSelectedClip({ timeline_start: Number(e.target.value) })} /></label><label>{t('길이', 'Duration', '时长', '長さ')}<input type="number" min=".1" step=".1" value={selected.clip.duration} onChange={(e) => void updateSelectedClip({ duration: Number(e.target.value) })} /></label>{['video', 'overlay'].includes(selected.track.type) && <><label>{t('크기', 'Scale', '缩放', 'スケール')}<input type="number" min=".05" max="8" step=".05" value={selected.clip.transform?.scale ?? 1} onChange={(e) => void updateSelectedClip({ transform: { ...(selected.clip.transform ?? {}), scale: Number(e.target.value) } })} /></label><label>{t('회전', 'Rotation', '旋转', '回転')}<input type="number" min="-360" max="360" step="1" value={selected.clip.transform?.rotation ?? 0} onChange={(e) => void updateSelectedClip({ transform: { ...(selected.clip.transform ?? {}), rotation: Number(e.target.value) } })} /></label><label>{t('불투명도', 'Opacity', '不透明度', '不透明度')}<input type="number" min="0" max="1" step=".05" value={selected.clip.transform?.opacity ?? 1} onChange={(e) => void updateSelectedClip({ transform: { ...(selected.clip.transform ?? {}), opacity: Number(e.target.value) } })} /></label></>}{['video', 'audio'].includes(selected.track.type) && <label>{t('볼륨', 'Volume', '音量', '音量')}<input type="number" min="0" max="4" step=".05" value={Number(selected.clip.audio?.volume ?? 1)} onChange={(e) => void updateSelectedClip({ audio: { ...(selected.clip.audio ?? {}), volume: Number(e.target.value) } })} /></label>}{selected.track.type === 'caption' && <label>{t('자막 문구', 'Caption text', '字幕文本', '字幕テキスト')}<textarea value={selected.clip.text ?? ''} onChange={(e) => void updateSelectedClip({ text: e.target.value })} /></label>}{['video', 'overlay', 'caption'].includes(selected.track.type) && <><label>{t('시작 전환', 'Transition in', '入场转场', '開始トランジション')}<select value={selected.clip.transition_in?.type ?? ''} onChange={(e) => void updateSelectedClip({ transition_in: e.target.value ? { type: e.target.value, duration: selected.clip.transition_in?.duration ?? 0.35 } : null })}><option value="">{t('없음', 'None', '无', 'なし')}</option><option value="fade">Fade</option><option value="crossfade">Crossfade</option><option value="dip_black">Dip black</option></select></label><label>{t('끝 전환', 'Transition out', '出场转场', '終了トランジション')}<select value={selected.clip.transition_out?.type ?? ''} onChange={(e) => void updateSelectedClip({ transition_out: e.target.value ? { type: e.target.value, duration: selected.clip.transition_out?.duration ?? 0.35 } : null })}><option value="">{t('없음', 'None', '无', 'なし')}</option><option value="fade">Fade</option><option value="crossfade">Crossfade</option><option value="dip_black">Dip black</option></select></label><label>{t('전환 길이', 'Transition duration', '转场时长', 'トランジション時間')}<input type="number" min=".05" max={Math.min(5, selected.clip.duration)} step=".05" value={selected.clip.transition_in?.duration ?? selected.clip.transition_out?.duration ?? .35} onChange={(e) => { const duration = Number(e.target.value); void updateSelectedClip({ ...(selected.clip.transition_in ? { transition_in: { ...selected.clip.transition_in, duration } } : {}), ...(selected.clip.transition_out ? { transition_out: { ...selected.clip.transition_out, duration } } : {}) }); }} /></label></>}{<label className="desktop-check"><input type="checkbox" checked={selected.clip.locked} onChange={(e) => void updateSelectedClip({ locked: e.target.checked })} />{t('클립 잠금', 'Lock clip', '锁定片段', 'クリップをロック')}</label>}<div className="desktop-clip-actions"><button onClick={() => void splitSelected()}>{t('중간 분할', 'Split', '分割', '分割')}</button><button className="danger" onClick={() => void removeSelected()}>{t('삭제', 'Delete', '删除', '削除')}</button></div></div> : <p className="desktop-muted">{t('타임라인에서 클립을 선택하세요.', 'Select a clip in the timeline.', '在时间线上选择片段。', 'タイムラインでクリップを選択してください。')}</p>}</section>
+          </> : null}
         </aside>
       </div>
 
-      {project && timeline && !specDeskOpen && (
+      {editToolsOpen && timeline ? (
         <TimelineEditor
           timeline={timeline}
           selectedClipIds={selectedClipIds}
@@ -1404,7 +1407,7 @@ export default function DesktopWorkspace() {
           trackBusy={busy || timelineEditing.pending}
           onPlayheadChange={setPlayhead}
         />
-      )}
+      ) : null}
 
       <footer className="desktop-command-bar"><div className={`desktop-message ${studioState === 'error' ? 'error' : studioState === 'loading' ? 'loading' : ''}`}><span className="desktop-message-icon">{studioState === 'error' ? '!' : studioState === 'loading' ? '…' : 'i'}</span><p>{message}</p></div><div className="desktop-command-summary"><span>{executionPolicy === 'auto_edit_render' ? t('자동 편집·렌더', 'Auto edit & render', '自动编辑和渲染', '自動編集・レンダー') : t('검토 우선', 'Review first', '审核优先', '確認優先')}</span><span>{Object.values(publishPolicy).filter((value) => value === 'auto').length} {t('개 자동 게시', 'auto publish', '个自动发布', '件の自動公開')}</span><button className="desktop-start" disabled={busy || !project || studioState !== 'ready'} onClick={() => void startGrok()}>{busy ? t('처리 중…', 'Working…', '处理中…', '処理中…') : t('편집 Agent로 제작 시작', 'Start with Editor Agent', '使用剪辑 Agent 开始制作', '編集 Agent で制作開始')} <b>→</b></button></div></footer>
     </main>
