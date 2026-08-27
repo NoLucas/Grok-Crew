@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Signed Windows install is the current track. The plan is `docs/SIGNED_INSTALL.ko.md`: publisher name and Azure Trusted Signing (or EV) stay outside the repo; the release job stays unsigned until those secrets exist; no server or P5 in this track.
 - The locked build list is `docs/BUILD.ko.md`: keep the guest loop (open → connect → one line → paste → save on this PC). Do not add a company server or a new `/api/v2` for that loop. P5 stays a contract.
 - Product stack inference is in `docs/STACK.ko.md`: today’s job and the cut stay on this PC (local SQLite + folders). A company server is only for later purchase proof or settings backup, and must never be the door to Start.
 - Auto now tells the wait honestly: empty preview while waiting, elapsed time, “this window does not know if the bot read it,” a stay-on-screen save card, last-seen next to the name, recent title chips, a before-start job card, one header dot, same-line retry, replace-cut ask, and an OS ping only when the window is hidden. Own-file mode no longer uses the bot-wait copy. Same-PC bots still do not auto-read the invite.
