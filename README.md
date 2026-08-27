@@ -4,20 +4,20 @@
 
 **[Open on Windows](https://github.com/NoLucas/Grok-crew-test/releases/latest)** — get [`GrokCrew-Windows.exe`](https://github.com/NoLucas/Grok-crew-test/releases/latest) and double-click.
 
-Five steps. Receive → open → connect → write → paste.
+Five steps. Receive → open → connect → write in Auto → paste.
 
 1. **Receive** — one file, `GrokCrew-Windows.exe`.
 2. **Open** — double-click. If the blue shield appears, More info → Run anyway.
 3. **Connect** — open **Connect**. Other-PC bots (Grok, Cursor, Claude, or an agent you made) sit at the top. Paste the connect line, then paste their one-line `GROK_CREW_OK` reply. A green light and **Connected** means it is attached.
-4. **Write** — a title.
-5. **Paste** — the job into that bot window. This window opens when the cut arrives.
+4. **Write** — today’s line in the **Auto** tab.
+5. **Paste** — Start copies the job. Paste it in that bot window. When the cut arrives, the preview stays on this tab and asks you to save.
 
-To cut your own file, drop it in the second card. There is no login.
+To cut your own file, use **Start with my file** inside Auto. There is no login.
 
 It is not a website that holds your footage. The bot never opens this PC. It only pushes a package.
 
 ```
-receive the exe  →  open it  →  connect  →  write a title  →  paste the job  →  this window opens when the cut arrives
+receive the exe  →  open it  →  connect  →  write in Auto  →  paste the job  →  preview and save on this PC
 ```
 
 ## Who it is for
@@ -30,13 +30,14 @@ You do not need an account to start.
 
 ## What you see
 
-The first screen is **Connect**. Other-PC links stay at the top. Same-PC, Local Studio, GitHub, and Runner live there too. A green light means **Connected**. Setup, Edit, and Export stay off until a bot is attached or you open a file yourself. Then the short desk: **Hand it off** is title → copy → wait. **Open it myself** is drop a video → edit now. The two paths stay in two cards. The sample opens only from **See it with the sample**. After a copy, the desk says the bot is working, when it last checked, and not yet / arrived / failed. Python, ports, and folder paths stay folded. **More detail** and **Advanced tools** grow only after the first cut arrives. Incoming cuts on the editor door open on their own. Files the bot saved — the package under `inputs/handoff/` and clips in the materials box — stay in one collapsed row. Open it and the list sits beside the preview. Right-click a file to preview, enlarge, show the original, or delete it. Quality stays locked to the spec; aspect, captions, and the other edit knobs stay yours. Setup can assign Shorts, Reels, TikTok, Custom, or another style, and save the current knobs as a named preset separately. Projects can live in folders, and trash keeps a restore window of 30 days. Bright day, deep night, soft day, soft night, and type live in the gear at the top-left corner. A person may specify which tools the bot should use; the bot should run them. That hub follows the desk theme and keeps the bot catalog folded. This desk does not scrape websites.
+The first screen is **Connect**. Other-PC links stay at the top. Same-PC, Local Studio, GitHub, and Runner live there too. A green light means **Connected**. After a bot is attached or you open a file yourself, **Auto** is the landing tab. Setup, Edit, and Export turn on then. **Auto** is one field for today’s line and one Start. Hand-it-off and start-with-my-file are two modes inside Auto. Connection controls stay in Connect only. The sample opens only from **See it with the sample**. After a copy, five lights show connect, sent, working, cut, and save on this PC, plus last check and not yet / arrived / failed. Python, ports, and folder paths stay folded. **More detail** and **Advanced tools** grow only after the first cut arrives. Incoming cuts on the editor door open on their own and stay previewed in Auto. Files the bot saved — the package under `inputs/handoff/` and clips in the materials box — stay in one collapsed row. Open it and the list sits beside the preview. Right-click a file to preview, enlarge, show the original, or delete it. Quality stays locked to the spec; aspect, captions, and the other edit knobs stay yours. Setup can assign Shorts, Reels, TikTok, Custom, or another style, and save the current knobs as a named preset separately. Projects can live in folders, and trash keeps a restore window of 30 days. Bright day, deep night, soft day, soft night, and type live in the gear at the top-left corner. A person may specify which tools the bot should use; the bot should run them. That hub follows the desk theme and keeps the bot catalog folded. This desk does not scrape websites.
 
-Then you work in four tabs:
+Then you work in five tabs:
 
 | Tab | What it is for |
 | --- | --- |
 | **Connect** | Other PC, this PC, Local Studio, GitHub, Runner |
+| **Auto** | Today’s line → send → wait → preview → save |
 | **Edit** | Watch the preview, cut on the timeline |
 | **Setup** | Look, captions, speed |
 | **Export** | Save an MP4 here, or post after it asks |

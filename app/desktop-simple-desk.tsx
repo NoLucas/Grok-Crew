@@ -1,5 +1,6 @@
 'use client';
 
+/** Kept as a rollback of the two-card desk. The live path is AutoDesk. */
 import { useMemo, useRef, useState, type DragEvent } from 'react';
 import { connectedBot, type CrewRoster } from './desktop-bot-connect';
 import { DesktopInstallHelp } from './desktop-install-help';

@@ -7324,6 +7324,124 @@ select {
 .desktop-simple-drop.is-over { border-color: var(--desktop-blue, #245a72); background: #f3f7f9; }
 .desktop-simple-drop b { font-size: 15px; letter-spacing: -.02em; }
 .desktop-simple-drop span { color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
+.desktop-auto-desk {
+  width: min(720px, 100%);
+  justify-self: center;
+  display: grid;
+  gap: 12px;
+}
+.desktop-auto-hero p { max-width: 40rem; }
+.desktop-auto-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border: 1px solid #d7d2c8;
+  border-radius: 12px;
+  background: #fff8ef;
+}
+.desktop-auto-status b { display: block; font-size: 14px; letter-spacing: -.02em; }
+.desktop-auto-status b.desktop-connect-lamp { display: inline-flex; }
+.desktop-auto-status p { margin: 4px 0 0; color: #6a5840; font-size: 13px; line-height: 1.45; max-width: 40rem; }
+.desktop-auto-status.is-ready { border-color: #cfead8; background: #f3faf5; }
+.desktop-auto-status.is-ready p { color: var(--desktop-green); }
+.desktop-auto-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.desktop-auto-modes button {
+  padding: 7px 12px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 999px;
+  background: var(--desktop-panel);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+.desktop-auto-modes button.is-selected {
+  border-color: var(--desktop-blue);
+  background: #eef5ff;
+}
+.desktop-auto-form { display: grid; gap: 10px; padding: 0; border: 0; }
+.desktop-auto-gate { margin: 0; color: var(--desktop-muted); font-size: 13px; line-height: 1.5; }
+.desktop-auto-own { display: grid; gap: 8px; }
+.desktop-auto-own > p { margin: 0; color: var(--desktop-muted); font-size: 13px; line-height: 1.45; }
+.desktop-auto-phases {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.desktop-auto-phase {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.desktop-auto-phase b { display: block; font-size: 13px; letter-spacing: -.02em; }
+.desktop-auto-phase p { margin: 2px 0 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
+.desktop-auto-lamp {
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #c4c0b6;
+  box-shadow: 0 0 0 3px rgba(40, 32, 24, 0.06);
+}
+.desktop-auto-lamp.is-yellow { background: #d4a017; box-shadow: 0 0 0 3px #f8efc8; }
+.desktop-auto-lamp.is-green { background: var(--desktop-green); box-shadow: 0 0 0 3px #dff3e9; }
+.desktop-auto-lamp.is-red { background: #b42318; box-shadow: 0 0 0 3px #fde8e6; }
+.desktop-auto-preview {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #cfead8;
+  border-radius: 12px;
+  background: #f3faf5;
+}
+.desktop-auto-preview b { font-size: 14px; }
+.desktop-auto-preview video {
+  width: 100%;
+  max-height: 360px;
+  border-radius: 10px;
+  background: #111;
+}
+.desktop-auto-preview-actions,
+.desktop-auto-publish-ask {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.desktop-auto-publish-ask p { margin: 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; flex: 1 1 16rem; }
+.desktop-shell[data-theme="dark"] .desktop-auto-status,
+.desktop-shell[data-theme="low-dark"] .desktop-auto-status {
+  border-color: rgba(255, 200, 120, 0.28);
+  background: rgba(255, 200, 120, 0.08);
+}
+.desktop-shell[data-theme="dark"] .desktop-auto-status.is-ready,
+.desktop-shell[data-theme="low-dark"] .desktop-auto-status.is-ready {
+  border-color: rgba(78, 203, 141, 0.35);
+  background: rgba(78, 203, 141, 0.08);
+}
+.desktop-shell[data-theme="dark"] .desktop-auto-modes button.is-selected,
+.desktop-shell[data-theme="low-dark"] .desktop-auto-modes button.is-selected {
+  background: rgba(120, 170, 255, 0.18);
+}
+.desktop-shell[data-theme="dark"] .desktop-auto-preview,
+.desktop-shell[data-theme="low-dark"] .desktop-auto-preview {
+  border-color: rgba(78, 203, 141, 0.35);
+  background: rgba(78, 203, 141, 0.08);
+}
+@media (max-width: 720px) {
+  .desktop-titlebar nav { flex-wrap: wrap; }
+  .desktop-auto-desk { width: 100%; }
+}
+
 .desktop-simple-banner { margin: 0; padding: 10px 12px; border: 1px solid var(--desktop-line); border-radius: 10px; background: #f7f7f9; color: var(--desktop-muted); font-size: 13px; line-height: 1.5; }
 .desktop-simple-help { margin: 8px 0 0; padding-left: 18px; color: var(--desktop-muted); font-size: 12px; line-height: 1.55; text-align: left; }
 .desktop-simple-help a { color: var(--desktop-blue, #245a72); text-decoration: underline; }
