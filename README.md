@@ -26,7 +26,7 @@ receive the exe  →  open it  →  connect  →  write in Auto  →  paste the 
 - Creators who let the connected bots do the sourcing and the first cut — on separate doors, never mixed
 - Anyone who still wants the finished file to land on this PC, not in a cloud editor
 
-You do not need an account to start.
+It is free for now. You do not need an account to start. It does not ask for a card or a subscription.
 
 ## What you see
 

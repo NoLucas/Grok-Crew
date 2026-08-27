@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- The current track is free: one GitHub Release exe, no account, no card, no stamp. Paid install and a publisher stamp wait until money is collected. The lock is `docs/FREE.ko.md`.
 - Other doors besides a stamp: keep the three pictures, an individual standard stamp, or (later, not this track) the Microsoft Store. Self-signed certs, a friend’s company stamp, and the open-source-only stamp stay closed.
 - Signed install without a business: publisher is the person’s legal name. Azure/EV are out for a Korea individual for now. The open door is an individual standard stamp, or keep the three pictures.
 - The signed-install plan now starts with a plain-language walkthrough of the blue Windows screen, the publisher stamp, and what the maintainer actually has to buy and lock away.

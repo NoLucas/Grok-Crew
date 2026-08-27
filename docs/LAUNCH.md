@@ -66,9 +66,13 @@ Token login in the desktop app works with no OAuth app. Device flow needs an ope
 1. In [Google Cloud credentials](https://console.cloud.google.com/apis/credentials), create a project, enable **YouTube Data API v3**, and create **OAuth 2.0** credentials (installed / desktop is the usual shape). Official notes: [Obtaining authorization credentials](https://developers.google.com/youtube/registering_an_application).
 2. Publish today with `YOUTUBE_ACCESS_TOKEN` in `local_studio/.env`. Optionally record `GOOGLE_OAUTH_CLIENT_ID`. That name is not required for token publish. Configure the OAuth consent screen and scopes in **your** Cloud project; this repo does not create one.
 
-### Windows signed install (current track)
+### Free for now
 
-The guest is buying an installer they can open, not “signing technology.” The plan is `docs/SIGNED_INSTALL.ko.md`. This repository still does **not** invent or commit a certificate.
+The current track is a free GitHub Release. No account, no card, no publisher stamp. The lock is `docs/FREE.ko.md`. The blue SmartScreen screen stays honest: More info → Run anyway.
+
+### Windows signed install (later, when money is collected)
+
+The guest will then be buying an installer they can open, not “signing technology.” The plan is `docs/SIGNED_INSTALL.ko.md`. This repository still does **not** invent or commit a certificate.
 
 Until Maintainer puts signing secrets in GitHub Actions (never in git), `.github/workflows/release.yml` builds an **unsigned** `GrokCrew-Windows.exe` and keeps `CSC_IDENTITY_AUTO_DISCOVERY` false. Do not claim the blue SmartScreen screen is gone.
 

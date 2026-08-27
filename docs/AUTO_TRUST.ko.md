@@ -86,7 +86,7 @@ P1–P4는 화면과 이 PC 기억만으로 된다. P5만 Codex 계약이다.
 
 하지 말 확장: 웹 SaaS 편집기, 모바일에서 루프백, 크레딧 미터, 적응형 메뉴, 샘플 자동 재생.
 
-서버·DB를 언제 여는지의 심층 추론은 `docs/STACK.ko.md`. 구현 목록은 `docs/BUILD.ko.md`. 지금 길은 서명된 설치(`docs/SIGNED_INSTALL.ko.md`). 오늘 일과 컷 저장에는 우리 서버가 없고, 장부는 이 PC의 SQLite다.
+서버·DB를 언제 여는지의 심층 추론은 `docs/STACK.ko.md`. 구현 목록은 `docs/BUILD.ko.md`. 지금 길은 무료로 풀기(`docs/FREE.ko.md`). 도장은 돈 받을 때(`docs/SIGNED_INSTALL.ko.md`). 오늘 일과 컷 저장에는 우리 서버가 없고, 장부는 이 PC의 SQLite다.
 
 ## 기술 지도
 
