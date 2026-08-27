@@ -27,6 +27,7 @@ import {
   type AutoPhaseId,
 } from './desktop-auto-state';
 import { DesktopInstallHelp } from './desktop-install-help';
+import { DesktopNewsCard } from './desktop-news-card';
 import { useLanguage } from './language';
 import { formatCheckTime, type DeskPullStatus, type DeskWaitState } from './desktop-wait-state';
 
@@ -707,6 +708,7 @@ export function AutoDesk({
         </button>
       ) : null}
 
+      <DesktopNewsCard />
       <DesktopInstallHelp />
     </div>
   );

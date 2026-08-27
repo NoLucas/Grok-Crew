@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Future-customer contact is optional: Auto shows a skippable **News later** email card. Today’s job never waits on it. GitHub downloads stay anonymous until the operator sets `NEXT_PUBLIC_GROK_CREW_NEWS_URL`. The lock is `docs/LEADS.ko.md`.
 - The current track is free: one GitHub Release exe, no account, no card, no stamp. Paid install and a publisher stamp wait until money is collected. The lock is `docs/FREE.ko.md`.
 - Other doors besides a stamp: keep the three pictures, an individual standard stamp, or (later, not this track) the Microsoft Store. Self-signed certs, a friend’s company stamp, and the open-source-only stamp stay closed.
 - Signed install without a business: publisher is the person’s legal name. Azure/EV are out for a Korea individual for now. The open door is an individual standard stamp, or keep the three pictures.

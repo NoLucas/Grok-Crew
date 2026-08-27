@@ -7432,6 +7432,8 @@ select {
 .desktop-auto-card p,
 .desktop-auto-empty p { margin: 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
 .desktop-auto-save-card { border-color: #cfead8; background: #f3faf5; }
+.desktop-news-card { margin-top: 4px; }
+.desktop-news-card .desktop-auto-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .desktop-auto-empty { border-style: dashed; }
 .desktop-auto-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .desktop-auto-chip {
