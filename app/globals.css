@@ -9134,24 +9134,26 @@ select {
   font: 12px/1.45 var(--font-geist-mono), ui-monospace, monospace;
 }
 
-.tools-more { margin-top: 36px; }
+.tools-more { margin-top: 28px; }
 .tools-more-hint {
   margin: 10px 0 0;
-  color: var(--soft);
-  font-size: 13px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .tools-more-toggle,
 .tools-catalog-toggle {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
   align-items: center;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  justify-content: center;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
   background: var(--surface);
   color: var(--text);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   cursor: pointer;
 }
 .tools-more-toggle:hover,

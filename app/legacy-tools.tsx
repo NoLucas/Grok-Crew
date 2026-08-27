@@ -113,16 +113,16 @@ export default function LegacyTools() {
           <div>
             <p className="kicker">{t('고급 도구', 'ADVANCED TOOLS', '高级工具', '高度なツール')}</p>
             <h1>
-              {t('카드만 고르면 됩니다.', 'Pick a card.', '选一张卡片即可。', 'カードを選ぶだけです。')}
+              {t('실행 두 개와', 'Two live consoles', '两个运行台', '稼働コンソール 2 つと')}
               <br />
-              <span>{t('규칙과 JSON은 접혀 있습니다.', 'Rules and JSON stay folded.', '规则和 JSON 都收着。', 'ルールと JSON は折りたたんであります。')}</span>
+              <span>{t('봇이 치는 API만 둡니다.', 'and the APIs a bot actually hits.', '和机器人会打的 API。', 'ボットが叩く API だけ置きます。')}</span>
             </h1>
             <p>
               {t(
-                '기본 화면은 그대로 둡니다. 허브에는 실행 두 개와, 봇이 실제로 치는 운영·컷 맵·설명서만 둡니다. 에이전트·패킷처럼 API가 없는 초안은 더보기 아래입니다.',
-                'The main screen stays put. This hub keeps the two live consoles plus operations, the cut map, and the bot guide. Agent, packet, and other API-less drafts sit under More.',
-                '主画面不动。这里只放两个运行台，以及机器人会打的运营、剪辑图和说明书。智能体、数据包这类没有 API 的草稿在“更多”下面。',
-                '基本画面はそのままです。ハブには稼働コンソール 2 つと、ボットが実際に叩く運用・カットマップ・ガイドだけを置きます。エージェントやパケットなど API のない草案は「もっと見る」の下です。',
+                '기본 화면은 그대로 둡니다. 에이전트·패킷처럼 API가 없는 초안은 아래 더보기에서 엽니다.',
+                'The main screen stays put. Agent, packet, and other API-less drafts open under More below.',
+                '主画面不动。智能体、数据包这类没有 API 的草稿在下面的“更多”里打开。',
+                '基本画面はそのままです。エージェントやパケットなど API のない草案は下の「もっと見る」から開きます。',
               )}
             </p>
             <div className="tools-hero-actions">
@@ -172,11 +172,11 @@ export default function LegacyTools() {
           </div>
         </section>
 
-        <section className="tools-more">
+        <section className="tools-more" id="tools-more">
           <button type="button" className="tools-more-toggle" onClick={() => setMoreOpen((value) => !value)}>
             {moreOpen
               ? t('더보기 접기', 'Hide more', '收起更多', 'もっと見るを閉じる')
-              : t(`더보기 · API 없는 초안 등 ${extraTools.length}개`, `More · ${extraTools.length} drafts`, `更多 · ${extraTools.length} 个草稿`, `もっと見る · 草案 ${extraTools.length}`)}
+              : t(`더보기 · 편집실·에이전트·패킷 등 ${extraTools.length}개`, `More · ${extraTools.length} drafts`, `更多 · ${extraTools.length} 个草稿`, `もっと見る · 草案 ${extraTools.length}`)}
           </button>
           {moreOpen ? (
             <div className="tools-grid">
