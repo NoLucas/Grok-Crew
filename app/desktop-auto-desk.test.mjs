@@ -9,6 +9,7 @@ const {
   DEFAULT_RECIPE_ID,
   attachedBotName,
   autoHeaderDot,
+  autoJobPayload,
   autoMachineState,
   autoPhaseLamps,
   botSeenSeconds,
@@ -40,6 +41,58 @@ describe('auto desk start rules', () => {
     assert.deepEqual(canStartAuto({ title: '   ', attached: true }), { ok: false, reason: 'title' });
     assert.deepEqual(canStartAuto({ title: '15초 훅 릴', attached: false }), { ok: false, reason: 'connect' });
     assert.deepEqual(canStartAuto({ title: '15초 훅 릴', attached: true }), { ok: true });
+    assert.deepEqual(canStartAuto({
+      title: '15초 훅 릴',
+      attached: true,
+      materialWay: 'find',
+      collectQuery: '',
+    }), { ok: false, reason: 'materials' });
+    assert.deepEqual(canStartAuto({
+      title: '15초 훅 릴',
+      attached: true,
+      materialWay: 'find',
+      collectQuery: '카페 오픈 공개 클립',
+    }), { ok: true });
+    assert.deepEqual(canStartAuto({
+      title: '15초 훅 릴',
+      attached: true,
+      materialWay: 'make',
+    }), { ok: true });
+  });
+});
+
+describe('auto desk job payload', () => {
+  it('keeps one bot and only sends a find query when the operator asked to find', () => {
+    assert.deepEqual(autoJobPayload({
+      title: '15초 훅 릴',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      materialWay: 'make',
+      collectQuery: 'ignore this leftover',
+    }), {
+      title: '15초 훅 릴',
+      goal: '15초 훅 릴',
+      recipe_id: 'instagram_reel',
+      source_mode: 'bot',
+      language: 'ko',
+      upload: false,
+    });
+    assert.deepEqual(autoJobPayload({
+      title: '카페 오픈',
+      goal: '손과 간판',
+      recipeId: 'tiktok_tight',
+      language: 'ko',
+      materialWay: 'find',
+      collectQuery: '  카페 오픈 공개 클립  ',
+    }), {
+      title: '카페 오픈',
+      goal: '손과 간판',
+      recipe_id: 'tiktok_tight',
+      source_mode: 'bot',
+      language: 'ko',
+      upload: false,
+      collect_query: '카페 오픈 공개 클립',
+    });
   });
 });
 

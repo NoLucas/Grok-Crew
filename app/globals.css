@@ -7366,6 +7366,7 @@ select {
   background: #eef5ff;
 }
 .desktop-auto-form { display: grid; gap: 10px; padding: 0; border: 0; }
+.desktop-auto-desk .desktop-spec-source-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .desktop-auto-gate { margin: 0; color: var(--desktop-muted); font-size: 13px; line-height: 1.5; }
 .desktop-auto-own { display: grid; gap: 8px; }
 .desktop-auto-own > p { margin: 0; color: var(--desktop-muted); font-size: 13px; line-height: 1.45; }

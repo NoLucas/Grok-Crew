@@ -338,6 +338,51 @@ def test_simple_path_spec_is_one_bot(studio):
     assert "제목: One bot reel" in korean["text"]
     assert "git clone" not in korean["text"]
     assert "local_studio/grok_crew.py" not in korean["text"]
+    assert "찾아올 것" not in korean["text"]
+    assert "Find:" not in invite["text"]
+
+
+def test_bot_invite_uses_operator_find_query_not_recipe_default(studio):
+    found = create_spec({
+        "title": "Cafe open",
+        "goal": "Hands and the sign",
+        "language": "ko",
+        "source_mode": "bot",
+        "recipe_id": "instagram_reel",
+        "collect_query": "카페 오픈 공개 클립",
+    })
+    korean = spec_invite(found["id"], "ko")
+    assert "찾아올 것: 카페 오픈 공개 클립" in korean["text"]
+    assert "스크래퍼가 아닙니다" in korean["text"]
+    assert "로그인 막힌 인스타" in korean["text"]
+    english = spec_invite(found["id"], "en")
+    assert "Find: 카페 오픈 공개 클립" in english["text"]
+    assert "This app is not a scraper" in english["text"]
+
+    made = create_spec({
+        "title": "Make reel",
+        "goal": "Source and cut",
+        "language": "en",
+        "source_mode": "bot",
+        "recipe_id": "instagram_reel",
+    })
+    invite = spec_invite(made["id"], "en")
+    assert "Find:" not in invite["text"]
+    assert "You make the source and the first cut" in invite["text"]
+    assert made["collect_query"] == "face or product close-up, readable text space, bright vertical clip"
+
+    long_cut = create_spec({
+        "title": "Long talk",
+        "goal": "One chapter",
+        "language": "ko",
+        "source_mode": "bot",
+        "recipe_id": "youtube_long",
+    })
+    long_invite = spec_invite(long_cut["id"], "ko")
+    assert "유튜브 본편" in long_invite["text"]
+    assert "가로" in long_invite["text"]
+    assert "8–12분" in long_invite["text"]
+    assert "찾아올 것" not in long_invite["text"]
 
 
 def test_http_invite_and_bot_pack(live_server):

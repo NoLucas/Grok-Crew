@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Auto now asks what kind of video and where the pictures come from. Four styles stay visible (Reel, TikTok, Short, long YouTube). Materials are either “the bot makes the source” or “find what you named.” Find still uses one attached bot and `source_mode: bot` — this app does not scrape, and login-walled Instagram/TikTok stay off limits. The invite only includes a find line when the operator wrote a query; the recipe default is not treated as a scrape request. Long YouTube invites say landscape and minutes, not a vertical short.
 - The existing homepage stays the public site. Pro and Team purchase buttons are **Coming soon** — no checkout. Copy now matches the guest loop (open → connect → one line → paste → save on this PC). Auto-publish, local-API editing, and OAuth claims are gone. Header and favicon use the shutter-play mark. `#install` still takes one email and returns `GrokCrew-Windows.exe`. `connect-install.js` applies the same patches on the live chatgpt.site. The lock is `docs/HOMEPAGE.ko.md`.
 - Future-customer contact is optional: Auto shows a skippable **News later** email card. Today’s job never waits on it. GitHub downloads stay anonymous until the operator sets `NEXT_PUBLIC_GROK_CREW_NEWS_URL`. The lock is `docs/LEADS.ko.md`.
 - The current track is free: one GitHub Release exe, no account, no card, no stamp. Paid install and a publisher stamp wait until money is collected. The lock is `docs/FREE.ko.md`.

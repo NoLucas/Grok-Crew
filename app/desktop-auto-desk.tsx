@@ -7,6 +7,7 @@ import {
   PASTE_TARGET,
   RECIPE_ORDER,
   attachedBotName,
+  autoJobPayload,
   autoMachineState,
   autoPhaseLamps,
   botSeenSeconds,
@@ -25,6 +26,7 @@ import {
   writeAutoPrefs,
   type AutoMode,
   type AutoPhaseId,
+  type MaterialWay,
 } from './desktop-auto-state';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { DesktopNewsCard } from './desktop-news-card';
@@ -34,6 +36,7 @@ import { formatCheckTime, type DeskPullStatus, type DeskWaitState } from './desk
 type StyleRecipe = {
   id: string;
   name?: { ko?: string; en?: string; zh?: string; ja?: string };
+  summary?: { ko?: string; en?: string; zh?: string; ja?: string };
 };
 
 type JsonObject = Record<string, unknown>;
@@ -112,6 +115,8 @@ export function AutoDesk({
   const [mode, setMode] = useState<AutoMode>('hand_off');
   const [title, setTitle] = useState(wait?.title ?? '');
   const [goal, setGoal] = useState('');
+  const [materialWay, setMaterialWay] = useState<MaterialWay>('make');
+  const [collectQuery, setCollectQuery] = useState('');
   const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
   const [recipeTouched, setRecipeTouched] = useState(false);
   const recipeId = recipeTouched ? pickedRecipeId : suggestRecipeId(title, prefs.recipeId);
@@ -168,6 +173,10 @@ export function AutoDesk({
   const styleLabel = selected
     ? localized(selected.name, language, selected.id)
     : t('인스타 릴', 'Instagram Reel', 'Instagram Reel', 'Instagram リール');
+  const wayLabel = materialWay === 'find'
+    ? t('적어 둔 곳에서 찾아옴', 'Find what you named', '从你写下的地方找', '書いたところから探す')
+    : t('봇이 원본을 만듦', 'The bot makes the source', '机器人做原片', 'ボットが原本を作る');
+  const startReady = canStartAuto({ title, attached, materialWay, collectQuery }).ok;
   const seenSeconds = botSeenSeconds(roster, connectedAt, nowMs);
   const seenLabel = seenSeconds === null ? '' : formatSince(seenSeconds, language);
   const elapsedLabel = wait ? formatElapsed(waitElapsedSeconds(wait.copiedAt, nowMs), language) : '';
@@ -210,10 +219,12 @@ export function AutoDesk({
   }, [language, pullStatus, t, wait?.specId, wait?.title]);
 
   const startJob = async () => {
-    const check = canStartAuto({ title, attached });
+    const check = canStartAuto({ title, attached, materialWay, collectQuery });
     if (!check.ok) {
       setError(check.reason === 'title'
         ? t('오늘 올릴 말을 적어 주세요.', 'Write what you will post today.', '请写下今天要发的话。', '今日出す言葉を書いてください。')
+        : check.reason === 'materials'
+          ? t('찾아올 곳이나 주제를 적어 주세요.', 'Write what to find, or where.', '请写下要找的内容或来源。', '探す場所か題を書いてください。')
         : t('먼저 연결하세요.', 'Connect first.', '请先连接。', '先に接続してください。'));
       return;
     }
@@ -225,14 +236,14 @@ export function AutoDesk({
     try {
       const created = await request('/api/v2/edit-specs', {
         method: 'POST',
-        body: JSON.stringify({
+        body: JSON.stringify(autoJobPayload({
           title: heading,
-          goal: goal.trim() || heading,
-          recipe_id: recipeId,
-          source_mode: 'bot',
+          goal,
+          recipeId,
           language,
-          upload: false,
-        }),
+          materialWay,
+          collectQuery,
+        })),
       });
       const record = created.edit_spec as { id?: string };
       if (!record?.id) throw new Error(t('규격을 저장하지 못했습니다.', 'Could not save the spec.', '无法保存规格。', '仕様を保存できませんでした。'));
@@ -403,8 +414,8 @@ export function AutoDesk({
     <div className="desktop-spec-desk desktop-auto-desk">
       <div className="desktop-spec-hero desktop-auto-hero">
         <span>✦</span>
-        <h1>{t('오늘 올릴 말만 적습니다', 'Write only what you will post today', '只写今天要发的话', '今日出す言葉だけ書く')}</h1>
-        <p>{t('연결은 연결 메뉴에서만 합니다. 이 화면은 보내고, 기다리고, 저장합니다.', 'Connections stay in Connect. This screen sends, waits, and saves.', '连接只在连接菜单里做。这个画面负责发送、等待和保存。', '接続は接続メニューだけです。この画面は送って、待って、保存します。')}</p>
+        <h1>{t('오늘 올릴 말과 어떤 영상인지만 적습니다', 'Write today’s line and what kind of video', '只写今天要发的话和什么样的视频', '今日出す言葉と、どんな映像かを書く')}</h1>
+        <p>{t('자료는 붙은 봇이 만들거나, 적어 둔 공개 곳에서 찾습니다. 이 앱은 긁지 않습니다. 연결은 연결 메뉴에서만 합니다.', 'The attached bot makes the source, or finds public clips you named. This app does not scrape. Connections stay in Connect.', '原片由接上的机器人做，或从你写下的公开来源找。这个应用不抓站。连接只在连接菜单里做。', '原本は付けたボットが作るか、書いた公開の場所から探します。このアプリは掻きません。接続は接続メニューだけです。')}</p>
       </div>
 
       {!studioReady ? (
@@ -491,26 +502,24 @@ export function AutoDesk({
           {attached && title.trim() ? (
             <section className="desktop-auto-card" aria-label={t('이번 일', 'This job', '这次任务', '今回の仕事')}>
               <b>{t('이번 일', 'This job', '这次任务', '今回の仕事')}</b>
-              <p>{t(`${attachedName} · ${styleLabel}`, `${attachedName} · ${styleLabel}`, `${attachedName} · ${styleLabel}`, `${attachedName} · ${styleLabel}`)}</p>
-              <p>{t('하지 않음: 올리지 않음 · 화질 잠금 유지 · 이 PC에만 저장', 'Will not: post · change quality · leave this PC', '不会：发布 · 改画质 · 离开这台电脑', 'しないこと: 上げない · 画質を変えない · この PC だけに保存')}</p>
+              <p>{`${attachedName} · ${styleLabel} · ${wayLabel}`}</p>
+              {materialWay === 'find' && collectQuery.trim() ? <p>{collectQuery.trim()}</p> : null}
+              <p>{t('하지 않음: 올리지 않음 · 화질 잠금 유지 · 이 PC에만 저장 · 이 앱이 사이트를 긁지 않음', 'Will not: post · change quality · leave this PC · scrape a site', '不会：发布 · 改画质 · 离开这台电脑 · 抓站', 'しないこと: 上げない · 画質を変えない · この PC だけに保存 · このアプリは掻かない')}</p>
               <p>{t('끝: 컷이 이 창에 뜨면 저장을 묻습니다. 이 창은 봇이 읽었는지 모릅니다.', 'Done when the cut appears here and we ask to save. This window does not know if the bot read it.', '结束：成片出现在这里并询问保存。这个窗口不知道机器人读没读。', '終わり: カットがここに出たら保存を聞きます。この窓はボットが読んだか知りません。')}</p>
             </section>
           ) : null}
-          <details className="desktop-spec-advanced">
-            <summary>{t('무엇을 말할까', 'What should it say', '要讲什么', '何を言うか')}</summary>
+          <label className="desktop-spec-field desktop-spec-wide">
+            <span>{t('어떤 영상을 만들지', 'What kind of video', '要做成什么样的视频', 'どんな映像にするか')}</span>
             <textarea
               value={goal}
               onChange={(event) => setGoal(event.target.value)}
-              placeholder={t('비워 두면 제목과 같습니다.', 'Leave empty to use the title.', '留空则与标题相同。', '空ならタイトルと同じ。')}
+              placeholder={t('비워 두면 제목과 같습니다. 예: 카페 오픈 15초 훅.', 'Leave empty to use the title. Example: a 15s cafe-open hook.', '留空则与标题相同。例如：咖啡馆开业 15 秒钩子。', '空ならタイトルと同じ。例: カフェ開店の15秒フック。')}
               rows={3}
               disabled={saving}
             />
-          </details>
-          <p className="desktop-spec-meta">
-            {t(`${styleLabel}로 보여요. 화질은 여기서 고르지 않습니다.`, `This looks like ${styleLabel}. Quality is not chosen here.`, `看起来像 ${styleLabel}。画质不在这里选。`, `${styleLabel} に見えます。画質はここでは選びません。`)}
-          </p>
-          <details className="desktop-spec-advanced">
-            <summary>{t('다른 스타일', 'Another style', '换风格', '他のスタイル')}</summary>
+          </label>
+          <fieldset className="desktop-spec-recipes">
+            <legend>{t('어떤 형태로', 'What shape', '什么形态', 'どんな形')}</legend>
             <div className="desktop-spec-recipe-grid">
               {cards.length ? cards.map((recipe) => (
                 <button
@@ -524,16 +533,71 @@ export function AutoDesk({
                   }}
                 >
                   <b>{localized(recipe.name, language, recipe.id)}</b>
+                  <span>{localized(recipe.summary, language, '')}</span>
                 </button>
               )) : (
                 <p className="desktop-spec-meta">{t('스타일 목록을 아직 읽지 못했습니다.', 'Could not load styles yet.', '还没读到风格列表。', 'スタイル一覧をまだ読めません。')}</p>
               )}
             </div>
-          </details>
+          </fieldset>
+          <fieldset className="desktop-spec-sources">
+            <legend>{t('자료는 어디서', 'Where do the pictures come from', '画面从哪来', '資料はどこから')}</legend>
+            <div className="desktop-spec-source-grid">
+              <button
+                type="button"
+                className={materialWay === 'make' ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                aria-pressed={materialWay === 'make'}
+                onClick={() => {
+                  setMaterialWay('make');
+                  if (error) setError('');
+                }}
+              >
+                <b>{t('봇이 원본을 만듦', 'The bot makes the source', '机器人做原片', 'ボットが原本を作る')}</b>
+                <span>{t('붙은 봇이 화면을 만들고 첫 컷을 합니다. 이 PC는 사이트를 긁지 않습니다.', 'The attached bot makes the pictures and the first cut. This PC does not scrape.', '接上的机器人做画面和第一刀。这台电脑不抓站。', '付けたボットが画面と最初のカットを作る。この PC は掻きません。')}</span>
+              </button>
+              <button
+                type="button"
+                className={materialWay === 'find' ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                aria-pressed={materialWay === 'find'}
+                onClick={() => {
+                  setMaterialWay('find');
+                  if (error) setError('');
+                }}
+              >
+                <b>{t('적어 둔 곳에서 찾아옴', 'Find what you named', '从你写下的地方找', '書いたところから探す')}</b>
+                <span>{t('주제나 공개 주소를 적으면, 붙은 봇이 공개 클립만 모은 뒤 자릅니다.', 'Name a topic or public page. The attached bot gathers public clips, then cuts.', '写下题目或公开地址。接上的机器人只收集公开片段再剪。', '題や公開の住所を書く。付けたボットが公開クリップだけ集めて切る。')}</span>
+              </button>
+            </div>
+          </fieldset>
+          {materialWay === 'find' ? (
+            <>
+              <label className="desktop-spec-field desktop-spec-wide">
+                <span>{t('찾아올 것', 'Find', '要找什么', '探してくるもの')}</span>
+                <textarea
+                  value={collectQuery}
+                  onChange={(event) => {
+                    setCollectQuery(event.target.value);
+                    if (error) setError('');
+                  }}
+                  placeholder={t('공개 페이지, 주제, 쓸 수 있는 주소. 로그인 막힌 인스타·틱톡은 적지 마세요.', 'A public page, topic, or allowed URL. Do not name login-walled Instagram or TikTok.', '公开页面、题目、能用的地址。不要写登录墙后的 Instagram 或 TikTok。', '公開ページ、題、使える住所。ログインで閉じた Instagram や TikTok は書かない。')}
+                  rows={3}
+                  aria-invalid={Boolean(error) && !collectQuery.trim()}
+                  disabled={saving}
+                />
+              </label>
+              <p className="desktop-spec-meta">
+                {t('이 앱은 스크래퍼가 아닙니다. 붙은 봇이 공개된 클립만 찾습니다. 로그인 막힌 인스타·틱톡은 안 됩니다.', 'This app is not a scraper. The attached bot finds public clips only. Login-walled Instagram or TikTok is off limits.', '这个应用不是抓取器。接上的机器人只找公开片段。登录墙后的 Instagram 或 TikTok 不行。', 'このアプリはスクレイパーではありません。付けたボットは公開クリップだけ探します。ログインで閉じた Instagram や TikTok はだめです。')}
+              </p>
+            </>
+          ) : (
+            <p className="desktop-spec-meta">
+              {t(`${styleLabel}로 보여요. 화질은 여기서 고르지 않습니다. 이 PC는 사이트를 긁지 않습니다.`, `This looks like ${styleLabel}. Quality is not chosen here. This PC does not scrape.`, `看起来像 ${styleLabel}。画质不在这里选。这台电脑不抓站。`, `${styleLabel} に見えます。画質はここでは選びません。この PC は掻きません。`)}
+            </p>
+          )}
           {!attached ? (
             <p className="desktop-auto-gate">{t('아직 안 붙었으면 시작이 안 됩니다. 연결 열기를 누르세요. 다른 PC 봇은 일을 복사해 그 창에 붙이고, 끝난 파일만 이 창에 놓습니다.', 'Nothing is attached, so Start stays off. Open Connect. An other-PC bot gets the job as text and drops the finished file here.', '还没接上就不能开始。请打开连接。另一台电脑的机器人只收任务文字，再把完成文件放到这里。', 'まだ付いていなければ始まりません。接続を開いてください。別 PC のボットは仕事を貼り、完成ファイルだけこの窓に置きます。')}</p>
           ) : null}
-          <button type="submit" className="desktop-primary" disabled={locked || !attached || !title.trim()}>
+          <button type="submit" className="desktop-primary" disabled={locked || !startReady}>
             {saving
               ? t('보내는 중…', 'Sending…', '发送中…', '送信中…')
               : copied
@@ -703,7 +767,7 @@ export function AutoDesk({
 
       {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
       {sendFailed || pullStatus === 'failed' || saveFailed ? (
-        <button type="button" className="desktop-secondary" disabled={locked || !attached || !title.trim()} onClick={() => void startJob()}>
+        <button type="button" className="desktop-secondary" disabled={locked || !startReady} onClick={() => void startJob()}>
           {t('같은 말로 다시', 'Send the same line again', '再用同一句话', '同じ言葉でもう一度')}
         </button>
       ) : null}

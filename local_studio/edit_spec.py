@@ -779,6 +779,63 @@ def crew_roster() -> dict[str, Any]:
     }
 
 
+def _invite_find_query(spec: dict[str, Any]) -> str:
+    query = str(spec.get("collect_query") or "").strip()
+    if not query:
+        return ""
+    recipe = spec.get("recipe") if isinstance(spec.get("recipe"), dict) else {}
+    collect = recipe.get("collect") if isinstance(recipe.get("collect"), dict) else {}
+    recipe_query = str(collect.get("query") or "").strip()
+    if source_mode_of(spec) in {"collect", "own_and_collect"}:
+        return query
+    if query == recipe_query:
+        return ""
+    return query
+
+
+def _invite_ratio(spec: dict[str, Any], language: str) -> str:
+    aspect = str(spec.get("aspect") or "9:16")
+    if aspect == "9:16":
+        return "세로" if language.startswith("ko") else "vertical"
+    if aspect == "16:9":
+        return "가로" if language.startswith("ko") else "landscape"
+    return aspect
+
+
+def _invite_length(spec: dict[str, Any], language: str) -> str:
+    duration = spec.get("duration_seconds") if isinstance(spec.get("duration_seconds"), dict) else {}
+    low = int(duration.get("min") or 21)
+    high = int(duration.get("max") or 30)
+    if low >= 60 and high >= 60:
+        return (
+            f"{low // 60}–{high // 60}분"
+            if language.startswith("ko")
+            else f"{low // 60}–{high // 60} min"
+        )
+    return f"{low}–{high}초" if language.startswith("ko") else f"{low}–{high}s"
+
+
+def _invite_find_block(spec: dict[str, Any], language: str) -> str:
+    query = _invite_find_query(spec)
+    if language.startswith("ko"):
+        if query:
+            return (
+                f"자료: 운영자가 적은 곳에서 공개로 쓸 수 있는 클립만 모으세요.\n"
+                f"찾아올 것: {query}\n"
+                "이 앱은 스크래퍼가 아닙니다. 로그인 막힌 인스타/틱톡은 긁지 마세요.\n"
+                "모은 뒤 그 자료로 첫 컷을 만듭니다.\n"
+            )
+        return "원본과 첫 컷을 당신이 만듭니다. 운영자는 영상을 주지 않습니다.\n"
+    if query:
+        return (
+            f"Materials: gather only public clips from what the operator named.\n"
+            f"Find: {query}\n"
+            "This app is not a scraper. Do not scrape login-walled Instagram or TikTok.\n"
+            "After you gather, make the first cut from those clips.\n"
+        )
+    return "You make the source and the first cut. The operator will not attach footage.\n"
+
+
 def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
     """Short paste for one bot. No git clone path. The person only copies."""
     record = get_spec(spec_id)
@@ -791,17 +848,19 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
     inbox = str(door_inbox_dir(EDITOR_DOOR))
     title = str(spec.get("title") or record.get("title") or "").strip()
     recipe_id = str(spec.get("recipe_id") or "instagram_reel")
-    duration = spec.get("duration_seconds") if isinstance(spec.get("duration_seconds"), dict) else {}
-    low = int(duration.get("min") or 21)
-    high = int(duration.get("max") or 30)
     recipe_name = recipe_label(RECIPES.get(recipe_id) or {"id": recipe_id, "name": {}}, language)
     lang = (language or "ko").strip().lower()
+    goal = str(spec.get("goal") or title).strip()
+    find_text = _invite_find_block(spec, lang)
+    ratio = _invite_ratio(spec, lang)
+    length = _invite_length(spec, lang)
     if lang.startswith("ko"):
         text = (
             f"이 컴퓨터의 Grok Crew가 켜져 있습니다.\n"
             f"제목: {title}\n"
-            f"형태: {recipe_name}, 세로, {low}–{high}초.\n"
-            f"원본과 첫 컷을 당신이 만듭니다. 운영자는 영상을 주지 않습니다.\n\n"
+            f"목표: {goal}\n"
+            f"형태: {recipe_name}, {ratio}, {length}.\n"
+            f"{find_text}\n"
             f"같은 컴퓨터에서 명령할 수 있으면:\n"
             f"  python grok-crew.py entry --bot-id desk-bot --display-name \"당신의 이름\" --purpose edit_video\n"
             f"  (스크립트는 http://127.0.0.1:7214/downloads/grok-crew.py)\n\n"
@@ -814,8 +873,9 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
         text = (
             f"Grok Crew is open on this computer.\n"
             f"Title: {title}\n"
-            f"Shape: {recipe_name}, vertical, {low}–{high}s.\n"
-            f"You make the source and the first cut. The operator will not attach footage.\n\n"
+            f"Goal: {goal}\n"
+            f"Shape: {recipe_name}, {ratio}, {length}.\n"
+            f"{find_text}\n"
             f"If you can run a command on this computer:\n"
             f"  python grok-crew.py entry --bot-id desk-bot --display-name \"your name\" --purpose edit_video\n"
             f"  (script: http://127.0.0.1:7214/downloads/grok-crew.py)\n\n"

@@ -7,6 +7,7 @@ export const PASTE_TARGET = 'Cursor';
 export const DEFAULT_RECIPE_ID = 'instagram_reel';
 
 export type AutoMode = 'hand_off' | 'own_file';
+export type MaterialWay = 'make' | 'find';
 export type AutoPhaseId = 'connect' | 'sent' | 'working' | 'cut' | 'save';
 export type AutoLamp = 'off' | 'yellow' | 'green' | 'red';
 export type AutoMachine =
@@ -27,7 +28,32 @@ export type AutoPrefs = {
 
 export type AutoStartCheck =
   | { ok: true }
-  | { ok: false; reason: 'title' | 'connect' };
+  | { ok: false; reason: 'title' | 'connect' | 'materials' };
+
+export type AutoJobInput = {
+  title: string;
+  goal?: string;
+  recipeId: string;
+  language: string;
+  materialWay?: MaterialWay;
+  collectQuery?: string;
+};
+
+export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
+  const heading = String(input.title || '').trim();
+  const body: Record<string, unknown> = {
+    title: heading,
+    goal: String(input.goal || '').trim() || heading,
+    recipe_id: input.recipeId,
+    source_mode: 'bot',
+    language: input.language,
+    upload: false,
+  };
+  if (input.materialWay === 'find') {
+    body.collect_query = String(input.collectQuery || '').trim();
+  }
+  return body;
+}
 
 export type AutoLampInput = {
   attached: boolean;
@@ -135,9 +161,17 @@ export function suggestRecipeId(text: string, lastRecipeId?: string): string {
   return last || DEFAULT_RECIPE_ID;
 }
 
-export function canStartAuto(input: { title: string; attached: boolean }): AutoStartCheck {
+export function canStartAuto(input: {
+  title: string;
+  attached: boolean;
+  materialWay?: MaterialWay;
+  collectQuery?: string;
+}): AutoStartCheck {
   if (!String(input.title || '').trim()) return { ok: false, reason: 'title' };
   if (!input.attached) return { ok: false, reason: 'connect' };
+  if (input.materialWay === 'find' && !String(input.collectQuery || '').trim()) {
+    return { ok: false, reason: 'materials' };
+  }
   return { ok: true };
 }
 
