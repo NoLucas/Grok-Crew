@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- The Windows exe, installer, and desktop window use the purple G desk mark instead of the default Electron icon.
 - The first desk keeps four human steps and hides the rest. Invite text stays on the clipboard; the screen says paste it in the bot window. After copy, a wait strip shows last check and not-yet / arrived / failed. Sample no longer opens by itself. Install failure stays on the same page with three SmartScreen pictures; the bot zip stays under Other method. No-bot help sits next to copy, with a finished-file drop and no path typing. Hand-it-off and open-it-myself stay on two cards. More detail and Advanced tools grow only after the first cut arrives.
 - Projects can be renamed, grouped into folders (drag or right-click), and moved to a trash that restores, empties, or auto-deletes after 30 days. Handoff files can be renamed or sent to the same trash.
 - Setup can apply YouTube Shorts, Instagram Reels, TikTok, and other edit styles, and save the current knobs as a named local preset. Quality stays locked when a spec is open.

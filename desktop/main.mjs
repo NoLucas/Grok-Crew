@@ -277,8 +277,12 @@ function registerIpc(apiBase) {
 
 async function createWindow(apiBase, rendererUrl) {
   const runtime = Buffer.from(JSON.stringify({ apiBase })).toString('base64url');
+  const iconFile = process.platform === 'win32'
+    ? join(desktopDir, 'icons', 'icon.ico')
+    : join(desktopDir, 'icons', 'icon.png');
   const window = new BrowserWindow({
     width: 1500, height: 980, minWidth: 1060, minHeight: 720, backgroundColor: '#f4f4f2',
+    icon: existsSync(iconFile) ? iconFile : undefined,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
       preload: join(desktopDir, 'preload.cjs'), sandbox: true, contextIsolation: true,
