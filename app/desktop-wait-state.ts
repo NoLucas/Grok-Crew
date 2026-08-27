@@ -25,7 +25,7 @@ function asWait(value: unknown): DeskWaitState | null {
   const specId = String(record.specId || "").trim();
   const title = String(record.title || "").trim();
   const copiedAt = String(record.copiedAt || "").trim();
-  const pasteTarget = String(record.pasteTarget || "").trim() || "Cursor";
+  const pasteTarget = String(record.pasteTarget || "").trim() || "Grok Bot";
   if (!specId || !copiedAt) return null;
   return { specId, title, copiedAt, pasteTarget };
 }

@@ -51,9 +51,7 @@ type BotPanelProps = {
 };
 
 const OTHER_KINDS: Array<{ id: Exclude<BotKind, 'same_pc'>; ko: string; en: string; zh: string; ja: string }> = [
-  { id: 'grok', ko: 'Grok', en: 'Grok', zh: 'Grok', ja: 'Grok' },
-  { id: 'cursor', ko: 'Cursor', en: 'Cursor', zh: 'Cursor', ja: 'Cursor' },
-  { id: 'claude', ko: 'Claude', en: 'Claude', zh: 'Claude', ja: 'Claude' },
+  { id: 'grok', ko: 'Grok Bot', en: 'Grok Bot', zh: 'Grok Bot', ja: 'Grok Bot' },
   { id: 'custom', ko: '내가 만든 에이전트', en: 'My agent', zh: '我做的智能体', ja: '自分のエージェント' },
 ];
 
@@ -194,12 +192,12 @@ export function DesktopBotPanel({
         />
         <p>{connected
           ? t('붙은 이름 옆의 초록불과 마지막 확인이 연결됨입니다. 끊기는 각 줄에서 합니다.', 'The green light and last check next to a name mean connected. Remove it on that row.', '名字旁边的绿灯和上次确认就是已连接。断开在该行操作。', '名前の横の緑と最後の確認が接続済みです。切るはその行で。')
-          : t('다른 PC의 Grok·Cursor·Claude·내가 만든 에이전트부터 붙이세요.', 'Attach Grok, Cursor, Claude, or your agent on another PC first.', '先接另一台电脑上的 Grok、Cursor、Claude 或自己的智能体。', '先に別 PC の Grok・Cursor・Claude・自分のエージェントを付けてください。')}</p>
+          : t('다른 PC의 Grok Bot이나 내가 만든 에이전트부터 붙이세요.', 'Attach Grok Bot or your agent on another PC first.', '先接另一台电脑上的 Grok Bot 或自己的智能体。', '先に別 PC の Grok Bot か自分のエージェントを付けてください。')}</p>
       </section>
 
       <section className="desktop-simple-card">
         <h2>{t('다른 PC', 'Other PC', '另一台电脑', '別の PC')}</h2>
-        <p>{t('Grok, Cursor, Claude, 내가 만든 에이전트는 연결 글을 그 창에 붙인 뒤, 봇이 보낸 한 줄을 다시 붙입니다. 그 봇은 이 주소를 열 수 없습니다.', 'Grok, Cursor, Claude, or your agent pastes the connect line, then you paste its one-line reply. That bot cannot open this address.', 'Grok、Cursor、Claude 或自己的智能体先贴连接文字，再把它们回的一行贴回来。那个机器人打不开这个地址。', 'Grok・Cursor・Claude・自分のエージェントは接続文を貼り、返ってきた一行を戻します。そのボットはこの住所を開けません。')}</p>
+        <p>{t('Grok Bot이나 내가 만든 에이전트는 연결 글을 그 창에 붙인 뒤, 봇이 보낸 한 줄을 다시 붙입니다. 그 봇은 이 주소를 열 수 없습니다.', 'Grok Bot or your agent pastes the connect line, then you paste its one-line reply. That bot cannot open this address.', 'Grok Bot 或自己的智能体先贴连接文字，再把它们回的一行贴回来。那个机器人打不开这个地址。', 'Grok Bot か自分のエージェントは接続文を貼り、返ってきた一行を戻します。そのボットはこの住所を開けません。')}</p>
         {links.pairCode ? <p className="desktop-spec-meta">{t(`연결 코드 ${links.pairCode}`, `Code ${links.pairCode}`, `连接代码 ${links.pairCode}`, `接続コード ${links.pairCode}`)}</p> : null}
         <ul className="desktop-bot-list">
           {OTHER_KINDS.map((item) => {

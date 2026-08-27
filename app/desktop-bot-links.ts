@@ -119,7 +119,7 @@ export function linkedByKind(bots: LinkedBot[] | undefined, kind: BotKind): Link
 }
 
 function brandName(kind: BotKind): string {
-  if (kind === 'grok') return 'Grok';
+  if (kind === 'grok') return 'Grok Bot';
   if (kind === 'cursor') return 'Cursor';
   if (kind === 'claude') return 'Claude';
   return 'Agent';
@@ -133,7 +133,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
     const title = kind === 'custom' || kind === 'same_pc' ? '이 에이전트' : who;
     return [
       `당신은 Grok Crew와 연결합니다. 이름은 ${title}입니다.`,
-      '역할 이름은 편집 Agent입니다. Grok·Claude·Cursor는 역할이 아닙니다.',
+      '역할 이름은 편집 Agent입니다. Grok Bot은 이름입니다. 역할이 아닙니다.',
       '다른 컴퓨터에서는 127.0.0.1에 붙지 마세요. 이 창을 열 수 없습니다.',
       `연결 코드: ${pairCode}`,
       '',
@@ -147,7 +147,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
     const title = kind === 'custom' || kind === 'same_pc' ? '这个智能体' : who;
     return [
       `你正在连接 Grok Crew。名字是 ${title}。`,
-      '角色名是剪辑 Agent。Grok、Claude、Cursor 不是角色。',
+      '角色名是剪辑 Agent。Grok Bot 是名字，不是角色。',
       '另一台电脑不要连接 127.0.0.1。打不开这个窗口。',
       `连接代码：${pairCode}`,
       '',
@@ -161,7 +161,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
     const title = kind === 'custom' || kind === 'same_pc' ? 'このエージェント' : who;
     return [
       `あなたは Grok Crew と接続します。名前は ${title} です。`,
-      '役割名は編集 Agent です。Grok・Claude・Cursor は役割ではありません。',
+      '役割名は編集 Agent です。Grok Bot は名前であり、役割ではありません。',
       '別のコンピュータから 127.0.0.1 に接続しないでください。この窓は開けません。',
       `接続コード: ${pairCode}`,
       '',
@@ -173,7 +173,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
   }
   return [
     `You are connecting to Grok Crew as ${who}.`,
-    'The role name is Editor Agent. Brand names are not roles.',
+    'The role name is Editor Agent. Grok Bot is a name, not a role.',
     'Do not connect to 127.0.0.1 from another computer.',
     `Connection code: ${pairCode}`,
     '',

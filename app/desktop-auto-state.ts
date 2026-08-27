@@ -3,7 +3,7 @@ import type { DeskPullStatus, DeskWaitState } from './desktop-wait-state';
 
 export const AUTO_PREFS_KEY = 'grok-crew-auto-prefs';
 export const RECIPE_ORDER = ['instagram_reel', 'tiktok_tight', 'youtube_short', 'youtube_long'] as const;
-export const PASTE_TARGET = 'Cursor';
+export const PASTE_TARGET = 'Grok Bot';
 export const DEFAULT_RECIPE_ID = 'instagram_reel';
 
 export type AutoMode = 'hand_off' | 'own_file';

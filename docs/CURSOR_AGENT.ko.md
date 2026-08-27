@@ -30,15 +30,9 @@ python grok-crew.py entry --bot-id cursor-desk --display-name "Cursor" --purpose
 
 ## 다른 컴퓨터의 Cursor
 
-1. 사람이 **연결** 메뉴 맨 위의 다른 PC · Cursor에서 **연결 글 복사**를 합니다.
-2. Cursor 에이전트 창에 그 글을 붙입니다. 에이전트는 `GROK_CREW_OK <코드> Cursor` 한 줄만 답합니다.
-3. 그 한 줄을 봇 메뉴에 다시 붙이면 이름이 연결됨으로 납니다. 그 에이전트는 `127.0.0.1`을 열지 않습니다.
-4. 사람이 책상에서 **봇에게 이 말 복사**를 하고 그 창에 붙입니다.
-5. 에이전트는 원본과 첫 컷을 만들고 `bundle.json` + 영상 파일을 초대문의 인박스 폴더에 둡니다.
-6. `bundle.project.door`는 `editor`, `created_by`는 `Cursor`, `edit_spec_id`는 초대에 있는 id입니다.
-7. 이 PC의 화면이 pull 합니다. 수집 인박스에 완성 컷을 넣으면 거절합니다.
+Cursor는 Grok Crew와 붙는 공식 연결 API를 제공하지 않습니다. 연결 메뉴의 다른 PC 칸에서 Cursor 브랜드 줄은 없습니다. 같은 PC 체크인만 남습니다.
 
-git으로 보낼 때는 `HANDOFF_REPO_REMOTE`가 있을 때만입니다. 없으면 로컬 폴더만 씁니다.
+다른 PC에서 직접 만든 에이전트를 붙이려면 **내가 만든 에이전트** 줄을 씁니다. 그 에이전트는 `127.0.0.1`을 열지 않습니다.
 
 ## 폴더 판과 규격 잠금
 

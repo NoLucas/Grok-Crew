@@ -51,6 +51,12 @@ describe('desk wait state', () => {
     });
     clearDeskWait();
     assert.equal(readDeskWait(), null);
+    memory.set(DESK_WAIT_KEY, JSON.stringify({
+      specId: 'spec-3',
+      title: 'No target',
+      copiedAt: '2026-08-27T03:02:00.000Z',
+    }));
+    assert.equal(readDeskWait()?.pasteTarget, 'Grok Bot');
   });
 
   it('remembers the first arrived cut', () => {

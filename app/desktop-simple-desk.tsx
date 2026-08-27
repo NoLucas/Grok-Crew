@@ -36,7 +36,7 @@ type SimpleDeskProps = {
 };
 
 const RECIPE_ORDER = ['instagram_reel', 'tiktok_tight', 'youtube_short', 'youtube_long'] as const;
-const PASTE_TARGET = 'Cursor';
+const PASTE_TARGET = 'Grok Bot';
 
 function localized(map: { ko?: string; en?: string; zh?: string; ja?: string } | undefined, language: string, fallback: string) {
   if (!map) return fallback;
@@ -238,7 +238,7 @@ export function SimpleDesk({
       <div className="desktop-spec-hero">
         <span>✦</span>
         <h1>{t('제목을 적고 붙입니다', 'Write a title and paste it', '写下标题再贴出去', 'タイトルを書いて貼る')}</h1>
-        <p>{t('연결은 위 연결 메뉴에서만 합니다. 다른 PC(Grok·Cursor·Claude·내가 만든 에이전트)가 맨 위입니다.', 'Connections live only in Connect. Other-PC bots (Grok, Cursor, Claude, your agent) stay at the top.', '连接只在上面的连接菜单里。另一台电脑（Grok、Cursor、Claude、自己的智能体）在最上面。', '接続は上の接続メニューだけです。別 PC（Grok・Cursor・Claude・自分のエージェント）が一番上です。')}</p>
+        <p>{t('연결은 위 연결 메뉴에서만 합니다. 다른 PC(Grok Bot·내가 만든 에이전트)가 맨 위입니다.', 'Connections live only in Connect. Other-PC bots (Grok Bot, your agent) stay at the top.', '连接只在上面的连接菜单里。另一台电脑（Grok Bot、自己的智能体）在最上面。', '接続は上の接続メニューだけです。別 PC（Grok Bot・自分のエージェント）が一番上です。')}</p>
       </div>
 
       {!studioReady ? (

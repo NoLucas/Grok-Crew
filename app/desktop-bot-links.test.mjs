@@ -26,7 +26,7 @@ describe('remote bot links', () => {
       parseConnectReply('first line\nGROK_CREW_OK 7K2M9Q Grok\n', '7K2M9Q'),
       { name: 'Grok' },
     );
-    assert.equal(suggestedConnectReply('grok', '7K2M9Q'), 'GROK_CREW_OK 7K2M9Q Grok');
+    assert.equal(suggestedConnectReply('grok', '7K2M9Q'), 'GROK_CREW_OK 7K2M9Q Grok Bot');
   });
 
   it('remote paste never points at a clone or this PC API', () => {
@@ -34,8 +34,10 @@ describe('remote bot links', () => {
       const text = remoteConnectPaste('grok', '7K2M9Q', language);
       assert.match(text, /Grok/);
       assert.match(text, /7K2M9Q/);
-      assert.match(text, /GROK_CREW_OK 7K2M9Q Grok/);
+      assert.match(text, /GROK_CREW_OK 7K2M9Q Grok Bot/);
       assert.match(text, /127\.0\.0\.1/);
+      assert.doesNotMatch(text, /Claude/);
+      assert.doesNotMatch(text, /Cursor/);
       assert.doesNotMatch(text, /git clone/);
       assert.doesNotMatch(text, /bot-entry/);
     }
