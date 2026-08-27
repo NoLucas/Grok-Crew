@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
+import { register } from 'node:module';
 import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+register('./timeline/ts-resolver.helper.mjs', import.meta.url);
 
 const {
   BOT_SKILL_PATHS,
@@ -84,7 +87,11 @@ describe('built-in bot skills', () => {
     assert.match(text, /자막: 끔/);
     assert.match(text, /더빙: 끔/);
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { captions: true, dubbing: true }), /자막: 켬/);
+    assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { captions: true, dubbing: true }), /Kokoro-82M 하나만/);
+    assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { dubbing: true, voiceModelId: 'step-audio-editx' }), /Step Audio EditX 하나만/);
     assert.match(voiceInviteBlock('en'), /Captions: off/);
+    assert.match(skillText('planner'), /초대문에 적힌 음성 모델 하나만/);
+    assert.match(skillText('editor'), /초대문에 적힌 음성 모델 하나만/);
   });
 
   it('keeps the public skill files in lockstep', () => {

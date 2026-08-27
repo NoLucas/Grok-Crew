@@ -1,4 +1,5 @@
 import { connectedBot, type CrewRoster } from './desktop-bot-connect';
+import { DEFAULT_VOICE_MODEL_ID, dubbingMustKeep, resolveVoiceModelId, type VoiceModelId } from './desktop-voice-models';
 import type { DeskPullStatus, DeskWaitState } from './desktop-wait-state';
 
 export const AUTO_PREFS_KEY = 'grok-crew-auto-prefs';
@@ -26,6 +27,7 @@ export type AutoPrefs = {
   lastSaveAt?: string;
   wantCaptions?: boolean;
   wantDubbing?: boolean;
+  voiceModelId?: VoiceModelId;
 };
 
 export type AutoStartCheck =
@@ -43,6 +45,7 @@ export type AutoJobInput = {
   collectQuery?: string;
   wantCaptions?: boolean;
   wantDubbing?: boolean;
+  voiceModelId?: VoiceModelId;
 };
 
 export function titleFromPrompt(title: string, goal = ''): string {
@@ -97,7 +100,7 @@ export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
   if (useScrape) body.collect_query = String(input.collectQuery || '').trim() || prompt;
   if (useOwn) body.owned_paths = ownedPaths;
   if (input.wantDubbing) {
-    body.must_keep = '더빙은 운영자가 넣은 음성 파일만. 없으면 원본 소리. TTS를 만들지 않는다.';
+    body.must_keep = dubbingMustKeep(input.voiceModelId);
   }
   return body;
 }
@@ -128,7 +131,7 @@ function storage(): Storage | null {
 }
 
 export function emptyAutoPrefs(): AutoPrefs {
-  return { recipeId: DEFAULT_RECIPE_ID, recentTitles: [], wantCaptions: false, wantDubbing: false };
+  return { recipeId: DEFAULT_RECIPE_ID, recentTitles: [], wantCaptions: false, wantDubbing: false, voiceModelId: DEFAULT_VOICE_MODEL_ID };
 }
 
 function cleanTitles(value: unknown): string[] {
@@ -159,6 +162,7 @@ export function readAutoPrefs(): AutoPrefs {
       lastSaveAt: String(parsed.lastSaveAt || '').trim() || undefined,
       wantCaptions: Boolean(parsed.wantCaptions),
       wantDubbing: Boolean(parsed.wantDubbing),
+      voiceModelId: resolveVoiceModelId(parsed.voiceModelId),
     };
   } catch {
     return emptyAutoPrefs();
@@ -175,6 +179,7 @@ export function writeAutoPrefs(prefs: Partial<AutoPrefs>): AutoPrefs {
     lastSaveAt: prefs.lastSaveAt !== undefined ? String(prefs.lastSaveAt || '').trim() || undefined : current.lastSaveAt,
     wantCaptions: prefs.wantCaptions !== undefined ? Boolean(prefs.wantCaptions) : Boolean(current.wantCaptions),
     wantDubbing: prefs.wantDubbing !== undefined ? Boolean(prefs.wantDubbing) : Boolean(current.wantDubbing),
+    voiceModelId: resolveVoiceModelId(prefs.voiceModelId ?? current.voiceModelId),
   };
   storage()?.setItem(AUTO_PREFS_KEY, JSON.stringify(next));
   return next;

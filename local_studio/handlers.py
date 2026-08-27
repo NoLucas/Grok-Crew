@@ -72,6 +72,7 @@ from studio_server import (
 )
 from advanced_tools import advanced_tools_catalog, assign_advanced_tools
 from first_run import first_run_status, open_sample_project
+from voice_models import select_voice_model
 from bot_pack import bot_pack_bytes
 from edit_spec import create_spec, get_spec, list_specs, spec_brief, spec_invite
 from handoff_folders import delete_handoff_file, reveal_handoff_file, workspace_handoff_folders
@@ -481,6 +482,8 @@ class StudioHandler(BaseHTTPRequestHandler):
             elif path == "/api/v2/first-run/sample":
                 opened = open_sample_project()
                 self._json(201, {**opened, **get_timeline(opened["project"]["id"])})
+            elif path == "/api/v2/first-run/voice-model":
+                self._json(200, select_voice_model(body))
             elif path == "/api/v2/edit-specs":
                 self._json(201, {"edit_spec": create_spec(body)})
             elif path == "/api/v2/handoff/pull":

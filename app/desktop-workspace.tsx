@@ -24,7 +24,14 @@ import {
   type BotLinkState,
 } from './desktop-bot-links';
 import { AutoDesk } from './desktop-auto-desk';
-import { autoHeaderDot } from './desktop-auto-state';
+import { autoHeaderDot, writeAutoPrefs } from './desktop-auto-state';
+import { DesktopVoiceSetup } from './desktop-voice-setup';
+import {
+  confirmVoiceChoice,
+  readVoiceSetup,
+  writeVoiceSetup,
+  type VoiceModelId,
+} from './desktop-voice-models';
 import { HandoffFolderBoard, type HandoffFolder } from './desktop-handoff-folder';
 import { appearanceDataAttrs, useDesktopAppearance } from './desktop-appearance';
 import { DesktopAppearanceControls } from './desktop-appearance-controls';
@@ -109,7 +116,17 @@ type Version = {
   action_kind?: 'edit' | 'undo' | 'redo' | 'restore';
   restored_from_revision?: number | null;
 };
-type FirstRun = { sample_available?: boolean; sample_open?: boolean; sample_path?: string; has_projects?: boolean };
+type FirstRun = {
+  sample_available?: boolean;
+  sample_open?: boolean;
+  sample_path?: string;
+  has_projects?: boolean;
+  voice_model?: {
+    active?: string | null;
+    chosen?: boolean;
+    download?: { model_id?: string | null; status?: string; received_bytes?: number; total_bytes?: number; file?: string; error?: string };
+  };
+};
 type EditSpec = {
   id: string;
   status: string;
@@ -317,6 +334,9 @@ export default function DesktopWorkspace() {
   const [studioState, setStudioState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [drawer, setDrawer] = useState<'none' | 'projects' | 'status'>('none');
   const [botLinks, setBotLinks] = useState<BotLinkState>({ pairCode: '', bots: [] });
+  const [voiceSetup, setVoiceSetup] = useState(() => readVoiceSetup());
+  const [voiceDraft, setVoiceDraft] = useState<VoiceModelId>(() => readVoiceSetup().modelId);
+  const [voiceBusy, setVoiceBusy] = useState(false);
   const [botPanelOpen, setBotPanelOpen] = useState(false);
   const [deskWait, setDeskWait] = useState<DeskWaitState | null>(null);
   const [firstCut, setFirstCut] = useState(false);
@@ -370,6 +390,28 @@ export default function DesktopWorkspace() {
     }
   }, [api, t]);
 
+  const confirmVoiceModel = useCallback(async (selected?: VoiceModelId) => {
+    const id = confirmVoiceChoice(selected ?? voiceDraft);
+    setVoiceSetup(writeVoiceSetup({ done: true, modelId: id }));
+    setVoiceDraft(id);
+    writeAutoPrefs({ voiceModelId: id });
+    setVoiceBusy(true);
+    try {
+      await api('/api/v2/first-run/voice-model', { method: 'POST', body: JSON.stringify({ model_id: id }) });
+      await refreshWorkspace(true);
+      setMessage(t(
+        `${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'}만 이 PC에 받습니다.`,
+        `Only ${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'} will be kept on this PC.`,
+        `这台电脑只收下 ${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'}。`,
+        `この PC には ${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'} だけ受け取ります。`,
+      ));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t('모델을 받지 못했습니다. 나중에 설정에서 다시 누르세요.', 'Could not download the model. Try again later in Setup.', '没能下载模型。请稍后在设置里再按。', 'モデルを受け取れませんでした。あとで設定でもう一度。'));
+    } finally {
+      setVoiceBusy(false);
+    }
+  }, [api, refreshWorkspace, t, voiceDraft]);
+
   const refreshProject = useCallback(async (projectId: string) => {
     if (!projectId) { setTimeline(null); setVersions([]); setHistory(emptyTimelineHistory()); setAnalysis(null); setProxies([]); setReceipts([]); return; }
     try {
@@ -394,6 +436,12 @@ export default function DesktopWorkspace() {
   }, [api, t]);
 
   useEffect(() => { const initial = window.setTimeout(() => void refreshWorkspace(), 0); const interval = window.setInterval(() => void refreshWorkspace(true), 5000); return () => { window.clearTimeout(initial); window.clearInterval(interval); }; }, [refreshWorkspace]);
+  useEffect(() => {
+    const status = workspace.first_run?.voice_model?.download?.status;
+    if (status !== 'queued' && status !== 'running') return undefined;
+    const faster = window.setInterval(() => void refreshWorkspace(true), 1200);
+    return () => window.clearInterval(faster);
+  }, [refreshWorkspace, workspace.first_run?.voice_model?.download?.status]);
 
   const editorInbox = workspace.handoff?.doors?.editor ?? workspace.handoff?.doors?.grok;
   const editorPending = editorInbox?.pending_count ?? 0;
@@ -1278,8 +1326,21 @@ export default function DesktopWorkspace() {
         />
 
         <section className="desktop-stage">
-          {studioState === 'error' && project ? <div className="desktop-banner error" role="alert"><div><b>{t('Local Studio에 연결하지 못했습니다', 'Could not reach Local Studio', '无法连接 Local Studio', 'Local Studio に接続できません')}</b><p>{t('사이드카가 꺼져 있으면 프로젝트와 렌더를 읽을 수 없습니다.', 'The sidecar is offline, so projects and renders cannot load.', '侧车离线时无法读取项目和渲染。', 'サイドカーが停止しているとプロジェクトとレンダーを読めません。')}</p></div><button type="button" className="desktop-secondary" onClick={() => void refreshWorkspace()}>{t('다시 연결', 'Reconnect', '重新连接', '再接続')}</button></div> : null}
-          {studioState === 'loading' && !project ? <div className="desktop-empty" aria-busy="true"><span className="desktop-spinner" /><h1>{t('작업 공간을 불러오는 중', 'Loading the workspace', '正在加载工作区', 'ワークスペースを読み込み中')}</h1><p>{t('Local Studio의 프로젝트와 게시 영수증을 확인합니다.', 'Checking Local Studio projects and publish receipts.', '正在检查本地工作室项目和发布回执。', 'Local Studio のプロジェクトと公開レシートを確認しています。')}</p></div>
+          {!voiceSetup.done && !showBotRoom ? (
+            <div className="desktop-simple-wrap">
+              <DesktopVoiceSetup
+                variant="wizard"
+                selected={voiceDraft}
+                studioReady={studioState === 'ready'}
+                busy={voiceBusy}
+                download={workspace.first_run?.voice_model?.download}
+                onSelect={setVoiceDraft}
+                onConfirm={() => { void confirmVoiceModel(voiceDraft); }}
+              />
+            </div>
+          ) : null}
+          {voiceSetup.done || showBotRoom ? studioState === 'error' && project ? <div className="desktop-banner error" role="alert"><div><b>{t('Local Studio에 연결하지 못했습니다', 'Could not reach Local Studio', '无法连接 Local Studio', 'Local Studio に接続できません')}</b><p>{t('사이드카가 꺼져 있으면 프로젝트와 렌더를 읽을 수 없습니다.', 'The sidecar is offline, so projects and renders cannot load.', '侧车离线时无法读取项目和渲染。', 'サイドカーが停止しているとプロジェクトとレンダーを読めません。')}</p></div><button type="button" className="desktop-secondary" onClick={() => void refreshWorkspace()}>{t('다시 연결', 'Reconnect', '重新连接', '再接続')}</button></div> : null}
+          {!(voiceSetup.done || showBotRoom) ? null : studioState === 'loading' && !project ? <div className="desktop-empty" aria-busy="true"><span className="desktop-spinner" /><h1>{t('작업 공간을 불러오는 중', 'Loading the workspace', '正在加载工作区', 'ワークスペースを読み込み中')}</h1><p>{t('Local Studio의 프로젝트와 게시 영수증을 확인합니다.', 'Checking Local Studio projects and publish receipts.', '正在检查本地工作室项目和发布回执。', 'Local Studio のプロジェクトと公開レシートを確認しています。')}</p></div>
           : studioState === 'error' && !project ? <div className="desktop-empty"><span>!</span><h1>{t('데스크톱이 로컬 서비스에 닿지 않습니다', 'The desktop cannot reach the local service', '桌面无法连接本地服务', 'デスクトップがローカルサービスに届きません')}</h1><p>{t('npm run local 또는 데스크톱 앱을 실행한 뒤 다시 연결하세요.', 'Start npm run local or the desktop app, then reconnect.', '请先运行 npm run local 或桌面应用，然后重试。', 'npm run local かデスクトップアプリを起動してから再接続してください。')}</p><button type="button" className="desktop-primary" onClick={() => void refreshWorkspace()}>{t('다시 시도', 'Try again', '重试', '再試行')}</button></div>
           : showBotRoom || showAutoDesk || advancedSpecOpen || !project ? (
             advancedSpecOpen ? (
@@ -1371,6 +1432,8 @@ export default function DesktopWorkspace() {
                 outputReady={outputReady}
                 savingFile={busy && Boolean(project) && activePanel === 'auto'}
                 saveFailed={autoSaveFailed}
+                voiceDownload={workspace.first_run?.voice_model?.download}
+                onChangeVoiceModel={(id) => confirmVoiceModel(id)}
                 onOpenSample={() => { setSpecDeskOpen(false); void openSampleProject(); }}
                 onOpenOwnFootage={() => { setSpecDeskOpen(false); setCreateOpen(true); setDrawer('projects'); }}
                 onCopied={(next) => {
@@ -1405,6 +1468,17 @@ export default function DesktopWorkspace() {
           : <>
             <div className="desktop-project-bar"><div><small>{t('현재 프로젝트', 'CURRENT PROJECT', '当前项目', '現在のプロジェクト')}</small><h1>{project.title}</h1></div><div className="desktop-project-chips">{project.handoff_agent ? <span className={project.handoff_door === 'editor' || project.handoff_door === 'grok' ? 'is-editor' : 'is-collector'}>{project.handoff_door === 'editor' || project.handoff_door === 'grok' ? t('편집 문', 'Editor door', '剪辑门', '編集ドア') : t('수집 문', 'Collector door', '收集门', '収集ドア')} · {handoffSenderLabel(project, t)}</span> : null}<span>v{timeline.revision}</span><span>{timeline.settings.width}×{timeline.settings.height}</span><span>{timeline.settings.fps}fps</span></div></div>
             {activePanel === 'setup' && <div className="desktop-setup-grid">
+              <section className="desktop-card desktop-voice-setup-card">
+                <DesktopVoiceSetup
+                  variant="panel"
+                  selected={voiceDraft}
+                  studioReady={studioState === 'ready'}
+                  busy={voiceBusy}
+                  download={workspace.first_run?.voice_model?.download}
+                  onSelect={setVoiceDraft}
+                  onConfirm={() => { void confirmVoiceModel(voiceDraft); }}
+                />
+              </section>
               <HandoffFolderBoard
                 folders={projectFolders}
                 studioState={studioState}

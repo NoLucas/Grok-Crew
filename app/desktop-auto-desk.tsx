@@ -33,6 +33,8 @@ import {
 import { withCrewInvite } from './bot-skills';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { DesktopNewsCard } from './desktop-news-card';
+import { DesktopVoiceSetup } from './desktop-voice-setup';
+import { confirmVoiceChoice, voiceModelLabel, type VoiceDownloadStatus, type VoiceModelId } from './desktop-voice-models';
 import { useLanguage } from './language';
 import { formatCheckTime, type DeskPullStatus, type DeskWaitState } from './desktop-wait-state';
 
@@ -74,6 +76,8 @@ type AutoDeskProps = {
   onCopied: (wait: DeskWaitState) => void;
   onRefresh: () => Promise<void>;
   request: (path: string, init?: RequestInit) => Promise<JsonObject>;
+  voiceDownload?: VoiceDownloadStatus | null;
+  onChangeVoiceModel?: (id: VoiceModelId) => Promise<void> | void;
 };
 
 function localized(map: { ko?: string; en?: string; zh?: string; ja?: string } | undefined, language: string, fallback: string) {
@@ -112,6 +116,8 @@ export function AutoDesk({
   onCopied,
   onRefresh,
   request,
+  voiceDownload = null,
+  onChangeVoiceModel,
 }: AutoDeskProps) {
   const { language, t } = useLanguage();
   const [prefs, setPrefs] = useState(() => readAutoPrefs());
@@ -124,6 +130,8 @@ export function AutoDesk({
   const [collectQuery, setCollectQuery] = useState('');
   const [wantCaptions, setWantCaptions] = useState(Boolean(prefs.wantCaptions));
   const [wantDubbing, setWantDubbing] = useState(Boolean(prefs.wantDubbing));
+  const [voiceModelId, setVoiceModelId] = useState<VoiceModelId>(() => confirmVoiceChoice(prefs.voiceModelId));
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const [ownOver, setOwnOver] = useState(false);
   const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
   const [recipeTouched, setRecipeTouched] = useState(false);
@@ -276,19 +284,20 @@ export function AutoDesk({
           collectQuery,
           wantCaptions,
           wantDubbing,
+          voiceModelId,
         })),
       });
       const record = created.edit_spec as { id?: string };
       if (!record?.id) throw new Error(t('규격을 저장하지 못했습니다.', 'Could not save the spec.', '无法保存规格。', '仕様を保存できませんでした。'));
       const invite = await request(`/api/v2/edit-specs/${record.id}/invite?lang=${encodeURIComponent(language)}`);
-      const text = withCrewInvite(String(invite.text || ''), language, { captions: wantCaptions, dubbing: wantDubbing });
+      const text = withCrewInvite(String(invite.text || ''), language, { captions: wantCaptions, dubbing: wantDubbing, voiceModelId });
       if (!text.trim()) throw new Error(t('초대문을 만들지 못했습니다.', 'Could not make the invite.', '无法生成邀请。', '招待文を作れませんでした。'));
       setInviteText(text);
       if (again.trim()) {
         setGoal(nextGoal);
         setRevisePrompt('');
       }
-      setPrefs(writeAutoPrefs({ recipeId, wantCaptions, wantDubbing }));
+      setPrefs(writeAutoPrefs({ recipeId, wantCaptions, wantDubbing, voiceModelId }));
       setPrefs(rememberRecentTitle(heading));
       const nextWait: DeskWaitState = {
         specId: record.id,
@@ -599,7 +608,7 @@ export function AutoDesk({
             <section className="desktop-auto-card" aria-label={t('이번 일', 'This job', '这次任务', '今回の仕事')}>
               <b>{t('이번 일', 'This job', '这次任务', '今回の仕事')}</b>
               <p>{`${attachedName} · ${styleLabel} · ${wayLabel}`}</p>
-              <p>{t(`자막 ${wantCaptions ? '켬' : '끔'} · 더빙 ${wantDubbing ? '켬' : '끔'}`, `Captions ${wantCaptions ? 'on' : 'off'} · Dubbing ${wantDubbing ? 'on' : 'off'}`, `字幕${wantCaptions ? '开' : '关'} · 配音${wantDubbing ? '开' : '关'}`, `字幕${wantCaptions ? 'オン' : 'オフ'} · 吹き替え${wantDubbing ? 'オン' : 'オフ'}`)}</p>
+              <p>{t(`자막 ${wantCaptions ? '켬' : '끔'} · 더빙 ${wantDubbing ? '켬' : '끔'} · ${voiceModelLabel(voiceModelId)}`, `Captions ${wantCaptions ? 'on' : 'off'} · Dubbing ${wantDubbing ? 'on' : 'off'} · ${voiceModelLabel(voiceModelId)}`, `字幕${wantCaptions ? '开' : '关'} · 配音${wantDubbing ? '开' : '关'} · ${voiceModelLabel(voiceModelId)}`, `字幕${wantCaptions ? 'オン' : 'オフ'} · 吹き替え${wantDubbing ? 'オン' : 'オフ'} · ${voiceModelLabel(voiceModelId)}`)}</p>
               {useOwn && ownedPaths.length ? <p>{ownedPaths.map(ownedFileName).join(', ')}</p> : null}
               {useScrape && collectQuery.trim() ? <p>{t(`가져올 것 · ${collectQuery.trim()}`, `Fetch · ${collectQuery.trim()}`, `要取 · ${collectQuery.trim()}`, `持ってくるもの · ${collectQuery.trim()}`)}</p> : null}
               <p>{t('하지 않음: 올리지 않음 · 화질 잠금 유지 · 이 PC에만 저장 · 이 앱이 사이트를 긁지 않음', 'Will not: post · change quality · leave this PC · scrape a site', '不会：发布 · 改画质 · 离开这台电脑 · 抓站', 'しないこと: 上げない · 画質を変えない · この PC だけに保存 · このアプリは掻かない')}</p>
@@ -747,12 +756,34 @@ export function AutoDesk({
                 onClick={() => setWantDubbing((value) => !value)}
               >
                 <b>{wantDubbing ? t('더빙 켬', 'Dubbing on', '配音开', '吹き替えオン') : t('더빙 끔', 'Dubbing off', '配音关', '吹き替えオフ')}</b>
-                <span>{t('켜면 운영자가 넣은 음성만 씁니다. 없으면 원본 소리. TTS는 만들지 않습니다.', 'When on, use only the operator’s audio. If none, keep the original. No TTS.', '打开后只用操作员放入的语音。没有就保留原声。不做 TTS。', 'オンなら運営者が入れた音声だけ。なければ元の音。TTS は作らない。')}</span>
+                <span>{t(`켜면 운영자 음성이 있으면 그것만. 없으면 ${voiceModelLabel(voiceModelId)} 하나만.`, `When on, use the operator’s audio if present. If none, only ${voiceModelLabel(voiceModelId)}.`, `打开后有操作员语音就只用那个。没有就只用 ${voiceModelLabel(voiceModelId)}。`, `オンなら運営者の音声があればそれだけ。なければ ${voiceModelLabel(voiceModelId)} だけ。`)}</span>
               </button>
             </div>
             <p className="desktop-spec-meta">
-              {t('둘 다 꺼 두면 음성인식·자막·더빙을 쓰지 않습니다.', 'Leave both off and speech recognition, captions, and dubbing stay unused.', '都关着就不会用语音识别、字幕、配音。', 'どちらもオフなら音声認識・字幕・吹き替えは使いません。')}
+              {t(`둘 다 꺼 두면 음성인식·자막·더빙을 쓰지 않습니다. 목소리는 ${voiceModelLabel(voiceModelId)} 하나.`, `Leave both off and speech recognition, captions, and dubbing stay unused. The voice is ${voiceModelLabel(voiceModelId)} only.`, `都关着就不会用语音识别、字幕、配音。声音只有 ${voiceModelLabel(voiceModelId)}。`, `どちらもオフなら音声認識・字幕・吹き替えは使いません。声は ${voiceModelLabel(voiceModelId)} だけ。`)}
             </p>
+            {onChangeVoiceModel ? (
+              <div className="desktop-auto-voice-pick">
+                <button type="button" className="desktop-secondary" onClick={() => setVoiceOpen((value) => !value)}>
+                  {voiceOpen ? t('목소리 접기', 'Hide voice', '收起声音', '声を閉じる') : t('목소리 바꾸기', 'Change voice', '换声音', '声を変える')}
+                </button>
+                {voiceOpen ? (
+                  <DesktopVoiceSetup
+                    variant="panel"
+                    selected={voiceModelId}
+                    studioReady={studioReady}
+                    download={voiceDownload}
+                    onSelect={setVoiceModelId}
+                    onConfirm={() => {
+                      const next = confirmVoiceChoice(voiceModelId);
+                      setVoiceModelId(next);
+                      setPrefs(writeAutoPrefs({ voiceModelId: next }));
+                      void onChangeVoiceModel(next);
+                    }}
+                  />
+                ) : null}
+              </div>
+            ) : null}
           </fieldset>
           {!attached ? (
             <p className="desktop-auto-gate">{t('아직 안 붙었으면 시작이 안 됩니다. 연결 열기를 누르세요. 다른 PC 봇은 일을 복사해 그 창에 붙이고, 끝난 파일만 이 창에 놓습니다.', 'Nothing is attached, so Start stays off. Open Connect. An other-PC bot gets the job as text and drops the finished file here.', '还没接上就不能开始。请打开连接。另一台电脑的机器人只收任务文字，再把完成文件放到这里。', 'まだ付いていなければ始まりません。接続を開いてください。別 PC のボットは仕事を貼り、完成ファイルだけこの窓に置きます。')}</p>

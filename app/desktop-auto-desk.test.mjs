@@ -153,7 +153,16 @@ describe('auto desk job payload', () => {
       useScrape: true,
       collectQuery: '간판',
       wantDubbing: true,
-    }).must_keep), /운영자가 넣은 음성/);
+    }).must_keep), /Kokoro-82M 하나만/);
+    assert.match(String(autoJobPayload({
+      title: '더빙 켬',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useScrape: true,
+      collectQuery: '간판',
+      wantDubbing: true,
+      voiceModelId: 'zonos-v0.1',
+    }).must_keep), /Zonos-v0.1 하나만/);
   });
 });
 

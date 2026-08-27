@@ -102,12 +102,15 @@ def existing_sample_project() -> dict[str, Any] | None:
 
 def first_run_status() -> dict[str, Any]:
     destination = sample_destination()
+    from voice_models import status as voice_model_status
+
     return {
         "schema": "grok-crew.first-run/v1",
         "sample_available": destination.is_file() and destination.stat().st_size > 0,
         "sample_open": existing_sample_project() is not None,
         "sample_path": SAMPLE_RELATIVE,
         "has_projects": bool(_projects()),
+        "voice_model": voice_model_status(),
     }
 
 
