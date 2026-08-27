@@ -4,8 +4,6 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
-
 const root = new URL('..', import.meta.url);
 const { takeGetLead, corsHeaders } = await import(new URL('../app/get-lead.ts', import.meta.url));
 
