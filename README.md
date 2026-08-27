@@ -1,77 +1,101 @@
 # Grok Crew
 
-<p align="center"><strong>English</strong> &nbsp;·&nbsp; <a href="README.ko.md">한국어</a> &nbsp;·&nbsp; <a href="README.zh.md">简体中文</a> &nbsp;·&nbsp; <a href="README.ja.md">日本語</a></p>
+A program on the guest’s PC. Attach a bot they already use. The finished file lands in **their folder**.
 
-**[Open on Windows](https://github.com/NoLucas/Grok-crew-test/releases/latest)** — get [`GrokCrew-Windows.exe`](https://github.com/NoLucas/Grok-crew-test/releases/latest) and double-click. There is no public site. `docs/HOMEPAGE.ko.md`.
+Opens with no account. Not a website subscription.
 
-Five steps. Receive → open → connect → write in Auto → paste.
+[Get Windows](https://github.com/NoLucas/Grok-crew-test/releases) · [한국어](README.ko.md) · [中文](README.zh.md) · [日本語](README.ja.md)
 
-1. **Receive** — one file, `GrokCrew-Windows.exe`.
-2. **Open** — double-click. If the blue shield appears, More info → Run anyway.
-3. **Connect** — open **Connect**. Other-PC seats sit in two groups: Grok Bot and Agent. Copy the connect text on planner, scraper, or editor and it is attached. Paste that text in the bot window.
-4. **Write** — one box in the **Auto** tab. Open pictures, where, or sound only when you need them. Captions, my voice, and make-a-voice stay off until you turn them on. Turning the voice on lets you pick gender, feel, and accent, then save it.
-5. **Paste** — Start copies the job. Paste it in that bot window. When the cut arrives, the preview stays on this tab and asks you to save.
+---
 
-To cut your own file, use **Start with my file** inside Auto. There is no login.
+## How you use it
 
-It is not a website that holds your footage. The bot never opens this PC. It only pushes a package.
+1. Install from **Get Windows** and open it. There is no sign-in.
+2. On **Connect**, attach the bot they already use. Copy the attach text into the bot window.
+3. On **Auto**, write what they want and press **Make**.
+4. A person pastes into the bot window. This window waits.
+5. When the preview appears, **save on this PC**. Posting is later, and only if they want it.
 
-```
-receive the exe  →  open it  →  connect  →  write in Auto  →  paste the job  →  preview and save on this PC
-```
+If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
-## Who it is for
+---
 
-- People who want to specify the Reel, not hunt for the raw file on this machine
-- Creators who let the connected bots do the sourcing and the first cut — on separate doors, never mixed
-- Anyone who still wants the finished file to land on this PC, not in a cloud editor
+## What’s on the screen
 
-It is free for now. You do not need an account to start. It does not ask for a card or a subscription.
+Each tab is **one job**. Extra tools stay behind chips until they ask.
 
-## What you see
+| Tab | What it does |
+|---|---|
+| **Connect** | Attach or remove a bot. Same-PC use, other windows, and open-a-file-without-a-bot stay folded. |
+| **Auto** | One prompt. Chips: picture / where it goes / sound. After Make: wait → preview → save. |
+| **Setup** | Shape, length, sound, pace. The button here is **Save setup only**. |
+| **Edit** | Timeline and preview first. Inbox files and proxy stay folded. |
+| **Export** | Save on this PC first. Post, swap, and history are chips. |
+| **Advanced spec** | Title and goal. Style, source, collect, and files are chips. Send/receive opens only after they save. |
 
-The first screen is **Connect**. Other-PC links stay at the top. Same-PC, Local Studio, GitHub, and the Grok builder live there too, folded until you open them. A green light means **Connected**. After a bot is attached or you open a file yourself, **Auto** is the landing tab. Setup, Edit, and Export turn on then. Each tab starts with one job and summary chips; extra fields open only when you ask. **Auto** is today’s line, what kind of video, the materials (your videos or images, or what a scrape bot should fetch), and one Start. This desk does not scrape. Hand-it-off and start-with-my-file are two modes inside Auto. Connection controls stay in Connect only. The sample opens only from **See it with the sample**. After a copy, five lights show connect, sent, working, cut, and save on this PC, plus elapsed time and not yet / arrived / failed. This window does not claim the bot read the invite. The save card names the folder on this PC and says Auto did not post. Python, ports, and folder paths stay folded. **More detail** and **Advanced tools** grow only after the first cut arrives. Incoming cuts on the editor door open on their own and stay previewed in Auto. Files the bot saved — the package under `inputs/handoff/` and clips in the materials box — stay in one collapsed row. Open it and the list sits beside the preview. Right-click a file to preview, enlarge, show the original, or delete it. Quality stays locked to the spec; aspect, captions, and the other edit knobs stay yours. Setup can assign Shorts, Reels, TikTok, Custom, or another style, and save the current knobs as a named preset separately. Projects can live in folders, and trash keeps a restore window of 30 days. Bright day, deep night, soft day, soft night, and type live in the gear at the top-left corner. A person may specify which tools the bot should use; the bot should run them. That hub follows the desk theme and keeps the bot catalog folded. This desk does not scrape websites.
+Captions, dubbing, and TTS run only when the guest turns them on. All three start off.
 
-Then you work in five tabs:
+**Version history** in the sidebar and GitHub / maker in the inspector stay folded until they open them.
 
-| Tab | What it is for |
-| --- | --- |
-| **Connect** | Other PC (Grok Bot / Agent × planner, scraper, editor), this PC, Local Studio, GitHub, Grok builder |
-| **Auto** | Today’s line → send → wait → preview → save |
-| **Edit** | Watch the preview, cut on the timeline |
-| **Setup** | Look, captions, speed |
-| **Export** | Save an MP4 here, or post after it asks |
+---
 
-The preview is a fast draft. The file you save is made from the footage the bot sent. Opening a file already on this computer is optional and tucked under the brief.
+## What changed
 
-## Your video stays on this computer
+- Every tab uses the same writing style: one job, then chips. Features stayed. Unused panels stay closed.
+- **Connect** only copies attach text. They do not paste a reply back into this window.
+- Finished files stay **on this PC**. Posting is after save, and only if they ask.
+- Git handoff is only a **guest-owned private repo** they turn on. There is no company inbox. The program works without it.
 
-Raw clips, the edit, and the finished file live on this PC. There is no Grok Crew cloud project and no login wall.
+---
 
-Posting is optional. The default is **Ask before posting**. If a post may have already gone out, it asks again before sending a second copy. Grok Crew does not create your Instagram, TikTok, or YouTube account.
+## What this is not
 
-## Optional: ask AI on this PC
+- A cloud editor or a site that cuts in the browser
+- A “we generate the video” subscription
+- Auto-post to Instagram or TikTok
+- Scraping a logged-in social account
+- Showing `127.0.0.1` to the bot
 
-If an AI helper is already running on **this same computer**, you can say in plain language: keep the strongest lines, add captions, make a vertical cut, save the file here, do not upload.
+---
 
-A helper on another computer cannot open this desk. **Connect** attaches it by name only. The finished cut is dropped on this window. Footage is not sent out so a bot elsewhere can “just take a look.”
+## What’s under the window
 
-## How to open it
+Guests can ignore this. Open the installer and use the desk.
 
-**Open on Windows** — get `GrokCrew-Windows.exe` from the [latest release](https://github.com/NoLucas/Grok-crew-test/releases/latest) and double-click it. It installs for this account only. It does not ask for an administrator password.
+For people who build or change the code:
 
-If Windows says it protected your PC: **More info → Run anyway**.
+| Job | What we use |
+|---|---|
+| Window | Electron — a program on this PC. |
+| Desk | React and TypeScript — Connect, Auto, Setup, Edit, Export. |
+| Cut | A Python sidecar on this PC (Local Studio). It talks to this window only. It does not upload the cut. |
+| Store | SQLite on this PC. No account server. |
+| Encode | ffmpeg and MoviePy, on this PC, when they save. |
+| Captions | whisper.cpp, only if they turn captions on. |
+| Voice | One chosen TTS engine, only if they turn TTS on. |
+| Other-PC bots | This window and a folder on this PC by default. Git only if they set their own private remote. |
 
-If someone already set it up, open the Grok Crew window, or a browser at [http://localhost:3000](http://localhost:3000/).
+Voice models are not in the installer. They download only after the guest turns that tool on.
 
-If you are building from source you need [Node.js 22+](https://nodejs.org/) and [Python 3.10+](https://www.python.org/downloads/):
+---
 
-```sh
-git clone https://github.com/NoLucas/Grok-Crew.git grok-crew
-cd grok-crew
+## Open this repo
+
+Public source: [NoLucas/Grok-crew-test](https://github.com/NoLucas/Grok-crew-test)
+
+```bash
+git clone https://github.com/NoLucas/Grok-crew-test.git
+cd Grok-crew-test
+npm install
 npm run local
 ```
 
-A desktop window from source: `npm install` once, then `npm run desktop`. The first start can take a few minutes. Stop with `Ctrl+C`.
+The guest window is `npm run desktop`. To look at the desk in a browser, run `npm run dev` and open the address it prints.
 
-You may use it on this computer to make and publish your own videos. The source is shared under [BUSL-1.1](LICENSE); it is not an open-source product. Questions: [CONTRIBUTING.md](CONTRIBUTING.md).
+Full install notes: [docs/BUILD.ko.md](docs/BUILD.ko.md).
+
+---
+
+## License
+
+[BUSL-1.1](LICENSE). To change the code, read [CONTRIBUTING.md](CONTRIBUTING.md).
