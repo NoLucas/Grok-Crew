@@ -6925,7 +6925,10 @@ select {
 .desktop-chip.ready { color: var(--desktop-green); border-color: #cfead8; }
 .desktop-chip.wait { color: #9a6b12; }
 .desktop-title-actions > button.desktop-chip { cursor: pointer; }
-.desktop-connection { color: var(--desktop-muted); font-size: 13px; white-space: nowrap; }
+.desktop-connection {
+  border: 0; padding: 0; background: transparent; cursor: pointer;
+  color: var(--desktop-muted); font: inherit; font-size: 13px; white-space: nowrap;
+}
 .desktop-chrome-btn {
   display: none; min-height: 32px; padding: 0 10px; border: 1px solid var(--desktop-line);
   border-radius: 8px; background: var(--desktop-panel); color: var(--desktop-text); font-size: var(--desktop-fs); font-weight: var(--desktop-weight-strong);
@@ -7163,10 +7166,12 @@ select {
   padding: 12px 14px; border: 1px solid #d7d2c8; border-radius: 12px; background: #fff8ef;
 }
 .desktop-simple-connect b { display: block; font-size: 14px; letter-spacing: -.02em; }
+.desktop-simple-connect b.desktop-connect-lamp { display: inline-flex; }
 .desktop-simple-connect p { margin: 4px 0 0; color: #6a5840; font-size: 13px; line-height: 1.45; max-width: 46rem; }
 .desktop-simple-connect.is-ready { border-color: #cfead8; background: #f3faf5; }
 .desktop-simple-connect.is-ready p { color: var(--desktop-green); }
-.desktop-titlebar nav button.needs-bot::after {
+.desktop-titlebar nav button.needs-bot::after,
+.desktop-titlebar nav button.is-connected::after {
   content: '';
   display: inline-block;
   width: 7px;
@@ -7174,6 +7179,9 @@ select {
   margin-left: 6px;
   border-radius: 50%;
   background: #c47b16;
+}
+.desktop-titlebar nav button.is-connected::after {
+  background: var(--desktop-green);
 }
 .desktop-bot-room {
   display: grid;
@@ -7189,11 +7197,9 @@ select {
   gap: 8px;
 }
 .desktop-bot-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 0;
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--desktop-line);
 }
 .desktop-bot-list li:last-child { border-bottom: 0; }
@@ -7201,8 +7207,54 @@ select {
   color: var(--desktop-muted);
   justify-content: flex-start;
 }
+.desktop-bot-list li.is-connected {
+  border-color: #cfead8;
+}
 .desktop-bot-list b { display: block; font-size: 14px; }
 .desktop-bot-list span { color: var(--desktop-muted); font-size: 12px; }
+.desktop-connect-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  width: 100%;
+}
+.desktop-connect-row.is-connected .desktop-connect-lamp { color: var(--desktop-green); }
+.desktop-connect-summary { display: grid; gap: 6px; }
+.desktop-connect-summary.is-ready {
+  border-color: #cfead8;
+  background: #f3faf5;
+}
+.desktop-connect-lamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--desktop-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.desktop-connect-lamp i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c4c0b6;
+  box-shadow: 0 0 0 3px rgba(40, 32, 24, 0.06);
+}
+.desktop-connect-lamp.is-on { color: var(--desktop-green); }
+.desktop-connect-lamp.is-on i {
+  background: var(--desktop-green);
+  box-shadow: 0 0 0 3px #dff3e9;
+}
+.desktop-shell[data-theme="dark"] .desktop-connect-summary.is-ready,
+.desktop-shell[data-theme="low-dark"] .desktop-connect-summary.is-ready {
+  border-color: rgba(78, 203, 141, 0.35);
+  background: rgba(78, 203, 141, 0.08);
+}
+.desktop-shell[data-theme="dark"] .desktop-connect-lamp i,
+.desktop-shell[data-theme="low-dark"] .desktop-connect-lamp i {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
 .desktop-bot-kinds {
   display: flex;
   flex-wrap: wrap;

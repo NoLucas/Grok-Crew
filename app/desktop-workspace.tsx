@@ -1145,7 +1145,7 @@ export default function DesktopWorkspace() {
         <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="gear" />
         <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
-          <button type="button" className={`${showBotRoom ? 'active' : ''}${deskReady ? '' : ' needs-bot'}`} aria-current={showBotRoom ? 'page' : undefined} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>{t('봇', 'Bots', '机器人', 'ボット')}</button>
+          <button type="button" className={`${showBotRoom ? 'active' : ''}${hasConnectedBot(workspace.crew_roster, botLinks) ? ' is-connected' : ' needs-bot'}`} aria-current={showBotRoom ? 'page' : undefined} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>{t('연결', 'Connect', '连接', '接続')}</button>
           {deskReady ? (
             <>
               <button type="button" className={!showBotRoom && activePanel === 'setup' ? 'active' : ''} aria-current={!showBotRoom && activePanel === 'setup' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setActivePanel('setup'); }}>{t('설정', 'Setup', '设置', '設定')}</button>
@@ -1159,7 +1159,9 @@ export default function DesktopWorkspace() {
             ? <button type="button" className={`desktop-chip ${update.status === 'up_to_date' || update.status === 'dev_fallback' ? 'ready' : 'wait'}`} title={update.message} onClick={() => void window.grokCrew?.openRelease?.(update.releaseUrl)}>{update.status === 'available_external' || update.status === 'available' ? t(`업데이트 ${update.latestVersion}`, `Update ${update.latestVersion}`, `更新 ${update.latestVersion}`, `更新 ${update.latestVersion}`) : t(`개발 ${update.currentVersion}`, `Dev ${update.currentVersion}`, `开发 ${update.currentVersion}`, `開発 ${update.currentVersion}`)}</button>
             : <span className={`desktop-chip ${update.status === 'up_to_date' || update.status === 'dev_fallback' ? 'ready' : 'wait'}`} title={update.message}>{t(`로컬 ${update.currentVersion}`, `Local ${update.currentVersion}`, `本地 ${update.currentVersion}`, `ローカル ${update.currentVersion}`)}</span>}
           {showRemoteDesk && launch ? <span className={`desktop-chip ${Object.values(launch.local_gates).every(Boolean) ? 'ready' : 'wait'}`} title={Object.values(launch.external_gates).map((gate) => gate.detail).join(' ')}>{t('로컬 1.0 게이트', 'Local 1.0 gates', '本地 1.0 关卡', 'ローカル 1.0 ゲート')}</span> : null}
-          <span className={`desktop-connection ${runnerPaired ? 'connected' : ''}`}>● {runnerPaired ? t('Runner 페어링됨', 'Runner paired', 'Runner 已配对', 'Runner ペアリング済み') : t('로컬 편집', 'Local edit', '本地编辑', 'ローカル編集')}</span>
+          <button type="button" className={`desktop-connection ${hasConnectedBot(workspace.crew_roster, botLinks) ? 'connected' : ''}`} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>
+            ● {hasConnectedBot(workspace.crew_roster, botLinks) ? t('연결됨', 'Connected', '已连接', '接続済み') : t('연결 안 됨', 'Not connected', '未连接', '未接続')}
+          </button>
           <button type="button" className="desktop-chrome-btn desktop-projects-toggle" aria-expanded={drawer === 'projects'} onClick={() => setDrawer((value) => value === 'projects' ? 'none' : 'projects')}>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</button>
           <button type="button" className="desktop-chrome-btn desktop-status-toggle" aria-expanded={drawer === 'status'} onClick={() => { setRemoteOpen(true); setDrawer((value) => value === 'status' ? 'none' : 'status'); }}>{t('상태', 'Status', '状态', '状態')}</button>
           <LanguageSwitcher />
@@ -1290,6 +1292,21 @@ export default function DesktopWorkspace() {
                   links={botLinks}
                   studioReady={studioState === 'ready'}
                   allowOwnFile={!project}
+                  services={{
+                    studioReady: studioState === 'ready',
+                    github,
+                    githubToken,
+                    runnerPaired,
+                    runnerName: runner?.display_name,
+                    desktopApp: Boolean(typeof window !== 'undefined' && window.grokCrew),
+                    busy,
+                    onGithubToken: setGithubToken,
+                    onLoginGitHub: (mode) => { void loginGitHub(mode); },
+                    onPairRunner: () => { void relayAction('pair'); },
+                    onExportDesktopKey: () => { void relayAction('desktop'); },
+                    onConnectRelay: () => { void relayAction('git-connect'); },
+                    onRefreshStudio: () => { void refreshWorkspace(); },
+                  }}
                   onLinksChange={(next) => {
                     setBotLinks(next);
                     if (hasConnectedBot(workspace.crew_roster, next)) setBotPanelOpen(false);

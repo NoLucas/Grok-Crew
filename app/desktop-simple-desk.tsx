@@ -237,7 +237,7 @@ export function SimpleDesk({
       <div className="desktop-spec-hero">
         <span>✦</span>
         <h1>{t('제목을 적고 붙입니다', 'Write a title and paste it', '写下标题再贴出去', 'タイトルを書いて貼る')}</h1>
-        <p>{t('봇 연결은 위 봇 메뉴에서만 합니다. 이 PC와 다른 PC(Grok·내가 만든 에이전트) 모두 거기에서 붙습니다.', 'Bot connections live only in the Bots menu. Same-PC and other-PC bots (Grok, your agent) attach there.', '机器人连接只在上面的机器人菜单里。这台电脑和另一台电脑（Grok、自己的智能体）都在那里接。', 'ボット接続は上のボットメニューだけです。この PC も別 PC（Grok・自分のエージェント）もそこで付けます。')}</p>
+        <p>{t('연결은 위 연결 메뉴에서만 합니다. 다른 PC(Grok·Cursor·Claude·내가 만든 에이전트)가 맨 위입니다.', 'Connections live only in Connect. Other-PC bots (Grok, Cursor, Claude, your agent) stay at the top.', '连接只在上面的连接菜单里。另一台电脑（Grok、Cursor、Claude、自己的智能体）在最上面。', '接続は上の接続メニューだけです。別 PC（Grok・Cursor・Claude・自分のエージェント）が一番上です。')}</p>
       </div>
 
       {!studioReady ? (
@@ -248,15 +248,18 @@ export function SimpleDesk({
 
       <section className={`desktop-simple-connect${attached ? ' is-ready' : ''}`} aria-live="polite">
         <div>
-          <b>{attached
+          <b className={attached ? 'desktop-connect-lamp is-on' : 'desktop-connect-lamp'}>
+            <i aria-hidden="true" />
+            {attached
             ? t(`연결됨 · ${attachedName}`, `Connected · ${attachedName}`, `已连接 · ${attachedName}`, `接続済み · ${attachedName}`)
-            : t('연결 상태는 봇 메뉴에서', 'Connection status is in Bots', '连接状态在机器人菜单', '接続状態はボットメニュー')}</b>
+            : t('연결 상태는 연결 메뉴에서', 'Connection status is in Connect', '连接状态在连接菜单', '接続状態は接続メニュー')}
+          </b>
           <p>{attached
             ? t('이제 제목을 적고 일을 맡기거나, 영상을 직접 여세요.', 'Now write a title and hand it off, or open a video yourself.', '现在写标题交给它，或自己打开视频。', 'タイトルを書いて任せるか、映像を自分で開いてください。')
-            : t('붙이거나 끊는 것은 봇 메뉴에서만 합니다.', 'Attach or remove a bot only in the Bots menu.', '接上或断开只在机器人菜单里做。', '付ける・切るはボットメニューだけです。')}</p>
+            : t('붙이거나 끊는 것은 연결 메뉴에서만 합니다.', 'Attach or remove a bot only in Connect.', '接上或断开只在连接菜单里做。', '付ける・切るは接続メニューだけです。')}</p>
         </div>
         <button type="button" className="desktop-secondary" onClick={onOpenBots}>
-          {t('봇 열기', 'Open Bots', '打开机器人', 'ボットを開く')}
+          {t('연결 열기', 'Open Connect', '打开连接', '接続を開く')}
         </button>
       </section>
 
@@ -335,7 +338,7 @@ export function SimpleDesk({
             </details>
 
             {!attached ? (
-              <p className="desktop-spec-meta">{t('아직 안 붙었으면 봇 메뉴에서 연결하세요. 다른 PC 봇은 일을 복사해 그 창에 붙이고, 완성 파일만 다시 가져옵니다.', 'If nothing is attached yet, connect in the Bots menu. An other-PC bot gets the job as text and brings the finished file back.', '还没接上就到机器人菜单连接。另一台电脑的机器人只收任务文字，再把完成文件带回来。', 'まだ付いていなければボットメニューで接続。別 PC のボットは仕事を貼り、完成ファイルだけ戻します。')}</p>
+              <p className="desktop-spec-meta">{t('아직 안 붙었으면 연결 메뉴에서 붙이세요. 다른 PC 봇은 일을 복사해 그 창에 붙이고, 완성 파일만 다시 가져옵니다.', 'If nothing is attached yet, connect in Connect. An other-PC bot gets the job as text and brings the finished file back.', '还没接上就到连接菜单。另一台电脑的机器人只收任务文字，再把完成文件带回来。', 'まだ付いていなければ接続メニューで付ける。別 PC のボットは仕事を貼り、完成ファイルだけ戻します。')}</p>
             ) : null}
             <div className="desktop-simple-copy-row">
               <button type="submit" className="desktop-primary" disabled={locked}>

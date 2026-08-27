@@ -105,6 +105,12 @@ export function connectedRemoteNames(links?: BotLinkState | null): string[] {
   return links?.bots.filter((item) => item.status === 'connected').map((item) => item.name) ?? [];
 }
 
+export function linkedByKind(bots: LinkedBot[] | undefined, kind: BotKind): LinkedBot | undefined {
+  const list = bots ?? [];
+  return list.find((item) => item.kind === kind && item.status === 'connected')
+    ?? list.find((item) => item.kind === kind);
+}
+
 function brandName(kind: BotKind): string {
   if (kind === 'grok') return 'Grok';
   if (kind === 'cursor') return 'Cursor';

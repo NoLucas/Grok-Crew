@@ -7,6 +7,7 @@ register('./timeline/ts-resolver.helper.mjs', import.meta.url);
 const {
   emptyBotLinks,
   hasConnectedBot,
+  linkedByKind,
   parseConnectReply,
   remoteConnectPaste,
   upsertLinkedBot,
@@ -56,5 +57,26 @@ describe('remote bot links', () => {
     });
     assert.equal(hasConnectedBot(undefined, next), true);
     assert.equal(hasConnectedBot({ bots: [{ display_name: 'Cursor', presence: 'active' }] }, empty), true);
+  });
+
+  it('prefers the connected row for a kind', () => {
+    const waiting = upsertLinkedBot(emptyBotLinks(), {
+      id: 'g-wait',
+      name: 'Grok',
+      kind: 'grok',
+      place: 'other_pc',
+      status: 'waiting',
+      pairCode: '7K2M9Q',
+    });
+    const mixed = upsertLinkedBot(waiting, {
+      id: 'g-ok',
+      name: 'Grok',
+      kind: 'grok',
+      place: 'other_pc',
+      status: 'connected',
+      pairCode: '7K2M9Q',
+    });
+    assert.equal(linkedByKind(mixed.bots, 'grok')?.status, 'connected');
+    assert.equal(linkedByKind(waiting.bots, 'cursor'), undefined);
   });
 });

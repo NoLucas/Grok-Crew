@@ -8,7 +8,7 @@ Five steps. Receive → open → connect → write → paste.
 
 1. **Receive** — one file, `GrokCrew-Windows.exe`.
 2. **Open** — double-click. If the blue shield appears, More info → Run anyway.
-3. **Connect** — open **Bots**. Same-PC bots paste the check-in line. Other-PC bots (Grok, or an agent you made) paste the connect line, then you paste their one-line `GROK_CREW_OK` reply. The name means it is connected.
+3. **Connect** — open **Connect**. Other-PC bots (Grok, Cursor, Claude, or an agent you made) sit at the top. Paste the connect line, then paste their one-line `GROK_CREW_OK` reply. A green light and **Connected** means it is attached.
 4. **Write** — a title.
 5. **Paste** — the job into that bot window. This window opens when the cut arrives.
 
@@ -30,13 +30,13 @@ You do not need an account to start.
 
 ## What you see
 
-The first screen is the **Bots** room. Same-PC and other-PC connections all happen there. Setup, Edit, and Export stay off until a bot is attached or you open a file yourself. Then the short desk: **Hand it off** is title → copy → wait. **Open it myself** is drop a video → edit now. The two paths stay in two cards. The sample opens only from **See it with the sample**. After a copy, the desk says the bot is working, when it last checked, and not yet / arrived / failed. Python, ports, and folder paths stay folded. **More detail** and **Advanced tools** grow only after the first cut arrives. Incoming cuts on the editor door open on their own. Files the bot saved — the package under `inputs/handoff/` and clips in the materials box — stay in one collapsed row. Open it and the list sits beside the preview. Right-click a file to preview, enlarge, show the original, or delete it. Quality stays locked to the spec; aspect, captions, and the other edit knobs stay yours. Setup can assign Shorts, Reels, TikTok, Custom, or another style, and save the current knobs as a named preset separately. Projects can live in folders, and trash keeps a restore window of 30 days. Bright day, deep night, soft day, soft night, and type live in the gear at the top-left corner. A person may specify which tools the bot should use; the bot should run them. That hub follows the desk theme and keeps the bot catalog folded. This desk does not scrape websites.
+The first screen is **Connect**. Other-PC links stay at the top. Same-PC, Local Studio, GitHub, and Runner live there too. A green light means **Connected**. Setup, Edit, and Export stay off until a bot is attached or you open a file yourself. Then the short desk: **Hand it off** is title → copy → wait. **Open it myself** is drop a video → edit now. The two paths stay in two cards. The sample opens only from **See it with the sample**. After a copy, the desk says the bot is working, when it last checked, and not yet / arrived / failed. Python, ports, and folder paths stay folded. **More detail** and **Advanced tools** grow only after the first cut arrives. Incoming cuts on the editor door open on their own. Files the bot saved — the package under `inputs/handoff/` and clips in the materials box — stay in one collapsed row. Open it and the list sits beside the preview. Right-click a file to preview, enlarge, show the original, or delete it. Quality stays locked to the spec; aspect, captions, and the other edit knobs stay yours. Setup can assign Shorts, Reels, TikTok, Custom, or another style, and save the current knobs as a named preset separately. Projects can live in folders, and trash keeps a restore window of 30 days. Bright day, deep night, soft day, soft night, and type live in the gear at the top-left corner. A person may specify which tools the bot should use; the bot should run them. That hub follows the desk theme and keeps the bot catalog folded. This desk does not scrape websites.
 
 Then you work in four tabs:
 
 | Tab | What it is for |
 | --- | --- |
-| **Bots** | Connection status, same-PC check-in, other-PC codes |
+| **Connect** | Other PC, this PC, Local Studio, GitHub, Runner |
 | **Edit** | Watch the preview, cut on the timeline |
 | **Setup** | Look, captions, speed |
 | **Export** | Save an MP4 here, or post after it asks |
@@ -53,7 +53,7 @@ Posting is optional. The default is **Ask before posting**. If a post may have a
 
 If an AI helper is already running on **this same computer**, you can say in plain language: keep the strongest lines, add captions, make a vertical cut, save the file here, do not upload.
 
-A helper on another computer cannot open this desk. **Bots** attaches it by name only. The finished cut is dropped on this window. Footage is not sent out so a bot elsewhere can “just take a look.”
+A helper on another computer cannot open this desk. **Connect** attaches it by name only. The finished cut is dropped on this window. Footage is not sent out so a bot elsewhere can “just take a look.”
 
 ## How to open it
 

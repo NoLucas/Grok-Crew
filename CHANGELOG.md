@@ -4,7 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
-- The titlebar has a **Bots** room for every connection. Same-PC bots still check in. Other-PC bots (Grok, Cursor, Claude, or an agent you made) get a pair code, paste a connect line, and reply `GROK_CREW_OK <code> <name>`. That does not open `127.0.0.1`. Setup, Edit, and Export stay off until a bot is attached or you open a file yourself. Finished cuts still drop on the desk.
+- The titlebar tab is **Connect**. Other-PC links (Grok, Cursor, Claude, your agent) sit at the top. A green light and **Connected** mark each live link, including Local Studio, GitHub, and Runner. Same-PC check-in stays below. `GROK_CREW_OK <code> <name>` still does not open `127.0.0.1`. Setup, Edit, and Export stay off until a bot is attached or you open a file yourself.
 - The Windows exe, installer, tray, and desk header use the shutter-play mark: interlocking warm blades around a play triangle, on a light tile.
 - The first desk keeps four human steps and hides the rest. Invite text stays on the clipboard; the screen says paste it in the bot window. After copy, a wait strip shows last check and not-yet / arrived / failed. Sample no longer opens by itself. Install failure stays on the same page with three SmartScreen pictures; the bot zip stays under Other method. No-bot help sits next to copy, with a finished-file drop and no path typing. Hand-it-off and open-it-myself stay on two cards. More detail and Advanced tools grow only after the first cut arrives.
 - Projects can be renamed, grouped into folders (drag or right-click), and moved to a trash that restores, empties, or auto-deletes after 30 days. Handoff files can be renamed or sent to the same trash.
