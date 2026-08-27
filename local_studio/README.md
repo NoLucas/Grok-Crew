@@ -36,13 +36,13 @@ The default browser workspace is Desktop at `http://localhost:3000/`. The older 
 
 Open `http://localhost:3000/bots` to see which local bots have actually checked in, their last action, and their recent activity. A bot is marked **active** only after it records a check-in within the last five minutes; a browser tab or an assumed bot is never counted as active.
 
-Open `http://localhost:3000/bot-guide` for the bot-facing editing manual. A local bot starts by reading `GET /api/bot-entry`, then sends `POST /api/bot-entry` with its id, display name, purpose, and task. This creates an auditable local entry and the first heartbeat. A newly entered bot receives `auto_local` by default, which enables all local editing functions and its own local rendering; it may instead choose `approval_required`.
+Open `http://localhost:3000/bot-guide` for the bot-facing editing manual. Same-PC bots should read `GET /api/v2/tools` (or `python local_studio/grok_crew.py tools`) for the advanced-tools catalog — each older console maps to live APIs, and bots must not scrape the HTML. A local bot starts by reading `GET /api/bot-entry`, then sends `POST /api/bot-entry` with its id, display name, purpose, and task. This creates an auditable local entry and the first heartbeat. A newly entered bot receives `auto_local` by default, which enables all local editing functions and its own local rendering; it may instead choose `approval_required`.
 
 Read a bot's choice with `GET /api/bots/{bot_id}/execution-policy`, or record it with `POST /api/bots/execution-policy` using `mode=auto_local` or `mode=approval_required`. The Bot Check page shows the current choice beside each verified bot.
 
 Local agents can record a check-in with `POST /api/bots/heartbeat`. Supply a `bot_id`, `display_name`, `action`, and optional `detail` object. If `LOCAL_STUDIO_TOKEN` is configured, the agent must receive that token through its own runtime configuration; it must not read `.env` or SQLite to obtain it. The browser’s Bot Check page includes a copy-ready request example.
 
-If `LOCAL_STUDIO_TOKEN` is set, it is required on every reading request as well as every writing request — only `/health`, `/api/terminal-contract`, `/api/bot-guide`, `GET /api/bot-entry`, and the CLI download stay open without it. Local Studio also rejects any request whose browser `Origin` header is outside `http://localhost:3000` / `http://127.0.0.1:3000`, regardless of whether a token is configured, so a page open in another tab cannot drive this service.
+If `LOCAL_STUDIO_TOKEN` is set, it is required on every reading request as well as every writing request — only `/health`, `/api/terminal-contract`, `/api/bot-guide`, `GET /api/v2/tools`, `GET /api/bot-entry`, and the CLI download stay open without it. Local Studio also rejects any request whose browser `Origin` header is outside `http://localhost:3000` / `http://127.0.0.1:3000`, regardless of whether a token is configured, so a page open in another tab cannot drive this service.
 
 ## Operations center
 

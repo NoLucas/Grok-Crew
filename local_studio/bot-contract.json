@@ -8,6 +8,7 @@
     "record_bot_heartbeat",
     "read_bot_status",
     "read_bot_guide",
+    "read_advanced_tools",
     "read_terminal_contract",
     "download_local_terminal_cli",
     "read_bot_entry",
@@ -36,7 +37,7 @@
     "bypass_local_token",
     "publish_to_unconfigured_platforms"
   ],
-  "token_rule": "Once LOCAL_STUDIO_TOKEN is configured it is required on GET requests as well as POST requests. Only /health, /api/terminal-contract, /api/bot-guide, /api/bot-entry (GET), and the CLI download stay open without it. Cross-origin requests (a browser Origin header outside http://localhost:3000 / http://127.0.0.1:3000) are rejected regardless of token configuration.",
+  "token_rule": "Once LOCAL_STUDIO_TOKEN is configured it is required on GET requests as well as POST requests. Only /health, /api/terminal-contract, /api/bot-guide, /api/v2/tools, /api/bot-entry (GET), and the CLI download stay open without it. Cross-origin requests (a browser Origin header outside http://localhost:3000 / http://127.0.0.1:3000) are rejected regardless of token configuration.",
   "execution_policy": {
     "on_entry": "auto_local",
     "choices": ["auto_local", "approval_required"],

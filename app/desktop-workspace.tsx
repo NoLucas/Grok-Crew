@@ -30,6 +30,7 @@ import {
 import { statusNoteOpen, useDesktopNoteFolds } from './desktop-note-folds';
 import { DesktopEditPresetControls } from './desktop-edit-presets-controls';
 import { DesktopProjectLibrary } from './desktop-project-library';
+import { setToolsDayTheme } from './tools-day';
 
 type UpdateStatus = {
   status: string;
@@ -297,6 +298,10 @@ export default function DesktopWorkspace() {
   const syncingRelay = useRef(false);
   const autoProxyKey = useRef('');
   const selectedClipId = selectedClipIds[selectedClipIds.length - 1] ?? '';
+
+  useEffect(() => {
+    setToolsDayTheme(false);
+  }, []);
 
   const api = useCallback(async (path: string, init?: RequestInit): Promise<JsonObject> => {
     if (window.grokCrew) return await window.grokCrew.request(path, { method: init?.method ?? 'GET', body: typeof init?.body === 'string' ? init.body : null }) as JsonObject;
@@ -1118,7 +1123,7 @@ export default function DesktopWorkspace() {
               {index > 0 && <small>{t('복원', 'Restore', '恢复', '復元')}</small>}
             </button>
           ))}</div>
-          <a className="desktop-legacy" href="/tools">{t('고급 도구', 'Advanced tools', '高级工具', '高度なツール')} ↗</a>
+          <a className="desktop-legacy" href="/tools" target="_blank" rel="noopener noreferrer">{t('고급 도구', 'Advanced tools', '高级工具', '高度なツール')} ↗</a>
         </aside>
         <div
           className={`desktop-column-handle${columns.dragging === 'sidebar' ? ' is-dragging' : ''}`}

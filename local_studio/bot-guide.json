@@ -20,8 +20,8 @@
     {
       "step": 2,
       "name": "inspect",
-      "action": "Read GET /api/bot-guide, Cut Log, edit map, existing projects, and queued jobs.",
-      "goal": "Do not overwrite an existing approved project or retry a job that is already running."
+      "action": "Read GET /api/bot-guide and GET /api/v2/tools, then Cut Log, edit map, existing projects, and queued jobs. Do not scrape advanced-tool HTML.",
+      "goal": "Do not overwrite an existing approved project or retry a job that is already running. Do not treat draft pages as the live timeline."
     },
     {
       "step": 3,
@@ -142,7 +142,7 @@
   ],
   "workspace_pages": [
     {"id":"01","url":"/","name":"Studio","purpose":"A visual overview of the reel concept, project state, and local creative direction.","bot_use":"Read the current creative context before selecting a project action."},
-    {"id":"01b","url":"/tools","name":"Advanced tools","purpose":"Index of older consoles. Production and Bot check can run real jobs; the rest are drafts.","bot_use":"Open /tools to choose a console. Do not treat draft pages as the live timeline."},
+    {"id":"01b","url":"/tools","name":"Advanced tools","purpose":"Index of older consoles. Production and Bot check can run real jobs; the rest are drafts.","bot_use":"Read GET /api/v2/tools or python grok-crew.py tools. Do not scrape HTML. Call only the APIs listed for that tool."},
     {"id":"02","url":"/edit","name":"Edit Lab","purpose":"Frame, motion, typography, timing, caption, and preview controls.","bot_use":"Use it to inspect or align visual-edit decisions with the shared edit method."},
     {"id":"03","url":"/cut","name":"Cut Log","purpose":"Transcript-led clip review, keep/remove decisions, and time-based cut planning.","bot_use":"Review the planned cut, then save a non-destructive cut map through Local Studio."},
     {"id":"04","url":"/production","name":"Production","purpose":"Projects, media paths, finish settings, render queue, and Instagram delivery.","bot_use":"Create or select the local project, apply settings, render, and queue or auto-upload delivery."},
@@ -186,7 +186,7 @@
     "download": "GET /downloads/grok-crew.py",
     "bootstrap": "python grok-crew.py contract",
     "purpose": "A dependency-free CLI for a bot running in a terminal on the same PC. It can use the Local Studio and Operations endpoints without browser interaction.",
-    "token_rule": "If token protection is enabled, pass LOCAL_STUDIO_TOKEN through the bot terminal environment. Never read .env, browser storage, or SQLite for it. The token is required on every reading request as well as every writing request once configured; only /health, /api/terminal-contract, /api/bot-guide, /api/bot-entry (GET), and the CLI download stay open without it.",
+    "token_rule": "If token protection is enabled, pass LOCAL_STUDIO_TOKEN through the bot terminal environment. Never read .env, browser storage, or SQLite for it. The token is required on every reading request as well as every writing request once configured; only /health, /api/terminal-contract, /api/bot-guide, /api/v2/tools, /api/bot-entry (GET), and the CLI download stay open without it.",
     "approval_rule": "A connected bot starts in auto_local and can render with jobs render --bot-id. Use policy set --bot-id <id> --mode approval_required to require --human-approved for that bot's renders. Use jobs instagram --auto-upload to start Instagram upload immediately, or omit it to queue the upload."
   },
   "execution_policy": {
@@ -204,7 +204,7 @@
     "Use auto_upload=true for immediate upload, or leave it false to keep the job queued."
   ],
   "allowed_endpoints": {
-    "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/jobs/{id}", "GET /api/presets", "GET /api/bots", "GET /api/bots/{bot_id}/execution-policy", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits", "GET /api/v2/handoff/folders"],
+    "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/jobs/{id}", "GET /api/presets", "GET /api/bots", "GET /api/bots/{bot_id}/execution-policy", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/v2/tools", "GET /api/edit-method", "GET /api/brand-kits", "GET /api/v2/handoff/folders"],
     "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/bots/execution-policy", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits", "POST /api/jobs/{id}/cancel", "POST /api/v2/handoff/files/reveal", "POST /api/v2/handoff/files/delete"],
     "local_render": ["POST /api/projects/{id}/render when the connected bot's policy is auto_local or a human approval is recorded."],
     "write_for_delivery": ["POST /api/projects/{id}/instagram with auto_upload=true or false"]
@@ -213,7 +213,8 @@
     "Read or reveal LOCAL_STUDIO_TOKEN, INSTAGRAM_ACCESS_TOKEN, or .env contents.",
     "Use a path outside local_studio/workspace.",
     "Claim a bot is active without a current heartbeat.",
-    "Change completed output files unless the owner requests a new edit."
+    "Change completed output files unless the owner requests a new edit.",
+    "Do not scrape advanced-tool HTML. Use GET /api/v2/tools and the listed APIs."
   ],
   "heartbeat_example": {
     "bot_id": "local-editor-bot",

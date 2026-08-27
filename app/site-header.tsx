@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
 import { LanguageSwitcher, useLanguage } from './language';
 import Link from 'next/link';
 import { PlanningBanner } from './planning-banner';
+import { setToolsDayTheme } from './tools-day';
 import { useWorkspaceProfile } from './workspace-profile';
 
 const sections = [
@@ -34,6 +36,10 @@ function NavLabel({ section, t }: { section: (typeof sections)[number]; t: (ko: 
 export function SiteHeader({ current }: { current: string }) {
   const { t } = useLanguage();
   const { profile } = useWorkspaceProfile();
+  useEffect(() => {
+    setToolsDayTheme(true);
+    return () => setToolsDayTheme(false);
+  }, []);
   return (
     <>
       <header className="site-header">

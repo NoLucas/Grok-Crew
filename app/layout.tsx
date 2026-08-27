@@ -18,5 +18,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const cookieStore = await cookies();
   const initialLanguage: AppLanguage = cookieStore.get('localVideoWorkspaceLanguage')?.value === 'en' ? 'en' : 'ko';
   const migrateStoredLanguage = `(function(){try{var saved=localStorage.getItem('localVideoWorkspaceLanguage');if((saved==='ko'||saved==='en')&&document.cookie.indexOf('localVideoWorkspaceLanguage=')===-1){document.cookie='localVideoWorkspaceLanguage='+saved+'; path=/; max-age=31536000; samesite=lax';location.replace(location.href);}}catch(e){}})();`;
-  return <html lang={initialLanguage}><head><script dangerouslySetInnerHTML={{ __html: migrateStoredLanguage }} /></head><body className={`${geistSans.variable} ${geistMono.variable}`}><LanguageProvider initialLanguage={initialLanguage}><LanguageBootstrap />{children}</LanguageProvider></body></html>;
+  const toolsDayBoot = `(function(){try{if(location.pathname!=='/'){document.documentElement.classList.add('tools-day');document.body.classList.add('tools-day');}}catch(e){}})();`;
+  return <html lang={initialLanguage}><head><script dangerouslySetInnerHTML={{ __html: migrateStoredLanguage }} /><script dangerouslySetInnerHTML={{ __html: toolsDayBoot }} /></head><body className={`${geistSans.variable} ${geistMono.variable}`}><LanguageProvider initialLanguage={initialLanguage}><LanguageBootstrap />{children}</LanguageProvider></body></html>;
 }

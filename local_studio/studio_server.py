@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 import config
+from advanced_tools import advanced_tools_catalog
 from config import (
     ARTIFACT_TYPES,
     BOT_ENTRY_SCHEMA,
@@ -495,7 +496,7 @@ def bot_entry_manifest() -> dict[str, Any]:
             "task": "Prepare a transcript-first local edit plan.",
             "execution_mode": "auto_local | approval_required",
         },
-        "first_requests": ["GET /api/bot-guide", "GET /api/projects", "GET /api/jobs", "GET /api/edit-method", "GET /api/bots/{bot_id}/execution-policy"],
+        "first_requests": ["GET /api/bot-guide", "GET /api/v2/tools", "GET /api/projects", "GET /api/jobs", "GET /api/edit-method", "GET /api/bots/{bot_id}/execution-policy"],
         "keep_alive": "POST /api/bots/heartbeat at each meaningful state change and at least once every five minutes while active.",
         "execution_policy": "On first entry, a bot receives auto_local for local project, inspection, planning, and rendering work. The bot can change its own policy to approval_required. Instagram upload is queued manually or run immediately with auto_upload.",
         "approval_boundary": "auto_local controls local rendering. Instagram upload can be queued manually or run immediately when auto_upload is enabled for that job.",
@@ -516,7 +517,7 @@ def terminal_contract() -> dict[str, Any]:
         "bootstrap": "python grok-crew.py contract",
         "auth": "Set LOCAL_STUDIO_TOKEN in the bot terminal only when Local Studio token protection is enabled.",
         "commands": {
-            "start": ["health", "contract", "guide", "site --page desktop", "entry", "policy get|set", "heartbeat", "bots list|activity|entries"],
+            "start": ["health", "contract", "guide", "tools", "site --page desktop", "entry", "policy get|set", "heartbeat", "bots list|activity|entries"],
             "editing": ["projects list|get|create", "method get|set", "ops show|inspect|cut-map|quality|artifact|update", "brand list|save"],
             "delivery": ["jobs list|render [auto local or human approved]|instagram|run|cancel", "render, instagram, and run accept --wait to poll until the job finishes; renders execute in the background and report progress via GET /api/jobs/{id}"],
         },
@@ -589,6 +590,7 @@ def bot_guide(language: str = "en") -> dict[str, Any]:
         raise RuntimeError("Local bot guide is unavailable or invalid JSON.") from exc
     if not isinstance(value, dict):
         raise RuntimeError("Local bot guide must be a JSON object.")
+    value["advanced_tools"] = advanced_tools_catalog(language)
     return value
 
 

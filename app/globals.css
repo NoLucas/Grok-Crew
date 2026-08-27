@@ -9029,3 +9029,261 @@ select {
   .tools-grid-live { grid-template-columns: 1fr; }
   .production-main .tools-crumb { width: min(100% - 28px, 1440px); }
 }
+
+.tools-card-api {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--yellow);
+  font: 600 11px var(--font-geist-mono), ui-monospace, monospace;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tools-card-api.is-empty { color: var(--soft); font-weight: 500; }
+.tools-card small {
+  color: var(--soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.tools-bot { margin-top: 36px; }
+.tools-bot-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.tools-bot-panel > p {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.tools-bot-panel ol {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.tools-bot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.tools-bot-actions code {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: 600 11px var(--font-geist-mono), ui-monospace, monospace;
+}
+.tools-bot-actions button {
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 750;
+}
+.tools-bot-panel pre {
+  max-height: 220px;
+  margin: 0;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: 12px/1.45 var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Soft-day chrome for every advanced-tools page. Matches desktop 부드러운 낮. */
+html.tools-day,
+html.tools-day body {
+  color-scheme: light;
+  --bg: #e4e1d7;
+  --surface: #efece3;
+  --surface-2: #e9e5db;
+  --line: #c8c3b6;
+  --soft: #5a564c;
+  --text: #2b2924;
+  --yellow: #9a6a14;
+  --lime: #2b8f5f;
+  --red: #c44d46;
+  background: #e4e1d7;
+  color: #2b2924;
+}
+html.tools-day .site-header {
+  background: rgba(236, 232, 222, 0.96);
+  border-bottom-color: #c8c3b6;
+}
+html.tools-day .wordmark span { color: #2b2924; }
+html.tools-day .header-more > div {
+  border-color: #c8c3b6;
+  background: #efece3;
+  box-shadow: 0 14px 28px rgba(43, 41, 36, 0.12);
+}
+html.tools-day .header-more > div a:hover,
+html.tools-day .header-more > div a.current {
+  background: #ddd8cc;
+  color: #2b2924;
+}
+html.tools-day .planning-banner {
+  background: #efe8d4;
+  border-bottom-color: #c8c3b6;
+}
+html.tools-day .planning-banner.live { background: #e4ead8; }
+html.tools-day .planning-banner a {
+  background: #2b2924;
+  color: #f4f1e8;
+}
+html.tools-day .planning-banner a.planning-banner-secondary {
+  background: transparent;
+  border-color: #2b2924;
+  color: #2b2924;
+}
+html.tools-day input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+html.tools-day textarea,
+html.tools-day select {
+  background: #e8e4da;
+  border-color: #c8c3b6;
+  color: #2b2924;
+}
+html.tools-day .tools-hero > div > p:last-of-type,
+html.tools-day .production-hero > div > p:last-child,
+html.tools-day .guide-hero > div > p:last-child,
+html.tools-day .agent-hero > div > p:last-child,
+html.tools-day .ops-hero > div > p:last-child,
+html.tools-day .cut-hero > div > p:last-child,
+html.tools-day .terminal-hero > div > p:last-child,
+html.tools-day .connect-hero > div > p:last-child,
+html.tools-day .privacy-hero > p:last-child {
+  color: #5a564c;
+}
+html.tools-day .tools-hero-actions .tools-secondary-action {
+  background: #efece3;
+  border-color: #c8c3b6;
+  color: #2b2924;
+}
+html.tools-day .tools-hero aside,
+html.tools-day .production-health,
+html.tools-day .guide-source,
+html.tools-day .ops-health,
+html.tools-day .terminal-health,
+html.tools-day .agent-hero-stats article {
+  background: #efece3;
+  border-color: #c8c3b6;
+}
+html.tools-day .tools-hero aside > span { color: #9a6a14; }
+html.tools-day .tools-card,
+html.tools-day .production-card,
+html.tools-day .guide-card,
+html.tools-day .guide-steps article,
+html.tools-day .guide-feature-grid > article,
+html.tools-day .guide-page-grid article,
+html.tools-day .ops-card,
+html.tools-day .terminal-card,
+html.tools-day .terminal-command-list article,
+html.tools-day .agent-card,
+html.tools-day .cut-card,
+html.tools-day .cut-stats article,
+html.tools-day .privacy-card,
+html.tools-day .packet-form,
+html.tools-day .packet-preview,
+html.tools-day .export-preview,
+html.tools-day .export-actions,
+html.tools-day .gate-chip {
+  background: #efece3;
+  border-color: #c8c3b6;
+}
+html.tools-day .tools-card:hover {
+  background: #e9e5db;
+  border-color: #b4ae9f;
+}
+html.tools-day .tools-card.is-live {
+  background: #e7ecdf;
+  border-color: #b7c4a6;
+}
+html.tools-day .tools-card span {
+  background: #e4e1d7;
+  color: #5a564c;
+}
+html.tools-day .tools-card.is-live span {
+  background: rgba(43, 143, 95, 0.12);
+  color: #2b8f5f;
+}
+html.tools-day .tools-card p,
+html.tools-day .production-health p,
+html.tools-day .production-note,
+html.tools-day .guide-source p,
+html.tools-day .ops-health p,
+html.tools-day .terminal-health p {
+  color: #5a564c;
+}
+html.tools-day .production-health button,
+html.tools-day .guide-source button,
+html.tools-day .guide-card-head button,
+html.tools-day .ops-health button,
+html.tools-day .ops-card button,
+html.tools-day .terminal-health button,
+html.tools-day .terminal-card button,
+html.tools-day .terminal-flow-head > button {
+  background: #e8e4da;
+  border-color: #c8c3b6;
+  color: #2b2924;
+}
+html.tools-day .production-note,
+html.tools-day .cut-note,
+html.tools-day .guide-first,
+html.tools-day .guide-never,
+html.tools-day .ops-message,
+html.tools-day .terminal-rule,
+html.tools-day .agent-alert,
+html.tools-day .agent-note {
+  background: #e7ecdf;
+  border-color: #b7c4a6;
+  color: #3d4a36;
+}
+html.tools-day .job-list,
+html.tools-day .project-list,
+html.tools-day .job-row,
+html.tools-day .empty-job,
+html.tools-day .ops-task-list article,
+html.tools-day .ops-recovery-list article,
+html.tools-day .ops-mini-list span,
+html.tools-day .terminal-card pre,
+html.tools-day .terminal-flow > pre,
+html.tools-day .packet-preview pre,
+html.tools-day .inspector-scroll input,
+html.tools-day .inspector-scroll select,
+html.tools-day .edit-track {
+  background: #e8e4da;
+  border-color: #c8c3b6;
+  color: #2b2924;
+}
+html.tools-day .inspector-scroll h3,
+html.tools-day .inspector-head b,
+html.tools-day .inspector-scroll label {
+  color: #5a564c;
+}
+html.tools-day .visual-track span { color: #efece3; }
+html.tools-day .header-meta { color: #5a564c; }
+html.tools-day .nav-live-dot {
+  background: rgba(43, 143, 95, 0.12);
+  color: #2b8f5f;
+}
+html.tools-day .test-switch {
+  background: #efece3;
+  border-color: #c8c3b6;
+  color: #2b2924;
+}
+html.tools-day .test-switch.on {
+  background: #f3e4e2;
+  border-color: #c44d46;
+  color: #c44d46;
+}

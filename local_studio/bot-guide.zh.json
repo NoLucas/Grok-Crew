@@ -12,7 +12,7 @@
   ],
   "workflow": [
     { "step": 1, "name": "进入本地工作室", "action": "携带 bot_id、display_name、purpose、task 调用 POST /api/bot-entry。", "goal": "创建本地入场记录和首次心跳。新机器人默认获得本地渲染的 auto_local 权限,也可以改选 approval_required。" },
-    { "step": 2, "name": "检查现状", "action": "读取 GET /api/bot-guide、Cut Log、剪辑图、现有项目和排队中的任务。", "goal": "不要覆盖已批准的项目,也不要重试正在运行的任务。" },
+    { "step": 2, "name": "检查现状", "action": "读取 GET /api/bot-guide 和 GET /api/v2/tools，以及 Cut Log、剪辑图、现有项目和排队中的任务。不要抓高级工具页面的 HTML。", "goal": "不要覆盖已批准的项目,也不要重试正在运行的任务。不要把草稿页当成真正的时间线。" },
     { "step": 3, "name": "设置剪辑方式", "action": "先读规格。保留操作者设定的画质。画面比例和字幕跟随当前工作台设置，操作者可在设置里改。POST /api/edit-method 可改开场、节奏、冗余、重构图、风格、音频、速度和 FPS。用 GET /api/v2/handoff/folders 查看已保存文件夹。操作者右键文件可预览、放大、打开原片或删除。", "goal": "遵守已保存画质。不要改画质。画面比例、字幕和其余控件操作者可在工作台上改。" },
     { "step": 4, "name": "规划剪辑", "action": "创建只包含保留语音片段的、以文字稿为先的 EDL。", "goal": "使用连续的原始时间码、易读的两词字幕和清晰的钩子。" },
     { "step": 5, "name": "准备收尾", "action": "在 render_settings 中设置重构图基准点、速度、音频、风格和 FPS。画质保持操作者规格，画面比例和字幕跟随当前工作台设置。", "goal": "选择能解决表达问题的最小改动,避免叠加过多特效。" },
@@ -79,6 +79,7 @@
   ],
   "workspace_pages": [
     {"id":"01","url":"/","name":"工作室","purpose":"以视觉方式概览 Reel 构思、项目状态和本地创作方向。","bot_use":"在选择项目操作前阅读当前的创作背景。"},
+    {"id":"01b","url":"/tools","name":"高级工具","purpose":"旧控制台目录。只有制作和机器人检查会跑真实任务，其余是草稿。","bot_use":"读 GET /api/v2/tools 或 python grok-crew.py tools。不要抓 HTML，只调用该工具列出的 API。"},
     {"id":"02","url":"/edit","name":"编辑室","purpose":"取景、动效、排版、时间轴、字幕和预览控制。","bot_use":"用它来检查或对齐与共享剪辑方式相符的视觉剪辑决定。"},
     {"id":"03","url":"/cut","name":"剪辑记录","purpose":"以文字稿为主导的片段审阅、保留/移除决定和基于时间的剪切规划。","bot_use":"审阅计划中的剪切,然后通过 Local Studio 保存非破坏性的剪辑图。"},
     {"id":"04","url":"/production","name":"制作","purpose":"项目、素材路径、收尾设置、渲染队列和 Instagram 交付。","bot_use":"创建或选择本地项目,应用设置,渲染,并加入队列或自动上传交付。"},
@@ -104,12 +105,12 @@
     "download": "GET /downloads/grok-crew.py",
     "bootstrap": "python grok-crew.py contract",
     "purpose": "面向在同一台电脑终端上运行的机器人的零依赖 CLI。它可以在不进行浏览器操作的情况下使用 Local Studio 和 Operations 端点。",
-    "token_rule": "如果开启了令牌保护,LOCAL_STUDIO_TOKEN 只能通过机器人终端环境传递,绝不能从 .env、浏览器存储或 SQLite 中读取。一旦设置了令牌,不仅写请求需要它,每个读请求也需要它;只有 /health、/api/terminal-contract、/api/bot-guide、/api/bot-entry(GET)和 CLI 下载在没有令牌的情况下保持开放。",
+    "token_rule": "如果开启了令牌保护,LOCAL_STUDIO_TOKEN 只能通过机器人终端环境传递,绝不能从 .env、浏览器存储或 SQLite 中读取。一旦设置了令牌,不仅写请求需要它,每个读请求也需要它;只有 /health、/api/terminal-contract、/api/bot-guide、/api/v2/tools、/api/bot-entry(GET)和 CLI 下载在没有令牌的情况下保持开放。",
     "approval_rule": "已连接的机器人默认处于 auto_local,可以使用 jobs render --bot-id 进行渲染。使用 policy set --bot-id <id> --mode approval_required 改变后,该机器人的渲染就需要 --human-approved。使用 jobs instagram --auto-upload 可立即开始 Instagram 上传,省略则只是把上传任务加入队列。"
   },
   "execution_policy": { "on_entry": "进入 Local Studio 的每个机器人都会获得 auto_local,除非它明确选择 approval_required。", "read": "GET /api/bots/{bot_id}/execution-policy", "write": "携带 bot_id 和 mode 调用 POST /api/bots/execution-policy。", "modes": { "auto_local": "机器人连接后可以将自己的本地 MP4 渲染加入队列并启动。", "approval_required": "机器人可以使用所有的计划、检查、项目和运营功能,但其渲染请求需要 approved: true 或 --human-approved。" }, "external_boundary": "Instagram 上传与本地渲染是相互独立的。任务的 auto_upload 设置决定是立即上传还是保留为手动执行的排队任务。" },
   "approval_gates": ["Instagram 上传需要有效的本地 Instagram 凭证和受支持的已渲染文件。", "使用 auto_upload=true 立即上传,或保持为 false 让任务留在队列中。"],
-  "allowed_endpoints": { "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/jobs/{id}", "GET /api/presets", "GET /api/bots", "GET /api/bots/{bot_id}/execution-policy", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/edit-method", "GET /api/brand-kits"], "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/bots/execution-policy", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits", "POST /api/jobs/{id}/cancel"], "local_render": ["当已连接机器人的策略为 auto_local,或已记录人工批准时,可调用 POST /api/projects/{id}/render"], "write_for_delivery": ["携带 auto_upload=true 或 false 调用 POST /api/projects/{id}/instagram"] },
-  "never": ["读取或泄露 LOCAL_STUDIO_TOKEN、INSTAGRAM_ACCESS_TOKEN 或 .env 的内容。", "使用 local_studio/workspace 之外的路径。", "在没有当前心跳的情况下声称机器人处于活跃状态。", "在所有者没有要求新剪辑的情况下更改已完成的输出文件。"],
+  "allowed_endpoints": { "read": ["GET /health", "GET /api/projects", "GET /api/projects/{id}/operations", "GET /api/jobs", "GET /api/jobs/{id}", "GET /api/presets", "GET /api/bots", "GET /api/bots/{bot_id}/execution-policy", "GET /api/bot-activity", "GET /api/bot-entry", "GET /api/terminal-contract", "GET /downloads/grok-crew.py", "GET /api/bot-entries", "GET /api/bot-guide", "GET /api/v2/tools", "GET /api/edit-method", "GET /api/brand-kits"], "write_after_scope_check": ["POST /api/bot-entry", "POST /api/bots/heartbeat", "POST /api/bots/execution-policy", "POST /api/edit-method", "POST /api/projects", "POST /api/projects/{id}/inspect", "POST /api/projects/{id}/cut-map", "POST /api/projects/{id}/quality-check", "POST /api/projects/{id}/artifacts", "POST /api/artifacts/{id}/update", "POST /api/brand-kits", "POST /api/jobs/{id}/cancel"], "local_render": ["当已连接机器人的策略为 auto_local,或已记录人工批准时,可调用 POST /api/projects/{id}/render"], "write_for_delivery": ["携带 auto_upload=true 或 false 调用 POST /api/projects/{id}/instagram"] },
+  "never": ["读取或泄露 LOCAL_STUDIO_TOKEN、INSTAGRAM_ACCESS_TOKEN 或 .env 的内容。", "使用 local_studio/workspace 之外的路径。", "在没有当前心跳的情况下声称机器人处于活跃状态。", "在所有者没有要求新剪辑的情况下更改已完成的输出文件。", "不要抓高级工具页面的 HTML。请用 GET /api/v2/tools 和列出的 API。"],
   "heartbeat_example": { "bot_id": "local-editor-bot", "display_name": "Local Editor Bot", "action": "render_or_upload_ready", "detail": { "project": "my-video-project", "decision": "已去除冗余内容,保留了 3 个语音片段,并采用居中的 9:16 重构图。", "next": "按机器人执行策略运行本地渲染,然后根据需要将 Instagram 上传加入队列或自动上传。" } }
 }

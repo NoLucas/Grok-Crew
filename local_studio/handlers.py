@@ -70,6 +70,7 @@ from studio_server import (
     terminal_contract,
     update_artifact,
 )
+from advanced_tools import advanced_tools_catalog
 from first_run import first_run_status, open_sample_project
 from bot_pack import bot_pack_bytes
 from edit_spec import create_spec, get_spec, list_specs, spec_brief, spec_invite
@@ -400,6 +401,10 @@ class StudioHandler(BaseHTTPRequestHandler):
                 query = urlparse(self.path).query
                 language = next((lang for lang in ("ko", "zh", "ja") if f"lang={lang}" in query), "en")
                 self._json(200, bot_guide(language))
+            elif path == "/api/v2/tools":
+                query = parse_qs(urlparse(self.path).query)
+                language = (query.get("lang") or query.get("language") or ["en"])[0]
+                self._json(200, advanced_tools_catalog(str(language or "en")))
             elif path == "/api/bot-entry":
                 self._json(200, bot_entry_manifest())
             elif path == "/api/terminal-contract":

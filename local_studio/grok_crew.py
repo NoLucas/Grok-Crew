@@ -123,6 +123,9 @@ def build_parser() -> argparse.ArgumentParser:
     for name, help_text in (("health", "Read local service status."), ("contract", "Read terminal capability contract."), ("guide", "Read bot editing guide."), ("presets", "Read quality, caption layout, and platform presets.")):
         commands.add_parser(name, help=help_text)
 
+    tools = commands.add_parser("tools", help="Read the advanced-tools catalog (APIs, not HTML).")
+    tools.add_argument("--lang", choices=("en", "ko", "zh", "ja"), default="en")
+
     site = commands.add_parser("site", help="Print the correct browser workspace URL; do not use port 7214 for browser pages.")
     site.add_argument("--page", choices=tuple(BROWSER_PAGES), default="desktop")
 
@@ -235,6 +238,8 @@ def main() -> None:
         print_json(client.request("/api/terminal-contract")); return
     if args.group == "guide":
         print_json(client.request("/api/bot-guide")); return
+    if args.group == "tools":
+        print_json(client.request(f"/api/v2/tools?lang={args.lang}")); return
     if args.group == "presets":
         print_json(client.request("/api/presets")); return
     if args.group == "site":
