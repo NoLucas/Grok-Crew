@@ -60,7 +60,7 @@ select {
   min-height: 68px;
   padding: 0 30px;
   border-bottom: 1px solid var(--line);
-  background: rgba(10, 10, 10, 0.94);
+  background: color-mix(in srgb, var(--header-bg, var(--surface)) 94%, transparent);
   backdrop-filter: blur(14px);
 }
 .wordmark {
@@ -141,7 +141,7 @@ select {
   font-weight: 850;
 }
 .studio-title h1 span {
-  color: #777;
+  color: var(--yellow);
 }
 .studio-actions {
   display: flex;
@@ -154,14 +154,14 @@ select {
   align-items: center;
   gap: 8px;
   color: var(--soft);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
 }
 .audio-select select {
   min-width: 106px;
   padding: 8px 10px;
-  border: 1px solid #3a3a3a;
-  background: var(--surface);
+  border: 1px solid var(--line);
+  background: var(--input);
   color: var(--text);
   outline: 0;
 }
@@ -170,11 +170,11 @@ select {
   align-items: center;
   gap: 8px;
   padding: 10px 13px;
-  border: 1px solid #424242;
+  border: 1.5px solid var(--line);
   border-radius: 8px;
-  background: #151515;
+  background: var(--surface);
   color: var(--text);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
 }
 .test-switch i {
@@ -185,8 +185,8 @@ select {
 }
 .test-switch.on {
   border-color: var(--red);
-  color: #fff;
-  background: #301414;
+  color: var(--text);
+  background: color-mix(in srgb, var(--red) 14%, var(--surface));
 }
 .test-switch.on i {
   background: var(--red);
@@ -220,12 +220,12 @@ select {
   gap: 3px;
 }
 .gate-chip b {
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.08em;
 }
 .gate-chip small {
   color: var(--soft);
-  font-size: 10px;
+  font-size: 13px;
 }
 .gate-chip.pass {
   border-color: rgba(184, 248, 90, 0.38);
@@ -242,7 +242,7 @@ select {
   color: var(--red);
 }
 .gate-chip.fail small {
-  color: #e8a19c;
+  color: var(--red);
 }
 .empty-copy {
   margin: 0 0 22px;
@@ -272,20 +272,20 @@ select {
   justify-content: space-between;
   padding: 13px 15px;
   border-bottom: 1px solid var(--line);
-  color: #d0d0cc;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.09em;
 }
 .scene-format {
-  color: #666;
+  color: var(--soft);
 }
 .scene-canvas-wrap {
   display: grid;
   place-items: center;
   padding: 20px;
   overflow: hidden;
-  background: #090909;
+  background: var(--surface-2);
 }
 .scene-canvas {
   position: relative;
@@ -408,8 +408,8 @@ select {
 .permalink-label {
   display: grid;
   gap: 6px;
-  color: #aaa;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.03em;
 }
@@ -421,11 +421,11 @@ select {
 .permalink-label input {
   width: 100%;
   padding: 9px 10px;
-  border: 1px solid #343434;
+  border: 1.5px solid var(--line);
   background: var(--input);
   color: var(--text);
   outline: none;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0;
 }
@@ -453,11 +453,11 @@ select {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #0c0c0c;
+  background: var(--surface-2);
 }
 .live-preview > span {
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.09em;
 }
@@ -526,8 +526,8 @@ select {
   border: 0;
   border-radius: 8px;
   background: var(--yellow);
-  color: #111;
-  font-size: 12px;
+  color: var(--on-accent);
+  font-size: 13px;
   font-weight: 900;
 }
 .play-button {
@@ -598,7 +598,7 @@ select {
   align-items: center;
   gap: 15px;
   color: var(--soft);
-  font-size: 10px;
+  font-size: 13px;
 }
 .timing-controls label {
   display: flex;
@@ -608,9 +608,9 @@ select {
 .timing-controls input {
   width: 43px;
   padding: 4px;
-  border: 1px solid #333;
-  background: #0b0b0b;
-  color: white;
+  border: 1px solid var(--line);
+  background: var(--input);
+  color: var(--text);
   text-align: center;
 }
 .timing-controls span {
@@ -623,7 +623,7 @@ select {
   gap: 18px;
   margin: 18px 0 12px;
   color: var(--soft);
-  font-size: 11px;
+  font-size: 13px;
 }
 .toggle-row {
   display: flex;
@@ -637,13 +637,13 @@ select {
   padding: 12px 17px;
   border-radius: 8px;
   background: var(--yellow);
-  color: #161616;
+  color: var(--on-accent);
   font-weight: 900;
 }
 .export-link.locked {
   pointer-events: none;
-  background: #272727;
-  color: #666;
+  background: var(--surface-2);
+  color: var(--soft);
 }
 .subpage {
   padding: 62px 0 72px;
@@ -682,7 +682,7 @@ select {
 }
 .preset-card > span {
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
 }
 .preset-card h2 {
@@ -693,24 +693,24 @@ select {
 }
 .preset-card p {
   margin: 0 0 6px;
-  color: #c1c1bd;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.35;
 }
 .preset-card small {
   margin: auto 0 14px;
   color: var(--soft);
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.4;
 }
 .preset-card button {
   width: 100%;
   padding: 10px;
-  border: 1px solid #464646;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0b0b0b;
+  background: var(--input);
   color: var(--text);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
   text-align: left;
 }
@@ -729,7 +729,7 @@ select {
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 13px;
-  background: #0e0e0e;
+  background: var(--surface-2);
 }
 .recent-panel h2,
 .rule-panel h2 {
@@ -771,12 +771,12 @@ select {
 }
 .packet-preview {
   min-height: 485px;
-  background: linear-gradient(145deg, #171308, #111 65%);
+  background: var(--surface);
 }
 .packet-preview > span,
 .packet-preview > small {
   color: var(--yellow);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.1em;
 }
@@ -788,27 +788,27 @@ select {
 }
 .packet-preview p {
   white-space: pre-wrap;
-  color: #d0d0cd;
-  font-size: 13px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.55;
 }
 .packet-preview b {
   display: block;
   margin-top: 20px;
   color: var(--yellow);
-  font-size: 11px;
+  font-size: 13px;
 }
 .packet-preview hr {
   margin: 35px 0 14px;
   border: 0;
-  border-top: 1px solid #4d4d4d;
+  border-top: 1px solid var(--line);
 }
 .packet-preview pre {
   overflow: auto;
   white-space: pre-wrap;
-  color: #bdbdb8;
+  color: var(--text);
   font:
-    10px/1.55 var(--font-geist-mono),
+    13px/1.55 var(--font-geist-mono),
     monospace;
 }
 .gate-intro {
@@ -844,7 +844,7 @@ select {
   justify-content: space-between;
   align-items: center;
   color: var(--soft);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.08em;
 }
@@ -862,7 +862,7 @@ select {
 .gate-board-card p {
   min-height: 31px;
   margin: 0;
-  color: #deded9;
+  color: var(--text);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -874,7 +874,7 @@ select {
 .gate-board-card li {
   margin-bottom: 6px;
   color: var(--soft);
-  font-size: 10px;
+  font-size: 13px;
 }
 .gate-board-card li:before {
   margin-right: 7px;
@@ -892,7 +892,7 @@ select {
   display: block;
   margin: 0 0 6px;
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
 }
@@ -914,7 +914,7 @@ select {
 }
 .export-preview > span {
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.1em;
 }
@@ -964,7 +964,7 @@ select {
 .export-actions > p {
   margin: 0;
   color: var(--soft);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
 }
 .export-preview p b {
@@ -981,16 +981,16 @@ select {
   padding: 15px;
 }
 .export-button:disabled {
-  background: #292929;
-  color: #666;
+  background: var(--surface-2);
+  color: var(--soft);
 }
 .recipe-button {
   padding: 11px;
-  border: 1px solid #4a4a4a;
+  border: 1px solid var(--line);
   border-radius: 8px;
   background: transparent;
-  color: white;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
 }
 .permalink-label {
@@ -1002,10 +1002,10 @@ select {
   padding: 11px;
   border: 1px solid;
   border-radius: 8px;
-  font-size: 10px;
+  font-size: 13px;
 }
 .permalink-result b {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.08em;
 }
 .permalink-result.pass {
@@ -1015,12 +1015,12 @@ select {
 }
 .permalink-result.fail {
   border-color: rgba(255, 91, 82, 0.35);
-  color: #e5a09d;
+  color: var(--red);
   background: rgba(255, 91, 82, 0.04);
 }
 .reference-link {
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
 }
 .forge-footer {
@@ -1137,7 +1137,7 @@ select {
   }
   .test-switch {
     padding: 9px;
-    font-size: 10px;
+    font-size: 13px;
   }
   .gate-strip {
     grid-template-columns: 1fr;
@@ -1280,7 +1280,7 @@ select {
 .agent-hero-stats article {
   min-height: 105px;
   padding: 15px;
-  border: 1px solid #303030;
+  border: 1.5px solid var(--line);
   border-radius: 13px;
   background: var(--surface);
 }
@@ -1294,8 +1294,8 @@ select {
 .agent-hero-stats span {
   display: block;
   margin-top: 10px;
-  color: var(--soft);
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 700;
 }
 .agent-alert {
@@ -1304,15 +1304,15 @@ select {
   gap: 14px;
   margin: 17px 0;
   padding: 13px 15px;
-  border: 1px solid rgba(245, 196, 0, 0.36);
+  border: 1.5px solid var(--line);
   border-radius: 11px;
-  background: #1b190b;
-  color: #d9d5b7;
-  font-size: 11px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
 }
 .agent-alert b {
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.09em;
   white-space: nowrap;
 }
@@ -1343,8 +1343,8 @@ select {
   justify-content: space-between;
   gap: 14px;
   margin-bottom: 17px;
-  color: #c9c9c2;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.08em;
 }
@@ -1359,14 +1359,14 @@ select {
   display: grid;
   gap: 6px;
   margin-bottom: 11px;
-  color: #aaa;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.03em;
 }
 .agent-card label small {
-  color: #686868;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0;
 }
@@ -1375,12 +1375,12 @@ select {
 .agent-card select {
   width: 100%;
   padding: 10px 11px;
-  border: 1px solid #353535;
+  border: 1.5px solid var(--line);
   border-radius: 8px;
-  background: #0b0b0b;
-  color: white;
+  background: var(--input);
+  color: var(--text);
   outline: none;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0;
 }
@@ -1415,7 +1415,7 @@ select {
   padding: 5px 8px;
   border: 1px solid;
   border-radius: 99px;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
 }
 .agent-badge.yes {
@@ -1424,9 +1424,9 @@ select {
   color: var(--lime);
 }
 .agent-badge.no {
-  border-color: rgba(255, 91, 82, 0.34);
-  background: rgba(255, 91, 82, 0.05);
-  color: #eba6a2;
+  border-color: color-mix(in srgb, var(--red) 40%, var(--line));
+  background: color-mix(in srgb, var(--red) 10%, var(--surface));
+  color: var(--red);
 }
 .switch-line {
   display: flex !important;
@@ -1435,8 +1435,8 @@ select {
   gap: 8px !important;
   margin: 3px 0 !important;
   padding: 9px 0;
-  border-top: 1px solid #292929;
-  color: #c8c8c2 !important;
+  border-top: 1px solid var(--line);
+  color: var(--text) !important;
 }
 .switch-line input {
   width: 14px;
@@ -1447,7 +1447,7 @@ select {
 .agent-note {
   margin: 4px 0 0;
   color: var(--soft);
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.5;
 }
 .visual-card {
@@ -1467,18 +1467,18 @@ select {
 .agent-primary,
 .add-task button {
   padding: 10px 12px;
-  border: 1px solid #484848;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #101010;
-  color: white;
-  font-size: 10px;
+  background: var(--input);
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
 }
 .memory-actions button:last-child,
 .agent-primary {
   border-color: var(--yellow);
   background: var(--yellow);
-  color: #111;
+  color: var(--on-accent);
 }
 .task-list {
   display: grid;
@@ -1491,9 +1491,9 @@ select {
   gap: 9px;
   min-height: 48px;
   padding: 7px;
-  border: 1px solid #292929;
+  border: 1.5px solid var(--line);
   border-radius: 8px;
-  background: #0d0d0d;
+  background: var(--surface-2);
 }
 .task-row.done {
   opacity: 0.55;
@@ -1503,11 +1503,11 @@ select {
   place-items: center;
   width: 26px;
   height: 26px;
-  border: 1px solid #575757;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #171717;
+  background: var(--input);
   color: var(--yellow);
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 900;
 }
 .task-row.done .task-check {
@@ -1517,19 +1517,19 @@ select {
 }
 .task-row b {
   display: block;
-  color: #deded9;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 14px;
 }
 .task-row small {
   display: block;
   margin-top: 3px;
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
 }
 .task-remove {
   border: 0;
   background: transparent;
-  color: #6d6d6d;
+  color: var(--soft);
   font-size: 18px;
 }
 .add-task {
@@ -1561,13 +1561,13 @@ select {
   margin: 0 0 13px;
   padding: 14px;
   overflow: auto;
-  border: 1px solid #292929;
+  border: 1.5px solid var(--line);
   border-radius: 9px;
-  background: #080808;
-  color: #c9c9c3;
+  background: var(--surface-2);
+  color: var(--text);
   white-space: pre-wrap;
   font:
-    10px/1.55 var(--font-geist-mono),
+    13px/1.55 var(--font-geist-mono),
     monospace;
 }
 .manifest-actions button {
@@ -1586,9 +1586,9 @@ select {
   grid-template-columns: auto 1fr;
   gap: 5px 8px;
   padding: 11px;
-  border: 1px solid #303030;
+  border: 1.5px solid var(--line);
   border-radius: 8px;
-  background: #0d0d0d;
+  background: var(--surface-2);
 }
 .snapshot-list span {
   grid-row: span 2;
@@ -1597,39 +1597,39 @@ select {
   width: 30px;
   height: 30px;
   border-radius: 6px;
-  background: #28220a;
+  background: var(--surface);
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
 }
 .snapshot-list b {
   overflow: hidden;
-  color: #ddd;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .snapshot-list small {
   color: var(--soft);
-  font-size: 8px;
+  font-size: 12px;
 }
 .snapshot-list button {
   grid-column: 1 / -1;
   margin-top: 4px;
   padding: 6px;
-  border: 1px solid #464646;
+  border: 1px solid var(--line);
   border-radius: 5px;
-  background: transparent;
-  color: #ddd;
-  font-size: 9px;
+  background: var(--input);
+  color: var(--text);
+  font-size: 13px;
   font-weight: 700;
 }
 .agent-feature-register {
   margin-top: 18px;
   padding: 25px;
-  border: 1px solid #303030;
+  border: 1.5px solid var(--line);
   border-radius: 16px;
-  background: linear-gradient(135deg, #15130a, #101010 48%);
+  background: var(--surface);
 }
 .agent-feature-register h2 {
   margin: 0 0 20px;
@@ -1645,10 +1645,10 @@ select {
 }
 .agent-feature-register span {
   padding: 7px 8px;
-  border: 1px solid #3b3927;
+  border: 1px solid var(--line);
   border-radius: 5px;
-  color: #c5c1a5;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 700;
 }
 @media (max-width: 960px) {
@@ -1749,8 +1749,8 @@ select {
   border: 0;
   border-radius: 8px;
   background: var(--yellow);
-  color: #111;
-  font-size: 11px;
+  color: var(--on-accent);
+  font-size: 13px;
   font-weight: 900;
 }
 .edit-master-controls > button.playing {
@@ -1760,17 +1760,17 @@ select {
   display: grid;
   gap: 5px;
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
 }
 .edit-master-controls select,
 .timeline-controls select {
   padding: 8px;
-  border: 1px solid #393939;
+  border: 1.5px solid var(--line);
   border-radius: 7px;
-  background: #101010;
-  color: white;
-  font-size: 10px;
+  background: var(--input);
+  color: var(--text);
+  font-size: 13px;
 }
 .edit-topbar {
   display: flex;
@@ -1783,7 +1783,7 @@ select {
   border-radius: 10px;
   background: var(--surface);
   color: var(--soft);
-  font-size: 10px;
+  font-size: 13px;
 }
 .edit-toggles {
   display: flex;
@@ -1796,8 +1796,8 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #c9c9c2;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 700;
 }
 .edit-toggles input,
@@ -1832,7 +1832,7 @@ select {
 .edit-card > div:first-child > span,
 .timeline-rail-head span {
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.1em;
 }
@@ -1841,15 +1841,15 @@ select {
   grid-template-columns: 28px 1fr;
   gap: 4px 7px;
   padding: 10px;
-  border: 1px solid #313131;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #0d0d0d;
-  color: #deded8;
+  background: var(--surface-2);
+  color: var(--text);
   text-align: left;
 }
 .scene-bin > button.active {
   border-color: var(--yellow);
-  background: #1d1a0a;
+  background: color-mix(in srgb, var(--yellow) 16%, var(--surface));
 }
 .scene-bin > button b {
   grid-row: span 2;
@@ -1858,20 +1858,20 @@ select {
   width: 26px;
   height: 26px;
   border-radius: 5px;
-  background: #242424;
+  background: var(--surface-2);
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
 }
 .scene-bin > button small {
   overflow: hidden;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .scene-bin > button em {
   color: var(--soft);
-  font-size: 8px;
+  font-size: 12px;
   font-style: normal;
 }
 .scene-bin .duplicate-take {
@@ -1882,8 +1882,8 @@ select {
 }
 .scene-bin p {
   margin: auto 0 0;
-  color: #686868;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   line-height: 1.45;
 }
 .edit-preview-panel {
@@ -1904,17 +1904,17 @@ select {
 }
 .preview-toolbar b,
 .timeline-rail-head b {
-  color: #d7d7d1;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
 }
 .preview-toolbar button,
 .timeline-rail-head button {
   padding: 6px 8px;
-  border: 1px solid #414141;
+  border: 1px solid var(--line);
   border-radius: 6px;
   background: transparent;
-  color: #ddd;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 12px;
   font-weight: 700;
 }
 .edit-canvas {
@@ -2017,7 +2017,7 @@ select {
   border-top: 1px solid var(--line);
   border-bottom: 0;
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
 }
 .inspector {
   display: grid;
@@ -2034,8 +2034,8 @@ select {
 .inspector-head b {
   overflow: hidden;
   max-width: 180px;
-  color: #ddd;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2047,7 +2047,7 @@ select {
 .inspector-scroll section {
   padding-bottom: 11px;
   margin-bottom: 12px;
-  border-bottom: 1px solid #292929;
+  border-bottom: 1px solid var(--line);
 }
 .inspector-scroll section:last-child {
   border: 0;
@@ -2055,15 +2055,15 @@ select {
 .inspector-scroll h3 {
   margin: 0 0 9px;
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.03em;
 }
 .inspector-scroll label {
   display: grid;
   gap: 5px;
   margin-bottom: 8px;
-  color: #aaa;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 800;
 }
 .inspector-scroll label output {
@@ -2078,7 +2078,7 @@ select {
   border-radius: 6px;
   background: var(--input);
   color: var(--text);
-  font-size: 10px;
+  font-size: 13px;
 }
 .inspector-scroll input[type="range"] {
   padding: 0;
@@ -2114,8 +2114,8 @@ select {
 .track-label {
   display: grid;
   align-items: center;
-  color: #777;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.06em;
 }
@@ -2227,8 +2227,8 @@ select {
   margin-bottom: 11px;
 }
 .edit-card > div:first-child b {
-  color: #ddd;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
 }
 .marker-list {
   display: grid;
@@ -2242,10 +2242,10 @@ select {
   align-items: center;
   gap: 7px;
   padding: 7px;
-  border: 1px solid #2d2d2d;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #0c0c0c;
-  color: #ddd;
+  background: var(--surface-2);
+  color: var(--text);
   text-align: left;
 }
 .marker-row i {
@@ -2267,16 +2267,16 @@ select {
 }
 .marker-row b,
 .marker-row span {
-  font-size: 9px;
+  font-size: 12px;
 }
 .marker-row span {
   overflow: hidden;
-  color: #bbb;
+  color: var(--soft);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .marker-row em {
-  color: #888;
+  color: var(--soft);
   font-size: 16px;
   font-style: normal;
   text-align: center;
@@ -2291,11 +2291,11 @@ select {
 .notes-card textarea {
   width: 100%;
   padding: 8px;
-  border: 1px solid #373737;
+  border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--input);
   color: var(--text);
-  font-size: 10px;
+  font-size: 13px;
 }
 .marker-add button,
 .notes-card button {
@@ -2304,7 +2304,7 @@ select {
   border-radius: 6px;
   background: transparent;
   color: var(--yellow);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -2318,8 +2318,8 @@ select {
 }
 .review-card p {
   margin: 9px 0 0;
-  color: #686868;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   line-height: 1.4;
 }
 .notes-card textarea {
@@ -2330,8 +2330,8 @@ select {
 .notes-card label {
   display: grid;
   gap: 5px;
-  color: #aaa;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 800;
 }
 .notes-card label input {
@@ -2347,9 +2347,9 @@ select {
 .edit-feature-register {
   margin-top: 15px;
   padding: 23px;
-  border: 1px solid #39341b;
+  border: 1px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #15130a, #0f0f0f 55%);
+  background: var(--surface);
 }
 .edit-feature-register h2 {
   margin: 0 0 17px;
@@ -2364,10 +2364,10 @@ select {
 }
 .edit-feature-register span {
   padding: 6px 8px;
-  border: 1px solid #3b3927;
+  border: 1px solid var(--line);
   border-radius: 5px;
-  color: #c9c6ad;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 12px;
   font-weight: 700;
 }
 @media (max-width: 1120px) {
@@ -2511,7 +2511,7 @@ select {
 .connect-hero > div > p:last-child {
   max-width: 590px;
   margin: 19px 0 0;
-  color: #aaa;
+  color: var(--text);
   font-size: 15px;
   line-height: 1.55;
 }
@@ -2519,9 +2519,9 @@ select {
   display: grid;
   gap: 7px;
   padding: 21px;
-  border: 1px solid #443a1a;
+  border: 1.5px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #17150b, #101010);
+  background: var(--surface);
 }
 .bridge-status.ready {
   border-color: rgba(184, 248, 90, 0.4);
@@ -2529,7 +2529,7 @@ select {
 .bridge-status span,
 .connect-card-head span {
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.11em;
 }
@@ -2543,19 +2543,19 @@ select {
 }
 .bridge-status p {
   margin: 0;
-  color: #bab7a1;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 14px;
 }
 .bridge-status button,
 .local-address button,
 .endpoint-list button,
 .manifest-actions button,
 .plan-button {
-  border: 1px solid #4b4732;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0c0c0c;
-  color: #ddd;
-  font-size: 10px;
+  background: var(--input);
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
 }
 .bridge-status button {
@@ -2569,23 +2569,23 @@ select {
   gap: 14px;
   margin: 27px 0 14px;
   padding: 13px 15px;
-  border: 1px solid #47421e;
+  border: 1.5px solid var(--line);
   border-radius: 10px;
-  background: #171509;
-  color: #cfc9a4;
-  font-size: 11px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.45;
 }
 .connect-safety b {
   color: var(--yellow);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   white-space: nowrap;
 }
 .connect-safety em {
   margin-left: auto;
   color: var(--lime);
-  font-size: 10px;
+  font-size: 13px;
   font-style: normal;
   font-weight: 800;
   white-space: nowrap;
@@ -2612,12 +2612,12 @@ select {
   margin-bottom: 14px;
 }
 .connect-card-head em {
-  color: #777;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-style: normal;
 }
 .local-address {
-  background: linear-gradient(135deg, #18160b, #121212 58%);
+  background: var(--surface);
 }
 .local-address > b {
   display: block;
@@ -2635,7 +2635,7 @@ select {
 .plan-card > p {
   margin: 12px 0;
   color: var(--soft);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.55;
 }
 .local-address > div,
@@ -2653,15 +2653,15 @@ select {
 .plan-button {
   border-color: var(--yellow);
   background: var(--yellow);
-  color: #141414;
+  color: var(--on-accent);
 }
 .setup-card ol {
   display: grid;
   gap: 7px;
   margin: 0;
   padding-left: 19px;
-  color: #d2d2cc;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.35;
 }
 .setup-card code,
@@ -2683,7 +2683,7 @@ select {
   gap: 12px;
   align-items: center;
   padding: 12px 0;
-  border-top: 1px solid #292929;
+  border-top: 1px solid var(--line);
 }
 .endpoint-list article:first-child {
   border-top: 0;
@@ -2694,20 +2694,20 @@ select {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: #29240d;
+  background: var(--surface-2);
   color: var(--yellow);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
 }
 .endpoint-list b {
   display: block;
-  color: #e7e7e1;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 14px;
 }
 .endpoint-list p {
   margin: 4px 0 0;
-  color: #838383;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.35;
 }
 .endpoint-list code {
@@ -2719,9 +2719,9 @@ select {
 .endpoint-list button {
   padding: 8px;
   overflow: hidden;
-  color: #b7b7b2;
+  color: var(--text);
   font:
-    9px var(--font-geist-mono),
+    13px var(--font-geist-mono),
     monospace;
   text-align: left;
   text-overflow: ellipsis;
@@ -2737,13 +2737,13 @@ select {
   margin: 14px 0 0;
   padding: 13px;
   overflow: auto;
-  border: 1px solid #292929;
+  border: 1.5px solid var(--line);
   border-radius: 8px;
-  background: #090909;
-  color: #c4c4bd;
+  background: var(--surface-2);
+  color: var(--text);
   white-space: pre-wrap;
   font:
-    9px/1.55 var(--font-geist-mono),
+    13px/1.55 var(--font-geist-mono),
     monospace;
 }
 .plan-card {
@@ -2753,20 +2753,20 @@ select {
 .plan-card label {
   display: grid;
   gap: 7px;
-  color: #b5b5af;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
 }
 .plan-card textarea {
   width: 100%;
   resize: vertical;
   padding: 10px;
-  border: 1px solid #383838;
+  border: 1.5px solid var(--line);
   border-radius: 8px;
   outline: 0;
-  background: #0b0b0b;
-  color: white;
-  font-size: 11px;
+  background: var(--input);
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.45;
 }
 .plan-button {
@@ -2788,14 +2788,14 @@ select {
   min-height: 138px;
   max-height: 530px;
   margin-bottom: 0;
-  color: #d3d3cb;
+  color: var(--text);
 }
 .connect-rules {
   margin-top: 16px;
   padding: 27px;
-  border: 1px solid #3f3918;
+  border: 1.5px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #18150a, #101010 56%);
+  background: var(--surface);
 }
 .connect-rules h2 {
   margin: 0 0 19px;
@@ -2810,10 +2810,10 @@ select {
 }
 .connect-rules span {
   padding: 7px 9px;
-  border: 1px solid #3c3928;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  color: #d3cfb7;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
 }
 .connect-rules span:nth-child(-n + 3) {
@@ -2822,7 +2822,7 @@ select {
 }
 .connect-rules span:nth-child(n + 4) {
   border-color: rgba(255, 91, 82, 0.32);
-  color: #ffaaa4;
+  color: var(--red);
 }
 @media (max-width: 960px) {
   .connect-hero,
@@ -2857,7 +2857,7 @@ select {
     font-size: 51px;
   }
   .connect-safety {
-    font-size: 10px;
+    font-size: 13px;
   }
   .connect-safety b {
     width: 100%;
@@ -2905,8 +2905,8 @@ select {
 .cut-hero > div > p:last-child {
   max-width: 660px;
   margin: 18px 0 0;
-  color: #aaa;
-  font-size: 14px;
+  color: var(--text);
+  font-size: 15px;
   line-height: 1.55;
 }
 .cut-stats {
@@ -2919,7 +2919,7 @@ select {
   align-content: center;
   min-height: 82px;
   padding: 14px;
-  border: 1px solid #313131;
+  border: 1px solid var(--line);
   border-radius: 11px;
   background: var(--surface);
 }
@@ -2933,7 +2933,7 @@ select {
 .cut-stats span {
   margin-top: 5px;
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -2946,14 +2946,14 @@ select {
   padding: 13px 15px;
   border: 1px solid rgba(184, 248, 90, 0.28);
   border-radius: 10px;
-  background: #11170e;
-  color: #bdc9ae;
-  font-size: 11px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
 }
 .cut-note b {
   color: var(--lime);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.09em;
   white-space: nowrap;
 }
@@ -2980,34 +2980,34 @@ select {
 }
 .cut-card-head span {
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.11em;
 }
 .cut-card-head em {
-  color: #777;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-style: normal;
 }
 .source-drop {
   display: grid;
   gap: 9px;
   padding: 18px;
-  border: 1px dashed #55513b;
+  border: 1px dashed var(--line);
   border-radius: 9px;
-  background: #101009;
+  background: var(--surface-2);
   color: var(--yellow);
   font-size: 12px;
   font-weight: 800;
 }
 .source-drop input {
   width: 100%;
-  color: #ccc;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
 }
 .source-drop small {
   color: var(--soft);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 500;
 }
 .local-video {
@@ -3024,10 +3024,10 @@ select {
   min-height: 136px;
   margin-top: 12px;
   padding: 20px;
-  border: 1px solid #282828;
+  border: 1px solid var(--line);
   border-radius: 9px;
-  color: #747474;
-  font-size: 11px;
+  color: var(--soft);
+  font-size: 13px;
   line-height: 1.45;
   text-align: center;
 }
@@ -3035,8 +3035,8 @@ select {
 .local-return label {
   display: grid;
   gap: 7px;
-  color: #bababa;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
 }
 .transcript-card textarea,
@@ -3044,13 +3044,13 @@ select {
   width: 100%;
   resize: vertical;
   padding: 10px;
-  border: 1px solid #3c3c3c;
+  border: 1px solid var(--line);
   border-radius: 8px;
   outline: 0;
-  background: #0a0a0a;
-  color: #e7e7e0;
+  background: var(--input);
+  color: var(--text);
   font:
-    10px/1.55 var(--font-geist-mono),
+    13px/1.55 var(--font-geist-mono),
     monospace;
 }
 .cut-actions {
@@ -3062,29 +3062,29 @@ select {
 .cut-actions button,
 .decision-controls button {
   padding: 9px 10px;
-  border: 1px solid #484848;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #101010;
-  color: #e0e0dc;
-  font-size: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
 }
 .cut-actions button:first-child,
 .export-recipe .cut-actions button:first-child {
   border-color: var(--yellow);
   background: var(--yellow);
-  color: #101010;
+  color: var(--on-accent);
 }
 .transcript-card p {
   margin: 10px 0 0;
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.45;
 }
 .transcript-card code {
-  color: #ccc38c;
+  color: var(--yellow);
   font:
-    9px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
 }
 .decision-card {
@@ -3096,17 +3096,17 @@ select {
   align-items: center;
   gap: 10px 18px;
   padding: 11px;
-  border: 1px solid #303030;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #0d0d0d;
+  background: var(--surface-2);
 }
 .decision-controls label {
   display: grid;
   grid-template-columns: auto 120px auto;
   gap: 8px;
   align-items: center;
-  color: #bbb;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   font-weight: 800;
 }
 .decision-controls input {
@@ -3115,13 +3115,13 @@ select {
 .decision-controls output {
   color: var(--yellow);
   font:
-    10px var(--font-geist-mono),
+    13px var(--font-geist-mono),
     monospace;
 }
 .decision-controls > span {
   margin-left: auto;
-  color: #777;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
 }
 .edl-list {
   display: grid;
@@ -3136,9 +3136,9 @@ select {
   align-items: center;
   min-height: 57px;
   padding: 9px;
-  border: 1px solid #2b2b2b;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #0d0d0d;
+  background: var(--surface-2);
 }
 .edl-row.keep {
   border-left: 3px solid var(--lime);
@@ -3150,19 +3150,19 @@ select {
 .edl-row label {
   display: grid;
   gap: 4px;
-  color: #91918b;
-  font-size: 8px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 900;
 }
 .edl-row input[type="number"] {
   width: 100%;
   padding: 6px;
-  border: 1px solid #383838;
+  border: 1px solid var(--line);
   border-radius: 5px;
-  background: #090909;
-  color: white;
+  background: var(--surface-2);
+  color: var(--text);
   font:
-    9px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
 }
 .edl-toggle {
@@ -3172,7 +3172,7 @@ select {
   color: var(--lime) !important;
 }
 .drop .edl-toggle {
-  color: #ff9892 !important;
+  color: var(--red) !important;
 }
 .edl-toggle input {
   accent-color: var(--lime);
@@ -3180,8 +3180,8 @@ select {
 .edl-row b {
   display: block;
   overflow: hidden;
-  color: #deded8;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3189,15 +3189,15 @@ select {
   display: block;
   overflow: hidden;
   margin-top: 4px;
-  color: #767676;
-  font-size: 8px;
+  color: var(--soft);
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .edl-row > button {
   border: 0;
   background: transparent;
-  color: #747474;
+  color: var(--soft);
   font-size: 18px;
 }
 .dead-gap {
@@ -3218,9 +3218,9 @@ select {
   height: 48px;
   margin-top: 12px;
   overflow: hidden;
-  border: 1px solid #323232;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #090909;
+  background: var(--surface-2);
 }
 .cut-timeline:before {
   position: absolute;
@@ -3244,7 +3244,7 @@ select {
   background: #371812;
   color: #a59a97;
   font:
-    800 8px var(--font-geist-mono),
+    800 12px var(--font-geist-mono),
     monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3266,9 +3266,9 @@ select {
   grid-template-columns: 25px 1fr;
   gap: 8px;
   padding: 9px;
-  border: 1px solid #303030;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0c0c0c;
+  background: var(--surface-2);
 }
 .qc-list b {
   display: grid;
@@ -3286,12 +3286,12 @@ select {
 }
 .qc-list strong {
   display: block;
-  color: #dcdcd6;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
 }
 .qc-list span {
-  color: #84847d;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   line-height: 1.35;
 }
 .approval-line {
@@ -3300,11 +3300,11 @@ select {
   gap: 8px;
   margin-top: 12px;
   padding: 10px;
-  border: 1px solid #3d381b;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #161408;
-  color: #d7d1a9;
-  font-size: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.4;
   font-weight: 700;
 }
@@ -3314,8 +3314,8 @@ select {
 }
 .export-recipe p {
   margin: 0;
-  color: #a0a09a;
-  font-size: 11px;
+  color: var(--soft);
+  font-size: 13px;
   line-height: 1.55;
 }
 .export-recipe .cut-actions button:disabled {
@@ -3323,30 +3323,30 @@ select {
   cursor: not-allowed;
 }
 .export-recipe .cut-actions button:last-child {
-  border-color: #4c4c4c;
-  background: #101010;
-  color: #ddd;
+  border-color: var(--line);
+  background: var(--surface-2);
+  color: var(--text);
 }
 .export-recipe pre {
   max-height: 245px;
   margin: 12px 0 0;
   padding: 12px;
   overflow: auto;
-  border: 1px solid #2c2c2c;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #080808;
-  color: #cbcbbf;
+  background: var(--surface-2);
+  color: var(--text);
   white-space: pre-wrap;
   font:
-    9px/1.55 var(--font-geist-mono),
+    12px/1.55 var(--font-geist-mono),
     monospace;
 }
 .cut-register {
   margin-top: 15px;
   padding: 25px;
-  border: 1px solid #3c391e;
+  border: 1px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #16150a, #101010 58%);
+  background: var(--surface);
 }
 .cut-register h2 {
   margin: 0 0 18px;
@@ -3361,10 +3361,10 @@ select {
 }
 .cut-register span {
   padding: 7px 9px;
-  border: 1px solid #3b3928;
+  border: 1px solid var(--line);
   border-radius: 5px;
-  color: #c9c5a9;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 12px;
   font-weight: 800;
 }
 @media (max-width: 960px) {
@@ -3432,8 +3432,8 @@ select {
   gap: 22px;
   min-height: 61px;
   padding: 0 24px;
-  border-bottom: 1px solid #272727;
-  background: rgba(10, 10, 10, 0.92);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--header-bg, var(--surface)) 94%, transparent);
   backdrop-filter: blur(14px);
 }
 .production-topbar nav {
@@ -3445,23 +3445,23 @@ select {
 .production-topbar nav a {
   padding: 8px 9px;
   border-radius: 5px;
-  color: #8b8b86;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
 }
 .production-topbar nav a:hover,
 .production-topbar nav a.current {
-  background: #25230f;
+  background: var(--surface-2);
   color: var(--yellow);
 }
 .production-topbar > div {
   display: grid;
   justify-items: end;
   gap: 2px;
-  color: #8e8e88;
-  font-size: 8px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
   white-space: nowrap;
@@ -3613,7 +3613,7 @@ select {
 .publish-field input {
   width: 100%;
   padding: 10px;
-  border: 1px solid #383838;
+  border: 1px solid var(--line);
   border-radius: 7px;
   outline: 0;
   background: var(--input);
@@ -3799,22 +3799,22 @@ select {
 }
 .project-list button.chosen {
   border-color: rgba(245, 196, 0, 0.55);
-  background: #1a1708;
+  background: color-mix(in srgb, var(--yellow) 16%, var(--surface));
 }
 .project-list button b {
   overflow: hidden;
-  font-size: 11px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .project-list button span {
-  color: #84847e;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
 }
 .project-list button i {
   color: var(--yellow);
   font:
-    8px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   font-style: normal;
 }
@@ -3866,19 +3866,19 @@ select {
   max-width: 530px;
   margin-top: 6px;
   overflow: hidden;
-  color: #ffaaa3;
-  font-size: 9px;
+  color: var(--red);
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .job-row button {
   flex: 0 0 auto;
   padding: 9px 10px;
-  border: 1px solid #514c2d;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #15130a;
+  background: var(--surface);
   color: var(--yellow);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
 }
 .job-row-actions {
@@ -3887,8 +3887,8 @@ select {
   gap: 8px;
 }
 .job-cancel-button {
-  border-color: #5a2b28 !important;
-  color: #ff8f87 !important;
+  border-color: var(--red) !important;
+  color: var(--red) !important;
 }
 .job-row progress {
   display: block;
@@ -3937,11 +3937,11 @@ select {
   grid-template-columns: 175px 1fr;
   gap: 12px;
   padding-top: 8px;
-  border-top: 1px solid #2c2c2c;
+  border-top: 1px solid var(--line);
 }
 .idea-card b {
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
 }
 .idea-card span {
   color: var(--text);
@@ -4074,7 +4074,7 @@ select {
 .finish-grid {
   display: grid;
   grid-template-columns: 1fr 1.12fr 1fr 1.12fr;
-  border: 1px solid #302e20;
+  border: 1px solid var(--line);
   border-radius: 9px;
   overflow: hidden;
 }
@@ -4232,8 +4232,8 @@ select {
   gap: 22px;
   min-height: 61px;
   padding: 0 24px;
-  border-bottom: 1px solid #272727;
-  background: rgba(10, 10, 10, 0.92);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--header-bg, var(--surface)) 94%, transparent);
   backdrop-filter: blur(14px);
 }
 .bot-topbar nav {
@@ -4245,23 +4245,23 @@ select {
 .bot-topbar nav a {
   padding: 8px 9px;
   border-radius: 5px;
-  color: #8b8b86;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
 }
 .bot-topbar nav a:hover,
 .bot-topbar nav a.current {
-  background: #25230f;
+  background: var(--surface-2);
   color: var(--yellow);
 }
 .bot-topbar > div {
   display: grid;
   justify-items: end;
   gap: 2px;
-  color: #8e8e88;
-  font-size: 8px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
   white-space: nowrap;
@@ -4269,7 +4269,7 @@ select {
 .bot-topbar > div b {
   color: var(--lime);
   font:
-    800 10px var(--font-geist-mono),
+    800 13px var(--font-geist-mono),
     monospace;
 }
 .bot-main {
@@ -4304,24 +4304,24 @@ select {
   display: grid;
   gap: 8px;
   padding: 22px;
-  border: 1px solid #4a251d;
+  border: 1.5px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #1a100d, #111);
+  background: var(--surface);
 }
 .bot-live-card.ready {
-  border-color: rgba(184, 248, 90, 0.42);
-  background: linear-gradient(135deg, #101709, #111);
+  border-color: var(--lime);
+  background: var(--surface);
 }
 .bot-live-card span,
 .bot-card-head span {
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.11em;
 }
 .bot-live-card b {
-  color: #ffaaa4;
-  font-size: 20px;
+  color: var(--red);
+  font-size: 22px;
   line-height: 1;
   letter-spacing: -0.05em;
 }
@@ -4331,19 +4331,19 @@ select {
 .bot-live-card p {
   min-height: 46px;
   margin: 0;
-  color: #b8b4a6;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .bot-live-card button,
 .bot-card-head button {
   justify-self: start;
   padding: 8px 10px;
-  border: 1px solid #504a30;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0d0d0d;
-  color: #e3e3dc;
-  font-size: 9px;
+  background: var(--input);
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
 }
 .bot-answer-strip {
@@ -4352,24 +4352,24 @@ select {
   gap: 14px;
   margin: 28px 0 14px;
   padding: 13px 15px;
-  border: 1px solid rgba(184, 248, 90, 0.28);
+  border: 1.5px solid var(--line);
   border-radius: 10px;
-  background: #10170e;
-  color: #c4cdb7;
-  font-size: 11px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.45;
 }
 .bot-answer-strip b {
   color: var(--lime);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.09em;
   white-space: nowrap;
 }
 .bot-answer-strip em {
   margin-left: auto;
-  color: #888;
+  color: var(--soft);
   font:
-    9px var(--font-geist-mono),
+    13px var(--font-geist-mono),
     monospace;
   font-style: normal;
   white-space: nowrap;
@@ -4382,13 +4382,13 @@ select {
 .bot-summary-grid article {
   min-height: 123px;
   padding: 16px;
-  border: 1px solid #303030;
+  border: 1.5px solid var(--line);
   border-radius: 11px;
   background: var(--surface);
 }
 .bot-summary-grid article.active {
-  border-color: rgba(184, 248, 90, 0.37);
-  background: linear-gradient(135deg, #11180e, #101010);
+  border-color: var(--lime);
+  background: var(--surface-2);
 }
 .bot-summary-grid b {
   display: block;
@@ -4404,22 +4404,22 @@ select {
 .bot-summary-grid span {
   display: block;
   margin-top: 7px;
-  color: #ddd;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
 }
 .bot-summary-grid p {
   margin: 5px 0 0;
-  color: #777;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 13px;
   line-height: 1.35;
 }
 .bot-section {
   margin-top: 16px;
   padding: 24px;
-  border: 1px solid #39351d;
+  border: 1.5px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #15140a, #101010 58%);
+  background: var(--surface);
 }
 .bot-section-head {
   display: flex;
@@ -4443,14 +4443,14 @@ select {
 .bot-section-head > p {
   max-width: 260px;
   margin: 0;
-  color: #85857f;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .capability-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border-top: 1px solid #302e21;
+  border-top: 1px solid var(--line);
 }
 .capability-list article {
   display: grid;
@@ -4459,39 +4459,39 @@ select {
   align-items: start;
   min-height: 93px;
   padding: 14px 8px;
-  border-bottom: 1px solid #302e21;
+  border-bottom: 1px solid var(--line);
 }
 .capability-list article:nth-child(odd) {
-  border-right: 1px solid #302e21;
+  border-right: 1px solid var(--line);
   padding-right: 18px;
 }
 .capability-list article:nth-child(even) {
   padding-left: 18px;
 }
 .capability-list i {
-  color: #79734d;
+  color: var(--yellow);
   font:
-    800 10px var(--font-geist-mono),
+    800 13px var(--font-geist-mono),
     monospace;
   font-style: normal;
 }
 .capability-list b {
   display: block;
-  color: #e4e4de;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 14px;
 }
 .capability-list p {
   margin: 5px 0 0;
-  color: #898984;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
 }
 .capability-list > article > span {
   padding: 5px 6px;
-  border: 1px solid #414141;
+  border: 1px solid var(--line);
   border-radius: 5px;
-  color: #bbb;
-  font-size: 8px;
+  color: var(--text);
+  font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -4505,7 +4505,7 @@ select {
 }
 .capability-list > article > span.never {
   border-color: rgba(255, 91, 82, 0.34);
-  color: #ffaaa4;
+  color: var(--red);
 }
 .bot-layout {
   display: grid;
@@ -4528,13 +4528,13 @@ select {
   margin-bottom: 14px;
 }
 .bot-card-head em {
-  color: #777;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-style: normal;
 }
 .bot-card h2 {
   margin: 0 0 13px;
-  color: #e6e6df;
+  color: var(--text);
   font-size: 25px;
   line-height: 0.95;
   letter-spacing: -0.055em;
@@ -4549,16 +4549,16 @@ select {
   gap: 11px;
   align-items: start;
   padding: 11px;
-  border: 1px solid #303030;
+  border: 1.5px solid var(--line);
   border-radius: 8px;
-  background: #0b0b0b;
+  background: var(--surface-2);
 }
 .presence-dot {
   width: 8px;
   height: 8px;
   margin-top: 4px;
   border-radius: 50%;
-  background: #747474;
+  background: var(--soft);
 }
 .presence-dot.active {
   background: var(--lime);
@@ -4566,43 +4566,43 @@ select {
 }
 .bot-presence-list b {
   display: block;
-  color: #e4e4de;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 14px;
 }
 .bot-presence-list span {
   display: block;
   margin-top: 3px;
   color: var(--yellow);
   font:
-    8px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
 }
 .bot-presence-list p {
   margin: 7px 0 0;
-  color: #a2a29d;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 13px;
 }
 .bot-presence-list strong {
-  color: #ddd;
+  color: var(--text);
 }
 .bot-presence-list small {
   display: block;
   max-width: 500px;
   margin-top: 6px;
   overflow: hidden;
-  color: #777;
+  color: var(--soft);
   font:
-    8px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .bot-presence-list > article > em {
   padding: 5px 6px;
-  border: 1px solid #4b4b4b;
+  border: 1px solid var(--line);
   border-radius: 5px;
-  color: #888;
-  font-size: 8px;
+  color: var(--soft);
+  font-size: 12px;
   font-style: normal;
   font-weight: 900;
 }
@@ -4612,22 +4612,22 @@ select {
 }
 .no-bot-state {
   padding: 21px;
-  border: 1px dashed #3b3b3b;
+  border: 1.5px dashed var(--line);
   border-radius: 8px;
-  background: #0b0b0b;
+  background: var(--surface-2);
 }
 .no-bot-state b {
   color: var(--yellow);
-  font-size: 11px;
+  font-size: 14px;
 }
 .no-bot-state p {
   margin: 8px 0 0;
-  color: #8e8e88;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.52;
 }
 .automation-card {
-  background: linear-gradient(135deg, #15110a, #101010 62%);
+  background: var(--surface);
 }
 .automation-rows {
   display: grid;
@@ -4635,29 +4635,29 @@ select {
 }
 .automation-rows div {
   padding: 11px 0;
-  border-top: 1px solid #302e23;
+  border-top: 1px solid var(--line);
 }
 .automation-rows b {
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
 }
 .automation-rows p {
   margin: 5px 0 0;
-  color: #aaa;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
 }
 .automation-rows div:last-child b {
-  color: #ffaaa3;
+  color: var(--red);
 }
 .automation-note {
   margin: 13px 0 0;
   padding: 10px;
-  border: 1px solid #45401f;
+  border: 1.5px solid var(--line);
   border-radius: 7px;
-  background: #161408;
-  color: #d8d0a2;
-  font-size: 9px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.45;
 }
@@ -4669,19 +4669,19 @@ select {
   margin: 0 0 12px;
   padding: 12px;
   overflow: auto;
-  border: 1px solid #2c2c2c;
+  border: 1.5px solid var(--line);
   border-radius: 8px;
-  background: #090909;
-  color: #c8c8bf;
+  background: var(--surface-2);
+  color: var(--text);
   white-space: pre-wrap;
   font:
-    9px/1.55 var(--font-geist-mono),
+    13px/1.55 var(--font-geist-mono),
     monospace;
 }
 .bot-contract-card > p {
   margin: 0;
-  color: #898983;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .bot-card-head button {
@@ -4700,32 +4700,32 @@ select {
   grid-template-columns: 1fr auto;
   gap: 3px 10px;
   padding: 10px;
-  border: 1px solid #2f2f2f;
+  border: 1.5px solid var(--line);
   border-radius: 7px;
-  background: #0b0b0b;
+  background: var(--surface-2);
 }
 .bot-activity-list b {
-  color: #ddd;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
 }
 .bot-activity-list span {
   color: var(--yellow);
   font:
-    8px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
 }
 .bot-activity-list p {
   grid-column: 1 / -1;
   margin: 2px 0;
-  color: #777;
-  font-size: 8px;
+  color: var(--text);
+  font-size: 13px;
 }
 .bot-activity-list small {
   grid-column: 1 / -1;
   overflow: hidden;
-  color: #8b8b85;
+  color: var(--soft);
   font:
-    8px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4787,7 +4787,7 @@ select {
   }
   .bot-topbar nav a {
     padding: 8px 7px;
-    font-size: 9px;
+    font-size: 12px;
   }
   .bot-topbar .wordmark {
     font-size: 16px;
@@ -4818,8 +4818,8 @@ select {
   gap: 22px;
   min-height: 61px;
   padding: 0 24px;
-  border-bottom: 1px solid #272727;
-  background: rgba(10, 10, 10, 0.92);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--header-bg, var(--surface)) 94%, transparent);
   backdrop-filter: blur(14px);
 }
 .guide-topbar nav {
@@ -4831,23 +4831,23 @@ select {
 .guide-topbar nav a {
   padding: 8px 9px;
   border-radius: 5px;
-  color: #8b8b86;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
 }
 .guide-topbar nav a:hover,
 .guide-topbar nav a.current {
-  background: #25230f;
+  background: var(--surface-2);
   color: var(--yellow);
 }
 .guide-topbar > div {
   display: grid;
   justify-items: end;
   gap: 2px;
-  color: #8e8e88;
-  font-size: 8px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.08em;
   white-space: nowrap;
@@ -4855,7 +4855,7 @@ select {
 .guide-topbar > div b {
   color: var(--lime);
   font:
-    800 10px var(--font-geist-mono),
+    800 13px var(--font-geist-mono),
     monospace;
 }
 .guide-main {
@@ -4882,8 +4882,8 @@ select {
 .guide-hero > div > p:last-child {
   max-width: 685px;
   margin: 21px 0 0;
-  color: #aaa;
-  font-size: 14px;
+  color: var(--text);
+  font-size: 15px;
   line-height: 1.6;
 }
 .guide-source {
@@ -4897,7 +4897,7 @@ select {
 .guide-source span,
 .guide-card-head span {
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.11em;
 }
@@ -4911,8 +4911,8 @@ select {
 .guide-source p {
   min-height: 31px;
   margin: 0;
-  color: #b2b9a9;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
 }
 .guide-source button,
@@ -4923,7 +4923,7 @@ select {
   border-radius: 7px;
   background: var(--input);
   color: var(--yellow);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
 }
 .guide-first {
@@ -4934,22 +4934,22 @@ select {
   padding: 13px 15px;
   border: 1px solid rgba(245, 196, 0, 0.36);
   border-radius: 10px;
-  background: #171408;
-  color: #ddd0a0;
-  font-size: 11px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
 }
 .guide-first b {
   color: var(--yellow);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   white-space: nowrap;
 }
 .guide-first em {
   margin-left: auto;
-  color: #8c896e;
+  color: var(--soft);
   font:
-    9px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   font-style: normal;
   white-space: nowrap;
@@ -4975,8 +4975,8 @@ select {
   margin-bottom: 14px;
 }
 .guide-card-head em {
-  color: #777;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-style: normal;
 }
 .guide-rules {
@@ -4991,9 +4991,9 @@ select {
   grid-template-columns: 34px 1fr;
   gap: 9px;
   padding: 12px 0;
-  border-top: 1px solid #2e2e2c;
-  color: #c3c3bd;
-  font-size: 11px;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
 }
 .guide-rules li:first-child {
@@ -5002,24 +5002,24 @@ select {
 .guide-rules i {
   color: var(--yellow);
   font:
-    800 9px var(--font-geist-mono),
+    800 12px var(--font-geist-mono),
     monospace;
   font-style: normal;
 }
 .guide-scope-card {
-  background: linear-gradient(135deg, #15130a, #101010 65%);
+  background: var(--surface);
 }
 .guide-scope-card h2 {
   margin: 0 0 10px;
-  color: #e6e6df;
+  color: var(--text);
   font-size: 24px;
   line-height: 0.95;
   letter-spacing: -0.055em;
 }
 .guide-scope-card > p {
   margin: 0 0 12px;
-  color: #aaa;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   line-height: 1.5;
 }
 .guide-scope-card > div {
@@ -5027,23 +5027,23 @@ select {
   grid-template-columns: 70px 1fr;
   gap: 9px;
   padding: 9px 0;
-  border-top: 1px solid #302e20;
+  border-top: 1px solid var(--line);
 }
 .guide-scope-card b {
   color: var(--yellow);
-  font-size: 9px;
+  font-size: 12px;
 }
 .guide-scope-card span {
-  color: #aaa;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   line-height: 1.4;
 }
 .guide-workflow {
   margin-top: 15px;
   padding: 24px;
-  border: 1px solid #39351d;
+  border: 1px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #15140a, #101010 58%);
+  background: var(--surface);
 }
 .guide-section-head {
   display: flex;
@@ -5067,15 +5067,15 @@ select {
 .guide-section-head > p {
   max-width: 320px;
   margin: 0;
-  color: #85857f;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   line-height: 1.5;
 }
 .guide-steps {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   overflow: hidden;
-  border: 1px solid #312f20;
+  border: 1px solid var(--line);
   border-radius: 9px;
 }
 .guide-steps article {
@@ -5084,23 +5084,23 @@ select {
   gap: 9px;
   min-height: 198px;
   padding: 15px;
-  border-left: 1px solid #312f20;
-  background: rgba(9, 9, 9, 0.42);
+  border-left: 1px solid var(--line);
+  background: var(--surface-2);
 }
 .guide-steps article:first-child {
   border-left: 0;
 }
 .guide-steps i {
-  color: #827c51;
+  color: var(--soft);
   font:
-    800 10px var(--font-geist-mono),
+    800 13px var(--font-geist-mono),
     monospace;
   font-style: normal;
 }
 .guide-steps b {
   display: block;
-  color: #e4e4de;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 13px;
   text-transform: uppercase;
 }
 .guide-steps span {
@@ -5108,21 +5108,21 @@ select {
   margin-top: 7px;
   color: var(--yellow);
   font:
-    8px/1.4 var(--font-geist-mono),
+    12px/1.4 var(--font-geist-mono),
     monospace;
 }
 .guide-steps p {
   margin: 8px 0 0;
-  color: #94948d;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   line-height: 1.45;
 }
 .guide-capabilities {
   margin-top: 15px;
   padding: 24px;
-  border: 1px solid #2f3a25;
+  border: 1px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #10140d, #101010 58%);
+  background: var(--surface);
 }
 .guide-feature-grid {
   display: grid;
@@ -5132,9 +5132,9 @@ select {
 .guide-feature-grid > article {
   min-width: 0;
   padding: 14px;
-  border: 1px solid #30362a;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(9, 11, 8, 0.6);
+  background: var(--surface-2);
 }
 .guide-feature-grid > article > div:first-child {
   display: flex;
@@ -5144,18 +5144,18 @@ select {
 }
 .guide-feature-grid i {
   color: var(--lime);
-  font: 800 9px var(--font-geist-mono), monospace;
+  font: 800 12px var(--font-geist-mono), monospace;
   font-style: normal;
 }
 .guide-feature-grid > article > div:first-child span {
-  color: #858f7a;
-  font-size: 8px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
 .guide-feature-grid h3 {
   margin: 12px 0;
-  color: #e6e8e0;
+  color: var(--text);
   font-size: 14px;
   line-height: 1.04;
   letter-spacing: -0.04em;
@@ -5171,22 +5171,22 @@ select {
 }
 .guide-feature-grid dt {
   color: var(--yellow);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.07em;
 }
 .guide-feature-grid dd {
   margin: 0;
-  color: #a5a79e;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   line-height: 1.45;
 }
 .guide-pages {
   margin-top: 15px;
   padding: 24px;
-  border: 1px solid #363027;
+  border: 1px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #16130e, #101010 62%);
+  background: var(--surface);
 }
 .guide-page-grid {
   display: grid;
@@ -5196,9 +5196,9 @@ select {
 .guide-page-grid article {
   min-width: 0;
   padding: 13px;
-  border: 1px solid #36332c;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(10, 10, 10, 0.62);
+  background: var(--surface-2);
 }
 .guide-page-grid article > div {
   display: flex;
@@ -5208,27 +5208,27 @@ select {
 }
 .guide-page-grid i {
   color: var(--yellow);
-  font: 800 9px var(--font-geist-mono), monospace;
+  font: 800 12px var(--font-geist-mono), monospace;
   font-style: normal;
 }
 .guide-page-grid code {
   overflow: hidden;
-  color: #858179;
-  font: 8px var(--font-geist-mono), monospace;
+  color: var(--soft);
+  font: 12px var(--font-geist-mono), monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .guide-page-grid h3 {
   margin: 11px 0 6px;
-  color: #e8e5dd;
+  color: var(--text);
   font-size: 13px;
   letter-spacing: -0.03em;
 }
 .guide-page-grid p {
   min-height: 40px;
   margin: 0;
-  color: #a09e96;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   line-height: 1.45;
 }
 .guide-page-grid small {
@@ -5236,27 +5236,27 @@ select {
   gap: 3px;
   margin-top: 10px;
   padding-top: 9px;
-  border-top: 1px solid #2d2b27;
-  color: #b5aa94;
-  font-size: 9px;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.4;
 }
 .guide-page-grid small b {
   color: var(--yellow);
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 0.07em;
 }
 .heuristic-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border-top: 1px solid #2c2c2c;
+  border-top: 1px solid var(--line);
 }
 .heuristic-grid article {
   padding: 11px 9px;
-  border-bottom: 1px solid #2c2c2c;
+  border-bottom: 1px solid var(--line);
 }
 .heuristic-grid article:nth-child(odd) {
-  border-right: 1px solid #2c2c2c;
+  border-right: 1px solid var(--line);
   padding-right: 15px;
 }
 .heuristic-grid article:nth-child(even) {
@@ -5264,24 +5264,24 @@ select {
 }
 .heuristic-grid b {
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
   text-transform: uppercase;
 }
 .heuristic-grid p {
   margin: 6px 0 0;
-  color: #aaa;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   line-height: 1.48;
 }
 .approvals-card {
-  background: linear-gradient(135deg, #181109, #101010 62%);
+  background: var(--surface);
 }
 .approvals-card > div {
   display: grid;
   grid-template-columns: 27px 1fr;
   gap: 9px;
   padding: 11px 0;
-  border-top: 1px solid #342c20;
+  border-top: 1px solid var(--line);
 }
 .approvals-card i {
   display: grid;
@@ -5289,17 +5289,17 @@ select {
   width: 23px;
   height: 23px;
   border-radius: 50%;
-  background: #322308;
+  background: color-mix(in srgb, var(--yellow) 18%, var(--surface-2));
   color: var(--yellow);
   font:
-    800 9px var(--font-geist-mono),
+    800 12px var(--font-geist-mono),
     monospace;
   font-style: normal;
 }
 .approvals-card p {
   margin: 1px 0 0;
-  color: #d0c3a8;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
 }
 .endpoint-guide {
@@ -5309,17 +5309,17 @@ select {
 }
 .endpoint-guide > div {
   padding: 10px 0;
-  border-top: 1px solid #2e2e2c;
+  border-top: 1px solid var(--line);
 }
 .endpoint-guide b {
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
 }
 .endpoint-guide p {
   margin: 5px 0 0;
-  color: #aaa;
+  color: var(--soft);
   font:
-    9px/1.5 var(--font-geist-mono),
+    12px/1.5 var(--font-geist-mono),
     monospace;
 }
 .heartbeat-guide pre {
@@ -5327,19 +5327,19 @@ select {
   margin: 0 0 12px;
   padding: 12px;
   overflow: auto;
-  border: 1px solid #2c2c2c;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #090909;
-  color: #c7c7bd;
+  background: var(--surface-2);
+  color: var(--text);
   white-space: pre-wrap;
   font:
-    9px/1.55 var(--font-geist-mono),
+    12px/1.55 var(--font-geist-mono),
     monospace;
 }
 .heartbeat-guide p {
   margin: 0;
-  color: #878780;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   line-height: 1.5;
 }
 .guide-never {
@@ -5350,15 +5350,15 @@ select {
   padding: 25px;
   border: 1px solid rgba(255, 91, 82, 0.31);
   border-radius: 15px;
-  background: linear-gradient(135deg, #1a100e, #111);
+  background: var(--surface);
 }
 .guide-never .kicker {
   margin: 0 0 8px;
-  color: #e2877d;
+  color: var(--red);
 }
 .guide-never h2 {
   margin: 0;
-  color: #f0e5df;
+  color: var(--text);
   font-size: clamp(24px, 3vw, 42px);
   line-height: 0.9;
   letter-spacing: -0.07em;
@@ -5370,11 +5370,11 @@ select {
 }
 .guide-never span {
   padding: 9px 10px;
-  border: 1px solid #4c2926;
+  border: 1px solid var(--red);
   border-radius: 7px;
-  background: #170c0b;
-  color: #e4aaa3;
-  font-size: 10px;
+  background: color-mix(in srgb, var(--red) 10%, var(--surface));
+  color: var(--red);
+  font-size: 13px;
   line-height: 1.4;
 }
 .guide-message {
@@ -5383,11 +5383,11 @@ select {
   max-width: 780px;
   margin: 20px auto 0;
   padding: 11px 14px;
-  border: 1px solid #484221;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(20, 19, 10, 0.94);
-  color: #dad2a4;
-  font-size: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
   text-align: center;
   backdrop-filter: blur(8px);
@@ -5477,7 +5477,7 @@ select {
   }
   .guide-topbar nav a {
     padding: 8px 7px;
-    font-size: 9px;
+    font-size: 12px;
   }
   .guide-topbar .wordmark {
     font-size: 16px;
@@ -5617,7 +5617,7 @@ select {
   border-radius: 3px;
   background: rgba(184, 248, 90, 0.14);
   color: var(--lime);
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.05em;
   vertical-align: 1px;
@@ -5631,8 +5631,8 @@ select {
   display: grid;
   height: 100%;
   place-items: center;
-  color: var(--soft);
-  font-size: 11px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 700;
   list-style: none;
   cursor: pointer;
@@ -5643,7 +5643,7 @@ select {
 }
 .header-more summary:after {
   margin-left: 5px;
-  color: #777;
+  color: var(--text);
   content: "⌄";
 }
 .header-more[open] summary,
@@ -5658,22 +5658,24 @@ select {
   top: calc(100% - 1px);
   right: 0;
   display: none;
-  min-width: 145px;
-  padding: 7px;
-  border: 1px solid var(--line);
-  border-radius: 0 0 10px 10px;
+  min-width: 220px;
+  padding: 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 0 0 12px 12px;
   background: var(--surface);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 16px 32px color-mix(in srgb, var(--text) 18%, transparent);
 }
 .header-more[open] > div {
   display: grid;
 }
 .header-more > div a {
   display: block;
-  padding: 9px 10px;
+  padding: 10px 12px;
   border: 0;
   border-radius: 6px;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
 }
 .header-more > div a:hover,
 .header-more > div a.current {
@@ -5996,7 +5998,7 @@ select {
 }
 .ops-hero h1 {
   margin: 0;
-  color: #edede8;
+  color: var(--text);
   font-size: clamp(44px, 5.6vw, 78px);
   font-weight: 900;
   line-height: 0.84;
@@ -6008,8 +6010,8 @@ select {
 .ops-hero > div > p:last-child {
   max-width: 710px;
   margin: 20px 0 0;
-  color: #aaa;
-  font-size: 13px;
+  color: var(--text);
+  font-size: 15px;
   line-height: 1.6;
 }
 .ops-health {
@@ -6028,12 +6030,12 @@ select {
 .ops-card-head span,
 .ops-project-bar > div > span {
   color: var(--soft);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.11em;
 }
 .ops-health b {
-  color: #898989;
+  color: var(--soft);
   font:
     800 24px var(--font-geist-mono),
     monospace;
@@ -6044,8 +6046,8 @@ select {
 }
 .ops-health p {
   margin: 0;
-  color: #96968f;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .ops-health button,
@@ -6054,9 +6056,9 @@ select {
   padding: 8px 10px;
   border: 1px solid var(--lime);
   border-radius: 7px;
-  background: #11180d;
+  background: var(--surface);
   color: var(--lime);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 900;
 }
 .ops-health button:disabled,
@@ -6085,10 +6087,10 @@ select {
 .ops-card textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #393939;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0c0c0c;
-  color: #dfdfd8;
+  background: var(--surface-2);
+  color: var(--text);
   outline: none;
 }
 .ops-project-bar select,
@@ -6096,44 +6098,44 @@ select {
 .ops-card input {
   min-height: 34px;
   padding: 0 9px;
-  font-size: 10px;
+  font-size: 13px;
 }
 .ops-card textarea {
   min-height: 63px;
   padding: 9px;
   resize: vertical;
   font:
-    10px/1.45 var(--font-geist-mono),
+    13px/1.45 var(--font-geist-mono),
     monospace;
 }
 .ops-project-bar p {
   margin: 0;
-  color: #95958e;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   line-height: 1.5;
 }
 .ops-project-bar p b {
-  color: #d2d2cb;
+  color: var(--text);
   font-family: var(--font-geist-mono), monospace;
-  font-size: 9px;
+  font-size: 12px;
   word-break: break-all;
 }
 .ops-project-bar label {
   display: grid;
   gap: 7px;
-  color: #898982;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
 }
 .ops-message {
   display: flex;
   gap: 13px;
   margin: 12px 0 30px;
   padding: 11px 14px;
-  border: 1px solid #413c23;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #17150a;
-  color: #bcb18a;
-  font-size: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
 }
 .ops-message b {
@@ -6155,7 +6157,7 @@ select {
 }
 .ops-section-head h2 {
   margin: 0;
-  color: #e8e8e2;
+  color: var(--text);
   font-size: clamp(28px, 3.7vw, 50px);
   line-height: 0.9;
   letter-spacing: -0.075em;
@@ -6166,8 +6168,8 @@ select {
 .ops-section-head > p {
   max-width: 410px;
   margin: 0;
-  color: #888881;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   line-height: 1.55;
 }
 .ops-grid {
@@ -6207,7 +6209,7 @@ select {
   background: var(--surface);
 }
 .ops-card:hover {
-  border-color: #484848;
+  border-color: var(--line);
 }
 .ops-card-head {
   display: flex;
@@ -6216,9 +6218,9 @@ select {
   gap: 8px;
 }
 .ops-card-head em {
-  color: #7e7e78;
+  color: var(--soft);
   font:
-    9px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
   font-style: normal;
 }
@@ -6227,7 +6229,7 @@ select {
 }
 .ops-card h3 {
   margin: 0;
-  color: #e2e2dc;
+  color: var(--text);
   font-size: 18px;
   line-height: 0.96;
   letter-spacing: -0.05em;
@@ -6235,18 +6237,18 @@ select {
 .ops-card > p,
 .ops-card > small {
   margin: 0;
-  color: #999992;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
   line-height: 1.5;
 }
 .ops-card > small {
-  color: #77776f;
+  color: var(--soft);
 }
 .ops-card label {
   display: grid;
   gap: 5px;
-  color: #a5a59e;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
 }
 .ops-card label textarea {
   min-height: 48px;
@@ -6259,19 +6261,19 @@ select {
 }
 .ops-facts div {
   padding: 7px;
-  border: 1px solid #303030;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #0e0e0e;
+  background: var(--surface-2);
 }
 .ops-facts dt {
-  color: #777;
-  font-size: 8px;
+  color: var(--soft);
+  font-size: 12px;
 }
 .ops-facts dd {
   margin: 4px 0 0;
-  color: #d2d2ca;
+  color: var(--text);
   font:
-    9px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
 }
 .cutmap-card textarea {
@@ -6285,7 +6287,7 @@ select {
 }
 .ops-button-row button:nth-child(2) {
   border-color: var(--yellow);
-  background: #171408;
+  background: var(--surface);
   color: var(--yellow);
 }
 .ops-task-controls input {
@@ -6303,17 +6305,17 @@ select {
   grid-template-columns: 1fr auto;
   gap: 5px 10px;
   padding-top: 8px;
-  border-top: 1px solid #303030;
+  border-top: 1px solid var(--line);
 }
 .ops-task-list b,
 .ops-recovery-list b {
-  color: #d7d7d1;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
 }
 .ops-task-list span {
-  color: #898981;
+  color: var(--soft);
   font:
-    8px var(--font-geist-mono),
+    12px var(--font-geist-mono),
     monospace;
 }
 .ops-task-list article > div {
@@ -6323,38 +6325,38 @@ select {
 }
 .ops-task-list article button {
   padding: 5px 7px;
-  border-color: #555;
-  background: #171717;
-  color: #c5c5bf;
-  font-size: 8px;
+  border-color: var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
 }
 .ops-mini-list span {
   display: block;
   padding: 7px 8px;
-  border: 1px solid #2f2f2f;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  color: #aaa9a1;
+  color: var(--soft);
   font:
-    8px/1.4 var(--font-geist-mono),
+    12px/1.4 var(--font-geist-mono),
     monospace;
 }
 .ops-recovery-list p {
   grid-column: 1 / -1;
   margin: 0;
-  color: #c99791;
-  font-size: 10px;
+  color: var(--red);
+  font-size: 13px;
   line-height: 1.45;
 }
 .ops-recovery-list small {
   grid-column: 1 / -1;
-  color: #77776f;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
 }
 .publish-card {
-  background: linear-gradient(135deg, #15140a, #101010);
+  background: var(--surface);
 }
 .recovery-card {
-  background: linear-gradient(135deg, #17100e, #101010);
+  background: var(--surface);
 }
 @media (max-width: 1180px) {
   .p0-grid {
@@ -6422,7 +6424,7 @@ select {
 }
 .terminal-hero h1 {
   margin: 0;
-  color: #ebebe6;
+  color: var(--text);
   font-size: clamp(44px, 5.7vw, 80px);
   font-weight: 900;
   line-height: 0.84;
@@ -6434,8 +6436,8 @@ select {
 .terminal-hero > div > p:last-child {
   max-width: 720px;
   margin: 20px 0 0;
-  color: #a7a7a0;
-  font-size: 13px;
+  color: var(--text);
+  font-size: 15px;
   line-height: 1.62;
 }
 .terminal-health {
@@ -6452,13 +6454,13 @@ select {
 }
 .terminal-health span,
 .terminal-card-head span {
-  color: #99936d;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.11em;
 }
 .terminal-health b {
-  color: #85857e;
+  color: var(--text);
   font:
     800 23px var(--font-geist-mono),
     monospace;
@@ -6469,8 +6471,8 @@ select {
 }
 .terminal-health p {
   margin: 0;
-  color: #96968e;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .terminal-health button,
@@ -6480,9 +6482,9 @@ select {
   padding: 8px 10px;
   border: 1px solid var(--yellow);
   border-radius: 7px;
-  background: #181408;
-  color: var(--yellow);
-  font-size: 9px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font-size: 13px;
   font-weight: 900;
 }
 .terminal-rule {
@@ -6490,11 +6492,11 @@ select {
   gap: 13px;
   margin: 23px 0 14px;
   padding: 12px 15px;
-  border: 1px solid #453d1d;
+  border: 1.5px solid var(--line);
   border-radius: 10px;
-  background: #171408;
-  color: #b8ae85;
-  font-size: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .terminal-rule b {
@@ -6504,7 +6506,7 @@ select {
 .terminal-rule code,
 .terminal-card code,
 .terminal-capabilities code {
-  color: #dfcd82;
+  color: var(--yellow);
   font-family: var(--font-geist-mono), monospace;
 }
 .terminal-download-grid {
@@ -6529,8 +6531,8 @@ select {
   gap: 9px;
 }
 .terminal-card-head em {
-  color: #777;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-style: normal;
 }
 .terminal-card pre,
@@ -6538,27 +6540,27 @@ select {
   margin: 0;
   padding: 13px;
   overflow: auto;
-  border: 1px solid #343027;
+  border: 1.5px solid var(--line);
   border-radius: 8px;
-  background: #090909;
-  color: #d9d4bb;
+  background: var(--surface-2);
+  color: var(--text);
   white-space: pre-wrap;
   font:
-    10px/1.55 var(--font-geist-mono),
+    13px/1.55 var(--font-geist-mono),
     monospace;
 }
 .terminal-card p {
   margin: 0;
-  color: #96968e;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .terminal-flow {
   margin-top: 14px;
   padding: 24px;
-  border: 1px solid #423c1f;
+  border: 1.5px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #15140a, #101010 60%);
+  background: var(--surface);
 }
 .terminal-flow-head {
   display: flex;
@@ -6573,7 +6575,7 @@ select {
 .terminal-flow-head h2,
 .terminal-section-head h2 {
   margin: 0;
-  color: #e8e7df;
+  color: var(--text);
   font-size: clamp(28px, 3.8vw, 52px);
   line-height: 0.9;
   letter-spacing: -0.075em;
@@ -6587,35 +6589,36 @@ select {
   grid-template-columns: repeat(4, 1fr);
   margin-top: 13px;
   overflow: hidden;
-  border: 1px solid #37311b;
+  border: 1.5px solid var(--line);
   border-radius: 9px;
 }
 .terminal-flow-steps article {
   min-height: 120px;
   padding: 13px;
-  border-left: 1px solid #37311b;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
 }
 .terminal-flow-steps article:first-child {
   border-left: 0;
 }
 .terminal-flow-steps i {
-  color: #867b4e;
+  color: var(--yellow);
   font:
-    800 9px var(--font-geist-mono),
+    800 13px var(--font-geist-mono),
     monospace;
   font-style: normal;
 }
 .terminal-flow-steps b {
   display: block;
   margin-top: 10px;
-  color: #e3e1d7;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 14px;
   text-transform: uppercase;
 }
 .terminal-flow-steps p {
   margin: 7px 0 0;
-  color: #95938a;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
 }
 .terminal-capabilities {
@@ -6634,8 +6637,8 @@ select {
 .terminal-section-head > p {
   max-width: 375px;
   margin: 0;
-  color: #88877f;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .terminal-command-list {
@@ -6651,7 +6654,7 @@ select {
   gap: 11px;
   padding: 17px;
   border-top: 1px solid var(--line);
-  background: #121212;
+  background: var(--surface);
 }
 .terminal-command-list article:nth-child(-n + 2) {
   border-top: 0;
@@ -6662,27 +6665,27 @@ select {
 .terminal-command-list i {
   color: var(--yellow);
   font:
-    800 10px var(--font-geist-mono),
+    800 13px var(--font-geist-mono),
     monospace;
   font-style: normal;
 }
 .terminal-command-list b {
   display: block;
-  color: #e2e1da;
-  font-size: 13px;
+  color: var(--text);
+  font-size: 15px;
 }
 .terminal-command-list code {
   display: block;
   margin-top: 8px;
-  color: #cac391;
-  font-size: 9px;
+  color: var(--yellow);
+  font-size: 13px;
   line-height: 1.45;
   word-break: break-word;
 }
 .terminal-command-list p {
   margin: 8px 0 0;
-  color: #94948d;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.48;
 }
 .terminal-safety-grid {
@@ -6693,22 +6696,20 @@ select {
 }
 .terminal-safety-grid h3 {
   margin: 0;
-  color: #e2e1da;
+  color: var(--text);
   font-size: 18px;
   line-height: 0.98;
   letter-spacing: -0.05em;
 }
 .terminal-safety-grid a {
   color: var(--yellow);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
   text-decoration: none;
 }
-.token-card {
-  background: linear-gradient(135deg, #12170d, #111);
-}
+.token-card,
 .approval-card {
-  background: linear-gradient(135deg, #17100e, #111);
+  background: var(--surface);
 }
 @media (max-width: 900px) {
   .terminal-main {
@@ -8282,13 +8283,13 @@ select {
 }
 .bot-flow-head h2 { margin: 5px 0 0; font-size: clamp(22px, 3vw, 34px); line-height: 1; letter-spacing: -.05em; }
 .bot-flow-head h2 span { color: var(--yellow); }
-.bot-flow-head > p { max-width: 380px; margin: 0; color: #aaa; font-size: 13px; line-height: 1.55; }
+.bot-flow-head > p { max-width: 380px; margin: 0; color: var(--text); font-size: 14px; line-height: 1.55; }
 .bot-flow-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.bot-flow-steps article { display: grid; grid-template-columns: 30px 1fr; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
-.bot-flow-steps article > i { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid #555; border-radius: 999px; color: #aaa; font-size: 11px; font-style: normal; font-weight: 800; }
-.bot-flow-steps article b { display: block; color: #eee; font-size: 13px; }
-.bot-flow-steps article p { grid-column: 1 / -1; margin: 3px 0 0; color: #999; font-size: 12px; line-height: 1.45; }
-.bot-flow-steps article em { grid-column: 1 / -1; color: #777; font-size: 10px; font-style: normal; font-weight: 800; letter-spacing: .06em; }
+.bot-flow-steps article { display: grid; grid-template-columns: 30px 1fr; gap: 10px; padding: 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); }
+.bot-flow-steps article > i { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid var(--line); border-radius: 999px; color: var(--text); font-size: 12px; font-style: normal; font-weight: 800; }
+.bot-flow-steps article b { display: block; color: var(--text); font-size: 14px; }
+.bot-flow-steps article p { grid-column: 1 / -1; margin: 3px 0 0; color: var(--text); font-size: 13px; line-height: 1.45; }
+.bot-flow-steps article em { grid-column: 1 / -1; color: var(--soft); font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: .06em; }
 .bot-flow-steps article.done { border-color: rgba(202, 255, 67, .5); background: rgba(202, 255, 67, .045); }
 .bot-flow-steps article.done > i { border-color: var(--lime); color: var(--lime); }
 .bot-flow-steps article.done em { color: var(--lime); }
@@ -8338,7 +8339,7 @@ select {
 }
 .privacy-hero h1 {
   margin: 0;
-  color: #ecebe5;
+  color: var(--text);
   font-size: clamp(44px, 6vw, 78px);
   font-weight: 900;
   line-height: 0.84;
@@ -8350,8 +8351,8 @@ select {
 .privacy-hero > p:last-child {
   max-width: 700px;
   margin: 20px 0 0;
-  color: #a7a79f;
-  font-size: 13px;
+  color: var(--text);
+  font-size: 15px;
   line-height: 1.65;
 }
 .privacy-grid {
@@ -8381,40 +8382,40 @@ select {
   letter-spacing: 0.1em;
 }
 .privacy-card-head em {
-  color: #7e7e77;
+  color: var(--soft);
   font-style: normal;
 }
 .privacy-card label {
   display: grid;
   gap: 7px;
-  color: #b7b6ae;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 13px;
 }
 .privacy-card input {
   min-height: 39px;
   box-sizing: border-box;
   padding: 0 11px;
-  border: 1px solid #414141;
+  border: 1.5px solid var(--line);
   border-radius: 8px;
   outline: none;
-  background: #0b0b0b;
-  color: #e7e6df;
+  background: var(--input);
+  color: var(--text);
 }
 .privacy-card button {
   width: fit-content;
   padding: 10px 12px;
   border: 1px solid var(--yellow);
   border-radius: 8px;
-  background: #201b04;
-  color: var(--yellow);
-  font-size: 10px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font-size: 13px;
   font-weight: 900;
 }
 .privacy-card > p,
 .privacy-card li {
   margin: 0;
-  color: #96968e;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.55;
 }
 .privacy-card ul {
@@ -8427,18 +8428,18 @@ select {
   color: var(--yellow);
 }
 .privacy-boundary {
-  background: linear-gradient(135deg, #151408, #111 68%);
+  background: var(--surface);
 }
 .privacy-card .privacy-danger {
-  border-color: #b85c55;
-  background: #251110;
-  color: #e5a49e;
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 14%, var(--surface));
+  color: var(--red);
 }
 .privacy-message {
   min-height: 20px;
   margin: 17px 0 0;
-  color: #c6bd8d;
-  font-size: 11px;
+  color: var(--text);
+  font-size: 14px;
 }
 .wordmark span {
   max-width: 180px;
@@ -8466,28 +8467,28 @@ select {
   gap: 1px;
   margin-bottom: 14px;
   overflow: hidden;
-  border: 1px solid #51461c;
+  border: 1.5px solid var(--line);
   border-radius: 11px;
-  background: #51461c;
+  background: var(--line);
 }
 .terminal-port-map article {
   display: grid;
   align-content: start;
   gap: 7px;
   padding: 15px;
-  background: #131208;
+  background: var(--surface);
 }
 .terminal-port-map article:last-child {
-  background: #16140a;
+  background: var(--surface-2);
 }
 .terminal-port-map span {
-  color: #a19769;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.1em;
 }
 .terminal-port-map b {
-  color: #eee6bd;
+  color: var(--text);
   font:
     800 18px var(--font-geist-mono),
     monospace;
@@ -8496,8 +8497,8 @@ select {
 .terminal-port-map p {
   min-height: 30px;
   margin: 0;
-  color: #9d9a89;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .terminal-port-map article:last-child b {
@@ -8512,9 +8513,9 @@ select {
 }
 .terminal-port-map code {
   overflow: hidden;
-  color: #dfcd82;
+  color: var(--yellow);
   font:
-    9px var(--font-geist-mono),
+    13px var(--font-geist-mono),
     monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -8524,9 +8525,9 @@ select {
   padding: 7px 9px;
   border: 1px solid var(--yellow);
   border-radius: 6px;
-  background: #201b04;
-  color: var(--yellow);
-  font-size: 9px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font-size: 13px;
   font-weight: 900;
 }
 @media (max-width: 900px) {
@@ -8550,14 +8551,14 @@ select {
   padding: 18px;
   border: 1px solid rgba(245, 196, 0, 0.42);
   border-radius: 12px;
-  background: linear-gradient(135deg, #171408, #111 67%);
+  background: var(--surface);
 }
 .terminal-clone .kicker {
   margin: 0 0 8px;
 }
 .terminal-clone h2 {
   margin: 0;
-  color: #e8e6d9;
+  color: var(--text);
   font-size: clamp(19px, 2.5vw, 29px);
   letter-spacing: -0.06em;
   line-height: 0.95;
@@ -8565,8 +8566,8 @@ select {
 .terminal-clone p:last-child {
   max-width: 650px;
   margin: 10px 0 0;
-  color: #9d9a89;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.55;
 }
 .terminal-clone > div:last-child {
@@ -8577,12 +8578,12 @@ select {
 .terminal-clone code {
   padding: 10px;
   overflow: auto;
-  border: 1px solid #413a22;
+  border: 1.5px solid var(--line);
   border-radius: 7px;
-  background: #090909;
-  color: #dfcd82;
+  background: var(--surface-2);
+  color: var(--text);
   font:
-    10px/1.5 var(--font-geist-mono),
+    13px/1.5 var(--font-geist-mono),
     monospace;
   white-space: nowrap;
 }
@@ -8591,9 +8592,9 @@ select {
   padding: 8px 10px;
   border: 1px solid var(--yellow);
   border-radius: 7px;
-  background: #201b04;
-  color: var(--yellow);
-  font-size: 9px;
+  background: var(--yellow);
+  color: var(--on-accent);
+  font-size: 13px;
   font-weight: 900;
 }
 @media (max-width: 720px) {
@@ -8971,8 +8972,8 @@ select {
   background: var(--surface);
 }
 .tools-hero aside > span {
-  color: #aaa06e;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -9440,7 +9441,7 @@ html.tools-shell .tools-card-api {
 html.tools-shell .nav-live-dot {
   background: var(--lime);
   color: var(--on-accent, #fff);
-  font-size: 11px;
+  font-size: 13px;
 }
 html.tools-shell .production-note span,
 html.tools-shell .bot-answer-strip span,
@@ -9514,4 +9515,136 @@ html.tools-shell .site-header nav a {
 html.tools-shell .site-header nav a.current,
 html.tools-shell .site-header nav a:hover {
   color: var(--text);
+}
+html.tools-shell .header-more summary,
+html.tools-shell .header-more summary:after {
+  color: var(--text);
+  font-size: 13px;
+}
+html.tools-shell .header-more > div {
+  background: var(--surface);
+  border-color: var(--line);
+}
+html.tools-shell .header-more > div a {
+  color: var(--text);
+  font-size: 14px;
+}
+html.tools-shell .header-more > div a:hover,
+html.tools-shell .header-more > div a.current {
+  background: var(--surface-2);
+  color: var(--yellow);
+}
+html.tools-shell .cut-note,
+html.tools-shell .cut-register,
+html.tools-shell .source-drop,
+html.tools-shell .source-empty,
+html.tools-shell .decision-controls,
+html.tools-shell .edl-row,
+html.tools-shell .qc-list > div,
+html.tools-shell .approval-line,
+html.tools-shell .export-recipe pre,
+html.tools-shell .guide-scope-card,
+html.tools-shell .guide-workflow,
+html.tools-shell .guide-capabilities,
+html.tools-shell .guide-pages,
+html.tools-shell .guide-steps,
+html.tools-shell .guide-steps article,
+html.tools-shell .guide-feature-grid > article,
+html.tools-shell .guide-page-grid article,
+html.tools-shell .approvals-card,
+html.tools-shell .heartbeat-guide pre,
+html.tools-shell .guide-message,
+html.tools-shell .ops-facts div,
+html.tools-shell .publish-card,
+html.tools-shell .recovery-card,
+html.tools-shell .ops-task-list article,
+html.tools-shell .ops-recovery-list article,
+html.tools-shell .scene-bin > button,
+html.tools-shell .edit-feature-register,
+html.tools-shell .edit-card,
+html.tools-shell .inspector,
+html.tools-shell .marker-row,
+html.tools-shell .notes-card,
+html.tools-shell .live-preview,
+html.tools-shell .preset-card,
+html.tools-shell .recent-panel,
+html.tools-shell .rule-panel,
+html.tools-shell .gate-board-card,
+html.tools-shell .privacy-card,
+html.tools-shell .connect-card,
+html.tools-shell .agent-card,
+html.tools-shell .bot-card,
+html.tools-shell .terminal-card {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--text);
+}
+html.tools-shell .guide-steps article,
+html.tools-shell .guide-feature-grid > article,
+html.tools-shell .guide-page-grid article,
+html.tools-shell .ops-facts div,
+html.tools-shell .scene-bin > button,
+html.tools-shell .marker-row,
+html.tools-shell .edl-row,
+html.tools-shell .qc-list > div,
+html.tools-shell .heartbeat-guide pre,
+html.tools-shell .export-recipe pre,
+html.tools-shell .decision-controls {
+  background: var(--surface-2);
+}
+html.tools-shell .cut-hero > div > p:last-child,
+html.tools-shell .guide-hero > div > p:last-child,
+html.tools-shell .ops-hero > div > p:last-child,
+html.tools-shell .edit-title + p,
+html.tools-shell .page-intro > p:last-child {
+  color: var(--text);
+  font-size: 15px;
+}
+html.tools-shell .cut-card-head em,
+html.tools-shell .guide-card-head em,
+html.tools-shell .ops-card-head em,
+html.tools-shell .ops-card > p,
+html.tools-shell .ops-card > small,
+html.tools-shell .ops-card h3,
+html.tools-shell .ops-facts dt,
+html.tools-shell .ops-facts dd,
+html.tools-shell .ops-task-list b,
+html.tools-shell .ops-task-list span,
+html.tools-shell .guide-rules li,
+html.tools-shell .guide-scope-card > p,
+html.tools-shell .guide-scope-card span,
+html.tools-shell .guide-steps b,
+html.tools-shell .guide-steps p,
+html.tools-shell .guide-feature-grid dd,
+html.tools-shell .guide-page-grid p,
+html.tools-shell .guide-page-grid small,
+html.tools-shell .heuristic-grid p,
+html.tools-shell .endpoint-guide p,
+html.tools-shell .approvals-card p,
+html.tools-shell .edl-row b,
+html.tools-shell .edl-row small,
+html.tools-shell .qc-list strong,
+html.tools-shell .qc-list span,
+html.tools-shell .scene-panel-top,
+html.tools-shell .scene-format,
+html.tools-shell .edit-toggles label,
+html.tools-shell .inspector-scroll label,
+html.tools-shell .notes-card label,
+html.tools-shell .marker-row,
+html.tools-shell .preset-card p,
+html.tools-shell .export-preview p,
+html.tools-shell .export-actions > p {
+  color: var(--text);
+}
+html.tools-shell .cut-actions button,
+html.tools-shell .decision-controls button,
+html.tools-shell .ops-task-list article button,
+html.tools-shell .ops-card button,
+html.tools-shell .recipe-button,
+html.tools-shell .preview-toolbar button,
+html.tools-shell .timeline-rail-head button {
+  background: var(--input);
+  border-color: var(--line);
+  color: var(--text);
+  font-size: 13px;
 }
