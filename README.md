@@ -4,7 +4,7 @@ A program on the guest’s PC. Attach a bot they already use. The finished file 
 
 Opens with no account. Not a website subscription.
 
-[Get Windows](https://github.com/NoLucas/Grok-crew-test/releases) · [한국어](README.ko.md) · [中文](README.zh.md) · [日本語](README.ja.md)
+[Get Windows](https://github.com/NoLucas/Grok-Crew/releases) · [한국어](README.ko.md) · [中文](README.zh.md) · [日本語](README.ja.md)
 
 ---
 
@@ -81,11 +81,11 @@ Voice models are not in the installer. They download only after the guest turns 
 
 ## Open this repo
 
-Public source: [NoLucas/Grok-crew-test](https://github.com/NoLucas/Grok-crew-test)
+Public source: [NoLucas/Grok-Crew](https://github.com/NoLucas/Grok-Crew)
 
 ```bash
-git clone https://github.com/NoLucas/Grok-crew-test.git
-cd Grok-crew-test
+git clone https://github.com/NoLucas/Grok-Crew.git
+cd Grok-Crew
 npm install
 npm run local
 ```

@@ -4,7 +4,7 @@
 
 打开不用登录。不是网站订阅。
 
-[下载 Windows](https://github.com/NoLucas/Grok-crew-test/releases) · [한국어](README.ko.md) · [English](README.md) · [日本語](README.ja.md)
+[下载 Windows](https://github.com/NoLucas/Grok-Crew/releases) · [한국어](README.ko.md) · [English](README.md) · [日本語](README.ja.md)
 
 ---
 
@@ -81,11 +81,11 @@
 
 ## 打开这个仓库
 
-公开源码：[NoLucas/Grok-crew-test](https://github.com/NoLucas/Grok-crew-test)
+公开源码：[NoLucas/Grok-Crew](https://github.com/NoLucas/Grok-Crew)
 
 ```bash
-git clone https://github.com/NoLucas/Grok-crew-test.git
-cd Grok-crew-test
+git clone https://github.com/NoLucas/Grok-Crew.git
+cd Grok-Crew
 npm install
 npm run local
 ```
