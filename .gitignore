@@ -39,6 +39,7 @@ next-env.d.ts
 /dist/
 /build/
 /release/
+/public/GrokCrew-Windows.exe
 /.wrangler/
 /outputs/
 /work/
