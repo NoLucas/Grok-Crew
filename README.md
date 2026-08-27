@@ -1,7 +1,7 @@
 # Grok Crew
 
 <p align="center">
-  <img src="docs/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
+  <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
 **v1.0.0** · with Grok Bot · free now

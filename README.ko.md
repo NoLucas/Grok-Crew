@@ -1,7 +1,7 @@
 # Grok Crew
 
 <p align="center">
-  <img src="docs/hero.png" alt="Grok Crew with Grok Bot — 로컬 영상 작업대" width="100%" />
+  <img src="public/hero.png" alt="Grok Crew with Grok Bot — 로컬 영상 작업대" width="100%" />
 </p>
 
 **v1.0.0** · with Grok Bot · 지금 무료

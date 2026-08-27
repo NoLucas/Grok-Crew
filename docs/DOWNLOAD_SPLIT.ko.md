@@ -74,7 +74,7 @@
 
 - [x] `README.md` / `README.ko.md` 여는 방법을 **받아서 연다**로 바꾼다. `git clone`은 “소스 받는 사람” 아래로 내린다. (SIMPLE_PATH E)
 - [x] GitHub Release 본문 초안은 버튼 하나(**Windows에서 열기**)다. 봇 zip은 본문 아래 “다른 방법”이다. (`docs/RELEASE_NOTES.v1.0.md`)
-- [x] `docs/ANNOUNCEMENT.md` 한 줄도 “받아서 연다”에 맞춘다.
+- [x] README와 `/home` 첫 줄도 “받아서 연다”에 맞춘다.
 - [x] 사이트/릴리스에 **관리자로 할까요** 문구를 쓰지 않는지 검토한다.
 
 완료 조건:
@@ -149,7 +149,7 @@ GrokCrew-봇에게주기/
 할 일:
 
 - [ ] `scripts/pack-bot-bundle.mjs`(또는 py)가 위 zip을 만든다. CLI는 지금 `GET /downloads/grok-crew.py`가 주는 그 파일이다.
-- [ ] 한글 안내 원문은 `docs/bot-pack/지금_이렇게_하세요.txt`에 두고 스크립트가 복사한다.
+- [x] 한글 안내는 `local_studio/bot_pack.py`의 `INSTRUCTIONS`로 zip 안에 `지금_이렇게_하세요.txt`를 만든다.
 - [ ] `npm run dist:bot-pack`으로 zip이 `release/GrokCrew-봇에게주기.zip`에 생긴다.
 - [ ] zip 안에 studio 서버, Electron, sidecar, `.env`, 토큰을 넣지 않는다.
 - [ ] 같은 PC가 아닌 봇에게는 “이 zip은 이 컴퓨터 봇용이다” 한 줄을 적는다. 원격 폴더 인계는 이 판에 넣지 않는다.
@@ -159,7 +159,7 @@ GrokCrew-봇에게주기/
 - zip을 받은 봇이 `entry` 한 줄로 화면에 이름이 뜬다.
 - zip을 더블클릭해도 설치 마법사가 나오지 않는다.
 
-건드리는 곳: `scripts/pack-bot-bundle.*`, `docs/bot-pack/`, `package.json` 스크립트. 화면 UI는 4판.
+건드리는 곳: `local_studio/bot_pack.py`, `package.json` 스크립트. 화면 UI는 4판.
 
 ## 4판 — 화면에서 봇 zip 받기
 
@@ -195,7 +195,7 @@ GrokCrew-봇에게주기/
 
 할 일:
 
-- [ ] 원본 슬라이드/페이지는 `docs/install-guide/`에 둔다. 스크린샷은 실제 창이다.
+- [ ] PDF를 나중에 만들 때만 원본 페이지를 둔다. 지금은 `/home`과 README가 안내다. 스크린샷은 실제 창이다.
 - [ ] PDF를 `release/GrokCrew-설치설명서.pdf`로 보낸다. 앱에 PDF 엔진을 넣지 않는다.
 - [ ] 사이트 “설치가 막히면”이 이 PDF를 연다.
 - [ ] PDF에 `git`, 포트, purpose, Runner, Instagram을 넣지 않는다.
