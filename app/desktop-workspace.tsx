@@ -1716,7 +1716,7 @@ export default function DesktopWorkspace() {
                   <button type="button" className="desktop-primary" disabled={busy} onClick={() => void runLocalRender()}>
                     {t('지금 로컬 렌더', 'Render locally now', '立即本地渲染', '今すぐローカルレンダー')}
                   </button>
-                  <button type="button" className="desktop-auto-secondary" disabled={busy} onClick={() => void enqueueQueuedRender()}>
+                  <button type="button" className="desktop-secondary" disabled={busy} onClick={() => void enqueueQueuedRender()}>
                     {t('대기열에 넣기', 'Add to queue', '加入队列', 'キューに追加')}
                   </button>
                 </div>
