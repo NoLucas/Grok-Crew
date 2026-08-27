@@ -8998,10 +8998,10 @@ select {
   border-radius: 12px;
   background: var(--surface);
   text-decoration: none;
-  color: inherit;
+  color: var(--text);
 }
-.tools-card:hover { border-color: color-mix(in srgb, var(--text) 28%, var(--line)); background: var(--surface-2); }
-.tools-card.is-live { border-color: color-mix(in srgb, var(--lime) 35%, var(--line)); background: color-mix(in srgb, var(--lime) 8%, var(--surface)); }
+.tools-card:hover { border-color: var(--text); background: var(--surface); }
+.tools-card.is-live { border-color: var(--lime); background: var(--surface); }
 .tools-card-head,
 .tools-card > div {
   display: flex;
@@ -9018,27 +9018,28 @@ select {
 .tools-card b { font-size: 15px; }
 .tools-card span,
 .tools-badge {
-  padding: 2px 6px;
+  padding: 3px 7px;
   border-radius: 4px;
   background: var(--surface-2);
-  color: var(--soft);
-  font-size: 10px;
+  color: var(--text);
+  font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
 }
 .tools-badge.live,
 .tools-card.is-live .tools-badge.live {
-  background: color-mix(in srgb, var(--lime) 16%, var(--surface));
-  color: var(--lime);
+  background: var(--lime);
+  color: var(--on-accent, #fff);
 }
 .tools-badge.api-live {
-  background: color-mix(in srgb, var(--yellow) 16%, var(--surface));
-  color: var(--yellow);
+  background: var(--yellow);
+  color: var(--on-accent, #fff);
 }
 .tools-badge.draft,
 .tools-badge.api-none {
-  background: var(--bg);
-  color: var(--soft);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--line);
 }
 .tools-card p {
   margin: 0;
@@ -9065,8 +9066,8 @@ select {
   display: block;
   overflow: hidden;
   max-width: 100%;
-  color: var(--yellow);
-  font: 600 11px var(--font-geist-mono), ui-monospace, monospace;
+  color: var(--text);
+  font: 700 13px var(--font-geist-mono), ui-monospace, monospace;
   letter-spacing: -0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -9358,8 +9359,22 @@ html.tools-shell .gate-chip,
 html.tools-shell .ops-mini-list span {
   color: var(--text);
   border-color: var(--line);
-  background: var(--surface-2);
-  font-size: 12px;
+  background: var(--input);
+  font-size: 13px;
+  font-weight: 700;
+}
+html.tools-shell .tools-card {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  color: var(--text);
+}
+html.tools-shell .tools-card-api {
+  color: var(--text);
+}
+html.tools-shell .nav-live-dot {
+  background: var(--lime);
+  color: var(--on-accent, #fff);
+  font-size: 11px;
 }
 html.tools-shell .production-note span,
 html.tools-shell .bot-answer-strip span,
