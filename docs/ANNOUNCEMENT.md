@@ -39,4 +39,4 @@ Open an issue on [NoLucas/Grok-crew-test](https://github.com/NoLucas/Grok-crew-t
 
 **한국어**
 
-> Grok Crew 1.0은 로컬 우선 숏폼 책상입니다. 제목을 적고 초대문을 봇(Cursor 또는 다른 에이전트)에 붙이면, 편집 인박스에 폴더가 올 때 창이 열립니다. 내 파일을 놓으면 봇 없이 열립니다. 게시는 선택입니다. OAuth 앱과 Apple 서명은 저장소 밖입니다. 15–60초 토킹헤드를 렌더해 보시고, 자막·리비전·로컬 렌더 중 무엇이 먼저 깨지는지 알려 주세요. https://github.com/NoLucas/Grok-crew-test
+> Grok Crew 1.0은 로컬 우선 숏폼 화면입니다. 제목을 적고 초대문을 봇(Cursor 또는 다른 에이전트)에 붙이면, 편집 인박스에 폴더가 올 때 창이 열립니다. 내 파일을 놓으면 봇 없이 열립니다. 게시는 선택입니다. OAuth 앱과 Apple 서명은 저장소 밖입니다. 15–60초 토킹헤드를 렌더해 보시고, 자막·리비전·로컬 렌더 중 무엇이 먼저 깨지는지 알려 주세요. https://github.com/NoLucas/Grok-crew-test

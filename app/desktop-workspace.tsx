@@ -860,7 +860,7 @@ export default function DesktopWorkspace() {
     void timelineEditing.submit(result.value);
   };
   const removeSelected = async () => { if (!selected) return; try { await patchTimeline([{ op: 'remove_clip', clip_id: selected.clip.id }]); setSelectedClipIds((current) => current.filter((clipId) => clipId !== selected.clip.id)); } catch (error) { setMessage(error instanceof Error ? error.message : 'Remove failed.'); } };
-  const addTrack = async (type: TrackType) => { try { await patchTimeline([{ op: 'add_track', track: { id: `${type}-r${(timeline?.revision ?? 0) + 1}`, type, name: type === 'video' ? 'B-roll' : type[0].toUpperCase() + type.slice(1), order: (timeline?.tracks.length ?? 0) * 10, locked: false, muted: false, solo: false, clips: [] } }]); } catch (error) { setMessage(error instanceof Error ? error.message : 'Track creation failed.'); } };
+  const addTrack = async (type: TrackType) => { try { await patchTimeline([{ op: 'add_track', track: { id: `${type}-r${(timeline?.revision ?? 0) + 1}`, type, name: type === 'video' ? t('추가 클립', 'Extra clip', '附加片段', '追加クリップ') : type[0].toUpperCase() + type.slice(1), order: (timeline?.tracks.length ?? 0) * 10, locked: false, muted: false, solo: false, clips: [] } }]); } catch (error) { setMessage(error instanceof Error ? error.message : 'Track creation failed.'); } };
   const addTimelineElement = async (kind: 'broll' | 'title' | 'caption') => {
     if (!timeline) return;
     const revision = timeline.revision + 1;
@@ -870,14 +870,14 @@ export default function DesktopWorkspace() {
     if (kind === 'broll') {
       const media = workspace.media.find((item) => item.path === newElement.brollPath);
       if (!media) {
-        setMessage(t('B-roll 영상을 선택하세요.', 'Choose a B-roll video.', '请选择 B-roll 视频。', 'B-roll 動画を選択してください。'));
+        setMessage(t('추가할 영상을 선택하세요.', 'Choose an extra clip.', '请选择附加片段。', '追加する動画を選んでください。'));
         return;
       }
       const assetId = `broll-asset-r${revision}`;
       const existingTrack = timeline.tracks.find((track) => track.type === 'video' && track.id !== 'video-main');
       const trackId = existingTrack?.id ?? `video-broll-r${revision}`;
       operations.push({ op: 'add_asset', asset: { id: assetId, kind: 'video', name: media.name, path: media.path } });
-      if (!existingTrack) operations.push({ op: 'add_track', track: { id: trackId, type: 'video', name: 'B-roll', order: timeline.tracks.length * 10, locked: false, muted: false, solo: false, clips: [] } });
+      if (!existingTrack) operations.push({ op: 'add_track', track: { id: trackId, type: 'video', name: t('추가 클립', 'Extra clip', '附加片段', '追加クリップ'), order: timeline.tracks.length * 10, locked: false, muted: false, solo: false, clips: [] } });
       operations.push({ op: 'add_clip', track_id: trackId, clip: {
         id: `broll-clip-r${revision}`, asset_id: assetId, timeline_start: start, duration,
         source_in: 0, source_out: duration, locked: false, transform: {}, audio: { volume: 1, muted: false }, effects: [], keyframes: {},
@@ -1040,7 +1040,7 @@ export default function DesktopWorkspace() {
     <main className={`desktop-shell${editToolsOpen ? ' has-timeline' : ' is-form'}`} {...appearanceDataAttrs(appearance)}>
       <header className="desktop-titlebar">
         <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="gear" />
-        <div className="desktop-brand"><span className="desktop-logo">G</span><div><b>Grok Crew</b><small>{t('로컬 제작 데스크', 'Desktop Production', '本地制作台', 'デスクトップ制作')}</small></div></div>
+        <div className="desktop-brand"><span className="desktop-logo">G</span><div><b>Grok Crew</b><small>{t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
           <button type="button" className={activePanel === 'setup' ? 'active' : ''} aria-current={activePanel === 'setup' ? 'page' : undefined} onClick={() => setActivePanel('setup')}>{t('설정', 'Setup', '设置', '設定')}</button>
           <button type="button" className={activePanel === 'edit' ? 'active' : ''} aria-current={activePanel === 'edit' ? 'page' : undefined} onClick={() => setActivePanel('edit')}>{t('편집', 'Edit', '编辑', '編集')}</button>
@@ -1143,7 +1143,7 @@ export default function DesktopWorkspace() {
           : specDeskOpen || !project ? (
             advancedSpecOpen ? (
               <div className="desktop-simple-wrap">
-                <button type="button" className="desktop-secondary" onClick={() => setAdvancedSpecOpen(false)}>{t('짧은 화면으로', 'Back to the short desk', '回到简短工作台', '短い画面へ')}</button>
+                <button type="button" className="desktop-secondary" onClick={() => setAdvancedSpecOpen(false)}>{t('짧은 화면으로', 'Back to the short screen', '回到简短画面', '短い画面へ')}</button>
                 <HandoffFolderBoard
                   folders={handoffFolders}
                   studioState={studioState}
@@ -1222,7 +1222,7 @@ export default function DesktopWorkspace() {
               </div>
             )
           )
-          : !timeline ? <div className="desktop-empty" aria-busy="true"><span className="desktop-spinner" /><h1>{t('타임라인을 불러오는 중', 'Loading the timeline', '正在加载时间线', 'タイムラインを読み込み中')}</h1><p>{t('프로젝트가 열려 있습니다. 규격 화면으로 돌아가지 않습니다.', 'A project is open. The spec desk stays hidden.', '项目已打开。不会回到规格页。', 'プロジェクトは開いています。仕様デスクには戻りません。')}</p><button type="button" className="desktop-secondary" onClick={() => void refreshProject(project.id)}>{t('다시 읽기', 'Reload', '重新读取', '再読み込み')}</button></div>
+          : !timeline ? <div className="desktop-empty" aria-busy="true"><span className="desktop-spinner" /><h1>{t('타임라인을 불러오는 중', 'Loading the timeline', '正在加载时间线', 'タイムラインを読み込み中')}</h1><p>{t('프로젝트가 열려 있습니다. 규격 화면으로 돌아가지 않습니다.', 'A project is open. The spec screen stays hidden.', '项目已打开。不会回到规格页。', 'プロジェクトは開いています。仕様画面には戻りません。')}</p><button type="button" className="desktop-secondary" onClick={() => void refreshProject(project.id)}>{t('다시 읽기', 'Reload', '重新读取', '再読み込み')}</button></div>
           : <>
             <div className="desktop-project-bar"><div><small>{t('현재 프로젝트', 'CURRENT PROJECT', '当前项目', '現在のプロジェクト')}</small><h1>{project.title}</h1></div><div className="desktop-project-chips">{project.handoff_agent ? <span className={project.handoff_door === 'editor' || project.handoff_door === 'grok' ? 'is-editor' : 'is-collector'}>{project.handoff_door === 'editor' || project.handoff_door === 'grok' ? t('편집 문', 'Editor door', '剪辑门', '編集ドア') : t('수집 문', 'Collector door', '收集门', '収集ドア')} · {handoffSenderLabel(project, t)}</span> : null}<span>v{timeline.revision}</span><span>{timeline.settings.width}×{timeline.settings.height}</span><span>{timeline.settings.fps}fps</span></div></div>
             {activePanel === 'setup' && <div className="desktop-setup-grid">
@@ -1263,7 +1263,7 @@ export default function DesktopWorkspace() {
                 <label>{t('콘텐츠 유형', 'Content type', '内容类型', 'コンテンツ種別')}<select value={method.content_type} onChange={(e) => setMethod({ ...method, content_type: e.target.value })}><option value="talking_head">{t('토킹헤드', 'Talking head', '口播', 'トーキングヘッド')}</option><option value="vlog">Vlog</option><option value="product">{t('제품·서비스', 'Product / service', '产品服务', '製品・サービス')}</option><option value="tutorial">{t('튜토리얼', 'Tutorial', '教程', 'チュートリアル')}</option></select></label>
                 <label>{t('목표 길이', 'Target length', '目标时长', '目標尺')}<select value={method.target_length} onChange={(e) => setMethod({ ...method, target_length: Number(e.target.value) })}><option value="15">15s</option><option value="30">30s</option><option value="45">45s</option><option value="60">60s</option><option value="90">90s</option></select></label>
                 <label>{t('화면비', 'Aspect ratio', '画面比例', 'アスペクト比')}<select value={method.aspect_ratio} onChange={(e) => setMethod({ ...method, aspect_ratio: e.target.value })}><option value="9:16">9:16</option><option value="1:1">1:1</option><option value="16:9">16:9</option></select></label>
-                <label>B-roll<select value={method.broll_policy} onChange={(e) => setMethod({ ...method, broll_policy: e.target.value })}><option value="auto">{t('필요할 때 제안', 'Suggest when useful', '按需建议', '必要時に提案')}</option><option value="required">{t('적극 사용', 'Use actively', '积极使用', '積極的に使用')}</option><option value="off">{t('사용 안 함', 'Off', '关闭', 'オフ')}</option></select></label>
+                <label>{t('추가 클립', 'Extra clips', '附加片段', '追加クリップ')}<select value={method.broll_policy} onChange={(e) => setMethod({ ...method, broll_policy: e.target.value })}><option value="auto">{t('필요할 때 제안', 'Suggest when useful', '按需建议', '必要時に提案')}</option><option value="required">{t('적극 사용', 'Use actively', '积极使用', '積極的に使用')}</option><option value="off">{t('사용 안 함', 'Off', '关闭', 'オフ')}</option></select></label>
                 <label>{t('훅', 'Hook', '开场', 'フック')}<select value={method.hook_strategy} onChange={(e) => setMethod({ ...method, hook_strategy: e.target.value })}><option value="payoff_first">{t('결과 먼저', 'Payoff first', '结果优先', '結果を先に')}</option><option value="question_first">{t('질문 먼저', 'Question first', '问题优先', '質問を先に')}</option><option value="chronological">{t('순서대로', 'Chronological', '按时间顺序', '時系列')}</option></select></label>
                 <label>{t('속도감', 'Pacing', '节奏', 'テンポ')}<select value={method.pacing} onChange={(e) => setMethod({ ...method, pacing: e.target.value })}><option value="tight">{t('빠르고 타이트', 'Tight', '紧凑', 'タイト')}</option><option value="balanced">{t('균형', 'Balanced', '平衡', 'バランス')}</option><option value="deliberate">{t('차분하게', 'Deliberate', '沉稳', '丁寧')}</option></select></label>
                 <label>{t('군더더기', 'Filler', '冗余', 'フィラー')}<select value={method.filler_policy} onChange={(e) => setMethod({ ...method, filler_policy: e.target.value })}><option value="remove">{t('자동 제거', 'Remove', '删除', '削除')}</option><option value="review">{t('검토 표시', 'Flag for review', '标记审核', '要確認')}</option><option value="keep">{t('유지', 'Keep', '保留', '維持')}</option></select></label>
@@ -1298,10 +1298,10 @@ export default function DesktopWorkspace() {
                     </button>
                   </summary>
                   <p>{t(
-                    `화질 ${method.quality}만 이 책상에서 정한 규격입니다. 봇은 화질을 바꾸지 않습니다. 화면비와 자막은 여기서 바꿀 수 있습니다. 템포·룩·B-roll·훅·오디오도 필요할 때 바꿉니다.`,
-                    `Only quality ${method.quality} is locked on this desk. The bot must keep that. Change aspect ratio and captions here. You can also change pacing, look, b-roll, hook, and audio if needed.`,
-                    `只有画质 ${method.quality} 在此工作台锁定。机器人不得改画质。画面比例和字幕可在此改。节奏、风格、B-roll、开场和音频也可按需调整。`,
-                    `画質 ${method.quality} だけがこのデスクでロックされています。ボットは画質を変えません。画面比と字幕はここで変えられます。テンポ・ルック・B-roll・フック・音声も必要なら変えられます。`,
+                    `화질 ${method.quality}만 여기서 정한 규격입니다. 봇은 화질을 바꾸지 않습니다. 화면비와 자막은 여기서 바꿀 수 있습니다. 템포·룩·추가 클립·훅·오디오도 필요할 때 바꿉니다.`,
+                    `Only quality ${method.quality} is locked here. The bot must keep that. Change aspect ratio and captions here. You can also change pacing, look, extra clips, hook, and audio if needed.`,
+                    `只有画质 ${method.quality} 在此锁定。机器人不得改画质。画面比例和字幕可在此改。节奏、风格、附加片段、开场和音频也可按需调整。`,
+                    `画質 ${method.quality} だけがここでロックされています。ボットは画質を変えません。画面比と字幕はここで変えられます。テンポ・ルック・追加クリップ・フック・音声も必要なら変えられます。`,
                   )}</p>
                 </details>
               ) : null}
@@ -1374,7 +1374,7 @@ export default function DesktopWorkspace() {
                         <li key={asset.id} className={`desktop-proxy-row ${status}`}>
                           <div>
                             <b>{asset.name || asset.id}</b>
-                            <small>{index === 0 ? t('프라이머리', 'Primary', '主素材', 'プライマリ') : 'B-roll'} · {status === 'missing' ? t('없음', 'none', '无', 'なし') : status}{['queued', 'running'].includes(status) ? ` ${percent}%` : ''}</small>
+                            <small>{index === 0 ? t('본편', 'Main', '主素材', '本編') : t('추가 클립', 'Extra clip', '附加片段', '追加クリップ')} · {status === 'missing' ? t('없음', 'none', '无', 'なし') : status}{['queued', 'running'].includes(status) ? ` ${percent}%` : ''}</small>
                           </div>
                           <i style={{ width: `${percent}%` }} />
                         </li>
@@ -1448,7 +1448,7 @@ export default function DesktopWorkspace() {
             {unclaimedJobs.length ? (
               <div className="desktop-unclaimed-jobs">
                 <b>{t(`대기 중인 편집 Agent 작업 ${unclaimedJobs.length}개`, `${unclaimedJobs.length} waiting Editor Agent job(s)`, `${unclaimedJobs.length} 个等待中的剪辑 Agent 任务`, `待機中の編集 Agent ジョブ ${unclaimedJobs.length} 件`)}</b>
-                <p>{t('Runner가 없어 전송되지 않았습니다. 로컬 편집을 가리려면 취소하세요.', 'No Runner picked these up. Cancel them to keep the local desk clear.', '没有 Runner 接收这些任务。取消后可保持本地编辑界面清爽。', 'Runner が受け取っていません。キャンセルするとローカル編集のままです。')}</p>
+                <p>{t('Runner가 없어 전송되지 않았습니다. 로컬 편집을 가리려면 취소하세요.', 'No Runner picked these up. Cancel them to keep this screen clear.', '没有 Runner 接收这些任务。取消后可保持本地编辑界面清爽。', 'Runner が受け取っていません。キャンセルするとローカル編集のままです。')}</p>
                 <div className="desktop-unclaimed-actions">
                   <button type="button" className="desktop-danger" disabled={busy} onClick={() => void cancelUnclaimedJobs()}>{t('대기 작업 취소', 'Cancel waiting jobs', '取消等待任务', '待機ジョブをキャンセル')}</button>
                   <button type="button" className="desktop-secondary" onClick={() => setRemoteOpen(true)}>{t('Runner·GitHub 열기', 'Open Runner & GitHub', '打开 Runner 和 GitHub', 'Runner と GitHub を開く')}</button>
@@ -1476,7 +1476,7 @@ export default function DesktopWorkspace() {
                     <li key={asset.id} className={`desktop-proxy-row ${status}`}>
                       <div>
                         <b>{asset.name || asset.id}</b>
-                        <small>{index === 0 ? t('프라이머리', 'Primary', '主素材', 'プライマリ') : 'B-roll'} · {status === 'missing' ? t('없음', 'none', '无', 'なし') : status}{['queued', 'running'].includes(status) ? ` ${percent}%` : ''}</small>
+                        <small>{index === 0 ? t('본편', 'Main', '主素材', '本編') : t('추가 클립', 'Extra clip', '附加片段', '追加クリップ')} · {status === 'missing' ? t('없음', 'none', '无', 'なし') : status}{['queued', 'running'].includes(status) ? ` ${percent}%` : ''}</small>
                       </div>
                       <i style={{ width: `${percent}%` }} />
                     </li>
@@ -1493,7 +1493,7 @@ export default function DesktopWorkspace() {
           </section>
           <section className="desktop-inspector-section desktop-elements">
             <div className="desktop-inspector-head"><b>{t('편집 요소', 'Edit elements', '编辑元素', '編集要素')}</b></div>
-            <label><span>B-roll</span>
+            <label><span>{t('추가 클립', 'Extra clip', '附加片段', '追加クリップ')}</span>
               <select value={newElement.brollPath} onChange={(event) => setNewElement({ ...newElement, brollPath: event.target.value })}>
                 <option value="">{t('영상 선택', 'Choose video', '选择视频', '動画を選択')}</option>
                 {workspace.media.filter((item) => item.kind === 'video' && item.area === 'inputs').map((item) => <option key={item.path} value={item.path}>{item.name}</option>)}

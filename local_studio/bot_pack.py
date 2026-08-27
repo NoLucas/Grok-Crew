@@ -10,7 +10,7 @@ from typing import Any
 from config import TERMINAL_CLI_PATH
 
 INSTRUCTIONS_NAME = "지금_이렇게_하세요.txt"
-INSTRUCTIONS = """이 묶음은 설치 파일이 아닙니다. 책상 창이 이미 켜져 있어야 합니다.
+INSTRUCTIONS = """이 묶음은 설치 파일이 아닙니다. Grok Crew 창이 이미 켜져 있어야 합니다.
 
 1. 이 글을 이 컴퓨터의 봇에게 붙여 넣으세요.
 2. 봇 이름은 자기 이름을 씁니다.
@@ -23,7 +23,7 @@ INSTRUCTIONS = """이 묶음은 설치 파일이 아닙니다. 책상 창이 이
 스크립트는 이 zip 안의 grok_crew.py 이거나
 http://127.0.0.1:7214/downloads/grok-crew.py 입니다.
 
-끝난 패키지는 책상이 알려 주는 받을함 폴더에 둡니다.
+끝난 패키지는 화면이 알려 주는 받을함 폴더에 둡니다.
 다른 주소로는 붙지 마세요. 관리자로 실행하지 마세요.
 """
 

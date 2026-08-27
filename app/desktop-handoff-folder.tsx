@@ -75,7 +75,7 @@ function roleLabel(
   t: (ko: string, en: string, zh: string, ja: string) => string,
 ) {
   if (role === 'source') return t('원본', 'Source', '原片', '原本');
-  if (role === 'broll') return 'B-roll';
+  if (role === 'broll') return t('추가 클립', 'Extra clip', '附加片段', '追加クリップ');
   return t('자료', 'Clip', '素材', '素材');
 }
 

@@ -1,6 +1,6 @@
 # Grok Crew 1.0
 
-로컬 숏폼 책장의 첫 안정 판입니다. GitHub Release 태그는 Maintainer가 올립니다. 이 문서는 그 본문 초안입니다.
+로컬 숏폼 화면의 첫 안정 판입니다. GitHub Release 태그는 Maintainer가 올립니다. 이 문서는 그 본문 초안입니다.
 
 공개 파일 하나: **Windows에서 열기** → `GrokCrew-Windows.exe`. 받는 곳: [v1.0.0 릴리스](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.0). 봇 zip은 다른 방법입니다.
 
@@ -16,7 +16,7 @@
 
 ## 1.0에 들어 있는 것
 
-- 짧은 책장: 제목, 놓기, 한 봇 초대문 (`source_mode: bot`)
+- 첫 화면: 제목, 놓기, 한 봇 초대문 (`source_mode: bot`)
 - 문 둘: `editor/` · `collector/`. leftover `grok/` · `agents/`는 읽기만
 - 역할 이름: 편집 Agent / 수집 Agent. Cursor·Claude·Grok은 역할이 아닙니다
 - Cursor 에이전트: 같은 PC는 `POST /api/bot-entry`, 다른 컴퓨터는 인박스 폴더. 확인: `docs/CURSOR_AGENT.ko.md`
@@ -25,7 +25,7 @@
 - 선택 게시: 가진 액세스 토큰. 영수증·재시도
 - 핸드오프·경로·git remote 가드
 - 봇이 둔 폴더: 한 줄로 접힘, 목록 옆 미리보기, 오른쪽 클릭으로 미리보기·크게 보기·원본 보기·삭제
-- 화질은 규격 잠금. 화면 비율·자막·템포·룩·B-roll·훅·오디오는 설정에서 변경
+- 화질은 규격 잠금. 화면 비율·자막·템포·룩·추가 클립·훅·오디오는 설정에서 변경
 
 ## 1.0에 없는 것
 
@@ -50,7 +50,7 @@ npm run local
 ## 다른 방법
 
 - 봇에게 줄 파일: `GET http://127.0.0.1:7214/downloads/grok-crew-bot.zip` (설치 파일 아님)
-- 두 봇 규격: 책장의 **더 자세히**
+- 두 봇 규격: 화면의 **더 자세히**
 - 변경 목록: `CHANGELOG.md`의 `1.0.0`
 
 질문: [NoLucas/Grok-crew-test](https://github.com/NoLucas/Grok-crew-test) 이슈.

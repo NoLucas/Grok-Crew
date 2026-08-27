@@ -61,7 +61,7 @@ export function DesktopAppearanceControls({ appearance, onChange, variant = 'car
           <p className="desktop-appearance-hint">
             {appearance.emphasize
               ? t('제목과 단추를 더 굵게 그립니다.', 'Titles and buttons stay heavier.', '标题和按钮更粗。', '見出しとボタンを太くします。')
-              : t('글자를 가늘게 해서 덜 답답하게 합니다.', 'Type sits lighter on the desk.', '文字变细，画面更松。', '文字を細くして余白を出します。')}
+              : t('글자를 가늘게 해서 덜 답답하게 합니다.', 'Type sits lighter on the screen.', '文字变细，画面更松。', '文字を細くして余白を出します。')}
           </p>
         ) : null}
       </div>

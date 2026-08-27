@@ -27,7 +27,7 @@
       "step": 3,
       "name": "set_edit_method",
       "action": "Read the edit spec first. Keep the operator's quality. Aspect and captions follow the current desk settings — the operator may change them in Setup. POST /api/edit-method may set hook, pacing, filler, reframe, look, audio, speed, FPS, aspect, and captions. Inspect GET /api/v2/handoff/folders; the operator right-clicks a file to preview, enlarge, reveal the original, or delete it.",
-      "goal": "Follow the saved spec quality. Do not change quality. The operator may change aspect, captions, and the other knobs on the desk."
+      "goal": "Follow the saved spec quality. Do not change quality. The operator may change aspect, captions, and the other knobs on this screen."
     },
     {
       "step": 4,
@@ -92,12 +92,12 @@
   "operator_locks": {
     "locked": ["quality"],
     "operator_may_change": ["aspect_ratio", "caption_mode", "pacing", "look", "broll_policy", "hook_strategy", "audio_policy", "filler_policy", "reframe_anchor", "speed", "fps", "content_type", "target_length"],
-    "reason": "Only quality is locked on the desk. Keep quality. The operator may change aspect and captions in Setup, plus the other knobs."
+    "reason": "Only quality is locked here. Keep quality. The operator may change aspect and captions in Setup, plus the other knobs."
   },
   "folder_board": {
     "same_pc": "GET /api/v2/handoff/folders lists inputs/handoff/ packages and handoff-materials/ clips. POST /api/v2/handoff/files/reveal opens the original. POST /api/v2/handoff/files/delete removes a non-source file.",
     "operator_ui": "The desk shows a collapsed folder row. Opening it puts the file list beside the preview. Right-click a file to preview, enlarge, show the original, or delete it. A project's source file cannot be deleted.",
-    "remote": "Remote bots never call 127.0.0.1. After a drop, the operator inspects the folder on the desk. Do not reuse a file the operator deleted."
+    "remote": "Remote bots never call 127.0.0.1. After a drop, the operator inspects the folder on this screen. Do not reuse a file the operator deleted."
   },
   "render_settings_contract": {
     "presets_endpoint": "GET /api/presets returns quality_presets, caption_layout_presets, and platform_presets. Merge a chosen preset's fields directly into a project's timeline.render_settings.",

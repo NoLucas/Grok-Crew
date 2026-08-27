@@ -5,12 +5,12 @@
     "operator": "규격만 적습니다(제목, 목표, 길이, 자막, 룩). 문은 편집(폴더 editor/) 또는 수집·다른 에이전트(폴더 collector/) 중 하나만 고릅니다. 저장하면 그 문 보낼함에 spec.json 이 올라갑니다. 원본 파일을 붙이지 않습니다.",
     "grok_door": "편집 문. 폴더 이름은 editor/. 남은 grok/ 폴더는 읽기만 합니다. 지정된 편집 봇만. Runner 페어링도 이 문만. collector/ 는 쓰지 마세요.",
     "other_agent_door": "수집·다른 에이전트 문. 폴더 이름은 collector/. 남은 agents/ 폴더는 읽기만 합니다. 지정된 수집 봇, 또는 크루가 아닌 다른 에이전트. editor/ 와 Runner는 쓰지 마세요.",
-    "bot": "자기 문 보낼함의 spec.json 을 읽고, 소스를 구해 편집한 뒤, 영상 파일과 edit_spec_id·project.door가 들어 있는 bundle.json 패키지를 같은 문 인박스로 push합니다. 운영자가 정한 화질은 유지합니다. 화면비와 자막은 설정에서 바꿀 수 있습니다. 템포·룩·B-roll·훅·오디오는 운영자가 책상에서 나중에 바꿀 수 있습니다."
+    "bot": "자기 문 보낼함의 spec.json 을 읽고, 소스를 구해 편집한 뒤, 영상 파일과 edit_spec_id·project.door가 들어 있는 bundle.json 패키지를 같은 문 인박스로 push합니다. 운영자가 정한 화질은 유지합니다. 화면비와 자막은 설정에서 바꿀 수 있습니다. 템포·룩·추가 클립·훅·오디오는 운영자가 화면에서 나중에 바꿀 수 있습니다."
   },
   "operator_locks": {
     "locked": ["quality"],
-    "reason": "화질만 책상에서 정한 값입니다. 컷이나 render_settings에서 화질을 바꾸지 마세요. 화면비와 자막은 설정에서 바꿀 수 있습니다. 나머지 편집 조절은 운영자가 엽니다.",
-    "folder_board": "패키지를 두면 운영자가 책장에서 inputs/handoff/ 또는 handoff-materials/ 를 엽니다. 목록은 왼쪽, 미리보기는 옆입니다. 오른쪽 클릭으로 미리보기·크게 보기·원본 보기·삭제를 고릅니다. 지운 파일은 다시 쓰지 마세요. 원격 봇은 127.0.0.1에 붙지 않습니다."
+    "reason": "화질만 화면에서 정한 값입니다. 컷이나 render_settings에서 화질을 바꾸지 마세요. 화면비와 자막은 설정에서 바꿀 수 있습니다. 나머지 편집 조절은 운영자가 엽니다.",
+    "folder_board": "패키지를 두면 운영자가 화면에서 inputs/handoff/ 또는 handoff-materials/ 를 엽니다. 목록은 왼쪽, 미리보기는 옆입니다. 오른쪽 클릭으로 미리보기·크게 보기·원본 보기·삭제를 고릅니다. 지운 파일은 다시 쓰지 마세요. 원격 봇은 127.0.0.1에 붙지 않습니다."
   },
   "style_recipes": {
     "purpose": "이름 있는 레시피가 길이, 화면비, 훅, 속도, 자막, 룩, 수집 힌트를 채웁니다. 문이 아닙니다.",
@@ -19,10 +19,10 @@
   "source_modes": {
     "collect": "수집 봇이 클립을 모읍니다. 보낼함 둘. 상태는 waiting_for_collector.",
     "own": "운영자 파일만. 편집 보낼함만. 상태는 waiting_for_editor.",
-    "own_and_collect": "운영자 본편 + 수집 B롤. 보낼함 둘. owned 클립은 유지."
+    "own_and_collect": "운영자 본편 + 수집 추가 클립. 보낼함 둘. owned 클립은 유지."
   },
   "crew": {
-    "purpose": "규격 하나, 봇 둘. 수집 봇이 자료를 모으고 편집 봇이 그 클립만 자릅니다. 이 책상은 사이트를 긁지 않습니다.",
+    "purpose": "규격 하나, 봇 둘. 수집 봇이 자료를 모으고 편집 봇이 그 클립만 자릅니다. 이 앱은 사이트를 긁지 않습니다.",
     "collector": {
       "door": "collector",
       "outbox": "local_studio/workspace/handoff-outbox/collector/{edit_spec_id}/",
@@ -97,7 +97,7 @@
         "caption": "Instagram 캡션, 최대 2200자",
         "edit_spec_id": "운영자 규격을 이행할 때 필수 — 받은 글에 있는 id를 그대로 넣습니다",
         "door": "필수: editor 또는 collector. grok와 agent는 별칭으로 받습니다. 인박스 폴더와 규격과 같아야 합니다",
-        "created_by": "이 데스크가 보낸 사람을 구분하는 이름. 체크인한 봇 이름, 또는 운영자가 적은 이름. Grok이나 Claude로 단정하지 마세요.",
+        "created_by": "이 화면이 보낸 사람을 구분하는 이름. 체크인한 봇 이름, 또는 운영자가 적은 이름. Grok이나 Claude로 단정하지 마세요.",
         "handoff_auto_upload_requested": "불리언, 선택 사항 — 아래 auto_upload_policy 참고"
       },
       "jobs": [
@@ -106,7 +106,7 @@
       ],
       "artifacts": []
     },
-    "media_file": "봇이 실제 영상 파일을 넣어야 합니다. 운영자는 원본을 주지 않습니다. 폴더 맨 위에 source.mp4처럼 마지막 이름만 둡니다. B-roll은 같은 폴더에 두고 timeline.assets[].path에 적습니다.",
+    "media_file": "봇이 실제 영상 파일을 넣어야 합니다. 운영자는 원본을 주지 않습니다. 폴더 맨 위에 source.mp4처럼 마지막 이름만 둡니다. 추가 클립은 같은 폴더에 두고 timeline.assets[].path에 적습니다.",
     "rule": "새 작업을 요청하려면 job의 'status' 필드를 아예 생략하세요 — 그러면 새로 만들어져 queued+approved 상태가 됩니다. 과거 이력을 재현하려는 의도가 아니라면 'status'를 succeeded/failed로 설정하지 마세요."
   },
   "auto_upload_policy": {

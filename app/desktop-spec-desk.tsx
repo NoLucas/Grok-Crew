@@ -449,7 +449,7 @@ export function SpecDesk({
       <div className="desktop-spec-hero">
         <span>✦</span>
         <h1>{t('스타일을 고르면 규격이 채워집니다', 'Pick a style. The spec fills in.', '选风格，规格会填好。', 'スタイルを選ぶと仕様が埋まる。')}</h1>
-        <p>{t('인스타·틱톡·유튜브 레시피를 고르고, 화면은 내 파일인지 수집인지 정하세요. 역할 이름은 수집 Agent / 편집 Agent입니다. 이 책상은 사이트를 긁지 않습니다.', 'Choose Instagram, TikTok, or YouTube, then say whether the pictures are yours or collected. Role names are Collector Agent and Editor Agent. This desk does not scrape sites.', '先选 Instagram、TikTok 或 YouTube，再决定画面从哪来。角色名是收集 Agent / 剪辑 Agent。这个工作台不抓网站。', 'Instagram・TikTok・YouTube のレシピを選び、画面の出どころを決める。役割名は収集 Agent / 編集 Agent。このデスクはサイトを掻かない。')}</p>
+        <p>{t('인스타·틱톡·유튜브 레시피를 고르고, 화면은 내 파일인지 수집인지 정하세요. 역할 이름은 수집 Agent / 편집 Agent입니다. 이 앱은 사이트를 긁지 않습니다.', 'Choose Instagram, TikTok, or YouTube, then say whether the pictures are yours or collected. Role names are Collector Agent and Editor Agent. This app does not scrape sites.', '先选 Instagram、TikTok 或 YouTube，再决定画面从哪来。角色名是收集 Agent / 剪辑 Agent。这个应用不抓网站。', 'Instagram・TikTok・YouTube のレシピを選び、画面の出どころを決める。役割名は収集 Agent / 編集 Agent。このアプリはサイトを掻かない。')}</p>
       </div>
 
       <form className="desktop-spec-form" onSubmit={(event) => { event.preventDefault(); void saveSpec(); }}>
@@ -495,7 +495,7 @@ export function SpecDesk({
             {([
               ['own', t('내 파일', 'My files', '我的文件', '自分のファイル'), t(`이 컴퓨터의 영상만 ${editorName}이 자릅니다. Collector Agent는 부르지 않습니다.`, `${editorName} cuts files already on this computer. No Collector Agent.`, `${editorName} 只剪这台电脑上的文件。不叫 Collector Agent。`, `このPCの映像だけ ${editorName} が切る。Collector Agent は呼ばない。`)],
               ['collect', t('수집', 'Collect', '收集', '収集'), t('Collector Agent가 쓸 수 있는 출처에서 클립을 모읍니다. 이 PC는 사이트를 긁지 않습니다.', 'Collector Agent gathers allowed clips. This PC does not scrape.', 'Collector Agent 从你能用的来源找片段。这台电脑不抓站。', 'Collector Agent が使える出典から集める。このPCは掻かない。')],
-              ['own_and_collect', t('둘 다', 'Both', '两者', '両方'), t('내 파일이 본편입니다. Collector Agent는 B롤과 커버만 보탭니다.', 'Your files are the A-roll. Collector Agent adds b-roll and covers only.', '你的文件是主画面。Collector Agent 只补 B-roll 和封面。', '自分のファイルが本編。Collector Agent は Bロールとカバーだけ足す。')],
+              ['own_and_collect', t('둘 다', 'Both', '两者', '両方'), t('내 파일이 본편입니다. Collector Agent는 추가 클립과 커버만 보탭니다.', 'Your files are the main cut. Collector Agent adds extra clips and covers only.', '你的文件是主画面。Collector Agent 只补附加片段和封面。', '自分のファイルが本編。Collector Agent は追加クリップとカバーだけ足す。')],
             ] as const).map(([id, label, hint]) => (
               <button
                 key={id}

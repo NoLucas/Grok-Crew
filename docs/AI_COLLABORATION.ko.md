@@ -14,7 +14,7 @@ Cursor가 **제품 봇**으로 붙는 경로(체크인·초대문·편집 인박
 | 사용자 / Maintainer | 요구사항 우선순위, UI 직접 검수, 외부 자격 증명, PR 승인·병합, 태그·릴리스 | 에이전트의 미검증 결과를 자동 병합하지 않음 |
 | Codex / Integration Owner | 스키마·API·IPC 계약, SQLite migration, Electron main/preload, Python sidecar, 렌더·게시, 보안 경계, 통합 테스트, 릴리스 조립 | Claude 작업 브랜치의 사용자 변경을 임의로 덮어쓰지 않음 |
 | Claude Code / Feature Implementer | 작업 패킷에 지정된 UI 동작·컴포넌트·focused test, 재현 절차와 스크린샷 증거 | 허용 목록 밖 수정, 계약의 독자 변경, main 병합·태그·릴리스 |
-| Cursor Cloud Agent | Maintainer가 연 세션에서 지정한 슬라이스(문서, 데스크, 검증). 커밋은 현재 브랜치 | 태그·GitHub Release·PR 병합, OAuth/서명 값 지어내기 |
+| Cursor Cloud Agent | Maintainer가 연 세션에서 지정한 슬라이스(문서, 화면, 검증). 커밋은 현재 브랜치 | 태그·GitHub Release·PR 병합, OAuth/서명 값 지어내기 |
 
 한 PR에는 한 명의 구현 책임자만 둡니다. 다른 에이전트는 같은 파일을 동시에 수정하지 않고
 리뷰 의견 또는 후속 PR로 참여합니다.

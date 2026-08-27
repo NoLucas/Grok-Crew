@@ -2,7 +2,7 @@
 
 The collector never calls this PC. It writes manifest.json plus video files
 under local_studio/workspace/handoff-materials/{spec_id}/, or git materials/{id}/.
-This desk does not scrape websites.
+This app does not scrape websites.
 """
 
 from __future__ import annotations

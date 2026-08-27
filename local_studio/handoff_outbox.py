@@ -73,7 +73,7 @@ def _package(record: dict[str, Any], brief_text: str, *, door: str, agent: str, 
             "Do not connect to 127.0.0.1.",
             "Do not put a finished cut in any inbox.",
             "Only collect sources the operator may use.",
-            "This desk does not scrape login-walled sites for you.",
+            "This app does not scrape login-walled sites for you.",
         ]
     else:
         returned = {

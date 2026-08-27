@@ -1,7 +1,7 @@
 """Named style recipes: platform numbers plus the edit habit behind them.
 
 A recipe is not a door. The same pack goes to the collector (what to find)
-and to Grok (how to cut). This desk does not scrape websites.
+and to Grok (how to cut). This app does not scrape websites.
 """
 
 from __future__ import annotations
@@ -116,7 +116,7 @@ RECIPES: dict[str, dict[str, Any]] = {
         "version": 1,
         "name": {"ko": "유튜브 본편", "en": "YouTube long", "zh": "YouTube 长视频", "ja": "YouTube 本編"},
         "summary": {
-            "ko": "짧은 인트로, 챕터, B롤, 아웃로. 8–12분 가로.",
+            "ko": "짧은 인트로, 챕터, 보조 영상, 아웃로. 8–12분 가로.",
             "en": "Short intro, chapters, b-roll, outro. Landscape, 8–12 minutes.",
             "zh": "短片头、章节、B-roll、片尾。横屏 8–12 分钟。",
             "ja": "短いイントロ、章、Bロール、アウトロ。8–12分の横。",

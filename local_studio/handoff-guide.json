@@ -5,12 +5,12 @@
     "operator": "Write the spec only (title, goal, length, captions, look). Choose one door: editor (folder editor/) or collector / other-agent (folder collector/). Saving puts spec.json in that door's outbox. Do not attach footage.",
     "grok_door": "Editor door. Folder name is editor/. Leftover grok/ folders are still read. Whoever is assigned as editor. Runner pairing is this door only. Do not use collector/.",
     "other_agent_door": "Collector / other-agent door. Folder name is collector/. Leftover agents/ folders are still read. Whoever is assigned as collector, or a non-crew other-agent. Do not use editor/ or Runner pairing.",
-    "bot": "Read spec.json from your door's outbox, find or make the source, edit it, and push a package that includes the video file plus bundle.json with edit_spec_id and project.door. Keep the operator's quality. The operator may change aspect and captions in Setup, and later change pacing, look, b-roll, hook, and audio on the desk."
+    "bot": "Read spec.json from your door's outbox, find or make the source, edit it, and push a package that includes the video file plus bundle.json with edit_spec_id and project.door. Keep the operator's quality. The operator may change aspect and captions in Setup, and later change pacing, look, extra clips, hook, and audio on this screen."
   },
   "operator_locks": {
     "locked": ["quality"],
-    "reason": "Quality was set on the desk. Do not change quality in the cut or render_settings. Aspect and captions can be changed in Setup. Other edit knobs stay open for the operator.",
-    "folder_board": "After you drop a package, the operator opens inputs/handoff/ or handoff-materials/ on the desk. The list sits beside the preview. Right-click chooses preview, enlarge, reveal original, or delete. Do not reuse a deleted file. Remote bots never call 127.0.0.1."
+    "reason": "Quality was set here. Do not change quality in the cut or render_settings. Aspect and captions can be changed in Setup. Other edit knobs stay open for the operator.",
+    "folder_board": "After you drop a package, the operator opens inputs/handoff/ or handoff-materials/ on this screen. The list sits beside the preview. Right-click chooses preview, enlarge, reveal original, or delete. Do not reuse a deleted file. Remote bots never call 127.0.0.1."
   },
   "style_recipes": {
     "purpose": "A named pack fills length, aspect, hook, pacing, captions, look, and collect hints. It is not a door.",
@@ -19,10 +19,10 @@
   "source_modes": {
     "collect": "Collector gathers clips. Both outboxes. Status waiting_for_collector.",
     "own": "Operator files only. Editor outbox only. Status waiting_for_editor.",
-    "own_and_collect": "Operator A-roll plus collector b-roll. Both outboxes. Keep owned clips."
+    "own_and_collect": "Operator main cut plus collector extra clips. Both outboxes. Keep owned clips."
   },
   "crew": {
-    "purpose": "One spec, two bots. The collector gathers source clips. The editor cuts those clips. This desk does not scrape websites.",
+    "purpose": "One spec, two bots. The collector gathers source clips. The editor cuts those clips. This app does not scrape websites.",
     "collector": {
       "door": "collector",
       "outbox": "local_studio/workspace/handoff-outbox/collector/{edit_spec_id}/",
@@ -106,7 +106,7 @@
       ],
       "artifacts": []
     },
-    "media_file": "The bot must include the actual video file. The operator does not provide it. Place it at the folder root using only the final path segment (source.mp4). Extra B-roll files listed on timeline.assets[].path go in the same folder.",
+    "media_file": "The bot must include the actual video file. The operator does not provide it. Place it at the folder root using only the final path segment (source.mp4). Extra clips listed on timeline.assets[].path go in the same folder.",
     "rule": "Omit a job's 'status' field entirely so it is created fresh as queued+approved. Do not set 'status' to succeeded/failed unless you are intentionally replaying history, not requesting new work."
   },
   "auto_upload_policy": {

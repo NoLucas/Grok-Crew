@@ -390,7 +390,7 @@ def _collect_hint_block(spec: dict[str, Any], language: str) -> str:
     if language.startswith("ko"):
         lines = [
             "각 클립에 license를 적으세요: operator, stock, public, unknown.",
-            "로그인 막힌 인스타/틱톡은 긁지 마세요. 이 책상은 스크래퍼가 아닙니다.",
+            "로그인 막힌 인스타/틱톡은 긁지 마세요. 이 앱은 스크래퍼가 아닙니다.",
         ]
         if query:
             lines.insert(0, f"찾아올 것: {query}")
@@ -400,11 +400,11 @@ def _collect_hint_block(spec: dict[str, Any], language: str) -> str:
                 extra += f", 각 {seconds.get('min')}–{seconds.get('max')}초"
             lines.insert(1 if query else 0, extra + ".")
         if source_mode_of(spec) == "own_and_collect":
-            lines.append("운영자가 이미 넣은 owned 클립은 지우지 마세요. B롤·커버만 보태세요.")
+            lines.append("운영자가 이미 넣은 owned 클립은 지우지 마세요. 추가 클립·커버만 보태세요.")
         return "\n".join(lines) + "\n"
     lines = [
         "Write a license on each clip: operator, stock, public, or unknown.",
-        "Do not scrape login-walled Instagram or TikTok. This desk is not a scraper.",
+        "Do not scrape login-walled Instagram or TikTok. This app is not a scraper.",
     ]
     if query:
         lines.insert(0, f"Find: {query}")
@@ -443,12 +443,12 @@ def operator_locks_of(spec: dict[str, Any] | None, quality: str = "balanced") ->
         "reason_ko": (
             f"화질 {quality}만 운영자가 규격에서 정한 값입니다. 봇은 화질을 바꾸지 않습니다. "
             f"화면 비율({aspect})과 자막({'켜짐' if captions else '꺼짐'})은 설정에서 바꿀 수 있습니다. "
-            "템포·룩·B-roll·훅·오디오도 필요할 때 책상에서 바꿉니다."
+            "템포·룩·추가 클립·훅·오디오도 필요할 때 설정에서 바꿉니다."
         ),
         "reason_en": (
             f"Only quality {quality} is locked by the operator. Do not change quality. "
             f"Aspect ({aspect}) and captions ({'on' if captions else 'off'}) can be changed in Setup. "
-            "The operator may also change pacing, look, b-roll, hook, and audio on the desk."
+            "The operator may also change pacing, look, extra clips, hook, and audio in Setup."
         ),
     }
 
@@ -506,12 +506,12 @@ def spec_brief(spec_id: str, role: str | None = None) -> dict[str, Any]:
     locks = operator_locks_of(spec)
     lock_note = (locks["reason_ko"] if language.startswith("ko") else locks["reason_en"]) + "\n"
     folder_note = (
-        "운영자는 책장에서 inputs/handoff/ 와 handoff-materials/ 폴더를 펼칩니다. "
+        "운영자는 화면에서 inputs/handoff/ 와 handoff-materials/ 폴더를 펼칩니다. "
         "오른쪽 클릭으로 미리보기·크게 보기·원본 보기·삭제를 합니다. "
         "삭제한 파일은 더 이상 쓰지 마세요.\n"
         if language.startswith("ko")
         else (
-            "The operator inspects inputs/handoff/ and handoff-materials/ on the desk. "
+            "The operator inspects inputs/handoff/ and handoff-materials/ in the app. "
             "Right-click a file to preview, enlarge, reveal the original, or delete it. "
             "Do not use a file after the operator deleted it.\n"
         )
@@ -539,7 +539,7 @@ def spec_brief(spec_id: str, role: str | None = None) -> dict[str, Any]:
             f"{common}\n"
             f"{collect_hints}"
             f"{attach_line_ko}"
-            f"이 책상은 로그인 벽을 넘는 스크래퍼가 아닙니다.\n"
+            f"이 앱은 로그인 벽을 넘는 스크래퍼가 아닙니다.\n"
             f"규격은 보낼함 local_studio/workspace/handoff-outbox/collector/{record['id']}/ 에 있습니다. "
             f"git이면 outbox/collector/{record['id']}/ 에서 spec.json 을 읽으세요.\n"
             f"클립과 manifest.json 은 local_studio/workspace/handoff-materials/{record['id']}/ 에 두세요. "
@@ -552,7 +552,7 @@ def spec_brief(spec_id: str, role: str | None = None) -> dict[str, Any]:
                 f"{common}\n"
                 f"{collect_hints}"
                 f"{attach_line_en}"
-                f"This desk is not a scraper for login-walled sites.\n"
+                f"This app is not a scraper for login-walled sites.\n"
                 f"This spec is in the outbox at local_studio/workspace/handoff-outbox/collector/{record['id']}/. "
                 f"On git read spec.json under outbox/collector/{record['id']}/.\n"
                 f"Put clips and manifest.json in local_studio/workspace/handoff-materials/{record['id']}/ "
@@ -798,17 +798,17 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
     lang = (language or "ko").strip().lower()
     if lang.startswith("ko"):
         text = (
-            f"이 컴퓨터의 Grok Crew 책상이 켜져 있습니다.\n"
+            f"이 컴퓨터의 Grok Crew가 켜져 있습니다.\n"
             f"제목: {title}\n"
             f"형태: {recipe_name}, 세로, {low}–{high}초.\n"
             f"원본과 첫 컷을 당신이 만듭니다. 운영자는 영상을 주지 않습니다.\n\n"
             f"같은 컴퓨터에서 명령할 수 있으면:\n"
             f"  python grok-crew.py entry --bot-id desk-bot --display-name \"당신의 이름\" --purpose edit_video\n"
             f"  (스크립트는 http://127.0.0.1:7214/downloads/grok-crew.py)\n\n"
-            f"화질은 이 규격 그대로 두세요. 화면비와 자막은 운영자가 설정에서 바꿀 수 있습니다. 템포·룩·B-roll도 나중에 바꿀 수 있습니다.\n"
+            f"화질은 이 규격 그대로 두세요. 화면비와 자막은 운영자가 설정에서 바꿀 수 있습니다. 템포·룩·추가 클립도 나중에 바꿀 수 있습니다.\n"
             f"끝난 패키지는 이 폴더에 둡니다:\n"
             f"  {inbox}\n"
-            f"이 PC 책장에서 그 폴더를 오른쪽 클릭해 미리보기·삭제합니다. 127.0.0.1 말고는 붙지 마세요."
+            f"이 PC 화면에서 그 폴더를 오른쪽 클릭해 미리보기·삭제합니다. 127.0.0.1 말고는 붙지 마세요."
         )
     else:
         text = (
@@ -819,10 +819,10 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
             f"If you can run a command on this computer:\n"
             f"  python grok-crew.py entry --bot-id desk-bot --display-name \"your name\" --purpose edit_video\n"
             f"  (script: http://127.0.0.1:7214/downloads/grok-crew.py)\n\n"
-            f"Keep the spec quality. The operator may change aspect and captions in Setup, and later change pacing, look, and b-roll.\n"
+            f"Keep the spec quality. The operator may change aspect and captions in Setup, and later change pacing, look, and extra clips.\n"
             f"Put the finished package in this folder:\n"
             f"  {inbox}\n"
-            f"The desk right-clicks that folder to preview or delete. Do not connect anywhere except 127.0.0.1."
+            f"The operator right-clicks that folder on this screen to preview or delete. Do not connect anywhere except 127.0.0.1."
         )
     return {
         "schema": "grok-crew.spec-invite/v1",

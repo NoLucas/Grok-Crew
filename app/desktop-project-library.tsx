@@ -344,7 +344,6 @@ export function DesktopProjectLibrary({
           <b>{t('휴지통', 'Trash', '废纸篓', 'ゴミ箱')}</b>
           <span>{trash.length}</span>
         </summary>
-        <p>{t('복원하거나 비우세요. 책상을 연다고 30일 지난 항목이 지워지지는 않습니다.', 'Restore or empty it. Opening the desk does not delete items after 30 days.', '可还原或清空。打开工作台不会自动删除满 30 天的项目。', '復元するか空にしてください。デスクを開いても30日後に自動削除されません。')}</p>
         {expiry.expired || expiry.dueSoon ? (
           <div className="desktop-library-expiry">
             <p>
