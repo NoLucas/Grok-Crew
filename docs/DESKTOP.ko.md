@@ -1,6 +1,6 @@
 # Grok Crew Desktop 개발 프리뷰
 
-이 브랜치는 기존 Local Studio와 CLI를 유지하면서, 사람이 설정과 상태를 중심으로 사용하는 Electron 데스크톱 작업 공간을 추가합니다. 원본·렌더·게시 자격 증명은 로컬에 남고 Runner에는 에셋 ID, 타임코드, 대본, 선택된 장면 썸네일만 암호화해 전달합니다.
+이 브랜치는 기존 Local Studio와 CLI를 유지하면서, 사람이 설정과 상태를 중심으로 사용하는 Electron 데스크톱 작업 공간을 추가합니다. 원본·렌더·게시 자격 증명은 로컬에 남고 Grok 제작기(코드 이름은 runner)에는 에셋 ID, 타임코드, 대본, 선택된 장면 썸네일만 암호화해 전달합니다.
 
 ## 실행
 
@@ -24,20 +24,22 @@ npm run desktop:dist
 
 ## 현재 제공되는 흐름
 
-빈 화면의 기본은 **연결** 메뉴입니다. 다른 PC(Grok Bot·내가 만든 에이전트)가 맨 위이고, 이 PC 체크인·Local Studio·GitHub·Runner도 거기서 합니다. 초록불이 **연결됨**입니다. 봇이 붙거나 **내 파일로 시작**으로 영상을 열면 **자동**이 착지하고 설정·편집·내보내기가 켜집니다. 자동은 오늘 올릴 말 한 칸과 시작 하나, 다섯 단계 램프입니다. 맡겨서 만들기와 내 파일로 시작은 자동 안의 두 모드입니다. 연결 UI는 자동에 다시 그리지 않습니다. 샘플은 **샘플로 화면 보기**로만 엽니다. 복사 글은 클립보드에만 가고, 화면에는 붙이라는 말과 대기만 둡니다. 컷이 오면 자동 탭에 미리보기가 남고 저장을 묻습니다. 레시피·두 봇·고급 도구는 첫 컷이 온 뒤 **더 자세히**에만 있습니다. 연결 확인은 `docs/CURSOR_AGENT.ko.md`. 자동 판단은 `docs/AUTO_TAB.ko.md`.
+빈 화면의 기본은 **연결** 메뉴입니다. 다른 PC(Grok Bot·내가 만든 에이전트)가 맨 위이고, 이 PC 체크인·Local Studio·GitHub·Grok 제작기도 거기서 합니다. 초록불이 **연결됨**입니다. 봇이 붙거나 **내 파일로 시작**으로 영상을 열면 **자동**이 착지하고 설정·편집·내보내기가 켜집니다. 자동은 오늘 올릴 말 한 칸과 시작 하나, 다섯 단계 램프입니다. 맡겨서 만들기와 내 파일로 시작은 자동 안의 두 모드입니다. 연결 UI는 자동에 다시 그리지 않습니다. 샘플은 **샘플로 화면 보기**로만 엽니다. 복사 글은 클립보드에만 가고, 화면에는 붙이라는 말과 대기만 둡니다. 컷이 오면 자동 탭에 미리보기가 남고 저장을 묻습니다. 레시피·두 봇·고급 도구는 첫 컷이 온 뒤 **더 자세히**에만 있습니다. 연결 확인은 `docs/CURSOR_AGENT.ko.md`. 자동 판단은 `docs/AUTO_TAB.ko.md`.
 
 1. 빈 작업 공간이면 제목을 적거나 영상을 놓거나 **샘플로 화면 보기**를 누릅니다. 샘플은 자동으로 열리지 않습니다. `npm run desktop`은 Local Studio용 Python 환경을 먼저 준비합니다.
 2. 콘텐츠 유형, 훅, 속도, 자막, 룩, 음향, FPS, 품질과 플랫폼별 게시 정책을 고릅니다.
 3. 로컬 분석이 장면 썸네일·미디어 정보와 선택적으로 whisper.cpp 단어 대본을 만듭니다.
 4. `Grok으로 제작 시작`이 현재 timeline revision에 고정된 control job을 만듭니다.
-5. Runner 키를 페어링합니다. 앱 안에서 GitHub 브라우저 로그인 또는 access token 로그인을 한 뒤 기존 비공개 clone을 선택하거나 전용 비공개 저장소를 만듭니다. 토큰은 Electron `safeStorage`를 통해 Windows Credential Manager/macOS Keychain으로 암호화됩니다.
+5. Grok 제작기 키를 페어링합니다. 앱 안에서 GitHub 브라우저 로그인 또는 access token 로그인을 한 뒤 기존 비공개 clone을 선택하거나 전용 비공개 저장소를 만듭니다. 토큰은 Electron `safeStorage`를 통해 Windows Credential Manager/macOS Keychain으로 암호화됩니다.
 6. `Grok으로 제작 시작`은 작업을 생성한 뒤 연결된 relay의 `control` 브랜치로 암호화 요청을 자동 전송합니다.
 7. 서명된 결과는 새 불변 timeline revision으로 적용됩니다. stale revision이나 잠금 충돌은 자동 병합하지 않고 Inspector의 충돌 카드에서 폐기하거나 현재 revision으로 다시 요청합니다.
 8. Grok의 `needs_input` 결과는 Inspector 선택 카드로 표시되며, 선택은 같은 control job/Grok 세션의 후속 암호화 요청이 됩니다.
-9. 취소·일시정지는 서명·암호화된 control 명령입니다. Runner는 실행 중 Grok 프로세스를 종료하고 서명된 취소/일시정지 영수증을 반환합니다. 재개·재시도는 attempt와 단조 증가 event sequence를 유지해 오래된 결과가 새 시도를 덮어쓰지 못하게 합니다.
+9. 취소·일시정지는 서명·암호화된 control 명령입니다. Grok 제작기는 실행 중 Grok 프로세스를 종료하고 서명된 취소/일시정지 영수증을 반환합니다. 재개·재시도는 attempt와 단조 증가 event sequence를 유지해 오래된 결과가 새 시도를 덮어쓰지 못하게 합니다.
 10. `자동 편집 + 렌더`는 결과 적용 뒤 로컬 렌더가 끝날 때까지 추적하고 `rendered`, `publish_waiting`, `completed`, `failed` 중 검증된 종결 상태를 저장합니다. 버전 목록에서 어느 revision이든 새 revision으로 복원할 수 있습니다.
 
-## Runner
+## Grok 제작기 (코드 이름은 runner)
+
+화면에 보이는 이름은 **Grok 제작기**다. AWS runner, GitHub Actions runner가 아니다. 글을 붙이는 Grok Bot과도 다르다. 이 프로그램이 Grok Build를 돌려 타임라인 수정을 제안하는 실행기다. 내부 파일·API는 그대로 `runner`다.
 
 Grok Build가 인증된 별도 환경에서:
 
@@ -48,9 +50,9 @@ node runner/grok-crew-runner.mjs run-file --state .runner-state --request reques
 node runner/grok-crew-runner.mjs run-repo --state .runner-state --repo /path/to/private-relay-clone --watch --interval 5
 ```
 
-Runner는 데스크톱 서명을 검증하고 X25519/HKDF/AES-256-GCM으로 요청을 복호화합니다. Grok Build는 streaming JSON, 전용 작업 폴더, 제한된 도구 권한으로 실행되며 전체 자동 승인 플래그를 사용하지 않습니다.
+Grok 제작기는 데스크톱 서명을 검증하고 X25519/HKDF/AES-256-GCM으로 요청을 복호화합니다. Grok Build는 streaming JSON, 전용 작업 폴더, 제한된 도구 권한으로 실행되며 전체 자동 승인 플래그를 사용하지 않습니다.
 
-Git relay는 데스크톱 전용 `control` 브랜치와 `runner/<id>` 브랜치를 사용합니다. `requests/<job>.request.json`과 `controls/<job>.control.json`은 모두 데스크톱이 서명·암호화합니다. Runner는 단계가 바뀔 때 서명된 event를 commit하고 데스크톱은 최대 5초 간격으로 새 event/result를 동기화합니다. 같은 job의 후속 선택은 새 blob hash와 증가한 attempt로 다시 처리되고, 데스크톱은 서명 검증과 sequence 검사를 통과한 새 결과만 한 번 적용합니다.
+Git relay는 데스크톱 전용 `control` 브랜치와 `runner/<id>` 브랜치를 사용합니다. `requests/<job>.request.json`과 `controls/<job>.control.json`은 모두 데스크톱이 서명·암호화합니다. Grok 제작기는 단계가 바뀔 때 서명된 event를 commit하고 데스크톱은 최대 5초 간격으로 새 event/result를 동기화합니다. 같은 job의 후속 선택은 새 blob hash와 증가한 attempt로 다시 처리되고, 데스크톱은 서명 검증과 sequence 검사를 통과한 새 결과만 한 번 적용합니다.
 
 GitHub OAuth 앱을 등록한 배포에서는 Electron 프로세스에 `GROK_CREW_GITHUB_CLIENT_ID`를 제공하면 device flow 버튼이 활성화됩니다. 등록 전 개발 프리뷰에서도 앱 내부 token 입력으로 연결할 수 있으며, 값은 renderer 상태에서 즉시 지우고 OS 보안 저장소에만 보관합니다. 새 저장소 생성은 GitHub REST API와 Git을 사용하므로 GitHub CLI는 필요하지 않습니다. `GROK_CREW_GITHUB_CLIENT_ID`가 있어도 `/api/v2/launch`의 `oauth_apps.ready`는 false입니다. 이 저장소가 앱을 등록했다는 뜻이 아닙니다.
 
@@ -74,7 +76,7 @@ Instagram/TikTok/YouTube/GitHub OAuth 앱과 Apple 서명·notarization은 운�
 - P1 직접 편집·트랙·이력·프록시·키프레임·전환/자막·오디오 믹서·렌더 골든·Electron E2E가 연결되어 있습니다. 프로그램 모니터는 기본으로 540px JPEG 초안 합성을 쓰고, 프록시가 있으면 미리보기에만 사용합니다. `quality=full`과 스코프는 최종 MoviePy 렌더와 같은 경로입니다.
 - P2 고급 편집의 첫 슬라이스도 포함됩니다: 마스크·블렌드·크로마 키, 스피드 램프·트래커 부착·안정화, nested sequence·multicam, LUT/컬러 휠/스코프, EQ·컴프레서, EDL/OTIO 교환과 렌더 큐. After Effects급 합성·플러그인 SDK·실시간 공동 편집은 1.0 범위 밖입니다.
 - P3 안정 1.0 로컬 게이트: 게시 영수증·재시도·중단 정리, `/api/v2/launch`, GitHub 릴리스 알림(설치는 서명 채널이 생길 때까지 외부). Instagram/TikTok/YouTube OAuth 앱과 macOS 서명/notarization은 이 저장소에서 만들지 않습니다.
-- 첫 화면은 로컬 편집이 먼저입니다. 프로젝트를 열면 프로그램 모니터와 타임라인이 열리고, GitHub/Runner 점검은 페어링·진행 중인 작업·직접 열기 전까지 접혀 있습니다.
+- 첫 화면은 로컬 편집이 먼저입니다. 프로젝트를 열면 프로그램 모니터와 타임라인이 열리고, GitHub/Grok 제작기 점검은 페어링·진행 중인 작업·직접 열기 전까지 접혀 있습니다.
 - UI Quality Track UI-01..UI-10: 시각 계층, 8px 간격, 빈/로딩/오류 상태, 포커스 링, 좁은 화면에서 설정·편집·내보내기 탭 유지, 프로젝트/상태 서랍, 스테이지 가독성, 커맨드바·영수증 안내.
 - GitHub 전용 비공개 저장소 생성/기존 clone 선택, 앱 내 token 로그인, 선택적 OAuth device flow와 `control` / `runner/<id>` watcher가 구현되어 있습니다. 공개 OAuth 앱 등록과 macOS 서명/notarization은 외부 자격 증명이 필요한 출시 게이트입니다.
 

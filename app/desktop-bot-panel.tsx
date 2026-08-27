@@ -180,7 +180,7 @@ export function DesktopBotPanel({
       <div className="desktop-spec-hero">
         <span>✦</span>
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('봇·Runner·GitHub 연결은 전부 여기서 합니다. 다른 PC가 맨 위입니다. 설정·편집·내보내기는 봇이 붙은 뒤에 켜집니다.', 'Every bot, Runner, and GitHub link lives here. Other PCs stay at the top. Setup, Edit, and Export turn on after a bot is attached.', '机器人、Runner、GitHub 都在这里连接。另一台电脑在最上面。设置、编辑、导出要等机器人接上后才打开。', 'ボット・Runner・GitHub の接続は全部ここです。別 PC が一番上。設定・編集・書き出しはボットが付いてから開きます。')}</p>
+        <p>{t('봇·Grok 제작기·GitHub 연결은 전부 여기서 합니다. 다른 PC가 맨 위입니다. 설정·편집·내보내기는 봇이 붙은 뒤에 켜집니다.', 'Every bot, Grok builder, and GitHub link lives here. Other PCs stay at the top. Setup, Edit, and Export turn on after a bot is attached.', '机器人、Grok 制作器、GitHub 都在这里连接。另一台电脑在最上面。设置、编辑、导出要等机器人接上后才打开。', 'ボット・Grok 制作機・GitHub の接続は全部ここです。別 PC が一番上。設定・編集・書き出しはボットが付いてから開きます。')}</p>
       </div>
 
       <section className={`desktop-simple-card desktop-connect-summary${connected ? ' is-ready' : ''}`} aria-live="polite">
@@ -360,17 +360,18 @@ export function DesktopBotPanel({
             <li className={services.runnerPaired ? 'is-connected' : ''}>
               <div className="desktop-connect-row">
               <div>
-                <b>Runner</b>
+                <b>{t('Grok 제작기', 'Grok builder', 'Grok 制作器', 'Grok 制作機')}</b>
                 <Lamp
                   on={services.runnerPaired}
                   label={services.runnerPaired
-                    ? t(`연결됨 · ${services.runnerName || 'Runner'}`, `Connected · ${services.runnerName || 'Runner'}`, `已连接 · ${services.runnerName || 'Runner'}`, `接続済み · ${services.runnerName || 'Runner'}`)
+                    ? t(`연결됨 · ${services.runnerName || 'Grok 제작기'}`, `Connected · ${services.runnerName || 'Grok builder'}`, `已连接 · ${services.runnerName || 'Grok 制作器'}`, `接続済み · ${services.runnerName || 'Grok 制作機'}`)
                     : t('아직 아님', 'Not yet', '还没有', 'まだ')}
                 />
+                <span>{t('이 창의 타임라인을 Grok Build가 고칩니다. AWS·GitHub Actions가 아닙니다. 글을 붙이는 Grok Bot과도 다릅니다.', 'Grok Build edits this window’s timeline. Not AWS or GitHub Actions. Different from Grok Bot, the chat you paste into.', '让 Grok Build 改这个窗口的时间线。不是 AWS 或 GitHub Actions。也不是你粘贴文字的 Grok Bot。', 'この窓のタイムラインを Grok Build が直します。AWS・GitHub Actions ではありません。文章を貼る Grok Bot とも違います。')}</span>
               </div>
               {services.desktopApp ? (
                 <div className="desktop-simple-copy-row">
-                  <button type="button" className="desktop-secondary" disabled={services.busy} onClick={services.onPairRunner}>{t('Runner 페어링', 'Pair Runner', '配对 Runner', 'Runner ペアリング')}</button>
+                  <button type="button" className="desktop-secondary" disabled={services.busy} onClick={services.onPairRunner}>{t('제작기 연결', 'Pair the builder', '连接制作器', '制作機を接続')}</button>
                   <button type="button" className="desktop-secondary" disabled={services.busy} onClick={services.onExportDesktopKey}>{t('데스크톱 키', 'Desktop key', '桌面密钥', 'デスクトップ鍵')}</button>
                 </div>
               ) : (

@@ -797,7 +797,7 @@ export default function DesktopWorkspace() {
       await refreshWorkspace(true);
       setMessage(delivered
         ? t('암호화 작업을 control 브랜치로 전송했습니다.', 'Encrypted job sent to the control branch.', '加密任务已发送到 control 分支。', '暗号化ジョブを control ブランチへ送信しました。')
-        : t('작업을 만들었습니다. Runner 페어링과 GitHub relay 연결 후 전송할 수 있습니다.', 'Job created. Pair a Runner and connect the GitHub relay to send it.', '任务已创建。配对 Runner 并连接 GitHub relay 后即可发送。', 'ジョブを作成しました。Runner と GitHub relay を接続すると送信できます。'));
+        : t('작업을 만들었습니다. Grok 제작기와 GitHub relay를 연결한 뒤 전송할 수 있습니다.', 'Job created. Pair the Grok builder and connect the GitHub relay to send it.', '任务已创建。连接 Grok 制作器和 GitHub relay 后即可发送。', 'ジョブを作成しました。Grok 制作機と GitHub relay を接続すると送信できます。'));
     } catch (error) { setMessage(error instanceof Error ? error.message : t('작업을 시작하지 못했습니다.', 'Could not start the job.', '无法启动任务。', 'ジョブを開始できませんでした。')); } finally { setBusy(false); }
   };
 
@@ -1047,7 +1047,7 @@ export default function DesktopWorkspace() {
   };
   const relayAction = async (action: 'pair' | 'desktop' | 'request' | 'result' | 'git-connect' | 'git-push' | 'git-pull') => {
     setRemoteOpen(true);
-    if (!window.grokCrew) { setMessage(t('Runner 연결은 데스크톱 앱에서 사용할 수 있습니다.', 'Runner pairing is available in the desktop app.', 'Runner 配对仅在桌面应用中可用。', 'Runner ペアリングはデスクトップアプリで利用できます。')); return; }
+    if (!window.grokCrew) { setMessage(t('Grok 제작기 연결은 데스크톱 앱에서 사용할 수 있습니다.', 'Grok builder pairing is available in the desktop app.', 'Grok 制作器配对仅在桌面应用中可用。', 'Grok 制作機の接続はデスクトップアプリで利用できます。')); return; }
     try {
       if (action === 'pair') await window.grokCrew.pairRunner();
       else if (action === 'desktop') await window.grokCrew.exportDesktopPairing();
@@ -1057,8 +1057,8 @@ export default function DesktopWorkspace() {
       else if (action === 'git-push' && latestJob) await window.grokCrew.pushGitRequest(latestJob.id);
       else if (action === 'git-pull') await window.grokCrew.pullGitResults();
       await refreshWorkspace(true);
-      setMessage(t('암호화된 Runner 전달 작업을 완료했습니다.', 'Encrypted Runner handoff completed.', '已完成加密的 Runner 交接。', '暗号化された Runner 引き継ぎが完了しました。'));
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Runner relay failed.'); }
+      setMessage(t('암호화된 제작기 전달을 마쳤습니다.', 'Encrypted builder handoff completed.', '已完成加密的制作器交接。', '暗号化された制作機の引き継ぎが完了しました。'));
+    } catch (error) { setMessage(error instanceof Error ? error.message : t('제작기 전달에 실패했습니다.', 'Builder relay failed.', '制作器交接失败。', '制作機の引き継ぎに失敗しました。')); }
   };
   const loginGitHub = async (mode: 'device' | 'token') => {
     if (!window.grokCrew) return;
@@ -1088,7 +1088,7 @@ export default function DesktopWorkspace() {
           : t(`작업을 ${command}했습니다.`, `Job ${command} sent.`, `已${command}任务。`, `ジョブを ${command} しました。`));
       }
       await refreshWorkspace(true);
-    } catch (error) { setMessage(error instanceof Error ? error.message : `Could not ${command} the Runner job.`); }
+    } catch (error) { setMessage(error instanceof Error ? error.message : t(`제작기 작업을 ${command}하지 못했습니다.`, `Could not ${command} the builder job.`, `无法对制作器任务执行 ${command}。`, `制作機ジョブを ${command} できませんでした。`)); }
     finally { setBusy(false); }
   };
   const cancelUnclaimedJobs = async () => {
@@ -1101,10 +1101,10 @@ export default function DesktopWorkspace() {
       }) as { count?: number };
       await refreshWorkspace(true);
       setMessage(t(
-        `대기 중이던 편집 Agent 작업 ${result.count ?? unclaimedJobs.length}개를 취소했습니다. Runner 없이 남아 있던 항목입니다.`,
-        `Cancelled ${result.count ?? unclaimedJobs.length} waiting Editor Agent job(s) that never reached a Runner.`,
-        `已取消 ${result.count ?? unclaimedJobs.length} 个未到达 Runner 的等待任务。`,
-        `Runner に届いていなかった待機ジョブ ${result.count ?? unclaimedJobs.length} 件をキャンセルしました。`,
+        `대기 중이던 편집 Agent 작업 ${result.count ?? unclaimedJobs.length}개를 취소했습니다. Grok 제작기 없이 남아 있던 항목입니다.`,
+        `Cancelled ${result.count ?? unclaimedJobs.length} waiting Editor Agent job(s) that never reached a Grok builder.`,
+        `已取消 ${result.count ?? unclaimedJobs.length} 个未到达 Grok 制作器的等待任务。`,
+        `Grok 制作機に届いていなかった待機ジョブ ${result.count ?? unclaimedJobs.length} 件をキャンセルしました。`,
       ));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : t('작업을 취소하지 못했습니다.', 'Could not cancel the jobs.', '无法取消任务。', 'ジョブをキャンセルできませんでした。'));
@@ -1602,7 +1602,7 @@ export default function DesktopWorkspace() {
             {inputRequest && <div className="desktop-input-request"><b>{inputRequest.question}</b>{inputRequest.options.map((option) => <button key={option.value} disabled={busy} onClick={() => void answerRunnerInput(option.value)}><span>{option.label}</span>{option.description && <small>{option.description}</small>}</button>)}</div>}
             {latestJob?.status === 'conflict' && latestJob.conflict_json && <div className="desktop-conflict-card"><b>{t('타임라인 충돌 검토', 'Timeline conflict review', '时间线冲突审核', 'タイムライン競合レビュー')}</b><p>{t(`편집 Agent 기준 v${latestJob.conflict_json.expected_revision}, 현재 v${latestJob.conflict_json.current_revision}`, `Editor Agent used v${latestJob.conflict_json.expected_revision}; current timeline is v${latestJob.conflict_json.current_revision}.`, `剪辑 Agent 基于 v${latestJob.conflict_json.expected_revision}，当前为 v${latestJob.conflict_json.current_revision}`, `編集 Agent は v${latestJob.conflict_json.expected_revision}、現在は v${latestJob.conflict_json.current_revision} です。`)}</p><small>{latestJob.conflict_json.reason}</small><div><button disabled={busy} onClick={() => void resolveConflict('retry_current')}>{t('현재 버전으로 다시 요청', 'Retry current revision', '基于当前版本重试', '現在版で再試行')}</button><button disabled={busy} onClick={() => void resolveConflict('discard')}>{t('편집안 폐기', 'Discard proposal', '放弃方案', '提案を破棄')}</button></div></div>}
             <div className="desktop-github-card"><div><b>GitHub</b><span className={github.authenticated ? 'ok' : ''}>{github.authenticated ? `✓ ${github.login}` : t('로그인 필요', 'Login required', '需要登录', 'ログインが必要')}</span></div><small>{github.relay_connected ? github.remote : t('비공개 relay 저장소가 연결되지 않았습니다.', 'No private relay repository connected.', '尚未连接私有 relay 仓库。', '非公開 relay リポジトリ未接続。')}</small>{!github.authenticated && <><button disabled={busy || !github.oauth_available} onClick={() => void loginGitHub('device')}>{t('브라우저로 GitHub 로그인', 'GitHub browser login', '通过浏览器登录 GitHub', 'ブラウザで GitHub ログイン')}</button><div className="desktop-token-login"><input type="password" autoComplete="off" value={githubToken} onChange={(event) => setGithubToken(event.target.value)} placeholder={t('또는 GitHub 토큰', 'Or GitHub token', '或 GitHub 令牌', 'または GitHub トークン')} /><button disabled={busy || githubToken.length < 20} onClick={() => void loginGitHub('token')}>{t('토큰 연결', 'Connect token', '连接令牌', 'トークン接続')}</button></div></>}</div>
-            <div className="desktop-relay-actions"><button onClick={() => void relayAction('pair')}>{t('Runner 페어링', 'Pair Runner', '配对 Runner', 'Runner ペアリング')}</button><button onClick={() => void relayAction('desktop')}>{t('데스크톱 키 내보내기', 'Export desktop key', '导出桌面密钥', 'デスクトップ鍵を書き出す')}</button><button onClick={() => void relayAction('git-connect')}>{github.relay_connected ? t('relay 저장소 변경', 'Change relay repo', '更改 relay 仓库', 'relay を変更') : t('GitHub relay 연결', 'Connect GitHub relay', '连接 GitHub relay', 'GitHub relay 接続')}</button>{latestJob && <button onClick={() => void relayAction('git-push')}>{t('작업 다시 전송', 'Resend job', '重新发送任务', 'ジョブ再送信')}</button>}<button onClick={() => void relayAction('git-pull')}>{t('지금 동기화', 'Sync now', '立即同步', '今すぐ同期')}</button><button onClick={() => void relayAction('request')}>{t('오프라인 요청 내보내기', 'Export offline request', '导出离线请求', 'オフライン要求を書き出す')}</button><button onClick={() => void relayAction('result')}>{t('오프라인 결과 가져오기', 'Import offline result', '导入离线结果', 'オフライン結果を読み込む')}</button></div>
+            <div className="desktop-relay-actions"><button onClick={() => void relayAction('pair')}>{t('제작기 연결', 'Pair the builder', '连接制作器', '制作機を接続')}</button><button onClick={() => void relayAction('desktop')}>{t('데스크톱 키 내보내기', 'Export desktop key', '导出桌面密钥', 'デスクトップ鍵を書き出す')}</button><button onClick={() => void relayAction('git-connect')}>{github.relay_connected ? t('relay 저장소 변경', 'Change relay repo', '更改 relay 仓库', 'relay を変更') : t('GitHub relay 연결', 'Connect GitHub relay', '连接 GitHub relay', 'GitHub relay 接続')}</button>{latestJob && <button onClick={() => void relayAction('git-push')}>{t('작업 다시 전송', 'Resend job', '重新发送任务', 'ジョブ再送信')}</button>}<button onClick={() => void relayAction('git-pull')}>{t('지금 동기화', 'Sync now', '立即同步', '今すぐ同期')}</button><button onClick={() => void relayAction('request')}>{t('오프라인 요청 내보내기', 'Export offline request', '导出离线请求', 'オフライン要求を書き出す')}</button><button onClick={() => void relayAction('result')}>{t('오프라인 결과 가져오기', 'Import offline result', '导入离线结果', 'オフライン結果を読み込む')}</button></div>
             {latestJob && !['completed', 'cancelled', 'failed', 'conflict', 'paused', 'pause_requested'].includes(latestJob.status) && <div className="desktop-control-actions"><button disabled={busy} onClick={() => void controlRunnerJob('pause')}>{t('일시정지', 'Pause', '暂停', '一時停止')}</button><button className="desktop-danger" disabled={busy} onClick={() => void controlRunnerJob('cancel')}>{t('작업 취소', 'Cancel job', '取消任务', 'ジョブをキャンセル')}</button></div>}
             {latestJob && ['paused', 'pause_requested'].includes(latestJob.status) && <div className="desktop-control-actions"><button disabled={busy} onClick={() => void controlRunnerJob('resume')}>{t('같은 세션 재개', 'Resume session', '恢复会话', 'セッション再開')}</button><button className="desktop-danger" disabled={busy} onClick={() => void controlRunnerJob('cancel')}>{t('작업 취소', 'Cancel job', '取消任务', 'ジョブをキャンセル')}</button></div>}
             {latestJob && ['failed', 'cancelled'].includes(latestJob.status) && <button className="desktop-secondary" disabled={busy} onClick={() => void controlRunnerJob('retry')}>{t('안전하게 재시도', 'Safe retry', '安全重试', '安全に再試行')}</button>}
@@ -1621,19 +1621,19 @@ export default function DesktopWorkspace() {
               </button>
             </div>
             {folds.remote ? (
-              <p>{t('로컬에서 바로 자를 수 있습니다. Runner와 GitHub는 편집 Agent에 넘길 때만 연결하세요.', 'Cut locally first. Connect a Runner and GitHub only when you hand work to Editor Agent.', '可以先在本地剪辑。仅在交给剪辑 Agent 时再连接 Runner 和 GitHub。', 'まずはローカルで切れます。編集 Agent に渡すときだけ Runner と GitHub を接続してください。')}</p>
+              <p>{t('로컬에서 바로 자를 수 있습니다. Grok 제작기와 GitHub는 편집 Agent에 넘길 때만 연결하세요.', 'Cut locally first. Connect a Grok builder and GitHub only when you hand work to Editor Agent.', '可以先在本地剪辑。仅在交给剪辑 Agent 时再连接 Grok 制作器和 GitHub。', 'まずはローカルで切れます。編集 Agent に渡すときだけ Grok 制作機と GitHub を接続してください。')}</p>
             ) : null}
             {unclaimedJobs.length ? (
               <div className="desktop-unclaimed-jobs">
                 <b>{t(`대기 중인 편집 Agent 작업 ${unclaimedJobs.length}개`, `${unclaimedJobs.length} waiting Editor Agent job(s)`, `${unclaimedJobs.length} 个等待中的剪辑 Agent 任务`, `待機中の編集 Agent ジョブ ${unclaimedJobs.length} 件`)}</b>
-                <p>{t('Runner가 없어 전송되지 않았습니다. 로컬 편집을 가리려면 취소하세요.', 'No Runner picked these up. Cancel them to keep this screen clear.', '没有 Runner 接收这些任务。取消后可保持本地编辑界面清爽。', 'Runner が受け取っていません。キャンセルするとローカル編集のままです。')}</p>
+                <p>{t('Grok 제작기가 없어 전송되지 않았습니다. 로컬 편집을 가리려면 취소하세요.', 'No Grok builder picked these up. Cancel them to keep this screen clear.', '没有 Grok 制作器接收这些任务。取消后可保持本地编辑界面清爽。', 'Grok 制作機が受け取っていません。キャンセルするとローカル編集のままです。')}</p>
                 <div className="desktop-unclaimed-actions">
                   <button type="button" className="desktop-danger" disabled={busy} onClick={() => void cancelUnclaimedJobs()}>{t('대기 작업 취소', 'Cancel waiting jobs', '取消等待任务', '待機ジョブをキャンセル')}</button>
-                  <button type="button" className="desktop-secondary" onClick={() => setRemoteOpen(true)}>{t('Runner·GitHub 열기', 'Open Runner & GitHub', '打开 Runner 和 GitHub', 'Runner と GitHub を開く')}</button>
+                  <button type="button" className="desktop-secondary" onClick={() => setRemoteOpen(true)}>{t('제작기·GitHub 열기', 'Open builder & GitHub', '打开制作器和 GitHub', '制作機と GitHub を開く')}</button>
                 </div>
               </div>
             ) : (
-              <button type="button" className="desktop-secondary" onClick={() => setRemoteOpen(true)}>{t('Runner·GitHub 열기', 'Open Runner & GitHub', '打开 Runner 和 GitHub', 'Runner と GitHub を開く')}</button>
+              <button type="button" className="desktop-secondary" onClick={() => setRemoteOpen(true)}>{t('제작기·GitHub 열기', 'Open builder & GitHub', '打开制作器和 GitHub', '制作機と GitHub を開く')}</button>
             )}
           </section>
           )}

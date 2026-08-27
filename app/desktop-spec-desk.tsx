@@ -651,7 +651,7 @@ export function SpecDesk({
             <span>{editorName}</span>
             <div>
               <b>{t(`${editorName} · 그 자료만 편집합니다`, `${editorName} edits those clips only`, `${editorName} 只剪那些素材`, `${editorName} はその素材だけ編集する`)}</b>
-              <small>{activeRecipe ? localized(activeRecipe.name, language, activeRecipe.id) : t('레시피 없음', 'No recipe', '无风格', 'レシピなし')} · {specMode(active || { id: '', status: '', title: '', goal: '' }) === 'own' ? t('자료함의 내 파일을 자릅니다.', 'Cuts your files in the materials box.', '剪资料箱里你的文件。', '素材箱の自分のファイルを切る。') : t('자료함의 클립을 잘라 인박스로 돌려줍니다. Runner 페어링도 이 역할입니다.', 'Cuts the materials-box clips and returns them to the inbox. Runner pairing is this role only.', '剪资料箱里的片段并交回收件箱。Runner 配对也只用这个角色。', '素材箱のクリップを切って受信箱に返す。Runner ペアリングもこの役割だけ。')}</small>
+              <small>{activeRecipe ? localized(activeRecipe.name, language, activeRecipe.id) : t('레시피 없음', 'No recipe', '无风格', 'レシピなし')} · {specMode(active || { id: '', status: '', title: '', goal: '' }) === 'own' ? t('자료함의 내 파일을 자릅니다.', 'Cuts your files in the materials box.', '剪资料箱里你的文件。', '素材箱の自分のファイルを切る。') : t('자료함의 클립을 잘라 인박스로 돌려줍니다. Grok 제작기 연결도 이 역할입니다.', 'Cuts the materials-box clips and returns them to the inbox. Grok builder pairing is this role only.', '剪资料箱里的片段并交回收件箱。Grok 制作器也只用这个角色。', '素材箱のクリップを切って受信箱に返す。Grok 制作機の接続もこの役割だけ。')}</small>
             </div>
           </div>
           {editBrief ? <textarea readOnly value={editBrief} rows={7} /> : null}

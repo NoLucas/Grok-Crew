@@ -1,6 +1,8 @@
 # Grok Crew Runner
 
-The Runner is installed on the machine where Grok Build is authenticated. It never receives source video or a desktop filesystem path. Its request contains an encrypted editing package made from asset IDs, timecodes, transcript text, and selected thumbnails.
+On the desk this is labeled **Grok 제작기** / Grok builder. It is not an AWS runner or a GitHub Actions runner, and it is not the Grok Bot chat window.
+
+The builder is installed on the machine where Grok Build is authenticated. It never receives source video or a desktop filesystem path. Its request contains an encrypted editing package made from asset IDs, timecodes, transcript text, and selected thumbnails.
 
 ```sh
 node runner/grok-crew-runner.mjs init --state .runner-state --runner-id studio-runner --name "Studio Runner"
