@@ -90,7 +90,13 @@ from project_library import (
     trash_project,
     undelete_project_folder,
 )
-from handoff_inbox import handoff_status, pull_handoff
+from handoff_inbox import (
+    MAX_MEDIA_BYTES,
+    accept_dropped_cut,
+    accept_uploaded_cut,
+    handoff_status,
+    pull_handoff,
+)
 from handoff_materials import materials_status, pull_materials, write_owned_materials
 from style_recipes import list_recipes
 from handoff_outbox import outbox_status, push_handoff_outbox
@@ -261,7 +267,7 @@ class StudioHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Filename")
         self.end_headers()
 
     def do_GET(self) -> None:  # noqa: N802
@@ -451,7 +457,23 @@ class StudioHandler(BaseHTTPRequestHandler):
         if not self._token_ok():
             self._json(401, {"error": "Invalid local studio token."}); return
         try:
-            path = urlparse(self.path).path.rstrip("/"); body = self._body()
+            parsed = urlparse(self.path)
+            path = parsed.path.rstrip("/")
+            if path == "/api/v2/handoff/accept-file":
+                query = parse_qs(parsed.query)
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > MAX_MEDIA_BYTES:
+                    raise ValueError("파일이 너무 큽니다.")
+                raw = self.rfile.read(length)
+                filename = Path(self.headers.get("X-Filename") or "cut.mp4").name
+                self._json(200, accept_uploaded_cut(
+                    filename,
+                    raw,
+                    door=str((query.get("door") or ["editor"])[0] or "editor"),
+                    edit_spec_id=str((query.get("edit_spec_id") or [""])[0] or "") or None,
+                ))
+                return
+            body = self._body()
             if path == "/api/projects":
                 self._json(201, {"project": new_project(body)})
             elif path == "/api/v2/projects":
@@ -463,6 +485,12 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(201, {"edit_spec": create_spec(body)})
             elif path == "/api/v2/handoff/pull":
                 self._json(200, pull_handoff(body))
+            elif path == "/api/v2/handoff/accept-drop":
+                self._json(200, accept_dropped_cut(
+                    str(body.get("path") or ""),
+                    door=str(body.get("door") or "editor"),
+                    edit_spec_id=str(body.get("edit_spec_id") or "") or None,
+                ))
             elif path == "/api/v2/handoff/outbox/push":
                 self._json(200, push_handoff_outbox(body))
             elif path == "/api/v2/handoff/materials/pull":

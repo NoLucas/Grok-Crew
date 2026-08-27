@@ -317,6 +317,155 @@ def _pull_local_inbox_locked(
     }
 
 
+def _utc_stamp() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
+
+
+def _safe_stem(value: str) -> str:
+    cleaned = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in (value or ""))
+    return (cleaned.strip("-")[:24] or "cut")
+
+
+def _resolve_drop_path(path: str) -> Path:
+    text = str(path or "").strip()
+    if not text or "\x00" in text:
+        raise ValueError("파일이 없습니다.")
+    raw = Path(text).expanduser()
+    workspace = config.WORKSPACE_DIR.resolve()
+    if not raw.is_absolute():
+        if ".." in raw.parts:
+            raise ValueError("이 작업 공간 밖의 상대 경로는 쓸 수 없습니다.")
+        resolved = (workspace / raw).resolve()
+        if resolved != workspace and workspace not in resolved.parents:
+            raise ValueError("이 작업 공간 안의 파일만 고를 수 있습니다.")
+        return resolved
+    try:
+        return raw.resolve()
+    except OSError as exc:
+        raise ValueError("경로를 열 수 없습니다.") from exc
+
+
+def _write_cut_package(
+    media: Path,
+    *,
+    door: str,
+    edit_spec_id: str | None,
+    title: str,
+) -> dict[str, Any]:
+    resolved_door = normalize_door(door, required=True)
+    agent = normalize_agent(None, resolved_door)
+    spec_id = str(edit_spec_id or "").strip() or None
+    if spec_id:
+        record = get_spec(spec_id)
+        if record:
+            title = str(record.get("title") or title)
+            spec = record.get("spec") if isinstance(record.get("spec"), dict) else {}
+            resolved_door = normalize_door(record.get("door") or spec.get("door") or resolved_door)
+            agent = normalize_agent(record.get("agent") or spec.get("agent"), resolved_door)
+    folder = door_inbox_dir(resolved_door) / f"drop-{_safe_stem(media.stem)}-{_utc_stamp()}"
+    folder.mkdir(parents=True, exist_ok=False)
+    media_name = media.name
+    shutil.copy2(media, folder / media_name)
+    bundle = {
+        "schema": BUNDLE_SCHEMA,
+        "project": {
+            "title": title or media.stem,
+            "source_path": f"inputs/handoff/{folder.name}/{media_name}",
+            "output_path": f"outputs/handoff/{folder.name}.mp4",
+            "timeline": {"clips": [{"in": 0, "out": 10, "keep": True, "caption": ""}]},
+            "caption": "",
+            "edit_spec_id": spec_id or "",
+            "door": resolved_door,
+            "created_by": agent,
+            "agent": agent,
+        },
+        "jobs": [{"kind": "render", "approved": True, "payload": {}}],
+        "artifacts": [],
+    }
+    (folder / "bundle.json").write_text(json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {
+        "kind": "media",
+        "folder": folder.name,
+        "path": str(folder),
+        "edit_spec_id": spec_id,
+        "door": resolved_door,
+        "agent": agent,
+        "inbox_dir": str(door_inbox_dir(resolved_door)),
+    }
+
+
+def accept_dropped_cut(
+    path: str,
+    *,
+    door: str = EDITOR_DOOR,
+    edit_spec_id: str | None = None,
+) -> dict[str, Any]:
+    """Accept a finished cut dropped from another PC. The person never types a path."""
+    resolved = _resolve_drop_path(path)
+    if not resolved.exists():
+        raise ValueError("파일이 없습니다.")
+    inbox = door_inbox_dir(door)
+    inbox_resolved = inbox.resolve()
+    if resolved == inbox_resolved or resolved == local_inbox_dir().resolve():
+        raise ValueError("받을함 전체를 놓을 수는 없습니다.")
+    if resolved.is_dir():
+        if not (resolved / "bundle.json").is_file():
+            raise ValueError("완성 폴더에는 bundle.json이 있어야 합니다.")
+        if resolved.parent == inbox_resolved:
+            return {
+                "kind": "package",
+                "folder": resolved.name,
+                "path": str(resolved),
+                "door": normalize_door(door, required=True),
+                "already_in_inbox": True,
+                "inbox_dir": str(inbox_resolved),
+            }
+        dest = inbox / resolved.name
+        if dest.exists():
+            dest = inbox / f"{resolved.name}-{_utc_stamp()}"
+        shutil.copytree(resolved, dest)
+        return {
+            "kind": "package",
+            "folder": dest.name,
+            "path": str(dest),
+            "door": normalize_door(door, required=True),
+            "already_in_inbox": False,
+            "inbox_dir": str(inbox_resolved),
+        }
+    suffix = resolved.suffix.lower()
+    if suffix not in ALLOWED_MEDIA_EXTENSIONS and suffix != ".m4v":
+        raise ValueError("영상 파일이나 완성 폴더만 놓을 수 있습니다.")
+    if not resolved.is_file():
+        raise ValueError("파일이 없습니다.")
+    size = resolved.stat().st_size
+    if size > MAX_MEDIA_BYTES:
+        raise ValueError(f"파일이 {size}바이트로 너무 큽니다.")
+    title = resolved.stem
+    return _write_cut_package(resolved, door=door, edit_spec_id=edit_spec_id, title=title)
+
+
+def accept_uploaded_cut(
+    filename: str,
+    data: bytes,
+    *,
+    door: str = EDITOR_DOOR,
+    edit_spec_id: str | None = None,
+) -> dict[str, Any]:
+    name = Path(filename or "cut.mp4").name
+    suffix = Path(name).suffix.lower()
+    if suffix not in ALLOWED_MEDIA_EXTENSIONS and suffix != ".m4v":
+        raise ValueError("영상 파일만 놓을 수 있습니다.")
+    if len(data) > MAX_MEDIA_BYTES:
+        raise ValueError("파일이 너무 큽니다.")
+    staging = (config.WORKSPACE_DIR / "tmp-drops").resolve()
+    staging.mkdir(parents=True, exist_ok=True)
+    dest = staging / name
+    if dest.exists():
+        dest = staging / f"{dest.stem}-{_utc_stamp()}{dest.suffix}"
+    dest.write_bytes(data)
+    return accept_dropped_cut(str(dest), door=door, edit_spec_id=edit_spec_id)
+
+
 def write_demo_package(spec_id: str | None = None, door: str | None = None) -> dict[str, Any]:
     """Build a local inbox package from the bundled sample, as if a bot sent it."""
     from first_run import find_bundled_sample, provision_sample_media, sample_manifest

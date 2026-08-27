@@ -31,6 +31,15 @@ import { statusNoteOpen, useDesktopNoteFolds } from './desktop-note-folds';
 import { DesktopEditPresetControls } from './desktop-edit-presets-controls';
 import { DesktopProjectLibrary } from './desktop-project-library';
 import { setToolsDayTheme } from './tools-day';
+import {
+  clearDeskWait,
+  markFirstCutArrived,
+  readDeskWait,
+  readFirstCutArrived,
+  writeDeskWait,
+  type DeskPullStatus,
+  type DeskWaitState,
+} from './desktop-wait-state';
 
 type UpdateStatus = {
   status: string;
@@ -47,6 +56,7 @@ declare global {
       request: (path: string, request?: { method?: string; body?: string | null }) => Promise<unknown>;
       applyTimelinePatch: (projectId: string, patch: TimelinePatch) => Promise<unknown>;
       selectMedia: () => Promise<string | null>;
+      getPathForFile?: (file: File) => string;
       showOutput: (path: string) => Promise<void>;
       appInfo: () => Promise<{ version: string; platform: string; packaged: boolean }>;
       updateStatus?: () => Promise<UpdateStatus>;
@@ -295,12 +305,22 @@ export default function DesktopWorkspace() {
   });
   const [studioState, setStudioState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [drawer, setDrawer] = useState<'none' | 'projects' | 'status'>('none');
+  const [deskWait, setDeskWait] = useState<DeskWaitState | null>(null);
+  const [firstCut, setFirstCut] = useState(false);
+  const [deskPulse, setDeskPulse] = useState<{ lastCheckedAt: string; pull: DeskPullStatus }>({ lastCheckedAt: '', pull: 'idle' });
+  const deskWaitRef = useRef<DeskWaitState | null>(null);
   const syncingRelay = useRef(false);
   const autoProxyKey = useRef('');
   const selectedClipId = selectedClipIds[selectedClipIds.length - 1] ?? '';
 
   useEffect(() => {
     setToolsDayTheme(false);
+  }, []);
+  useEffect(() => {
+    const stored = readDeskWait();
+    deskWaitRef.current = stored;
+    setDeskWait(stored);
+    setFirstCut(readFirstCutArrived());
   }, []);
 
   const api = useCallback(async (path: string, init?: RequestInit): Promise<JsonObject> => {
@@ -315,11 +335,27 @@ export default function DesktopWorkspace() {
     try {
       const next = await api('/api/v2/workspace') as Workspace;
       setWorkspace(next);
-      setSelectedProjectId((current) => current || next.projects[0]?.id || '');
+      setSelectedProjectId((current) => (next.projects.some((item) => item.id === current) ? current : ''));
+      setDeskPulse((current) => ({
+        lastCheckedAt: new Date().toISOString(),
+        pull: current.pull === 'arrived' || current.pull === 'failed'
+          ? current.pull
+          : deskWaitRef.current
+            ? 'none'
+            : current.pull,
+      }));
+      if (next.projects.some((item) => item.handoff_agent || item.handoff_door === 'editor' || item.handoff_door === 'grok')) {
+        markFirstCutArrived();
+        setFirstCut(true);
+      }
       setStudioState('ready');
       if (!quiet) setMessage(t('확인된 최신 상태를 불러왔습니다.', 'Loaded the latest verified state.', '已加载最新确认状态。', '確認済みの最新状態を読み込みました。'));
     } catch (error) {
       setStudioState('error');
+      setDeskPulse((current) => ({
+        lastCheckedAt: new Date().toISOString(),
+        pull: deskWaitRef.current ? 'failed' : current.pull,
+      }));
       if (!quiet) setMessage(error instanceof Error ? `${error.message} — ${t('npm run local을 먼저 실행하세요.', 'Start npm run local first.', '请先运行 npm run local。', '先に npm run local を実行してください。')}` : t('연결할 수 없습니다.', 'Could not connect.', '无法连接。', '接続できません。'));
     }
   }, [api, t]);
@@ -364,7 +400,16 @@ export default function DesktopWorkspace() {
         const imported = Array.isArray(result.imported) ? result.imported as Array<{ project?: { id?: string }; agent?: string }> : [];
         const projectId = imported[0]?.project?.id;
         await refreshWorkspace(true);
-        if (!projectId) return;
+        if (!projectId) {
+          if (deskWaitRef.current) setDeskPulse({ lastCheckedAt: new Date().toISOString(), pull: 'none' });
+          return;
+        }
+        markFirstCutArrived();
+        setFirstCut(true);
+        clearDeskWait();
+        deskWaitRef.current = null;
+        setDeskWait(null);
+        setDeskPulse({ lastCheckedAt: new Date().toISOString(), pull: 'arrived' });
         setSpecDeskOpen(false);
         setAdvancedSpecOpen(false);
         setSelectedProjectId(projectId);
@@ -374,6 +419,7 @@ export default function DesktopWorkspace() {
         setMessage(t(`${name} 쪽에서 넘긴 컷을 열었습니다.`, `Opened the cut from ${name}.`, `已打开 ${name} 交来的剪辑。`, `${name} が渡したカットを開きました。`));
       })
       .catch(() => {
+        setDeskPulse({ lastCheckedAt: new Date().toISOString(), pull: deskWaitRef.current ? 'failed' : 'idle' });
         /* Keep the key unset so the next refresh can retry a failed pull. */
       })
       .finally(() => {
@@ -605,6 +651,8 @@ export default function DesktopWorkspace() {
     setBusy(true);
     try {
       const result = await api('/api/v2/first-run/sample', { method: 'POST' }) as { project: Project; reused?: boolean };
+      setSpecDeskOpen(false);
+      setAdvancedSpecOpen(false);
       setSelectedProjectId(result.project.id);
       setActivePanel('edit');
       setCreateOpen(false);
@@ -1123,7 +1171,7 @@ export default function DesktopWorkspace() {
               {index > 0 && <small>{t('복원', 'Restore', '恢复', '復元')}</small>}
             </button>
           ))}</div>
-          <a className="desktop-legacy" href="/tools" target="_blank" rel="noopener noreferrer">{t('고급 도구', 'Advanced tools', '高级工具', '高度なツール')} ↗</a>
+          {firstCut ? <a className="desktop-legacy" href="/tools" target="_blank" rel="noopener noreferrer">{t('고급 도구', 'Advanced tools', '高级工具', '高度なツール')} ↗</a> : null}
         </aside>
         <div
           className={`desktop-column-handle${columns.dragging === 'sidebar' ? ' is-dragging' : ''}`}
@@ -1186,8 +1234,18 @@ export default function DesktopWorkspace() {
                 busy={busy}
                 studioReady={studioState === 'ready'}
                 sampleAvailable={sampleAvailable}
+                showAdvanced={firstCut}
+                wait={deskWait}
+                lastCheckedAt={deskPulse.lastCheckedAt}
+                pullStatus={deskPulse.pull}
                 onOpenSample={() => { setSpecDeskOpen(false); void openSampleProject(); }}
                 onOpenOwnFootage={() => { setSpecDeskOpen(false); setCreateOpen(true); setDrawer('projects'); }}
+                onCopied={(next) => {
+                  writeDeskWait(next);
+                  deskWaitRef.current = next;
+                  setDeskWait(next);
+                  setDeskPulse({ lastCheckedAt: next.copiedAt, pull: 'none' });
+                }}
                 onPickedFile={(sourcePath) => {
                   const name = sourcePath.split(/[/\\]/).pop() || t('내 파일', 'My file', '我的文件', '自分のファイル');
                   setNewProject((current) => ({ ...current, title: current.title || name.replace(/\.[^.]+$/, ''), source_path: sourcePath }));
@@ -1218,12 +1276,14 @@ export default function DesktopWorkspace() {
                 onRefresh={() => refreshWorkspace(true)}
                 request={api}
               />
-              <HandoffFolderBoard
-                folders={handoffFolders}
-                studioState={studioState}
-                onOpenProject={openHandoffProject}
-                {...folderActions}
-              />
+              {firstCut ? (
+                <HandoffFolderBoard
+                  folders={handoffFolders}
+                  studioState={studioState}
+                  onOpenProject={openHandoffProject}
+                  {...folderActions}
+                />
+              ) : null}
               </div>
             )
           )

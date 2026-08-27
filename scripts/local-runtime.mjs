@@ -1,4 +1,4 @@
-/** Shared first-run bootstrap for `npm run local` and `npm run desktop`. */
+/** Shared bootstrap for `npm run local` and `npm run desktop`. Sample stays behind the button. */
 
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -134,7 +134,6 @@ export async function ensureLocalRuntime({ startStudio = true } = {}) {
       studio.on('error', (error) => console.error(`Local Studio could not start: ${error.message}`));
       await waitForStudio();
     }
-    await openSampleIfEmpty();
   }
 
   return { studio };

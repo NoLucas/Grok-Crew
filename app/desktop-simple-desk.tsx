@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo, useState, type DragEvent } from 'react';
+import { useMemo, useRef, useState, type DragEvent } from 'react';
+import { DesktopInstallHelp } from './desktop-install-help';
 import { useLanguage } from './language';
+import { formatCheckTime, type DeskPullStatus, type DeskWaitState } from './desktop-wait-state';
 
 type StyleRecipe = {
   id: string;
@@ -15,15 +17,21 @@ type SimpleDeskProps = {
   busy: boolean;
   studioReady: boolean;
   sampleAvailable: boolean;
+  showAdvanced: boolean;
+  wait: DeskWaitState | null;
+  lastCheckedAt: string;
+  pullStatus: DeskPullStatus;
   onOpenSample: () => void;
   onOpenOwnFootage: () => void;
   onPickedFile?: (path: string) => void;
   onOpenAdvanced: () => void;
+  onCopied: (wait: DeskWaitState) => void;
   onRefresh: () => Promise<void>;
   request: (path: string, init?: RequestInit) => Promise<JsonObject>;
 };
 
 const RECIPE_ORDER = ['instagram_reel', 'tiktok_tight', 'youtube_short', 'youtube_long'] as const;
+const PASTE_TARGET = 'Cursor';
 
 function localized(map: { ko?: string; en?: string; zh?: string; ja?: string } | undefined, language: string, fallback: string) {
   if (!map) return fallback;
@@ -35,29 +43,59 @@ function studioDownloadBase() {
   return typeof window !== 'undefined' && window.grokCrew?.apiBase ? window.grokCrew.apiBase : 'http://127.0.0.1:7214';
 }
 
+function droppedFilePath(file: File): string {
+  const grok = typeof window !== 'undefined' ? window.grokCrew : undefined;
+  if (grok?.getPathForFile) {
+    try {
+      const value = grok.getPathForFile(file);
+      if (value) return value;
+    } catch {
+      /* fall through to File.path */
+    }
+  }
+  return (file as File & { path?: string }).path || '';
+}
+
+function pullLabel(
+  status: DeskPullStatus,
+  t: (ko: string, en: string, zh: string, ja: string) => string,
+) {
+  if (status === 'arrived') return t('도착함', 'Arrived', '已到达', '到着');
+  if (status === 'failed') return t('실패', 'Failed', '失败', '失敗');
+  if (status === 'none') return t('아직 없음', 'Not yet', '还没有', 'まだない');
+  return t('아직 없음', 'Not yet', '还没有', 'まだない');
+}
+
 export function SimpleDesk({
   recipes = [],
   busy,
   studioReady,
   sampleAvailable,
+  showAdvanced,
+  wait,
+  lastCheckedAt,
+  pullStatus,
   onOpenSample,
   onOpenOwnFootage,
   onPickedFile,
   onOpenAdvanced,
+  onCopied,
   onRefresh,
   request,
 }: SimpleDeskProps) {
   const { language, t } = useLanguage();
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(wait?.title ?? '');
   const [goal, setGoal] = useState('');
   const [recipeId, setRecipeId] = useState('instagram_reel');
   const [saving, setSaving] = useState(false);
+  const [accepting, setAccepting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [clipboardBlocked, setClipboardBlocked] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
   const [inviteText, setInviteText] = useState('');
-  const [dragging, setDragging] = useState(false);
+  const [ownOver, setOwnOver] = useState(false);
+  const [cutOver, setCutOver] = useState(false);
+  const cutInputRef = useRef<HTMLInputElement>(null);
 
   const cards = useMemo(() => {
     const byId = new Map(recipes.map((item) => [item.id, item]));
@@ -65,8 +103,10 @@ export function SimpleDesk({
   }, [recipes]);
 
   const selected = cards.find((item) => item.id === recipeId) || cards[0];
-  const locked = busy || saving || !studioReady;
+  const locked = busy || saving || accepting || !studioReady;
   const titleEmpty = !title.trim();
+  const pasteTarget = wait?.pasteTarget || PASTE_TARGET;
+  const checkedClock = formatCheckTime(lastCheckedAt, language);
 
   const copyInvite = async () => {
     const heading = title.trim();
@@ -76,7 +116,6 @@ export function SimpleDesk({
     }
     setSaving(true);
     setError('');
-    setNotice('');
     setClipboardBlocked(false);
     try {
       const created = await request('/api/v2/edit-specs', {
@@ -96,15 +135,21 @@ export function SimpleDesk({
       const text = String(invite.text || '');
       if (!text) throw new Error(t('초대문을 만들지 못했습니다.', 'Could not make the invite.', '无法生成邀请。', '招待文を作れませんでした。'));
       setInviteText(text);
+      const nextWait: DeskWaitState = {
+        specId: record.id,
+        title: heading,
+        copiedAt: new Date().toISOString(),
+        pasteTarget: PASTE_TARGET,
+      };
       try {
         if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
         await navigator.clipboard.writeText(text);
         setCopied(true);
         window.setTimeout(() => setCopied(false), 4000);
-        setNotice(t('복사했습니다. Cursor든 다른 봇이든 한 창에 붙이세요. 컷이 오면 이 창이 엽니다.', 'Copied. Paste it in Cursor or any other bot. This window opens when the cut arrives.', '已复制。请粘贴到 Cursor 或其他机器人。成片到达后此窗口会打开。', 'コピーしました。Cursor でも他のボットでも一つの窓に貼ってください。カットが届くとこの窓が開きます。'));
+        onCopied(nextWait);
       } catch {
         setClipboardBlocked(true);
-        setNotice(t('아래 글을 직접 복사하세요. 클립보드를 쓰지 못했습니다.', 'Copy the text below. The clipboard was blocked.', '请手动复制下面的文字。无法使用剪贴板。', '下の文を自分でコピーしてください。クリップボードを使えませんでした。'));
+        onCopied(nextWait);
       }
       await onRefresh();
     } catch (caught) {
@@ -114,18 +159,19 @@ export function SimpleDesk({
     }
   };
 
-  const takeDropped = (event: DragEvent<HTMLButtonElement>) => {
+  const takeOwnFile = (event: DragEvent<HTMLButtonElement>) => {
     event.preventDefault();
-    setDragging(false);
-    const file = event.dataTransfer.files?.[0] as (File & { path?: string }) | undefined;
-    if (file?.path && onPickedFile) {
-      onPickedFile(file.path);
+    setOwnOver(false);
+    const file = event.dataTransfer.files?.[0];
+    const path = file ? droppedFilePath(file) : '';
+    if (path && onPickedFile) {
+      onPickedFile(path);
       return;
     }
     onOpenOwnFootage();
   };
 
-  const pickFile = async () => {
+  const pickOwnFile = async () => {
     const picker = typeof window !== 'undefined' ? window.grokCrew?.selectMedia : undefined;
     if (!picker) {
       onOpenOwnFootage();
@@ -136,12 +182,52 @@ export function SimpleDesk({
     else if (picked) onOpenOwnFootage();
   };
 
+  const acceptFinished = async (file: File | undefined) => {
+    if (!file) return;
+    setAccepting(true);
+    setError('');
+    try {
+      const path = droppedFilePath(file);
+      if (path) {
+        await request('/api/v2/handoff/accept-drop', {
+          method: 'POST',
+          body: JSON.stringify({
+            path,
+            door: 'editor',
+            edit_spec_id: wait?.specId || '',
+          }),
+        });
+      } else if (typeof window !== 'undefined' && window.grokCrew) {
+        throw new Error(t('이 창에서 놓으세요. 브라우저에서는 파일 위치를 알 수 없습니다.', 'Drop it in this window. The browser cannot see the file path.', '请放到这个窗口。浏览器看不到文件位置。', 'この窓に置いてください。ブラウザでは場所が分かりません。'));
+      } else {
+        const query = new URLSearchParams({ door: 'editor' });
+        if (wait?.specId) query.set('edit_spec_id', wait.specId);
+        const response = await fetch(`${studioDownloadBase()}/api/v2/handoff/accept-file?${query.toString()}`, {
+          method: 'POST',
+          headers: {
+            'X-Filename': file.name,
+            'Content-Type': 'application/octet-stream',
+          },
+          body: file,
+        });
+        const data = await response.json() as { error?: string };
+        if (!response.ok) throw new Error(String(data.error || t('파일을 받지 못했습니다.', 'Could not take the file.', '无法接收文件。', 'ファイルを受け取れませんでした。')));
+      }
+      await onRefresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t('파일을 받지 못했습니다.', 'Could not take the file.', '无法接收文件。', 'ファイルを受け取れませんでした。'));
+    } finally {
+      setAccepting(false);
+      setCutOver(false);
+    }
+  };
+
   return (
     <div className="desktop-spec-desk desktop-simple-desk">
       <div className="desktop-spec-hero">
         <span>✦</span>
         <h1>{t('제목을 적거나 영상을 놓으세요', 'Write a title or drop a video', '写下标题，或放进视频', 'タイトルを書くか、映像を置く')}</h1>
-        <p>{t('스타일은 인스타 릴입니다. 한 줄을 복사하면 그 봇이 원본과 첫 컷을 만듭니다. 컷이 오면 창이 열립니다.', 'The style is an Instagram Reel. Copy one line. That bot makes the source and the first cut. The window opens when it arrives.', '默认是 Instagram Reel。复制一行，由那个机器人做原片和初剪。成片到达后窗口会打开。', 'スタイルは Instagram リール。一行をコピーすると、そのボットが素材と初回カットを作る。届くと窓が開く。')}</p>
+        <p>{t('맡기기는 제목을 적고 복사한 뒤 기다립니다. 내가 열기는 영상을 놓으면 바로 자릅니다.', 'Hand it off: title, copy, wait. Open it yourself: drop a video and cut.', '交给它：写标题、复制、等待。自己打开：放进视频立刻剪。', '任せる：タイトルを書いてコピーして待つ。自分で開く：映像を置けばすぐ切る。')}</p>
       </div>
 
       {!studioReady ? (
@@ -150,93 +236,158 @@ export function SimpleDesk({
         </p>
       ) : null}
 
-      <form
-        className="desktop-spec-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void copyInvite();
-        }}
-      >
-        <label className="desktop-spec-field">
-          <span>{t('제목', 'Title', '标题', 'タイトル')}</span>
-          <input
-            value={title}
-            onChange={(event) => {
-              setTitle(event.target.value);
-              if (error) setError('');
+      {wait ? (
+        <section className={`desktop-simple-wait is-${pullStatus === 'failed' ? 'failed' : pullStatus === 'arrived' ? 'arrived' : 'busy'}`} role="status">
+          <b>{t('봇이 작업 중 · 창을 끄지 마세요', 'The bot is working · do not close this window', '机器人正在工作 · 不要关掉这个窗口', 'ボットが作業中 · この窓を閉じないでください')}</b>
+          <p>{t(`복사했습니다. ${pasteTarget} 창에 붙이세요. 끝나면 이 창이 열립니다.`, `Copied. Paste it in the ${pasteTarget} window. This window opens when it is done.`, `已复制。请粘贴到 ${pasteTarget} 窗口。完成后此窗口会打开。`, `コピーしました。${pasteTarget} の窓に貼ってください。終わるとこの窓が開きます。`)}</p>
+          <p>
+            {t('마지막 확인', 'Last check', '上次检查', '最後の確認')}
+            {' · '}
+            {checkedClock || t('아직', 'soon', '稍后', 'まもなく')}
+            {' · '}
+            {pullLabel(pullStatus === 'idle' ? 'none' : pullStatus, t)}
+          </p>
+        </section>
+      ) : null}
+
+      <div className="desktop-simple-paths">
+        <section className="desktop-simple-card">
+          <h2>{t('맡기기', 'Hand it off', '交给它', '任せる')}</h2>
+          <p>{t('제목 → 복사 → 기다림', 'Title → copy → wait', '标题 → 复制 → 等待', 'タイトル → コピー → 待ち')}</p>
+          <form
+            className="desktop-spec-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void copyInvite();
             }}
-            placeholder={t('15초 훅 릴', '15s hook Reel', '15秒钩子 Reel', '15秒フックのリール')}
-            aria-invalid={Boolean(error) && titleEmpty}
-            disabled={saving}
-          />
-        </label>
-        <label className="desktop-spec-field desktop-spec-wide">
-          <span>{t('무엇을 말할까', 'What should it say', '要讲什么', '何を言うか')}</span>
-          <textarea
-            value={goal}
-            onChange={(event) => setGoal(event.target.value)}
-            placeholder={t('비워 두면 제목과 같습니다.', 'Leave empty to use the title.', '留空则与标题相同。', '空ならタイトルと同じ。')}
-            rows={3}
-            disabled={saving}
-          />
-        </label>
+          >
+            <label className="desktop-spec-field">
+              <span>{t('제목', 'Title', '标题', 'タイトル')}</span>
+              <input
+                value={title}
+                onChange={(event) => {
+                  setTitle(event.target.value);
+                  if (error) setError('');
+                }}
+                placeholder={t('15초 훅 릴', '15s hook Reel', '15秒钩子 Reel', '15秒フックのリール')}
+                aria-invalid={Boolean(error) && titleEmpty}
+                disabled={saving}
+              />
+            </label>
+            <label className="desktop-spec-field desktop-spec-wide">
+              <span>{t('무엇을 말할까', 'What should it say', '要讲什么', '何を言うか')}</span>
+              <textarea
+                value={goal}
+                onChange={(event) => setGoal(event.target.value)}
+                placeholder={t('비워 두면 제목과 같습니다.', 'Leave empty to use the title.', '留空则与标题相同。', '空ならタイトルと同じ。')}
+                rows={3}
+                disabled={saving}
+              />
+            </label>
 
-        <p className="desktop-spec-meta">
-          {selected
-            ? t(`${localized(selected.name, language, selected.id)} · 다른 스타일은 아래에서`, `${localized(selected.name, language, selected.id)} · more styles below`, `${localized(selected.name, language, selected.id)} · 下面可换风格`, `${localized(selected.name, language, selected.id)} · 他のスタイルは下`)
-            : t('인스타 릴', 'Instagram Reel', 'Instagram Reel', 'Instagram リール')}
-        </p>
+            <p className="desktop-spec-meta">
+              {selected
+                ? t(`${localized(selected.name, language, selected.id)} · 다른 스타일은 아래에서`, `${localized(selected.name, language, selected.id)} · more styles below`, `${localized(selected.name, language, selected.id)} · 下面可换风格`, `${localized(selected.name, language, selected.id)} · 他のスタイルは下`)
+                : t('인스타 릴', 'Instagram Reel', 'Instagram Reel', 'Instagram リール')}
+            </p>
 
-        <details className="desktop-spec-advanced">
-          <summary>{t('다른 스타일', 'Another style', '换风格', '他のスタイル')}</summary>
-          <div className="desktop-spec-recipe-grid">
-            {cards.length ? cards.map((recipe) => (
-              <button
-                key={recipe.id}
-                type="button"
-                className={recipe.id === recipeId ? 'desktop-spec-recipe is-selected' : 'desktop-spec-recipe'}
-                aria-pressed={recipe.id === recipeId}
-                onClick={() => setRecipeId(recipe.id)}
-              >
-                <b>{localized(recipe.name, language, recipe.id)}</b>
+            <details className="desktop-spec-advanced">
+              <summary>{t('다른 스타일', 'Another style', '换风格', '他のスタイル')}</summary>
+              <div className="desktop-spec-recipe-grid">
+                {cards.length ? cards.map((recipe) => (
+                  <button
+                    key={recipe.id}
+                    type="button"
+                    className={recipe.id === recipeId ? 'desktop-spec-recipe is-selected' : 'desktop-spec-recipe'}
+                    aria-pressed={recipe.id === recipeId}
+                    onClick={() => setRecipeId(recipe.id)}
+                  >
+                    <b>{localized(recipe.name, language, recipe.id)}</b>
+                  </button>
+                )) : (
+                  <p className="desktop-spec-meta">{t('스타일 목록을 아직 읽지 못했습니다.', 'Could not load styles yet.', '还没读到风格列表。', 'スタイル一覧をまだ読めません。')}</p>
+                )}
+              </div>
+            </details>
+
+            <div className="desktop-simple-copy-row">
+              <button type="submit" className="desktop-primary" disabled={locked}>
+                {saving
+                  ? t('저장 중…', 'Saving…', '保存中…', '保存中…')
+                  : copied
+                    ? t('복사했습니다', 'Copied', '已复制', 'コピーしました')
+                    : t('봇에게 이 말 복사', 'Copy this for the bot', '复制给机器人', 'ボットにこの文をコピー')}
               </button>
-            )) : (
-              <p className="desktop-spec-meta">{t('스타일 목록을 아직 읽지 못했습니다.', 'Could not load styles yet.', '还没读到风格列表。', 'スタイル一覧をまだ読めません。')}</p>
-            )}
-          </div>
-        </details>
+              <details className="desktop-spec-advanced desktop-simple-no-bot">
+                <summary>{t('아직 봇이 없어요', 'No bot yet', '还没有机器人', 'まだボットがない')}</summary>
+                <p>{t(`같은 PC면 ${PASTE_TARGET} 창에 붙이세요. 끝나면 이 창이 열립니다.`, `On this PC, paste it in the ${PASTE_TARGET} window. This window opens when it is done.`, `同一电脑请粘贴到 ${PASTE_TARGET} 窗口。完成后此窗口会打开。`, `同じ PC なら ${PASTE_TARGET} の窓に貼る。終わるとこの窓が開く。`)}</p>
+                <input
+                  ref={cutInputRef}
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm,.m4v,.mkv"
+                  hidden
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0];
+                    event.currentTarget.value = '';
+                    void acceptFinished(file);
+                  }}
+                />
+                <button
+                  type="button"
+                  className={cutOver ? 'desktop-simple-drop is-over' : 'desktop-simple-drop'}
+                  disabled={locked}
+                  onClick={() => cutInputRef.current?.click()}
+                  onDragEnter={(event) => { event.preventDefault(); setCutOver(true); }}
+                  onDragOver={(event) => { event.preventDefault(); setCutOver(true); }}
+                  onDragLeave={() => setCutOver(false)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    void acceptFinished(event.dataTransfer.files?.[0]);
+                  }}
+                >
+                  <b>{cutOver
+                    ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
+                    : t('완성 파일을 여기 놓기', 'Drop the finished file here', '把完成文件放这里', '完成ファイルをここに置く')}</b>
+                  <span>{t('다른 PC에서 온 컷입니다. 경로는 적지 마세요.', 'A cut from another PC. Do not type a path.', '来自另一台电脑的成片。不要填写路径。', '別の PC からのカット。パスは書かない。')}</span>
+                </button>
+              </details>
+              {!studioReady ? (
+                <button type="button" className="desktop-secondary" onClick={() => void onRefresh()}>
+                  {t('다시 연결', 'Reconnect', '重新连接', '再接続')}
+                </button>
+              ) : null}
+            </div>
+          </form>
 
-        <div className="desktop-spec-actions">
-          <button type="submit" className="desktop-primary" disabled={locked}>
-            {saving
-              ? t('저장 중…', 'Saving…', '保存中…', '保存中…')
-              : copied
-                ? t('복사됨. 봇 창에 붙여 넣으세요', 'Copied. Paste it in the bot.', '已复制。请粘贴到机器人。', 'コピー済み。ボットに貼ってください')
-                : t('봇에게 이 말 복사', 'Copy this for the bot', '复制给机器人', 'ボットにこの文をコピー')}
-          </button>
-          {!studioReady ? (
-            <button type="button" className="desktop-secondary" onClick={() => void onRefresh()}>
-              {t('다시 연결', 'Reconnect', '重新连接', '再接続')}
-            </button>
+          {clipboardBlocked ? (
+            <details className="desktop-spec-advanced desktop-simple-invite" open>
+              <summary>{t('봇이 읽을 글 보기', 'Show the text the bot reads', '查看机器人要读的文字', 'ボットが読む文を見る')}</summary>
+              <p className="desktop-spec-error">{t('아래 글을 직접 복사하세요. 클립보드를 쓰지 못했습니다.', 'Copy the text below. The clipboard was blocked.', '请手动复制下面的文字。无法使用剪贴板。', '下の文を自分でコピーしてください。クリップボードを使えませんでした。')}</p>
+              <textarea value={inviteText} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
+            </details>
           ) : null}
-        </div>
-      </form>
+        </section>
 
-      <button
-        type="button"
-        className={dragging ? 'desktop-simple-drop is-over' : 'desktop-simple-drop'}
-        disabled={locked}
-        onClick={() => void pickFile()}
-        onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
-        onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={takeDropped}
-      >
-        <b>{dragging
-          ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
-          : t('영상을 여기 놓거나 고르기', 'Drop a video here, or pick one', '把视频放这里，或选择', '映像をここに置くか選ぶ')}</b>
-        <span>{t('내 파일이면 봇 없이 타임라인이 열립니다.', 'Your file opens on the timeline. No bot.', '自己的文件会直接打开时间线。不用机器人。', '自分のファイルならボットなしでタイムラインが開く。')}</span>
-      </button>
+        <section className="desktop-simple-card">
+          <h2>{t('내가 열기', 'Open it myself', '自己打开', '自分で開く')}</h2>
+          <p>{t('영상 놓기 → 바로 편집', 'Drop a video → edit now', '放进视频 → 立刻编辑', '映像を置く → すぐ編集')}</p>
+          <button
+            type="button"
+            className={ownOver ? 'desktop-simple-drop is-over' : 'desktop-simple-drop'}
+            disabled={locked}
+            onClick={() => void pickOwnFile()}
+            onDragEnter={(event) => { event.preventDefault(); setOwnOver(true); }}
+            onDragOver={(event) => { event.preventDefault(); setOwnOver(true); }}
+            onDragLeave={() => setOwnOver(false)}
+            onDrop={takeOwnFile}
+          >
+            <b>{ownOver
+              ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
+              : t('영상을 여기 놓거나 고르기', 'Drop a video here, or pick one', '把视频放这里，或选择', '映像をここに置くか選ぶ')}</b>
+            <span>{t('내 파일이면 봇 없이 타임라인이 열립니다.', 'Your file opens on the timeline. No bot.', '自己的文件会直接打开时间线。不用机器人。', '自分のファイルならボットなしでタイムラインが開く。')}</span>
+          </button>
+        </section>
+      </div>
 
       <div className="desktop-empty-actions">
         {sampleAvailable ? (
@@ -244,34 +395,16 @@ export function SimpleDesk({
             {t('샘플로 화면 보기', 'See it with the sample', '用示例查看画面', 'サンプルで画面を見る')}
           </button>
         ) : null}
-        <button type="button" className="desktop-secondary" onClick={onOpenAdvanced}>
-          {t('더 자세히', 'More detail', '更详细', 'もっと詳しく')}
-        </button>
+        {showAdvanced ? (
+          <button type="button" className="desktop-secondary" onClick={onOpenAdvanced}>
+            {t('더 자세히', 'More detail', '更详细', 'もっと詳しく')}
+          </button>
+        ) : null}
       </div>
 
-      {notice ? <p className={clipboardBlocked ? 'desktop-spec-error' : 'desktop-spec-outbox'} role="status">{notice}</p> : null}
       {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
 
-      {inviteText ? (
-        <label className="desktop-spec-field desktop-simple-invite">
-          <span>{t('봇에게 줄 글', 'Text for the bot', '给机器人的文字', 'ボットに渡す文')}</span>
-          <textarea value={inviteText} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
-        </label>
-      ) : null}
-
-      <details className="desktop-spec-advanced">
-        <summary>{t('안 열리면', 'If it will not open', '打不开时', '開かないとき')}</summary>
-        <ol className="desktop-simple-help">
-          <li>{t('받은 파일은 GrokCrew-Windows.exe 하나입니다.', 'The file you received is GrokCrew-Windows.exe.', '你收到的文件是 GrokCrew-Windows.exe。', '受け取ったファイルは GrokCrew-Windows.exe 一つ。')}</li>
-          <li>{t('파란 “Windows의 PC 보호”가 뜨면 추가 정보 → 그래도 실행.', 'If you see “Windows protected your PC”, click More info → Run anyway.', '若出现“Windows 已保护你的电脑”，点“更多信息 → 仍要运行”。', '「Windows によって PC が保護されました」なら 詳細情報 → 実行。')}</li>
-          <li>{t('그래도 안 되면 압축 실행 파일을 풀어 Grok Crew.exe 를 엽니다. 관리자 비밀번호는 필요 없습니다.', 'If it still will not open, unzip the portable file and open Grok Crew.exe. No administrator password.', '还是不行就解压便携包，打开 Grok Crew.exe。不需要管理员密码。', 'まだ開かないなら圧縮ファイルを解いて Grok Crew.exe を開く。管理者パスワードは不要。')}</li>
-        </ol>
-        <p className="desktop-simple-help">
-          <a href={`${studioDownloadBase()}/downloads/grok-crew-bot.zip`}>
-            {t('다른 방법: 봇에게 줄 파일', 'Other: file for the bot', '其他：给机器人的文件', '別の方法：ボット用ファイル')}
-          </a>
-        </p>
-      </details>
+      <DesktopInstallHelp />
     </div>
   );
 }

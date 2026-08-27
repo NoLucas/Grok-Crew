@@ -2,7 +2,7 @@
 
 // Electron's sandbox loader requires CommonJS for preload scripts.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const runtimeArgument = process.argv.find((value) => value.startsWith('--grok-crew-runtime='));
 const encodedRuntime = runtimeArgument ? runtimeArgument.split('=', 2)[1] : '';
@@ -25,6 +25,13 @@ contextBridge.exposeInMainWorld('grokCrew', Object.freeze({
     'timeline:apply-patch', projectId, timelinePatch,
   ),
   selectMedia: () => ipcRenderer.invoke('desktop:select-media'),
+  getPathForFile: (file) => {
+    try {
+      return webUtils.getPathForFile(file);
+    } catch {
+      return '';
+    }
+  },
   showOutput: (relativePath) => ipcRenderer.invoke('desktop:show-output', relativePath),
   appInfo: () => ipcRenderer.invoke('desktop:app-info'),
   updateStatus: () => ipcRenderer.invoke('desktop:update-status'),

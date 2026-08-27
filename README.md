@@ -2,16 +2,21 @@
 
 <p align="center"><strong>English</strong> &nbsp;·&nbsp; <a href="README.ko.md">한국어</a> &nbsp;·&nbsp; <a href="README.zh.md">简体中文</a> &nbsp;·&nbsp; <a href="README.ja.md">日本語</a></p>
 
-**Open on Windows.** Get [`GrokCrew-Windows.exe`](https://github.com/NoLucas/Grok-crew-test/releases/latest) and double-click. Write a title or drop a video. Copy one line to one bot. The cut opens when it arrives.
+**[Open on Windows](https://github.com/NoLucas/Grok-crew-test/releases/latest)** — get [`GrokCrew-Windows.exe`](https://github.com/NoLucas/Grok-crew-test/releases/latest) and double-click.
 
-**Grok Crew is a short-form desk on your computer. You write the brief. There are two doors: the editor door, and the collector / other-agent door.**
+Four steps. Receive → open → write → paste.
 
-You do not have to drop a source file here. You say how it should feel — length, captions, what to keep — and which door should do the work. A bot on **another computer** makes the video and the edit, then hands the folder to that door only. This PC receives it and shows the timeline. You post to Instagram, TikTok, or YouTube only if you choose to.
+1. **Receive** — one file, `GrokCrew-Windows.exe`.
+2. **Open** — double-click. If the blue shield appears, More info → Run anyway.
+3. **Write** — a title.
+4. **Paste** — the copied line into the bot window. This window opens when the cut arrives.
+
+To cut your own file, drop it in the second card. There is no login.
 
 It is not a website that holds your footage. The bot never opens this PC. It only pushes a package.
 
 ```
-your brief  →  collector outbox + editor outbox  →  collector drops clips in the materials box  →  the assigned editor cuts those clips  →  editor inbox  →  this PC receives it  →  post only if you say so
+receive the exe  →  open it  →  write a title  →  paste in the bot window  →  this window opens when the cut arrives
 ```
 
 ## Who it is for
@@ -24,7 +29,7 @@ You do not need an account to start.
 
 ## What you see
 
-The first screen is short: a title, a drop zone, and **Copy this for the bot**. That save is one bot (`source_mode: bot`). A Cursor agent on this PC can check in; a remote Cursor agent only drops a folder in the editor inbox from the invite. Style recipes and a two-bot crew stay behind **More detail**. Incoming cuts on the editor door open on their own. Files the bot saved — the package under `inputs/handoff/` and clips in the materials box — stay in one collapsed row. Open it and the list sits beside the preview. Right-click a file to preview, enlarge, show the original, or delete it. Quality stays locked to the spec; aspect, captions, and the other edit knobs stay yours. Setup can assign Shorts, Reels, TikTok, Custom, or another style, and save the current knobs as a named preset separately. Projects can live in folders, and trash keeps a restore window of 30 days. Bright day, deep night, soft day, soft night, and type live in the gear at the top-left corner. Older consoles open in a new **Advanced tools** tab. A person may specify which tools the bot should use; the bot should run them. That hub follows the desk theme and keeps the bot catalog folded. This desk does not scrape websites.
+The first screen is a short desk. **Hand it off** is title → copy → wait. **Open it myself** is drop a video → edit now. The two paths stay in two cards. The sample opens only from **See it with the sample**. After a copy, the desk says the bot is working, when it last checked, and not yet / arrived / failed. Python, ports, and folder paths stay folded. **More detail** and **Advanced tools** grow only after the first cut arrives. Incoming cuts on the editor door open on their own. Files the bot saved — the package under `inputs/handoff/` and clips in the materials box — stay in one collapsed row. Open it and the list sits beside the preview. Right-click a file to preview, enlarge, show the original, or delete it. Quality stays locked to the spec; aspect, captions, and the other edit knobs stay yours. Setup can assign Shorts, Reels, TikTok, Custom, or another style, and save the current knobs as a named preset separately. Projects can live in folders, and trash keeps a restore window of 30 days. Bright day, deep night, soft day, soft night, and type live in the gear at the top-left corner. A person may specify which tools the bot should use; the bot should run them. That hub follows the desk theme and keeps the bot catalog folded. This desk does not scrape websites.
 
 Then you work in three tabs:
 

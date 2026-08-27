@@ -7134,7 +7134,56 @@ select {
 .desktop-empty-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
 .desktop-empty-actions .desktop-primary { margin-top: 0; }
 .desktop-simple-wrap { width: min(1080px, 100%); margin: 0 auto; display: grid; gap: 8px; padding: 10px 12px 14px; }
-.desktop-simple-desk { width: min(640px, 100%); justify-self: center; }
+.desktop-simple-desk { width: min(920px, 100%); justify-self: center; }
+.desktop-simple-paths {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.desktop-simple-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 12px;
+  background: var(--desktop-panel);
+  text-align: left;
+}
+.desktop-simple-card h2 { margin: 0; font-size: 15px; letter-spacing: -.02em; }
+.desktop-simple-card > p { margin: 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
+.desktop-simple-card .desktop-spec-form { padding: 0; border: 0; }
+.desktop-simple-copy-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.desktop-simple-no-bot { min-width: 0; }
+.desktop-simple-no-bot > p { margin: 8px 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
+.desktop-simple-wait {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #c7e4f3;
+  border-radius: 12px;
+  background: #f3f9fd;
+  text-align: left;
+}
+.desktop-simple-wait b { font-size: 14px; letter-spacing: -.02em; }
+.desktop-simple-wait p { margin: 0; color: #245a72; font-size: 13px; line-height: 1.5; }
+.desktop-simple-wait.is-arrived { border-color: #cfead8; background: #f3faf5; }
+.desktop-simple-wait.is-arrived p { color: var(--desktop-green); }
+.desktop-simple-wait.is-failed { border-color: #f0c2be; background: #fff5f4; }
+.desktop-simple-wait.is-failed p { color: #b42318; }
+.desktop-simple-help-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+.desktop-simple-figure { margin: 0; }
+.desktop-simple-figure svg { display: block; width: 100%; height: auto; border: 1px solid var(--desktop-line); border-radius: 8px; background: #fff; }
+.desktop-simple-figure figcaption { display: grid; gap: 2px; margin-top: 6px; }
+.desktop-simple-figure b { font-size: 12px; }
+.desktop-simple-figure span { color: var(--desktop-muted); font-size: 11px; line-height: 1.4; }
+.desktop-simple-invite textarea { min-height: 10rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45; width: 100%; }
 .desktop-simple-drop {
   display: grid;
   gap: 6px;
@@ -7151,7 +7200,6 @@ select {
 .desktop-simple-drop b { font-size: 15px; letter-spacing: -.02em; }
 .desktop-simple-drop span { color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
 .desktop-simple-banner { margin: 0; padding: 10px 12px; border: 1px solid var(--desktop-line); border-radius: 10px; background: #f7f7f9; color: var(--desktop-muted); font-size: 13px; line-height: 1.5; }
-.desktop-simple-invite textarea { min-height: 10rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45; }
 .desktop-simple-help { margin: 8px 0 0; padding-left: 18px; color: var(--desktop-muted); font-size: 12px; line-height: 1.55; text-align: left; }
 .desktop-simple-help a { color: var(--desktop-blue, #245a72); text-decoration: underline; }
 .desktop-handoff-board { display: grid; gap: 8px; }
@@ -7604,12 +7652,18 @@ select {
   .desktop-spec-row { grid-template-columns: 1fr; }
   .desktop-spec-recipe-grid, .desktop-spec-source-grid { grid-template-columns: 1fr; }
 }
+@media (max-width: 760px) {
+  .desktop-simple-paths { grid-template-columns: 1fr; }
+  .desktop-simple-help-figures { grid-template-columns: 1fr; }
+}
 @media (max-width: 600px) {
   .desktop-simple-desk { width: 100%; }
   .desktop-simple-desk .desktop-spec-form,
   .desktop-simple-desk .desktop-spec-actions,
+  .desktop-simple-desk .desktop-simple-copy-row,
   .desktop-simple-desk .desktop-empty-actions { display: grid; gap: 10px; }
   .desktop-simple-desk .desktop-spec-actions .desktop-primary,
+  .desktop-simple-desk .desktop-simple-copy-row .desktop-primary,
   .desktop-simple-desk .desktop-simple-drop { width: 100%; }
 }
 .desktop-spinner {

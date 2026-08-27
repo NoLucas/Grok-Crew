@@ -26,16 +26,19 @@
 한 화면이다. 버튼 세 개로 나누지 않는다.
 
 ```
-제목  [15초 훅 릴            ]
-
-무엇을 말할까 (한 칸, 비워도 됨)
-
-[ 영상을 여기 놓거나 고르기 ]
+맡기기                         내가 열기
+제목 → 복사 → 기다림            영상 놓기 → 바로 편집
 
 [ 봇에게 이 말 복사 ]
+아직 봇이 없어요
+  같은 PC: Cursor 창에 붙이세요
+  다른 PC: 완성 파일을 여기 놓기
 
-인스타 릴 · 다른 스타일
+복사 뒤: 봇이 작업 중 · 창을 끄지 마세요
+마지막 확인 · 아직 없음 / 도착함 / 실패
+
 샘플로 화면 보기
+안 열리면 (SmartScreen 그림 세 장)
 ```
 
 동작:
@@ -221,4 +224,6 @@ A 없이 F만 하면 받은 사람이 다시 긴 화면을 본다. F 없이 A–
 
 A–G는 이 저장소에 들어 있다. Cursor 에이전트 연결은 `docs/CURSOR_AGENT.ko.md`에서 확인했다. 1.0 노트는 `docs/RELEASE_NOTES.v1.0.md`다.
 
-남는 일은 Windows 기계에서 `npm run desktop:dist`로 `GrokCrew-Windows.exe`를 만드는 것, 그리고 서명 전 SmartScreen 그림 세 장이다. 이 Linux 개발 기계에서는 사용자에게 줄 exe를 만들지 않는다. 태그·GitHub Release는 Maintainer가 올린다.
+사람 화면 보완(초대 숨김, 복사 다음 대기, 샘플 자동 열기 없음, SmartScreen 그림 세 장, 봇 없음 드롭칸, 두 길 분리, 고급 접기, README를 네 번에 맞춤)은 이 저장소에 들어 있다.
+
+남는 일은 Windows 기계에서 `npm run desktop:dist`로 `GrokCrew-Windows.exe`를 만드는 것이다. 서명 전이면 그림 안내가 설치의 일부다. 이 Linux 개발 기계에서는 사용자에게 줄 exe를 만들지 않는다. 태그·GitHub Release는 Maintainer가 올린다.
