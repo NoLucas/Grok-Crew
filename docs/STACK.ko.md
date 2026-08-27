@@ -4,7 +4,7 @@
 
 이 문서의 질문은 하나다. **그 말을 지키려면 어떤 기계가 필요하고, 우리 회사 서버와 우리 회사 DB가 있어야 하는가.**
 
-가격·패키지는 Maintainer가 정한다. 여기서는 기술만 가른다. 이 아이디어로 가기로 했고, 구현 목록은 `docs/BUILD.ko.md`다. 지금 가는 길은 서명된 설치다. 순서는 `docs/SIGNED_INSTALL.ko.md`.
+가격·패키지는 Maintainer가 정한다. 여기서는 기술만 가른다. 이 아이디어로 가기로 했고, 구현 목록은 `docs/BUILD.ko.md`다. 지금은 무료로 푼다(`docs/FREE.ko.md`). 도장은 돈 받을 때(`docs/SIGNED_INSTALL.ko.md`).
 
 ## 한 줄
 
