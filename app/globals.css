@@ -7061,6 +7061,29 @@ select {
 .desktop-library-trash-item .desktop-danger { width: auto; margin: 0; padding: 5px 7px; font-size: 11px; }
 .desktop-library-trash > .desktop-danger { width: calc(100% - 16px); margin: 4px 8px 8px; }
 .desktop-library-submenu { display: grid; margin: 2px 0 2px 8px; padding: 4px; border-left: 1px solid var(--desktop-line); }
+.desktop-library-undo,
+.desktop-library-expiry,
+.desktop-library-dialog {
+  display: grid;
+  gap: 8px;
+  margin: 0 8px;
+  padding: 8px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 9px;
+  background: var(--desktop-input);
+}
+.desktop-library-undo { grid-template-columns: 1fr auto; align-items: center; }
+.desktop-library-undo p,
+.desktop-library-expiry p,
+.desktop-library-dialog p { margin: 0; color: var(--desktop-muted); font-size: 11px; line-height: 1.4; }
+.desktop-library-undo .desktop-secondary,
+.desktop-library-expiry .desktop-secondary,
+.desktop-library-dialog .desktop-secondary,
+.desktop-library-dialog .desktop-danger { width: auto; margin: 0; padding: 5px 8px; font-size: 11px; }
+.desktop-library-dialog b { font-size: 12px; }
+.desktop-library-choices { display: grid; gap: 6px; }
+.desktop-library-choices label { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: start; font-size: 11px; line-height: 1.4; }
+.desktop-library-dialog-actions { display: flex; justify-content: flex-end; gap: 6px; }
 .desktop-version-head { margin-top: 12px; border-top: 1px solid var(--desktop-line); padding-top: 10px; }
 .desktop-version-list { display: grid; gap: 2px; }
 .desktop-version-list button { display: grid; grid-template-columns: 28px 1fr auto; gap: 5px; align-items: center; padding: 7px 8px; border: 0; border-radius: 7px; background: transparent; text-align: left; }

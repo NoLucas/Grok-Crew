@@ -73,7 +73,7 @@ function studioBase() {
 type PublishMode = 'export_only' | 'ask' | 'auto';
 type Project = { id: string; title: string; source_path: string; output_path: string; updated_at: string; current_revision: number; folder_id?: string | null; handoff_door?: string | null; handoff_agent?: string | null; edit_spec_id?: string | null };
 type ProjectFolder = { id: string; title: string };
-type TrashItem = { id: string; kind: string; title: string; original_path?: string | null; trashed_at: string; purge_after: string };
+type TrashItem = { id: string; kind: string; title: string; original_path?: string | null; has_source?: boolean; trashed_at: string; purge_after: string };
 type TimelineConflict = { schema: string; reason: string; expected_revision: number; current_revision: number; timeline_patch?: { operations?: unknown[] } };
 type ControlJob = { id: string; project_id: string; status: string; execution_policy: string; updated_at: string; error_text?: string; result_revision?: number; attempt?: number; control_sequence?: number; runner_id?: string; render_job_id?: string; conflict_json?: TimelineConflict };
 type RunnerEvent = { id: string; control_job_id: string; runner_id: string; sequence: number; stage: string; status: string; detail_json: Record<string, unknown>; verified_at: string };
@@ -138,7 +138,7 @@ type CrewRoster = {
   suggested_collector?: string;
   suggested_editor?: string;
 };
-type Workspace = { projects: Project[]; control_jobs: ControlJob[]; runner_events: RunnerEvent[]; runners: Runner[]; media: MediaItem[]; first_run?: FirstRun; edit_specs?: EditSpec[]; handoff?: HandoffStatus; handoff_folders?: HandoffFolder[]; style_recipes?: StyleRecipe[]; crew_roster?: CrewRoster; project_folders?: ProjectFolder[]; trash?: { items?: TrashItem[] } };
+type Workspace = { projects: Project[]; control_jobs: ControlJob[]; runner_events: RunnerEvent[]; runners: Runner[]; media: MediaItem[]; first_run?: FirstRun; edit_specs?: EditSpec[]; handoff?: HandoffStatus; handoff_folders?: HandoffFolder[]; style_recipes?: StyleRecipe[]; crew_roster?: CrewRoster; project_folders?: ProjectFolder[]; trash?: { items?: TrashItem[]; expired?: number; due_soon?: number; due_soon_days?: number; purge_days?: number } };
 type GitHubStatus = { authenticated: boolean; login?: string | null; oauth_available?: boolean; relay_connected?: boolean; remote?: string | null };
 type JsonObject = Record<string, unknown>;
 type AnalysisScene = { id: string; at: number; size_bytes: number };

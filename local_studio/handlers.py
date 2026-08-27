@@ -78,6 +78,7 @@ from project_library import (
     create_project_folder,
     delete_project_folder,
     empty_trash,
+    purge_expired_trash,
     list_trash,
     move_project,
     purge_trash_item,
@@ -86,6 +87,7 @@ from project_library import (
     rename_workspace_file,
     restore_trash_item,
     trash_project,
+    undelete_project_folder,
 )
 from handoff_inbox import handoff_status, pull_handoff
 from handoff_materials import materials_status, pull_materials, write_owned_materials
@@ -470,16 +472,28 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, reveal_handoff_file(str(body.get("path") or "")))
             elif path == "/api/v2/project-folders":
                 self._json(201, {"folder": create_project_folder(str(body.get("title") or ""))})
+            elif path == "/api/v2/project-folders/undelete":
+                self._json(201, {"folder": undelete_project_folder(
+                    str(body.get("id") or ""),
+                    str(body.get("title") or ""),
+                    body.get("project_ids") if isinstance(body.get("project_ids"), list) else [],
+                    int(body.get("sort_order") or 0),
+                )})
             elif path.startswith("/api/v2/project-folders/") and path.endswith("/rename"):
                 self._json(200, {"folder": rename_project_folder(self._route_id(path, "/api/v2/project-folders/", "/rename"), str(body.get("title") or ""))})
             elif path.startswith("/api/v2/project-folders/") and path.endswith("/delete"):
                 self._json(200, delete_project_folder(self._route_id(path, "/api/v2/project-folders/", "/delete")))
             elif path == "/api/v2/trash/empty":
                 self._json(200, empty_trash())
+            elif path == "/api/v2/trash/purge-expired":
+                self._json(200, purge_expired_trash())
             elif path.startswith("/api/v2/trash/") and path.endswith("/restore"):
                 self._json(200, restore_trash_item(self._route_id(path, "/api/v2/trash/", "/restore")))
             elif path.startswith("/api/v2/trash/") and path.endswith("/purge"):
-                self._json(200, purge_trash_item(self._route_id(path, "/api/v2/trash/", "/purge")))
+                self._json(200, purge_trash_item(
+                    self._route_id(path, "/api/v2/trash/", "/purge"),
+                    source_action=str(body.get("source_action") or "keep"),
+                ))
             elif path.startswith("/api/v2/projects/") and path.endswith("/rename"):
                 self._json(200, {"project": rename_project(self._route_id(path, "/api/v2/projects/", "/rename"), str(body.get("title") or ""))})
             elif path.startswith("/api/v2/projects/") and path.endswith("/move"):

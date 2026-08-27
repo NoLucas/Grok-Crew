@@ -1007,6 +1007,11 @@ def update_control_job(
     with db() as conn:
         row = conn.execute("SELECT * FROM control_jobs WHERE id = ?", (control_job_id,)).fetchone()
         if not row: raise ValueError("Control job not found.")
+        current = row_dict(row) or {}
+        if str(_project(str(current.get("project_id") or "")).get("trashed_at") or "").strip() and status not in {
+            "cancelled", "failed", "cancel_requested",
+        }:
+            raise ValueError("project is in the trash.")
         completed_at = utc_now() if status in {"completed", "cancelled", "failed"} else None
         conn.execute("""UPDATE control_jobs SET status = ?, error_text = ?,
             result_revision = COALESCE(?, result_revision), runner_id = COALESCE(?, runner_id),
@@ -1030,6 +1035,8 @@ def control_control_job(control_job_id: str, command: str, reason: str | None = 
             raise ValueError("Control job not found.")
         current = row_dict(row) or {}
         status = str(current.get("status", ""))
+        if str(_project(str(current.get("project_id") or "")).get("trashed_at") or "").strip() and command != "cancel":
+            raise ValueError("project is in the trash.")
         terminal = {"completed", "cancelled"}
         if command in {"cancel", "pause"} and status in terminal:
             raise ValueError(f"A {status} job cannot be {command}d.")
@@ -1152,8 +1159,11 @@ def record_runner_event(body: dict[str, Any]) -> dict[str, Any]:
     # mark the whole control job completed after local apply/render/publish gates.
     mapped = {"claimed": "claimed", "analyzing": "analyzing", "planning": "planning", "needs_input": "needs_input", "proposal_ready": "proposal_ready", "completed": "proposal_ready", "failed": "failed", "cancelled": "cancelled", "paused": "paused", "resumed": "claimed"}.get(stage)
     with db() as conn:
-        if not conn.execute("SELECT id FROM control_jobs WHERE id = ?", (control_job_id,)).fetchone():
+        job_row = conn.execute("SELECT project_id FROM control_jobs WHERE id = ?", (control_job_id,)).fetchone()
+        if not job_row:
             raise ValueError("Control job not found.")
+        if str(_project(str(job_row["project_id"])).get("trashed_at") or "").strip() and stage not in {"cancelled", "failed"}:
+            raise ValueError("project is in the trash.")
         existing = conn.execute("SELECT * FROM runner_events WHERE control_job_id = ? AND runner_id = ? AND sequence = ?", (control_job_id, runner_id, sequence)).fetchone()
         if existing:
             current = row_dict(existing) or {}
@@ -1222,12 +1232,8 @@ def media_catalog() -> list[dict[str, Any]]:
 
 
 def workspace_v2() -> dict[str, Any]:
-    from project_library import library_payload, purge_expired_trash
+    from project_library import library_payload
 
-    try:
-        purge_expired_trash()
-    except Exception:
-        pass
     with db() as conn:
         projects = [row_dict(row) or {} for row in conn.execute("SELECT * FROM projects WHERE trashed_at IS NULL ORDER BY updated_at DESC LIMIT 80").fetchall()]
     for project in projects:

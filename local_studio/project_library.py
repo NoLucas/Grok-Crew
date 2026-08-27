@@ -16,8 +16,18 @@ from db import db, event, row_dict
 LIBRARY_SCHEMA = "grok-crew.project-library/v1"
 TRASH_ROOT = Path(".trash")
 PURGE_DAYS = 30
+DUE_SOON_DAYS = 3
 MAX_FOLDERS = 24
 TITLE_MAX = 80
+SOURCE_ACTIONS = {"keep", "trash", "delete"}
+OWNED_MEDIA_ROOTS = {"inputs", "handoff-materials"}
+OPEN_JOB_STATUSES = {"queued", "running"}
+OPEN_CONTROL_STATUSES = {
+    "queued", "claimed", "analyzing", "planning", "needs_input",
+    "proposal_ready", "applied", "rendering", "rendered",
+    "publish_waiting", "publishing", "cancel_requested",
+    "pause_requested", "paused", "conflict",
+}
 
 PROJECT_PURGE_SQL = (
     "DELETE FROM runner_events WHERE control_job_id IN (SELECT id FROM control_jobs WHERE project_id = ?)",
@@ -181,13 +191,63 @@ def rename_project_folder(folder_id: str, title: str) -> dict[str, Any]:
 def delete_project_folder(folder_id: str) -> dict[str, Any]:
     folder_id = _safe_id(folder_id)
     with db() as conn:
-        exists = conn.execute("SELECT id FROM project_folders WHERE id = ?", (folder_id,)).fetchone()
-        if not exists:
+        row = conn.execute("SELECT * FROM project_folders WHERE id = ?", (folder_id,)).fetchone()
+        if not row:
             raise ValueError("folder not found.")
+        folder = row_dict(row) or {}
+        project_ids = [
+            str(item["id"])
+            for item in conn.execute(
+                "SELECT id FROM projects WHERE folder_id = ? AND trashed_at IS NULL",
+                (folder_id,),
+            ).fetchall()
+        ]
         conn.execute("UPDATE projects SET folder_id = NULL WHERE folder_id = ?", (folder_id,))
         conn.execute("DELETE FROM project_folders WHERE id = ?", (folder_id,))
-    event(None, None, "project_folder_deleted", {"id": folder_id})
-    return {"ok": True, "id": folder_id}
+    event(None, None, "project_folder_deleted", {"id": folder_id, "project_count": len(project_ids)})
+    return {
+        "ok": True,
+        "id": folder_id,
+        "title": folder.get("title"),
+        "sort_order": folder.get("sort_order") or 0,
+        "project_ids": project_ids,
+    }
+
+
+def undelete_project_folder(
+    folder_id: str,
+    title: str,
+    project_ids: list[Any] | None = None,
+    sort_order: int = 0,
+) -> dict[str, Any]:
+    wanted_id = _safe_id(folder_id)
+    name = _safe_title(title)
+    ids = [str(item).strip() for item in (project_ids or []) if str(item or "").strip()]
+    with db() as conn:
+        count = conn.execute("SELECT COUNT(*) FROM project_folders").fetchone()[0]
+        if int(count) >= MAX_FOLDERS:
+            raise ValueError(f"at most {MAX_FOLDERS} folders.")
+        exists = conn.execute("SELECT id FROM project_folders WHERE id = ?", (wanted_id,)).fetchone()
+        next_id = f"fld_{uuid.uuid4().hex[:12]}" if exists else wanted_id
+        now = utc_now()
+        conn.execute(
+            "INSERT INTO project_folders (id, title, created_at, updated_at, sort_order) VALUES (?, ?, ?, ?, ?)",
+            (next_id, name, now, now, max(0, int(sort_order or 0))),
+        )
+        restored = 0
+        for project_id in ids:
+            try:
+                _require_live_project(conn, project_id)
+            except ValueError:
+                continue
+            conn.execute(
+                "UPDATE projects SET folder_id = ?, updated_at = ? WHERE id = ?",
+                (next_id, now, project_id),
+            )
+            restored += 1
+        row = conn.execute("SELECT * FROM project_folders WHERE id = ?", (next_id,)).fetchone()
+    event(None, None, "project_folder_undeleted", {"id": next_id, "restored": restored})
+    return row_dict(row) or {}
 
 
 def _require_live_project(conn: Any, project_id: str, *, allow_trashed: bool = False) -> Any:
@@ -230,6 +290,37 @@ def move_project(project_id: str, folder_id: str | None) -> dict[str, Any]:
     return row_dict(row) or {}
 
 
+def _stop_project_work(project_id: str) -> dict[str, int]:
+    from desktop_domain import control_control_job, list_control_jobs, resolve_control_conflict
+    from studio_server import list_jobs, request_job_cancel, update_job
+
+    stopped = {"jobs": 0, "control_jobs": 0}
+    for job in list_jobs(project_id):
+        status = str(job.get("status") or "")
+        if status not in OPEN_JOB_STATUSES:
+            continue
+        try:
+            if status == "queued":
+                update_job(str(job["id"]), status="cancelled", error="project moved to trash")
+            request_job_cancel(str(job["id"]))
+            stopped["jobs"] += 1
+        except Exception:
+            continue
+    for job in list_control_jobs(project_id):
+        status = str(job.get("status") or "")
+        if status not in OPEN_CONTROL_STATUSES:
+            continue
+        try:
+            if status == "conflict":
+                resolve_control_conflict(str(job["id"]), "discard")
+            else:
+                control_control_job(str(job["id"]), "cancel", "project_trashed")
+            stopped["control_jobs"] += 1
+        except Exception:
+            continue
+    return stopped
+
+
 def trash_project(project_id: str) -> dict[str, Any]:
     now = utc_now()
     with db() as conn:
@@ -241,8 +332,11 @@ def trash_project(project_id: str) -> dict[str, Any]:
             (now, now, project_id),
         )
         next_row = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
-    event(project_id, None, "project_trashed", {"trashed_at": now})
-    return row_dict(next_row) or {}
+    stopped = _stop_project_work(project_id)
+    event(project_id, None, "project_trashed", {"trashed_at": now, **stopped})
+    payload = row_dict(next_row) or {}
+    payload["stopped"] = stopped
+    return payload
 
 
 def restore_project(project_id: str) -> dict[str, Any]:
@@ -264,14 +358,114 @@ def _purge_project_row(conn: Any, project_id: str) -> None:
         conn.execute(statement, (project_id,))
 
 
-def purge_project(project_id: str) -> dict[str, Any]:
+def _owned_media_rel(source_path: str) -> str:
+    raw = str(source_path or "").strip()
+    if not raw:
+        raise ValueError("path is required.")
+    try:
+        resolved = config.workspace_path(raw)
+    except ValueError as exc:
+        raise ValueError("path leaves the workspace.") from exc
+    rel = resolved.relative_to(config.WORKSPACE_DIR.resolve()).as_posix()
+    parts = Path(rel).parts
+    if not parts or parts[0] not in OWNED_MEDIA_ROOTS or ".." in parts:
+        raise ValueError("only files under inputs or handoff-materials can be used.")
+    if any(part in {".", ".."} or part.startswith(".") for part in parts):
+        raise ValueError("path is not allowed.")
+    return rel
+
+
+def resolve_owned_media_destination(rel_path: str) -> Path:
+    rel = _owned_media_rel(rel_path)
+    workspace = config.WORKSPACE_DIR.resolve()
+    dest = (workspace / rel).resolve()
+    if dest == workspace or workspace not in dest.parents:
+        raise ValueError("path leaves the workspace.")
+    return dest
+
+
+def _source_file_exists(source_path: str) -> bool:
+    try:
+        return resolve_owned_media_destination(source_path).is_file()
+    except ValueError:
+        return False
+
+
+def _trash_owned_media(rel_path: str) -> dict[str, Any]:
+    from handoff_folders import parse_handoff_rel, _source_paths
+
+    rel = _owned_media_rel(rel_path)
+    try:
+        parse_handoff_rel(rel)
+        return trash_workspace_file(rel)
+    except ValueError:
+        pass
+    target = resolve_owned_media_destination(rel)
+    if not target.is_file():
+        raise ValueError("file not found.")
+    if target in _source_paths():
+        raise ValueError("file is the project's source and cannot be deleted.")
+    now = utc_now()
+    item_id = f"trs_{uuid.uuid4().hex[:16]}"
+    dest_dir = (_trash_dir() / item_id).resolve()
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = (dest_dir / target.name).resolve()
+    if dest.parent != dest_dir:
+        raise ValueError("path leaves the allowed root.")
+    shutil.move(str(target), str(dest))
+    with db() as conn:
+        conn.execute(
+            "INSERT INTO trash_items (id, kind, title, original_path, trash_path, payload_json, trashed_at, purge_after) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                item_id,
+                "file",
+                target.name,
+                rel,
+                f"{TRASH_ROOT.as_posix()}/{item_id}/{target.name}",
+                json.dumps({"kind": "file", "original_path": rel, "name": target.name}),
+                now,
+                _purge_after(now),
+            ),
+        )
+        row = conn.execute("SELECT * FROM trash_items WHERE id = ?", (item_id,)).fetchone()
+    event(None, None, "file_trashed", {"path": rel, "id": item_id})
+    return row_dict(row) or {}
+
+
+def _dispose_project_source(source_path: str, action: str) -> dict[str, Any]:
+    from handoff_folders import _source_paths
+
+    if action == "keep":
+        return {"source": "kept"}
+    try:
+        rel = _owned_media_rel(source_path)
+        target = resolve_owned_media_destination(rel)
+    except ValueError:
+        return {"source": "skipped"}
+    if not target.is_file():
+        return {"source": "missing"}
+    if target in _source_paths():
+        return {"source": "in_use"}
+    if action == "delete":
+        target.unlink()
+        return {"source": "deleted", "path": rel}
+    item = _trash_owned_media(rel)
+    return {"source": "trashed", "path": rel, "trash_id": item.get("id")}
+
+
+def purge_project(project_id: str, source_action: str = "keep") -> dict[str, Any]:
+    action = str(source_action or "keep").strip().lower()
+    if action not in SOURCE_ACTIONS:
+        raise ValueError("source action must be keep, trash, or delete.")
     with db() as conn:
         row = _require_live_project(conn, project_id, allow_trashed=True)
         if not row["trashed_at"]:
             raise ValueError("empty the trash or wait 30 days to delete a project for good.")
+        source_path = str(row["source_path"] or "")
         _purge_project_row(conn, project_id)
-    event(None, None, "project_purged", {"id": project_id})
-    return {"ok": True, "id": project_id, "purged": True}
+    disposed = _dispose_project_source(source_path, action)
+    event(None, None, "project_purged", {"id": project_id, "source_action": action, **disposed})
+    return {"ok": True, "id": project_id, "purged": True, "source_action": action, **disposed}
 
 
 def trash_workspace_file(rel_path: str) -> dict[str, Any]:
@@ -374,16 +568,31 @@ def _rename_clip_in_manifest(folder: Path, old_name: str, new_name: str) -> None
 def _restore_file_item(item: dict[str, Any]) -> dict[str, Any]:
     from handoff_folders import MATERIALS_ROOT, parse_handoff_rel, resolve_handoff_destination, _restore_clip_to_manifest
 
-    original_parts = parse_handoff_rel(str(item.get("original_path") or ""))
-    original = "/".join(original_parts)
+    original = str(item.get("original_path") or "")
+    try:
+        original_parts = parse_handoff_rel(original)
+        dest = resolve_handoff_destination(original_parts)
+        original = "/".join(original_parts)
+    except ValueError:
+        original_parts = Path(_owned_media_rel(original)).parts
+        dest = resolve_owned_media_destination(original)
+        original = "/".join(original_parts)
     trash_abs = _resolve_stored_trash(str(item.get("id") or ""), str(item.get("trash_path") or ""))
-    dest = resolve_handoff_destination(original_parts)
     if dest.exists():
         raise ValueError("the original path already has a file.")
     if not trash_abs.is_file():
         raise ValueError("trashed file is missing.")
+    workspace = config.WORKSPACE_DIR.resolve()
     parent = dest.parent
     if not parent.exists():
+        allowed_parents = {
+            workspace,
+            (workspace / "inputs").resolve(),
+            (workspace / "inputs" / "handoff").resolve(),
+            (workspace / "handoff-materials").resolve(),
+        }
+        if parent.parent not in allowed_parents:
+            raise ValueError("original folder is missing.")
         parent.mkdir(exist_ok=True)
     shutil.move(str(trash_abs), str(dest))
     leftover = trash_abs.parent
@@ -398,7 +607,7 @@ def _restore_file_item(item: dict[str, Any]) -> dict[str, Any]:
             payload = {}
     if isinstance(payload, dict):
         clip_meta = payload.get("clip") if isinstance(payload.get("clip"), dict) else None
-    if original_parts[0] == "handoff-materials":
+    if original_parts and original_parts[0] == "handoff-materials":
         _restore_clip_to_manifest(config.WORKSPACE_DIR / MATERIALS_ROOT / original_parts[1], dest.name, clip_meta)
     with db() as conn:
         conn.execute("DELETE FROM trash_items WHERE id = ?", (item["id"],))
@@ -442,16 +651,18 @@ def _file_trash_rows() -> list[dict[str, Any]]:
 def _project_trash_rows() -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute(
-            "SELECT id, title, trashed_at FROM projects WHERE trashed_at IS NOT NULL ORDER BY trashed_at DESC"
+            "SELECT id, title, source_path, trashed_at FROM projects WHERE trashed_at IS NOT NULL ORDER BY trashed_at DESC"
         ).fetchall()
     items = []
     for row in rows:
         item = row_dict(row) or {}
+        source_path = str(item.get("source_path") or "")
         items.append({
             "id": item["id"],
             "kind": "project",
             "title": item["title"],
-            "original_path": None,
+            "original_path": source_path or None,
+            "has_source": _source_file_exists(source_path),
             "trashed_at": item["trashed_at"],
             "purge_after": _purge_after(item["trashed_at"]),
         })
@@ -461,7 +672,28 @@ def _project_trash_rows() -> list[dict[str, Any]]:
 def list_trash() -> dict[str, Any]:
     items = _project_trash_rows() + _file_trash_rows()
     items.sort(key=lambda item: str(item.get("trashed_at") or ""), reverse=True)
-    return {"schema": LIBRARY_SCHEMA, "purge_days": PURGE_DAYS, "items": items}
+    now = datetime.now(timezone.utc)
+    expired = 0
+    due_soon = 0
+    horizon = now + timedelta(days=DUE_SOON_DAYS)
+    for item in items:
+        stamp = str(item.get("purge_after") or "")
+        if _expired(stamp, now):
+            expired += 1
+            continue
+        try:
+            if _parse_iso(stamp) <= horizon:
+                due_soon += 1
+        except ValueError:
+            continue
+    return {
+        "schema": LIBRARY_SCHEMA,
+        "purge_days": PURGE_DAYS,
+        "due_soon_days": DUE_SOON_DAYS,
+        "expired": expired,
+        "due_soon": due_soon,
+        "items": items,
+    }
 
 
 def restore_trash_item(item_id: str) -> dict[str, Any]:
@@ -477,13 +709,13 @@ def restore_trash_item(item_id: str) -> dict[str, Any]:
     raise ValueError("trash item not found.")
 
 
-def purge_trash_item(item_id: str) -> dict[str, Any]:
+def purge_trash_item(item_id: str, source_action: str = "keep") -> dict[str, Any]:
     item_id = _safe_id(item_id)
     with db() as conn:
         project = conn.execute("SELECT id, trashed_at FROM projects WHERE id = ?", (item_id,)).fetchone()
         file_row = conn.execute("SELECT * FROM trash_items WHERE id = ?", (item_id,)).fetchone()
     if project and project["trashed_at"]:
-        return purge_project(item_id)
+        return purge_project(item_id, source_action=source_action)
     if file_row:
         _purge_file_item(row_dict(file_row) or {})
         return {"ok": True, "id": item_id, "purged": True, "kind": "file"}

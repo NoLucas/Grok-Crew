@@ -13,11 +13,14 @@ from project_library import (
     list_trash,
     move_project,
     purge_expired_trash,
+    purge_project,
+    purge_trash_item,
     rename_project,
     rename_workspace_file,
     restore_trash_item,
     trash_project,
     trash_workspace_file,
+    undelete_project_folder,
 )
 
 import pytest
@@ -263,6 +266,119 @@ def test_materials_restore_puts_the_clip_back_in_the_manifest(studio, tmp_path):
     )
     notes = {item["file"]: item.get("note") for item in manifest["clips"]}
     assert notes["drop.mp4"] == "Hook"
+
+
+def test_trashing_a_project_stops_queued_jobs_and_control_jobs(studio):
+    from desktop_domain import RUNNER_EVENT_SCHEMA, create_control_job, record_runner_event, update_control_job
+    from studio_server import create_job, get_job
+
+    project = _project(studio, "Busy cut")
+    queued = create_job(project["id"], "render", {"requested_by": "test"}, True)
+    running = create_job(project["id"], "proxy", {"requested_by": "test"}, True)
+    from db import db
+    with db() as conn:
+        conn.execute("UPDATE jobs SET status = 'running' WHERE id = ?", (running["id"],))
+    control = create_control_job(project["id"], {"execution_policy": "auto_edit_render"})
+    claimed = create_control_job(project["id"], {"execution_policy": "review_before_render"})
+    update_control_job(claimed["id"], "claimed", runner_id="runner-keep")
+    stopped = trash_project(project["id"])
+    assert stopped["stopped"]["jobs"] == 2
+    assert stopped["stopped"]["control_jobs"] == 2
+    assert get_job(queued["id"])["status"] == "cancelled"
+    assert get_job(running["id"])["cancel_requested"] == 1
+    from db import db as database
+    with database() as conn:
+        rows = {row["id"]: row["status"] for row in conn.execute("SELECT id, status FROM control_jobs WHERE project_id = ?", (project["id"],))}
+    assert rows[control["id"]] == "cancelled"
+    assert rows[claimed["id"]] == "cancel_requested"
+    with pytest.raises(ValueError, match="trash"):
+        create_control_job(project["id"], {"execution_policy": "auto_edit_render"})
+    with pytest.raises(ValueError, match="trash"):
+        record_runner_event({
+            "schema": RUNNER_EVENT_SCHEMA,
+            "control_job_id": claimed["id"],
+            "runner_id": "runner-keep",
+            "sequence": 1,
+            "stage": "analyzing",
+            "status": "active",
+            "detail": {"message": "still going"},
+            "verified_at": "2026-08-26T02:00:00+00:00",
+        })
+
+
+def test_workspace_load_does_not_purge_expired_trash(studio):
+    from desktop_domain import workspace_v2
+
+    folder = config.WORKSPACE_DIR / "inputs" / "handoff" / "pkg-keep-expired"
+    folder.mkdir(parents=True)
+    (folder / "clip.mp4").write_bytes(b"clip")
+    item = trash_workspace_file("inputs/handoff/pkg-keep-expired/clip.mp4")
+    expired = (datetime.now(timezone.utc) - timedelta(days=PURGE_DAYS + 1)).isoformat(timespec="seconds")
+    from db import db
+    with db() as conn:
+        conn.execute(
+            "UPDATE trash_items SET trashed_at = ?, purge_after = ? WHERE id = ?",
+            (expired, expired, item["id"]),
+        )
+    listed = workspace_v2()
+    assert any(row["id"] == item["id"] for row in listed["trash"]["items"])
+    assert listed["trash"]["expired"] >= 1
+    purged = purge_expired_trash()
+    assert purged["purged"] == 1
+    assert list_trash()["items"] == []
+
+
+def test_purge_project_can_keep_trash_or_delete_source(studio):
+    keep = _project(studio, "Keep source")
+    trash_project(keep["id"])
+    source = config.WORKSPACE_DIR / "inputs" / "source.mp4"
+    assert source.exists()
+    purged = purge_project(keep["id"], source_action="keep")
+    assert purged["source"] == "kept"
+    assert source.exists()
+
+    trash_me = studio.new_project({
+        "title": "Trash source",
+        "source_path": "inputs/source.mp4",
+        "output_path": "outputs/final-video.mp4",
+        "timeline": {"clips": [{"in": 0, "out": 2, "keep": True, "caption": ""}]},
+    })
+    trash_project(trash_me["id"])
+    moved = purge_trash_item(trash_me["id"], source_action="trash")
+    assert moved["source"] == "trashed"
+    assert not source.exists()
+    restore_trash_item(moved["trash_id"])
+    assert source.exists()
+
+    delete_me = studio.new_project({
+        "title": "Delete source",
+        "source_path": "inputs/source.mp4",
+        "output_path": "outputs/final-video.mp4",
+        "timeline": {"clips": [{"in": 0, "out": 2, "keep": True, "caption": ""}]},
+    })
+    trash_project(delete_me["id"])
+    gone = purge_project(delete_me["id"], source_action="delete")
+    assert gone["source"] == "deleted"
+    assert not source.exists()
+
+
+def test_folder_delete_can_be_undone(studio):
+    project = _project(studio, "Filed")
+    folder = create_project_folder("릴스")
+    move_project(project["id"], folder["id"])
+    deleted = delete_project_folder(folder["id"])
+    assert deleted["project_ids"] == [project["id"]]
+    assert list_project_folders() == []
+    from db import db, row_dict
+    with db() as conn:
+        row = row_dict(conn.execute("SELECT * FROM projects WHERE id = ?", (project["id"],)).fetchone())
+    assert row["folder_id"] is None
+    restored = undelete_project_folder(deleted["id"], deleted["title"], deleted["project_ids"], deleted["sort_order"])
+    assert restored["id"] == folder["id"]
+    assert restored["title"] == "릴스"
+    with db() as conn:
+        row = row_dict(conn.execute("SELECT * FROM projects WHERE id = ?", (project["id"],)).fetchone())
+    assert row["folder_id"] == folder["id"]
 
 
 def test_http_library_routes_reject_extra_path_segments(live_server):
