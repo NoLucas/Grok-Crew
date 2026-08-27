@@ -12,6 +12,7 @@ const {
   roleLabel,
   seatName,
   skillText,
+  voiceInviteBlock,
   withCrewInvite,
 } = await import('./bot-skills.ts');
 
@@ -42,6 +43,7 @@ describe('built-in bot skills', () => {
     assert.match(planner, /日本語\(ja\)/);
     assert.match(planner, /원본과 보낼 곳이 다르면/);
     assert.match(planner, /중국 영상 → 한국 컷/);
+    assert.match(planner, /자동 스위치/);
     assert.doesNotMatch(planner, /git clone/);
     assert.match(scraper, /공개/);
     assert.match(scraper, /로그인 막힌/);
@@ -57,6 +59,7 @@ describe('built-in bot skills', () => {
     assert.match(editor, /효과는 과하지 않게/);
     assert.match(editor, /중국 영상 → 한국 컷/);
     assert.match(editor, /한글 자막/);
+    assert.match(editor, /자막 끔/);
     assert.deepEqual(ROLE_EXTRA_SKILLS.planner, ['edit-plan']);
     assert.deepEqual(ROLE_EXTRA_SKILLS.scraper, ['public-pick']);
     assert.deepEqual(ROLE_EXTRA_SKILLS.editor, ['cut-to-plan']);
@@ -78,6 +81,10 @@ describe('built-in bot skills', () => {
     assert.match(text, /\/bot-skills\/public-pick\.md/);
     assert.match(text, /\/bot-skills\/cut-to-plan\.md/);
     assert.equal(crewOrderBlock('en').includes('This app does not scrape'), true);
+    assert.match(text, /자막: 끔/);
+    assert.match(text, /더빙: 끔/);
+    assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { captions: true, dubbing: true }), /자막: 켬/);
+    assert.match(voiceInviteBlock('en'), /Captions: off/);
   });
 
   it('keeps the public skill files in lockstep', () => {

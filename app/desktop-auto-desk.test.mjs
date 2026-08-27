@@ -94,6 +94,7 @@ describe('auto desk job payload', () => {
       source_mode: 'collect',
       language: 'ko',
       upload: false,
+      captions: false,
       collect_query: '카페 오픈 공개 클립',
     });
     assert.deepEqual(autoJobPayload({
@@ -109,6 +110,7 @@ describe('auto desk job payload', () => {
       source_mode: 'collect',
       language: 'ko',
       upload: false,
+      captions: false,
       collect_query: 'https://example.com/open',
     });
     assert.deepEqual(autoJobPayload({
@@ -124,6 +126,7 @@ describe('auto desk job payload', () => {
       source_mode: 'own',
       language: 'ko',
       upload: false,
+      captions: false,
       owned_paths: ['/tmp/talk.mp4', '/tmp/sign.png'],
     });
     assert.deepEqual(autoJobPayload({
@@ -135,6 +138,22 @@ describe('auto desk job payload', () => {
       ownedPaths: ['/tmp/talk.mp4'],
       collectQuery: '간판 클로즈업',
     }).source_mode, 'own_and_collect');
+    assert.equal(autoJobPayload({
+      title: '자막 켬',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useScrape: true,
+      collectQuery: '간판',
+      wantCaptions: true,
+    }).captions, true);
+    assert.match(String(autoJobPayload({
+      title: '더빙 켬',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useScrape: true,
+      collectQuery: '간판',
+      wantDubbing: true,
+    }).must_keep), /운영자가 넣은 음성/);
   });
 });
 

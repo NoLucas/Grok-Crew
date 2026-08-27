@@ -122,6 +122,8 @@ export function AutoDesk({
   const [useScrape, setUseScrape] = useState(true);
   const [ownedPaths, setOwnedPaths] = useState<string[]>([]);
   const [collectQuery, setCollectQuery] = useState('');
+  const [wantCaptions, setWantCaptions] = useState(Boolean(prefs.wantCaptions));
+  const [wantDubbing, setWantDubbing] = useState(Boolean(prefs.wantDubbing));
   const [ownOver, setOwnOver] = useState(false);
   const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
   const [recipeTouched, setRecipeTouched] = useState(false);
@@ -272,19 +274,21 @@ export function AutoDesk({
           useScrape,
           ownedPaths,
           collectQuery,
+          wantCaptions,
+          wantDubbing,
         })),
       });
       const record = created.edit_spec as { id?: string };
       if (!record?.id) throw new Error(t('규격을 저장하지 못했습니다.', 'Could not save the spec.', '无法保存规格。', '仕様を保存できませんでした。'));
       const invite = await request(`/api/v2/edit-specs/${record.id}/invite?lang=${encodeURIComponent(language)}`);
-      const text = withCrewInvite(String(invite.text || ''), language);
+      const text = withCrewInvite(String(invite.text || ''), language, { captions: wantCaptions, dubbing: wantDubbing });
       if (!text.trim()) throw new Error(t('초대문을 만들지 못했습니다.', 'Could not make the invite.', '无法生成邀请。', '招待文を作れませんでした。'));
       setInviteText(text);
       if (again.trim()) {
         setGoal(nextGoal);
         setRevisePrompt('');
       }
-      setPrefs(writeAutoPrefs({ recipeId }));
+      setPrefs(writeAutoPrefs({ recipeId, wantCaptions, wantDubbing }));
       setPrefs(rememberRecentTitle(heading));
       const nextWait: DeskWaitState = {
         specId: record.id,
@@ -595,6 +599,7 @@ export function AutoDesk({
             <section className="desktop-auto-card" aria-label={t('이번 일', 'This job', '这次任务', '今回の仕事')}>
               <b>{t('이번 일', 'This job', '这次任务', '今回の仕事')}</b>
               <p>{`${attachedName} · ${styleLabel} · ${wayLabel}`}</p>
+              <p>{t(`자막 ${wantCaptions ? '켬' : '끔'} · 더빙 ${wantDubbing ? '켬' : '끔'}`, `Captions ${wantCaptions ? 'on' : 'off'} · Dubbing ${wantDubbing ? 'on' : 'off'}`, `字幕${wantCaptions ? '开' : '关'} · 配音${wantDubbing ? '开' : '关'}`, `字幕${wantCaptions ? 'オン' : 'オフ'} · 吹き替え${wantDubbing ? 'オン' : 'オフ'}`)}</p>
               {useOwn && ownedPaths.length ? <p>{ownedPaths.map(ownedFileName).join(', ')}</p> : null}
               {useScrape && collectQuery.trim() ? <p>{t(`가져올 것 · ${collectQuery.trim()}`, `Fetch · ${collectQuery.trim()}`, `要取 · ${collectQuery.trim()}`, `持ってくるもの · ${collectQuery.trim()}`)}</p> : null}
               <p>{t('하지 않음: 올리지 않음 · 화질 잠금 유지 · 이 PC에만 저장 · 이 앱이 사이트를 긁지 않음', 'Will not: post · change quality · leave this PC · scrape a site', '不会：发布 · 改画质 · 离开这台电脑 · 抓站', 'しないこと: 上げない · 画質を変えない · この PC だけに保存 · このアプリは掻かない')}</p>
@@ -723,6 +728,32 @@ export function AutoDesk({
               {t(`${styleLabel}로 보여요. 화질은 여기서 고르지 않습니다. 이 PC는 사이트를 긁지 않습니다.`, `This looks like ${styleLabel}. Quality is not chosen here. This PC does not scrape.`, `看起来像 ${styleLabel}。画质不在这里选。这台电脑不抓站。`, `${styleLabel} に見えます。画質はここでは選びません。この PC は掻きません。`)}
             </p>
           )}
+          <fieldset className="desktop-spec-sources desktop-auto-voice">
+            <legend>{t('자막과 더빙', 'Captions and dubbing', '字幕和配音', '字幕と吹き替え')}</legend>
+            <div className="desktop-spec-source-grid">
+              <button
+                type="button"
+                className={wantCaptions ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                aria-pressed={wantCaptions}
+                onClick={() => setWantCaptions((value) => !value)}
+              >
+                <b>{wantCaptions ? t('자막 켬', 'Captions on', '字幕开', '字幕オン') : t('자막 끔', 'Captions off', '字幕关', '字幕オフ')}</b>
+                <span>{t('켜면 말 구간만 인식해 자막을 붙입니다. 원본과 보낼 곳이 다르면 자막만 바꿉니다.', 'When on, only speech windows become captions. If source and destination differ, captions change only.', '打开后只识别说话段落并加字幕。源语言和去向不同时只改字幕。', 'オンなら話している区間だけ字幕にする。元と送り先が違うときは字幕だけ変える。')}</span>
+              </button>
+              <button
+                type="button"
+                className={wantDubbing ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                aria-pressed={wantDubbing}
+                onClick={() => setWantDubbing((value) => !value)}
+              >
+                <b>{wantDubbing ? t('더빙 켬', 'Dubbing on', '配音开', '吹き替えオン') : t('더빙 끔', 'Dubbing off', '配音关', '吹き替えオフ')}</b>
+                <span>{t('켜면 운영자가 넣은 음성만 씁니다. 없으면 원본 소리. TTS는 만들지 않습니다.', 'When on, use only the operator’s audio. If none, keep the original. No TTS.', '打开后只用操作员放入的语音。没有就保留原声。不做 TTS。', 'オンなら運営者が入れた音声だけ。なければ元の音。TTS は作らない。')}</span>
+              </button>
+            </div>
+            <p className="desktop-spec-meta">
+              {t('둘 다 꺼 두면 음성인식·자막·더빙을 쓰지 않습니다.', 'Leave both off and speech recognition, captions, and dubbing stay unused.', '都关着就不会用语音识别、字幕、配音。', 'どちらもオフなら音声認識・字幕・吹き替えは使いません。')}
+            </p>
+          </fieldset>
           {!attached ? (
             <p className="desktop-auto-gate">{t('아직 안 붙었으면 시작이 안 됩니다. 연결 열기를 누르세요. 다른 PC 봇은 일을 복사해 그 창에 붙이고, 끝난 파일만 이 창에 놓습니다.', 'Nothing is attached, so Start stays off. Open Connect. An other-PC bot gets the job as text and drops the finished file here.', '还没接上就不能开始。请打开连接。另一台电脑的机器人只收任务文字，再把完成文件放到这里。', 'まだ付いていなければ始まりません。接続を開いてください。別 PC のボットは仕事を貼り、完成ファイルだけこの窓に置きます。')}</p>
           ) : null}

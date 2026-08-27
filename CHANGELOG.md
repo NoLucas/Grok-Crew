@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Auto captions and dubbing stay **off** until the operator turns them on. Captions on runs VAD then whisper.cpp and writes speech windows to clip captions/`word_timings`. Dubbing on uses only the operator’s audio files. No new `/api/v2` field.
 - When source and destination differ (Chinese clip → Korean cut), the planner writes both, the scraper keeps the named source, and the editor changes hook/captions/on-screen words only. Do not swap in a lookalike Korean video. Login walls stay closed.
 - Role extras now name a market (ko / en / zh / ja): planner writes country style, cut density, and effects; scraper picks public pages for that language, not Korea-only; editor follows that cut/effect density. Login walls stay closed. No new `/api/v2` field.
 - Each Other-PC role now gets one extra skill on connect: planner `edit-plan`, scraper `public-pick`, editor `cut-to-plan`. Full text stays in `public/bot-skills/`. The desk still does not scrape. No new `/api/v2` field.

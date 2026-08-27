@@ -24,6 +24,8 @@ export type AutoPrefs = {
   lastTitle?: string;
   lastSavePath?: string;
   lastSaveAt?: string;
+  wantCaptions?: boolean;
+  wantDubbing?: boolean;
 };
 
 export type AutoStartCheck =
@@ -39,6 +41,8 @@ export type AutoJobInput = {
   useScrape?: boolean;
   ownedPaths?: string[];
   collectQuery?: string;
+  wantCaptions?: boolean;
+  wantDubbing?: boolean;
 };
 
 export function titleFromPrompt(title: string, goal = ''): string {
@@ -88,9 +92,13 @@ export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
     source_mode: sourceMode,
     language: input.language,
     upload: false,
+    captions: Boolean(input.wantCaptions),
   };
   if (useScrape) body.collect_query = String(input.collectQuery || '').trim() || prompt;
   if (useOwn) body.owned_paths = ownedPaths;
+  if (input.wantDubbing) {
+    body.must_keep = '더빙은 운영자가 넣은 음성 파일만. 없으면 원본 소리. TTS를 만들지 않는다.';
+  }
   return body;
 }
 
@@ -120,7 +128,7 @@ function storage(): Storage | null {
 }
 
 export function emptyAutoPrefs(): AutoPrefs {
-  return { recipeId: DEFAULT_RECIPE_ID, recentTitles: [] };
+  return { recipeId: DEFAULT_RECIPE_ID, recentTitles: [], wantCaptions: false, wantDubbing: false };
 }
 
 function cleanTitles(value: unknown): string[] {
@@ -149,6 +157,8 @@ export function readAutoPrefs(): AutoPrefs {
       lastTitle: String(parsed.lastTitle || '').trim() || undefined,
       lastSavePath: String(parsed.lastSavePath || '').trim() || undefined,
       lastSaveAt: String(parsed.lastSaveAt || '').trim() || undefined,
+      wantCaptions: Boolean(parsed.wantCaptions),
+      wantDubbing: Boolean(parsed.wantDubbing),
     };
   } catch {
     return emptyAutoPrefs();
@@ -163,6 +173,8 @@ export function writeAutoPrefs(prefs: Partial<AutoPrefs>): AutoPrefs {
     lastTitle: prefs.lastTitle !== undefined ? String(prefs.lastTitle || '').trim() || undefined : current.lastTitle,
     lastSavePath: prefs.lastSavePath !== undefined ? String(prefs.lastSavePath || '').trim() || undefined : current.lastSavePath,
     lastSaveAt: prefs.lastSaveAt !== undefined ? String(prefs.lastSaveAt || '').trim() || undefined : current.lastSaveAt,
+    wantCaptions: prefs.wantCaptions !== undefined ? Boolean(prefs.wantCaptions) : Boolean(current.wantCaptions),
+    wantDubbing: prefs.wantDubbing !== undefined ? Boolean(prefs.wantDubbing) : Boolean(current.wantDubbing),
   };
   storage()?.setItem(AUTO_PREFS_KEY, JSON.stringify(next));
   return next;

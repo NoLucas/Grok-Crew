@@ -285,8 +285,8 @@ def test_local_analysis_persists_transcript_and_scene_metadata(studio, monkeypat
     thumbnail.write_bytes(b"jpeg")
     monkeypatch.setattr(analysis, "_probe", lambda _source: {"status": "ready", "duration": 8.0})
     monkeypatch.setattr(analysis, "_thumbnails", lambda *_args: [{"id": "scene-01", "at": 2.0, "path": str(thumbnail), "size_bytes": 4}])
-    monkeypatch.setattr(analysis, "_transcript", lambda _source: {"status": "ready", "engine": "whisper.cpp", "words": [{"start": 0, "end": 1, "text": "hello"}]})
-    result = analysis.analyze_project(project)
+    monkeypatch.setattr(analysis, "_transcript", lambda _source, _language="": {"status": "ready", "engine": "whisper.cpp", "words": [{"start": 0, "end": 1, "text": "hello"}], "caption_cues": [{"start": 0, "end": 1, "text": "hello"}]})
+    result = analysis.analyze_project(project, want_transcript=True)
     assert result["status"] == "ready"
     assert result["transcript_json"]["words"][0]["text"] == "hello"
     assert result["thumbnails_json"][0]["path"] == str(thumbnail)

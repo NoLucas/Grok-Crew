@@ -971,11 +971,12 @@ export default function DesktopWorkspace() {
       const result = await api(`/api/v2/projects/${project.id}/analysis`, { method: 'POST', body: '{}' }) as { analysis: ProjectAnalysis };
       setAnalysis(result.analysis);
       const transcriptReady = result.analysis.transcript_json?.status === 'ready';
+      const transcriptSkipped = result.analysis.transcript_json?.status === 'skipped';
       setMessage(t(
-        `로컬 분석 완료: 장면 ${result.analysis.thumbnails_json?.length ?? 0}개${transcriptReady ? ', 대본 준비됨' : '. whisper.cpp 설정 시 대본도 생성됩니다.'}`,
-        `Local analysis complete: ${result.analysis.thumbnails_json?.length ?? 0} scenes${transcriptReady ? ' and transcript ready.' : '. Configure whisper.cpp to add a transcript.'}`,
-        `本地分析完成：${result.analysis.thumbnails_json?.length ?? 0} 个场景。`,
-        `ローカル解析完了：${result.analysis.thumbnails_json?.length ?? 0} シーン。`,
+        `로컬 분석 완료: 장면 ${result.analysis.thumbnails_json?.length ?? 0}개${transcriptReady ? ', 대본 준비됨' : transcriptSkipped ? '. 자동에서 자막을 켜야 대본이 생깁니다.' : '. whisper.cpp 설정 시 대본도 생성됩니다.'}`,
+        `Local analysis complete: ${result.analysis.thumbnails_json?.length ?? 0} scenes${transcriptReady ? ' and transcript ready.' : transcriptSkipped ? '. Turn on captions in Auto to make a transcript.' : '. Configure whisper.cpp to add a transcript.'}`,
+        `本地分析完成：${result.analysis.thumbnails_json?.length ?? 0} 个场景${transcriptReady ? '，字幕稿已就绪。' : transcriptSkipped ? '。要出字幕稿请在自动里打开字幕。' : '。'}`,
+        `ローカル解析完了：${result.analysis.thumbnails_json?.length ?? 0} シーン${transcriptReady ? '、文字起こし準備完了。' : transcriptSkipped ? '。字幕を自動でオンにすると文字起こしします。' : '。'}`,
       ));
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Local analysis failed.'); } finally { setAnalyzing(false); }
   };
@@ -1420,7 +1421,7 @@ export default function DesktopWorkspace() {
                   <div className="desktop-analysis-facts">
                     <span><b>{t('길이', 'Duration', '时长', '長さ')}</b>{formatTime(Number(analysis.media_json.duration ?? 0))}</span>
                     <span><b>{t('화면', 'Frame', '画面', '画面')}</b>{analysisVideo?.width && analysisVideo?.height ? `${analysisVideo.width}×${analysisVideo.height}` : '—'}</span>
-                    <span><b>{t('대본', 'Transcript', '字幕稿', '文字起こし')}</b>{analysis.transcript_json.status === 'ready' ? `${analysisWords.length} ${t('개 구간', 'segments', '个片段', '区間')}` : t('미설정', 'Not configured', '未配置', '未設定')}</span>
+                    <span><b>{t('대본', 'Transcript', '字幕稿', '文字起こし')}</b>{analysis.transcript_json.status === 'ready' ? `${analysisWords.length} ${t('개 구간', 'segments', '个片段', '区間')}` : analysis.transcript_json.status === 'skipped' ? t('자막 끔', 'Captions off', '字幕关', '字幕オフ') : t('미설정', 'Not configured', '未配置', '未設定')}</span>
                   </div>
                   {!!analysis.thumbnails_json.length && <div className="desktop-scene-grid">{analysis.thumbnails_json.map((scene, index) => <figure key={scene.id}>
                     {/* Generated analysis thumbnails are served only by the loopback sidecar. */}
@@ -1428,7 +1429,7 @@ export default function DesktopWorkspace() {
                     <img src={analysisSceneUrl(project.id, scene.id, analysis.updated_at)} alt={t(`장면 ${index + 1}`, `Scene ${index + 1}`, `场景 ${index + 1}`, `シーン ${index + 1}`)} />
                     <figcaption><span>{String(index + 1).padStart(2, '0')}</span><time>{formatTime(scene.at)}</time></figcaption>
                   </figure>)}</div>}
-                  <div className={`desktop-transcript-state ${analysis.transcript_json.status === 'ready' ? 'ready' : ''}`}><span>{analysis.transcript_json.status === 'ready' ? '✓' : 'i'}</span><div><b>{analysis.transcript_json.status === 'ready' ? t('대본 준비됨', 'Transcript ready', '字幕稿已就绪', '文字起こし準備完了') : t('장면 분석만 완료됨', 'Scene analysis complete', '场景分析已完成', 'シーン解析のみ完了')}</b><p>{analysis.transcript_json.status === 'ready' ? (analysis.transcript_json.text || analysisWords.map((word) => word.text).join(' ')) : t('whisper.cpp를 설정하면 음성을 대본으로 변환합니다.', 'Configure whisper.cpp to transcribe speech.', '配置 whisper.cpp 后可将语音转成文字。', 'whisper.cpp を設定すると音声を文字起こしできます。')}</p></div></div>
+                  <div className={`desktop-transcript-state ${analysis.transcript_json.status === 'ready' ? 'ready' : ''}`}><span>{analysis.transcript_json.status === 'ready' ? '✓' : 'i'}</span><div><b>{analysis.transcript_json.status === 'ready' ? t('대본 준비됨', 'Transcript ready', '字幕稿已就绪', '文字起こし準備完了') : analysis.transcript_json.status === 'skipped' ? t('자막이 꺼져 대본을 만들지 않음', 'Captions off, no transcript', '字幕关闭，未做字幕稿', '字幕オフのため文字起こしなし') : t('장면 분석만 완료됨', 'Scene analysis complete', '场景分析已完成', 'シーン解析のみ完了')}</b><p>{analysis.transcript_json.status === 'ready' ? (analysis.transcript_json.text || analysisWords.map((word) => word.text).join(' ')) : analysis.transcript_json.status === 'skipped' ? t('자동에서 자막을 켜야 말 구간을 자막으로 붙입니다.', 'Turn on captions in Auto to burn speech windows as captions.', '要在自动里打开字幕，才会把说话段落做成字幕。', '自動で字幕をオンにすると、話している区間を字幕にします。') : t('whisper.cpp를 설정하면 음성을 대본으로 변환합니다.', 'Configure whisper.cpp to transcribe speech.', '配置 whisper.cpp 后可将语音转成文字。', 'whisper.cpp を設定すると音声を文字起こしできます。')}</p></div></div>
                 </div>}
               </section>
               <section className="desktop-card desktop-settings-card"><div className="desktop-card-title"><span>02</span><div><b>{t('편집 Agent 설정', 'Editor Agent controls', '剪辑 Agent 设置', '編集 Agent 設定')}</b><small>{t('채팅 없이 명확한 선택으로 전달합니다.', 'Clear controls, no prompt writing.', '无需编写提示词。', 'プロンプト入力は不要です。')}</small></div></div>
