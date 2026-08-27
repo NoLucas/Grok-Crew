@@ -14,6 +14,9 @@ const contentSecurityPolicy = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [{ source: '/get', destination: '/existing-home.html' }];
+  },
   async headers() {
     return [
       {
