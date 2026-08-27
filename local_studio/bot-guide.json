@@ -142,7 +142,7 @@
   ],
   "workspace_pages": [
     {"id":"01","url":"/","name":"Studio","purpose":"A visual overview of the reel concept, project state, and local creative direction.","bot_use":"Read the current creative context before selecting a project action."},
-    {"id":"01b","url":"/tools","name":"Advanced tools","purpose":"Index of older consoles. Production and Bot check can run real jobs; the rest are drafts.","bot_use":"Read GET /api/v2/tools or python grok-crew.py tools. Do not scrape HTML. Call only the APIs listed for that tool."},
+    {"id":"01b","url":"/tools","name":"Advanced tools","purpose":"The person specifies which tools the bot should use. Screens can be opened; the bot should run them.","bot_use":"Read GET /api/v2/tools or python grok-crew.py tools. Call APIs only for tools where assigned is true and api_live is true. Do not scrape HTML."},
     {"id":"02","url":"/edit","name":"Edit Lab","purpose":"Frame, motion, typography, timing, caption, and preview controls.","bot_use":"Use it to inspect or align visual-edit decisions with the shared edit method."},
     {"id":"03","url":"/cut","name":"Cut Log","purpose":"Transcript-led clip review, keep/remove decisions, and time-based cut planning.","bot_use":"Review the planned cut, then save a non-destructive cut map through Local Studio."},
     {"id":"04","url":"/production","name":"Production","purpose":"Projects, media paths, finish settings, render queue, and Instagram delivery.","bot_use":"Create or select the local project, apply settings, render, and queue or auto-upload delivery."},

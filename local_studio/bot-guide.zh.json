@@ -79,7 +79,7 @@
   ],
   "workspace_pages": [
     {"id":"01","url":"/","name":"工作室","purpose":"以视觉方式概览 Reel 构思、项目状态和本地创作方向。","bot_use":"在选择项目操作前阅读当前的创作背景。"},
-    {"id":"01b","url":"/tools","name":"高级工具","purpose":"旧控制台目录。只有制作和机器人检查会跑真实任务，其余是草稿。","bot_use":"读 GET /api/v2/tools 或 python grok-crew.py tools。不要抓 HTML，只调用该工具列出的 API。"},
+    {"id":"01b","url":"/tools","name":"高级工具","purpose":"人在这里指定机器人该用的工具。可以打开画面，执行尽量交给机器人。","bot_use":"读 GET /api/v2/tools 或 python grok-crew.py tools。只调用 assigned 为 true 且 api_live 为 true 的工具的 API。不要抓 HTML。"},
     {"id":"02","url":"/edit","name":"编辑室","purpose":"取景、动效、排版、时间轴、字幕和预览控制。","bot_use":"用它来检查或对齐与共享剪辑方式相符的视觉剪辑决定。"},
     {"id":"03","url":"/cut","name":"剪辑记录","purpose":"以文字稿为主导的片段审阅、保留/移除决定和基于时间的剪切规划。","bot_use":"审阅计划中的剪切,然后通过 Local Studio 保存非破坏性的剪辑图。"},
     {"id":"04","url":"/production","name":"制作","purpose":"项目、素材路径、收尾设置、渲染队列和 Instagram 交付。","bot_use":"创建或选择本地项目,应用设置,渲染,并加入队列或自动上传交付。"},

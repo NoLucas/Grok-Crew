@@ -80,7 +80,7 @@
   ],
   "workspace_pages": [
     {"id":"01","url":"/","name":"스튜디오","purpose":"릴 콘셉트·프로젝트 상태·로컬 창작 방향을 한눈에 보는 화면입니다.","bot_use":"프로젝트 작업을 고르기 전에 현재 창작 맥락을 읽습니다."},
-    {"id":"01b","url":"/tools","name":"고급 도구","purpose":"예전 콘솔 목록입니다. 제작과 봇 확인만 실제 작업을 돌리고, 나머지는 초안입니다.","bot_use":"GET /api/v2/tools 또는 python grok-crew.py tools를 읽습니다. HTML을 긁지 말고, 도구마다 적힌 API만 호출합니다."},
+    {"id":"01b","url":"/tools","name":"고급 도구","purpose":"사람이 봇이 쓸 도구를 지정하는 목록입니다. 화면은 열어 볼 수 있고, 실행은 웬만하면 봇이 합니다.","bot_use":"GET /api/v2/tools 또는 python grok-crew.py tools를 읽습니다. assigned가 true이고 api_live가 true인 도구의 API만 호출합니다. HTML을 긁지 마세요."},
     {"id":"02","url":"/edit","name":"편집실","purpose":"프레임·모션·타이포그래피·타이밍·자막·미리보기를 조정하는 화면입니다.","bot_use":"공통 편집 방식과 시각 편집 결정을 확인하거나 맞출 때 사용합니다."},
     {"id":"03","url":"/cut","name":"컷 로그","purpose":"대본 중심 클립 검토·유지/제거 결정·시간 기반 컷 계획을 다룹니다.","bot_use":"계획된 컷을 검토한 뒤 Local Studio에 비파괴 컷 맵을 저장합니다."},
     {"id":"04","url":"/production","name":"제작","purpose":"프로젝트·미디어 경로·마무리 설정·렌더 대기열·Instagram 전달을 관리합니다.","bot_use":"로컬 프로젝트를 만들거나 선택하고, 설정 적용·렌더·대기열 또는 자동 업로드를 실행합니다."},

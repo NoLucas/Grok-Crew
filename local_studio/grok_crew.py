@@ -123,8 +123,9 @@ def build_parser() -> argparse.ArgumentParser:
     for name, help_text in (("health", "Read local service status."), ("contract", "Read terminal capability contract."), ("guide", "Read bot editing guide."), ("presets", "Read quality, caption layout, and platform presets.")):
         commands.add_parser(name, help=help_text)
 
-    tools = commands.add_parser("tools", help="Read the advanced-tools catalog (APIs, not HTML).")
+    tools = commands.add_parser("tools", help="Read the advanced-tools catalog (APIs, not HTML). A person may specify which tools the bot should use.")
     tools.add_argument("--lang", choices=("en", "ko", "zh", "ja"), default="en")
+    tools.add_argument("--assign", default=None, metavar="IDS", help="Comma-separated tool ids the person specified for the bot. Use none to clear.")
 
     site = commands.add_parser("site", help="Print the correct browser workspace URL; do not use port 7214 for browser pages.")
     site.add_argument("--page", choices=tuple(BROWSER_PAGES), default="desktop")
@@ -239,7 +240,12 @@ def main() -> None:
     if args.group == "guide":
         print_json(client.request("/api/bot-guide")); return
     if args.group == "tools":
-        print_json(client.request(f"/api/v2/tools?lang={args.lang}")); return
+        if args.assign is not None:
+            ids = [] if args.assign.strip().lower() in {"", "-", "none"} else [part.strip() for part in args.assign.split(",") if part.strip()]
+            print_json(client.request("/api/v2/tools", {"ids": ids, "lang": args.lang}))
+        else:
+            print_json(client.request(f"/api/v2/tools?lang={args.lang}"))
+        return
     if args.group == "presets":
         print_json(client.request("/api/presets")); return
     if args.group == "site":

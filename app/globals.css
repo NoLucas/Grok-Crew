@@ -5594,6 +5594,18 @@ select {
   border: 1px solid var(--text);
   color: var(--text);
 }
+.planning-banner-copy {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--yellow);
+  color: var(--on-accent, #111);
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+}
 @media (max-width: 720px) {
   .planning-banner { flex-wrap: wrap; }
 }
@@ -8933,13 +8945,17 @@ select {
   gap: 8px;
   margin-top: 22px;
 }
-.tools-hero-actions a {
+.tools-hero-actions a,
+.tools-copy-action {
   padding: 10px 13px;
+  border: 0;
   border-radius: 8px;
   background: var(--yellow);
   color: var(--on-accent, #111);
   font-size: 13px;
   font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
 }
 .tools-hero-actions .tools-secondary-action {
   background: var(--surface);
@@ -9001,7 +9017,55 @@ select {
   color: var(--text);
 }
 .tools-card:hover { border-color: var(--text); background: var(--surface); }
-.tools-card.is-live { border-color: var(--lime); background: var(--surface); }
+.tools-card.is-live,
+.tools-card.is-assigned { border-color: var(--lime); background: var(--surface); }
+.tools-assign-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.tools-assign-bar b { font-size: 15px; }
+.tools-assign-bar p { margin: 4px 0 0; color: var(--text); font-size: 13px; line-height: 1.5; }
+.tools-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tools-card-assign {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.tools-card-assign input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--lime);
+}
+.tools-card-assign.is-human {
+  cursor: default;
+  color: var(--soft);
+  font-weight: 700;
+}
+.tools-card-open {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .tools-card-head,
 .tools-card > div {
   display: flex;
@@ -9431,8 +9495,10 @@ html.tools-shell .packet-preview pre {
   color: var(--text);
 }
 html.tools-shell .tools-hero-actions a,
+html.tools-shell .tools-copy-action,
 html.tools-shell .production-primary,
-html.tools-shell .planning-banner a:not(.planning-banner-secondary) {
+html.tools-shell .planning-banner a:not(.planning-banner-secondary),
+html.tools-shell .planning-banner-copy {
   background: var(--yellow);
   color: var(--on-accent);
 }

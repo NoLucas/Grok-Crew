@@ -10,12 +10,15 @@ register('./timeline/ts-resolver.helper.mjs', import.meta.url);
 const {
   ADVANCED_TOOLS,
   ADVANCED_TOOLS_SCHEMA,
+  botToolsInstruction,
+  defaultAssignedIds,
   draftAdvancedTools,
   featuredAdvancedTools,
   formatToolApi,
   liveAdvancedTools,
   localizeQuad,
   moreAdvancedTools,
+  normalizeAssignedIds,
   primaryToolApi,
   toolCatalogPayload,
 } = await import('./advanced-tools.ts');
@@ -69,5 +72,20 @@ describe('advanced tools catalog', () => {
     assert.ok(production.botApi.write.includes('POST /api/projects/{id}/render'));
     assert.match(formatToolApi(production), /GET \/api\/projects/);
     assert.match(localizeQuad(ADVANCED_TOOLS.find((tool) => tool.id === 'hub').never, 'ko'), /api\/v2\/tools/);
+  });
+
+  it('defaults assignment to live APIs so the bot uses them unless a person unchecks', () => {
+    const assigned = defaultAssignedIds();
+    assert.ok(assigned.includes('production'));
+    assert.ok(assigned.includes('operations'));
+    assert.ok(!assigned.includes('agent'));
+    assert.deepEqual(normalizeAssignedIds(['production', 'nope', 'production']), ['production']);
+    const payload = toolCatalogPayload('ko', ['production', 'operations']);
+    assert.equal(payload.operator, 'bot');
+    assert.equal(payload.human_may_specify, true);
+    assert.deepEqual(payload.assigned, ['production', 'operations']);
+    assert.equal(payload.tools.find((tool) => tool.id === 'bots').assigned, false);
+    assert.match(payload.bot_instruction, /지정: production, operations/);
+    assert.match(botToolsInstruction('en', []), /No advanced tools are assigned/);
   });
 });

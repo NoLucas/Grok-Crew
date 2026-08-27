@@ -70,7 +70,7 @@ from studio_server import (
     terminal_contract,
     update_artifact,
 )
-from advanced_tools import advanced_tools_catalog
+from advanced_tools import advanced_tools_catalog, assign_advanced_tools
 from first_run import first_run_status, open_sample_project
 from bot_pack import bot_pack_bytes
 from edit_spec import create_spec, get_spec, list_specs, spec_brief, spec_invite
@@ -566,6 +566,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, {"execution_policy": set_execution_policy(body)})
             elif path == "/api/bot-entry":
                 self._json(201, enter_bot_workspace(body))
+            elif path == "/api/v2/tools":
+                self._json(200, assign_advanced_tools(body))
             elif path == "/api/edit-method":
                 self._json(200, {"edit_method": set_edit_method(body)})
             elif path == "/api/brand-kits":
