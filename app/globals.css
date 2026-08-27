@@ -12,6 +12,7 @@
   --red: #ff5b52;
   --input: #0a0a0a;
   --header-bg: rgba(10, 10, 10, 0.94);
+  --on-accent: #111;
 }
 * {
   box-sizing: border-box;
@@ -1030,8 +1031,8 @@ select {
   margin: 0 auto;
   padding: 20px 0 32px;
   border-top: 1px solid var(--line);
-  color: #777;
-  font-size: 10px;
+  color: var(--soft);
+  font-size: 13px;
 }
 .forge-footer span:first-child,
 .forge-footer span:last-child {
@@ -3589,8 +3590,8 @@ select {
   margin-bottom: 15px;
 }
 .production-card-head em {
-  color: #777;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 12px;
   font-style: normal;
 }
 .blueprint-card {
@@ -3602,9 +3603,9 @@ select {
 .publish-field {
   display: grid;
   gap: 6px;
-  color: #bbb;
-  font-size: 9px;
-  font-weight: 900;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
 }
 .blueprint-card input,
 .blueprint-card textarea,
@@ -3617,7 +3618,7 @@ select {
   outline: 0;
   background: var(--input);
   color: var(--text);
-  font-size: 11px;
+  font-size: 14px;
 }
 .blueprint-card textarea {
   min-height: 80px;
@@ -3629,9 +3630,9 @@ select {
 .lane-card > p,
 .bot-card > p {
   margin: 0;
-  color: #84847f;
-  font-size: 10px;
-  line-height: 1.45;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
 }
 .path-grid {
   display: grid;
@@ -3648,7 +3649,7 @@ select {
 }
 .production-primary {
   background: var(--yellow);
-  color: #111;
+  color: var(--on-accent, #111);
 }
 .production-outline {
   background: transparent;
@@ -3671,17 +3672,17 @@ select {
   grid-template-columns: 0.78fr 1.22fr;
   gap: 10px;
   padding: 10px 0;
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid var(--line);
 }
 .local-status-card dt {
-  color: #777;
-  font-size: 9px;
+  color: var(--soft);
+  font-size: 13px;
   font-weight: 800;
 }
 .local-status-card dd {
   margin: 0;
-  color: #d4d4cc;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   font-weight: 800;
 }
 .local-status-card dd.good {
@@ -3690,8 +3691,8 @@ select {
 .local-status-card dd small {
   display: block;
   margin-top: 3px;
-  color: #83837e;
-  font-size: 8px;
+  color: var(--soft);
+  font-size: 12px;
   font-weight: 500;
 }
 .token-field {
@@ -3708,7 +3709,7 @@ select {
 }
 .lane-card h2 {
   margin: 0;
-  color: #e8e8e1;
+  color: var(--text);
   font-size: 23px;
   line-height: 0.95;
   letter-spacing: -0.055em;
@@ -3718,11 +3719,11 @@ select {
   align-items: flex-start;
   gap: 8px;
   padding: 10px;
-  border: 1px solid #3f391c;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #151407;
-  color: #d7d1a7;
-  font-size: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
   font-weight: 800;
   line-height: 1.4;
 }
@@ -3731,13 +3732,13 @@ select {
   accent-color: var(--yellow);
 }
 .lane-card > small {
-  color: #777;
+  color: var(--soft);
   font:
-    9px var(--font-geist-mono),
+    13px var(--font-geist-mono),
     monospace;
 }
 .instagram-card {
-  background: linear-gradient(135deg, #171109, #111 62%);
+  background: var(--surface);
 }
 .publish-field {
   margin-top: 1px;
@@ -3745,9 +3746,9 @@ select {
 .production-jobs {
   margin-top: 16px;
   padding: 24px;
-  border: 1px solid #39351d;
+  border: 1px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #15140a, #101010 58%);
+  background: var(--surface);
 }
 .production-section-head {
   display: flex;
@@ -3769,9 +3770,9 @@ select {
   color: var(--yellow);
 }
 .production-section-head > span {
-  color: #777;
+  color: var(--soft);
   font:
-    10px var(--font-geist-mono),
+    13px var(--font-geist-mono),
     monospace;
   white-space: nowrap;
 }
@@ -3828,9 +3829,9 @@ select {
   justify-content: space-between;
   gap: 15px;
   padding: 13px;
-  border: 1px solid #323232;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #0c0c0c;
+  background: var(--surface-2);
 }
 .job-row.running {
   border-color: #59642a;
@@ -3848,17 +3849,17 @@ select {
   margin-right: 8px;
   color: var(--yellow);
   font:
-    900 9px var(--font-geist-mono),
+    800 12px var(--font-geist-mono),
     monospace;
 }
 .job-row b {
-  color: #ddd;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 13px;
 }
 .job-row p {
   margin: 6px 0 0;
-  color: #777;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 13px;
 }
 .job-row small {
   display: block;
@@ -3899,10 +3900,10 @@ select {
 }
 .empty-job {
   padding: 24px;
-  border: 1px dashed #343434;
+  border: 1px dashed var(--line);
   border-radius: 8px;
-  color: #777;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.55;
   text-align: center;
 }
@@ -3915,13 +3916,13 @@ select {
   margin: 0 0 12px;
   padding: 12px;
   overflow: auto;
-  border: 1px solid #2c2c2c;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #090909;
-  color: #c5c4b9;
+  background: var(--surface-2);
+  color: var(--text);
   white-space: pre-wrap;
   font:
-    9px/1.55 var(--font-geist-mono),
+    13px/1.55 var(--font-geist-mono),
     monospace;
 }
 .idea-card ul {
@@ -3943,8 +3944,8 @@ select {
   font-size: 10px;
 }
 .idea-card span {
-  color: #aaa;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.4;
 }
 .production-message {
@@ -3953,14 +3954,15 @@ select {
   max-width: 800px;
   margin: 20px auto 0;
   padding: 11px 14px;
-  border: 1px solid #484221;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(20, 19, 10, 0.94);
-  color: #dad2a4;
-  font-size: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.45;
   text-align: center;
   backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 12%, transparent);
 }
 @media (max-width: 980px) {
   .production-hero,
@@ -4039,9 +4041,9 @@ select {
 .finish-rack {
   margin-top: 14px;
   padding: 23px;
-  border: 1px solid #3f3b1f;
+  border: 1px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #17150a, #101010 62%);
+  background: var(--surface);
 }
 .finish-rack-head {
   display: flex;
@@ -4065,8 +4067,8 @@ select {
 .finish-rack-head > p {
   max-width: 350px;
   margin: 0;
-  color: #898981;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   line-height: 1.5;
 }
 .finish-grid {
@@ -4082,21 +4084,21 @@ select {
   gap: 10px;
   min-width: 0;
   padding: 15px;
-  border-left: 1px solid #302e20;
-  background: rgba(9, 9, 9, 0.45);
+  border-left: 1px solid var(--line);
+  background: var(--surface-2);
 }
 .finish-grid > article:first-child {
   border-left: 0;
 }
 .finish-grid > article > span {
-  color: #85805a;
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
 }
 .finish-grid h3 {
   margin: 0 0 2px;
-  color: #e6e6df;
+  color: var(--text);
   font-size: 17px;
   line-height: 0.95;
   letter-spacing: -0.045em;
@@ -4104,8 +4106,8 @@ select {
 .finish-grid label {
   display: grid;
   gap: 5px;
-  color: #b9b9b3;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 800;
 }
 .finish-grid label > output {
@@ -8934,8 +8936,8 @@ select {
   padding: 10px 13px;
   border-radius: 8px;
   background: var(--yellow);
-  color: #111;
-  font-size: 12px;
+  color: var(--on-accent, #111);
+  font-size: 13px;
   font-weight: 800;
 }
 .tools-hero-actions .tools-secondary-action {
@@ -9172,61 +9174,65 @@ html.tools-shell body {
 }
 html.tools-shell[data-theme="light"] {
   color-scheme: light;
-  --bg: #f3f4f6;
+  --bg: #e6e8ed;
   --surface: #ffffff;
-  --surface-2: #f8f8fa;
-  --line: #dedfe4;
-  --soft: #3d4148;
-  --text: #191a1d;
-  --yellow: #b27616;
-  --lime: #2fa66f;
-  --red: #dc554c;
-  --input: #fafafa;
-  --header-bg: rgba(250, 250, 251, 0.97);
+  --surface-2: #eef0f4;
+  --line: #8b919c;
+  --soft: #2a2f38;
+  --text: #101114;
+  --yellow: #6a4308;
+  --lime: #14643f;
+  --red: #b42318;
+  --input: #ffffff;
+  --header-bg: #ffffff;
+  --on-accent: #fffdf8;
 }
 html.tools-shell[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #12141a;
-  --surface: #1b1e26;
-  --surface-2: #16181f;
-  --line: #2d323c;
-  --soft: #c5cad3;
-  --text: #eceef3;
-  --yellow: #e0b25a;
-  --lime: #4ecb8d;
-  --red: #f07a72;
-  --input: #14171e;
-  --header-bg: rgba(18, 20, 26, 0.96);
+  --bg: #0c0e13;
+  --surface: #252a34;
+  --surface-2: #181c24;
+  --line: #6b7384;
+  --soft: #dce1ea;
+  --text: #f7f8fb;
+  --yellow: #f3c85a;
+  --lime: #7ae8a6;
+  --red: #ff8b82;
+  --input: #10131a;
+  --header-bg: #1a1e27;
+  --on-accent: #14120a;
 }
 html.tools-shell[data-theme="low-light"],
 html.tools-day,
 html.tools-day body {
   color-scheme: light;
-  --bg: #e4e1d7;
-  --surface: #efece3;
-  --surface-2: #e9e5db;
-  --line: #c8c3b6;
-  --soft: #5a564c;
-  --text: #2b2924;
-  --yellow: #9a6a14;
-  --lime: #2b8f5f;
-  --red: #c44d46;
-  --input: #e8e4da;
-  --header-bg: rgba(236, 232, 222, 0.96);
+  --bg: #d4cfc2;
+  --surface: #fffdf8;
+  --surface-2: #f3eee3;
+  --line: #7d7668;
+  --soft: #332f28;
+  --text: #14120e;
+  --yellow: #5c3d07;
+  --lime: #145a3c;
+  --red: #9f1f16;
+  --input: #ffffff;
+  --header-bg: #fffdf8;
+  --on-accent: #fffdf8;
 }
 html.tools-shell[data-theme="low-dark"] {
   color-scheme: dark;
-  --bg: #1a1c1f;
-  --surface: #23262b;
-  --surface-2: #1f2125;
-  --line: #34383e;
-  --soft: #b4b8bf;
-  --text: #c5c8ce;
-  --yellow: #c4a05a;
-  --lime: #4aa87a;
-  --red: #d4766d;
-  --input: #1c1e22;
-  --header-bg: rgba(26, 28, 31, 0.96);
+  --bg: #121418;
+  --surface: #2c3138;
+  --surface-2: #1d2025;
+  --line: #6d7480;
+  --soft: #d8dbe1;
+  --text: #f4f5f7;
+  --yellow: #ebc15a;
+  --lime: #78d4a0;
+  --red: #f08b82;
+  --input: #16181c;
+  --header-bg: #22262c;
+  --on-accent: #14120a;
 }
 html.tools-shell input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
 html.tools-shell textarea,
@@ -9366,5 +9372,60 @@ html.tools-shell .inspector-scroll h3,
 html.tools-shell .inspector-head b,
 html.tools-shell .track-label {
   color: var(--text);
-  font-size: 12px;
+  font-size: 13px;
+}
+html.tools-shell label,
+html.tools-shell dt,
+html.tools-shell .blueprint-card label,
+html.tools-shell .token-field,
+html.tools-shell .publish-field,
+html.tools-shell .finish-grid label,
+html.tools-shell .local-status-card dt {
+  color: var(--text);
+  font-size: 13px;
+}
+html.tools-shell .local-status-card dd,
+html.tools-shell .lane-card h2,
+html.tools-shell .job-row b,
+html.tools-shell .finish-grid h3,
+html.tools-shell .idea-card span,
+html.tools-shell .forge-footer {
+  color: var(--text);
+}
+html.tools-shell .job-row,
+html.tools-shell .empty-job,
+html.tools-shell .production-jobs,
+html.tools-shell .production-message,
+html.tools-shell .instagram-card,
+html.tools-shell .approval-check,
+html.tools-shell .bot-card pre,
+html.tools-shell .finish-grid > article,
+html.tools-shell .project-list button,
+html.tools-shell .ops-task-list article,
+html.tools-shell .ops-recovery-list article,
+html.tools-shell .terminal-card pre,
+html.tools-shell .terminal-flow > pre,
+html.tools-shell .packet-preview pre {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--text);
+}
+html.tools-shell .tools-hero-actions a,
+html.tools-shell .production-primary,
+html.tools-shell .planning-banner a:not(.planning-banner-secondary) {
+  background: var(--yellow);
+  color: var(--on-accent);
+}
+html.tools-shell .planning-banner a.planning-banner-secondary,
+html.tools-shell .production-outline {
+  color: var(--text);
+  border-color: var(--text);
+  background: transparent;
+}
+html.tools-shell .site-header nav a {
+  color: var(--text);
+}
+html.tools-shell .site-header nav a.current,
+html.tools-shell .site-header nav a:hover {
+  color: var(--text);
 }
