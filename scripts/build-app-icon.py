@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Paint the crew-and-reel mark into PNG and a multi-size Windows ICO.
+"""Paint the orbit-reel mark into PNG and a multi-size Windows ICO.
 
-Three overlapping discs (the crew) with a vertical capsule punched out (the reel).
+A vertical capsule (the reel) with two crescent arms (the crew).
 Needs Pillow. From this repo: local_studio/.venv/bin/python scripts/build-app-icon.py
 """
 
@@ -45,34 +45,51 @@ def squircle(size: int) -> Image.Image:
     return image
 
 
-def crew_mark(size: int) -> Image.Image:
-    """Connected three-lobe crew with a vertical reel slot."""
+def stamp_arc(
+    draw: ImageDraw.ImageDraw,
+    cx: float,
+    cy: float,
+    rx: float,
+    ry: float,
+    start_deg: float,
+    end_deg: float,
+    stamp: float,
+) -> None:
+    sweep = end_deg - start_deg
+    steps = max(14, int(abs(sweep) * max(rx, ry) / 10))
+    for index in range(steps + 1):
+        angle = math.radians(start_deg + sweep * index / steps)
+        x = cx + rx * math.sin(angle)
+        y = cy - ry * math.cos(angle)
+        draw.ellipse([x - stamp, y - stamp, x + stamp, y + stamp], fill=255)
+
+
+def orbit_mark(size: int) -> Image.Image:
+    """Vertical reel with two crew arms."""
     mark = Image.new("L", (size, size), 0)
     draw = ImageDraw.Draw(mark)
     cx = cy = (size - 1) / 2
-    # Tiny icons need a slightly tighter, thicker glyph so lobes stay one shape.
-    tight = 1.05 if size <= 24 else 1.0
-    radius = size * 0.198 * tight
-    offset = size * 0.122 * tight
-    for degrees in (0.0, 120.0, 240.0):
-        radians = math.radians(degrees)
-        x = cx + offset * math.sin(radians)
-        y = cy - offset * math.cos(radians)
-        draw.ellipse([x - radius, y - radius, x + radius, y + radius], fill=255)
+    tight = 1.08 if size <= 24 else 1.0
 
-    slot_w = max(3 if size >= 16 else 2, size * (0.145 if size <= 32 else 0.108))
-    slot_h = max(slot_w * 2.2, size * 0.285)
+    slot_w = max(3 if size >= 16 else 2, size * (0.155 if size <= 32 else 0.138))
+    slot_h = size * 0.39 * tight
     draw.rounded_rectangle(
         [cx - slot_w / 2, cy - slot_h / 2, cx + slot_w / 2, cy + slot_h / 2],
         radius=slot_w / 2,
-        fill=0,
+        fill=255,
     )
+
+    stamp = max(2.0, size * (0.074 if size <= 24 else 0.072))
+    rx = size * 0.262 * tight
+    ry = size * 0.282 * tight
+    stamp_arc(draw, cx, cy, rx, ry, 208, 332, stamp)
+    stamp_arc(draw, cx, cy, rx, ry, 28, 152, stamp)
     return mark
 
 
 def paint(size: int) -> Image.Image:
     tile = squircle(size)
-    mark = crew_mark(size)
+    mark = orbit_mark(size)
     white = Image.new("RGBA", (size, size), (255, 255, 255, 255))
     cut = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     emblem = Image.composite(white, cut, mark)
