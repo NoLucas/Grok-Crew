@@ -10,6 +10,12 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 export const metadata: Metadata = {
   title: 'Local Video Workspace',
   description: 'A local-first video editing workspace for people and their bots.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/app-mark.png', type: 'image/png' },
+    ],
+  },
   openGraph: { title: 'Local Video Workspace', description: 'A local-first video editing workspace for people and their bots.' },
   twitter: { card: 'summary', title: 'Local Video Workspace', description: 'A local-first video editing workspace for people and their bots.' },
 };

@@ -1,12 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <linearGradient id="desk" x1="36" y1="24" x2="220" y2="232" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#5d57ef"/>
-      <stop offset="1" stop-color="#918bff"/>
-    </linearGradient>
-  </defs>
-  <rect x="8" y="8" width="240" height="240" rx="72" fill="url(#desk)"/>
-  <rect x="110.3" y="78.1" width="35.4" height="99.8" rx="17.7" fill="#fff"/>
-  <path d="M96.5 191.7A67.1 72.2 0 0 0 96.5 64.3" fill="none" stroke="#fff" stroke-width="37" stroke-linecap="round"/>
-  <path d="M159.5 64.3A67.1 72.2 0 0 1 159.5 191.7" fill="none" stroke="#fff" stroke-width="37" stroke-linecap="round"/>
+  <rect x="8" y="8" width="240" height="240" rx="72" fill="#f7f7f7"/>
+  <g transform="translate(128 128)">
+    <circle r="92" fill="#2f2f2f"/>
+    <path d="M0-92A92 92 0 0 1 79.7-46L20-12A24 24 0 0 0 0-24Z" fill="#d9b48a"/>
+    <path d="M79.7-46A92 92 0 0 1 79.7 46L20 12A24 24 0 0 0 20-12Z" fill="#2f2f2f"/>
+    <path d="M79.7 46A92 92 0 0 1 0 92L0 24A24 24 0 0 0 20 12Z" fill="#e07a2f"/>
+    <path d="M0 92A92 92 0 0 1-79.7 46L-20 12A24 24 0 0 0 0 24Z" fill="#c4784a"/>
+    <path d="M-79.7 46A92 92 0 0 1-79.7-46L-20-12A24 24 0 0 0-20 12Z" fill="#e6c49a"/>
+    <path d="M-79.7-46A92 92 0 0 1 0-92L0-24A24 24 0 0 0-20-12Z" fill="#3a3a3a"/>
+    <polygon points="12,0 -8,-12 -8,12" fill="#fff"/>
+  </g>
 </svg>

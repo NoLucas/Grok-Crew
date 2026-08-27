@@ -1,29 +1,24 @@
 #!/usr/bin/env python3
-"""Paint the orbit-reel mark into PNG and a multi-size Windows ICO.
+"""Fit the shutter-play mark onto a light squircle PNG and a multi-size ICO.
 
-A vertical capsule (the reel) with two crescent arms (the crew).
 Needs Pillow. From this repo: local_studio/.venv/bin/python scripts/build-app-icon.py
+Source art: desktop/icons/mark-source.png
 """
 
 from __future__ import annotations
 
 import io
-import math
 import struct
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "desktop" / "icons"
+PUBLIC = ROOT / "public"
+SOURCE = OUT / "mark-source.png"
 ICO_SIZES = (16, 24, 32, 48, 64, 128, 256)
-START = (0x5D, 0x57, 0xEF, 255)
-END = (0x91, 0x8B, 0xFF, 255)
-
-
-def mix(start: tuple[int, ...], end: tuple[int, ...], t: float) -> tuple[int, ...]:
-    t = min(1.0, max(0.0, t))
-    return tuple(int(a + (b - a) * t) for a, b in zip(start, end, strict=True))
+TILE = (247, 247, 247, 255)
 
 
 def squircle(size: int) -> Image.Image:
@@ -36,68 +31,33 @@ def squircle(size: int) -> Image.Image:
         radius=radius,
         fill=255,
     )
-    pixels = image.load()
-    last = max(1, size - 1)
-    for y in range(size):
-        for x in range(size):
-            if mask.getpixel((x, y)):
-                pixels[x, y] = mix(START, END, (x + y) / (2 * last))
-    return image
+    tile = Image.new("RGBA", (size, size), TILE)
+    return Image.composite(tile, image, mask), mask
 
 
-def stamp_arc(
-    draw: ImageDraw.ImageDraw,
-    cx: float,
-    cy: float,
-    rx: float,
-    ry: float,
-    start_deg: float,
-    end_deg: float,
-    stamp: float,
-) -> None:
-    sweep = end_deg - start_deg
-    steps = max(14, int(abs(sweep) * max(rx, ry) / 10))
-    for index in range(steps + 1):
-        angle = math.radians(start_deg + sweep * index / steps)
-        x = cx + rx * math.sin(angle)
-        y = cy - ry * math.cos(angle)
-        draw.ellipse([x - stamp, y - stamp, x + stamp, y + stamp], fill=255)
+def fit_mark(size: int, mark: Image.Image) -> Image.Image:
+    # Small icons: fill more of the tile so the shutter still reads.
+    inset = 0.03 if size <= 32 else 0.045
+    inner = max(1, round(size * (1 - 2 * inset)))
+    fitted = mark.resize((inner, inner), Image.Resampling.LANCZOS)
+    if size <= 32:
+        fitted = fitted.filter(ImageFilter.UnsharpMask(radius=1.2, percent=110, threshold=2))
+    return fitted
 
 
-def orbit_mark(size: int) -> Image.Image:
-    """Vertical reel with two crew arms."""
-    mark = Image.new("L", (size, size), 0)
-    draw = ImageDraw.Draw(mark)
-    cx = cy = (size - 1) / 2
-    tight = 1.08 if size <= 24 else 1.0
-
-    slot_w = max(3 if size >= 16 else 2, size * (0.155 if size <= 32 else 0.138))
-    slot_h = size * 0.39 * tight
-    draw.rounded_rectangle(
-        [cx - slot_w / 2, cy - slot_h / 2, cx + slot_w / 2, cy + slot_h / 2],
-        radius=slot_w / 2,
-        fill=255,
-    )
-
-    stamp = max(2.0, size * (0.074 if size <= 24 else 0.072))
-    rx = size * 0.262 * tight
-    ry = size * 0.282 * tight
-    stamp_arc(draw, cx, cy, rx, ry, 208, 332, stamp)
-    stamp_arc(draw, cx, cy, rx, ry, 28, 152, stamp)
-    return mark
-
-
-def paint(size: int) -> Image.Image:
-    tile = squircle(size)
-    mark = orbit_mark(size)
-    white = Image.new("RGBA", (size, size), (255, 255, 255, 255))
+def paint(size: int, mark: Image.Image) -> Image.Image:
+    tile, mask = squircle(size)
+    fitted = fit_mark(size, mark)
+    layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    x = (size - fitted.size[0]) // 2
+    y = (size - fitted.size[1]) // 2
+    layer.paste(fitted, (x, y))
+    composed = Image.alpha_composite(tile, layer)
     cut = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    emblem = Image.composite(white, cut, mark)
-    return Image.alpha_composite(tile, emblem)
+    return Image.composite(composed, cut, mask)
 
 
 def save_ico(path: Path, images: list[Image.Image]) -> None:
-    """Write a PNG-in-ICO so each size keeps its own painted geometry."""
     entries: list[tuple[int, int, bytes]] = []
     for image in images:
         buffer = io.BytesIO()
@@ -115,11 +75,19 @@ def save_ico(path: Path, images: list[Image.Image]) -> None:
 
 
 def main() -> None:
+    if not SOURCE.exists():
+        raise SystemExit(f"Missing {SOURCE}")
+    mark = Image.open(SOURCE).convert("RGBA")
     OUT.mkdir(parents=True, exist_ok=True)
-    master = paint(512)
+    PUBLIC.mkdir(parents=True, exist_ok=True)
+    master = paint(512, mark)
     master.save(OUT / "icon.png", format="PNG")
-    save_ico(OUT / "icon.ico", [paint(size) for size in ICO_SIZES])
-    print(f"Wrote {OUT / 'icon.png'} and {OUT / 'icon.ico'}")
+    save_ico(OUT / "icon.ico", [paint(size, mark) for size in ICO_SIZES])
+    header = paint(128, mark)
+    header.save(PUBLIC / "app-mark.png", format="PNG")
+    favicon = paint(32, mark)
+    favicon.save(PUBLIC / "favicon.ico", format="ICO", sizes=[(16, 16), (32, 32)])
+    print(f"Wrote {OUT / 'icon.png'}, {OUT / 'icon.ico'}, {PUBLIC / 'app-mark.png'}")
 
 
 if __name__ == "__main__":
