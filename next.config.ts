@@ -14,6 +14,7 @@ const contentSecurityPolicy = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ['grok-crew-local.jinegcc.chatgpt.site'],
   async rewrites() {
     return [{ source: '/get', destination: '/existing-home.html' }];
   },

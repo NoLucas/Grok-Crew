@@ -94,9 +94,19 @@ export function corsHeaders(origin: string, requestUrl?: string): Record<string,
   };
 }
 
+const memoryLeads: LeadRecord[] = [];
+
+export function rememberedLeads(): LeadRecord[] {
+  return memoryLeads.slice();
+}
+
 export async function saveLeadLocal(record: LeadRecord, path = localLeadsPath()): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  await appendFile(path, `${JSON.stringify(record)}\n`, { encoding: 'utf8', mode: 0o600 });
+  await appendFile(path, `${JSON.stringify(record)}\n`, { encoding: 'utf8' });
+}
+
+export async function saveLeadMemory(record: LeadRecord): Promise<void> {
+  memoryLeads.push(record);
 }
 
 export async function saveLeadS3(record: LeadRecord, bucket: string, region: string): Promise<void> {
@@ -119,7 +129,11 @@ export async function saveLead(record: LeadRecord): Promise<void> {
     await saveLeadS3(record, bucket, region);
     return;
   }
-  await saveLeadLocal(record);
+  try {
+    await saveLeadLocal(record);
+  } catch {
+    await saveLeadMemory(record);
+  }
 }
 
 export async function takeGetLead(input: GetLeadInput): Promise<GetLeadResult> {

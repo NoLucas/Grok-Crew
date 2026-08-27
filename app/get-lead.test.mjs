@@ -85,6 +85,14 @@ describe('homepage email door', () => {
     assert.equal(downloadUrl('https://files.example/GrokCrew-Windows.exe'), 'https://files.example/GrokCrew-Windows.exe');
   });
 
+  it('keeps the door open when the disk file cannot be written', async () => {
+    process.env.GROK_CREW_LEADS_PATH = '/proc/grok-crew-cannot-write.jsonl';
+    delete process.env.GROK_CREW_LEADS_BUCKET;
+    const result = await takeGetLead({ email: 'memory@example.com' });
+    assert.equal(result.ok, true);
+    if (result.ok) assert.equal(result.stored, true);
+  });
+
   it('keeps the existing homepage and only opens the email file door', () => {
     const html = readFileSync(new URL('../public/existing-home.html', import.meta.url), 'utf8');
     assert.match(html, /id="getLead"/);
