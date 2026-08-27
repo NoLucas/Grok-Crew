@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- The locked build list is `docs/BUILD.ko.md`: keep the guest loop (open → connect → one line → paste → save on this PC). Do not add a company server or a new `/api/v2` for that loop. P5 stays a contract.
 - Product stack inference is in `docs/STACK.ko.md`: today’s job and the cut stay on this PC (local SQLite + folders). A company server is only for later purchase proof or settings backup, and must never be the door to Start.
 - Auto now tells the wait honestly: empty preview while waiting, elapsed time, “this window does not know if the bot read it,” a stay-on-screen save card, last-seen next to the name, recent title chips, a before-start job card, one header dot, same-line retry, replace-cut ask, and an OS ping only when the window is hidden. Own-file mode no longer uses the bot-wait copy. Same-PC bots still do not auto-read the invite.
 - The titlebar is **Connect · Auto · Setup · Edit · Export**. After a bot is attached, **Auto** is the landing tab. Auto is one field for today’s line, one Start, five lights (connect → sent → working → cut → save), and a preview that stays in this tab. Hand-it-off and start-with-my-file are two modes inside Auto. Connect stays the only place to attach or remove a bot. Auto save is file-only; posting asks once more. Same-PC bots still need a person to paste the job; the bot does not read the invite by itself. `127.0.0.1` stays closed.
