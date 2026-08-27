@@ -86,10 +86,17 @@ export function removeLinkedBot(state: BotLinkState, id: string): BotLinkState {
   return { ...state, bots: state.bots.filter((item) => item.id !== id) };
 }
 
+export function suggestedConnectReply(kind: BotKind, pairCode: string): string {
+  return `GROK_CREW_OK ${pairCode} ${brandName(kind)}`;
+}
+
 export function parseConnectReply(text: string, pairCode: string): { name: string } | null {
   const expected = String(pairCode || '').trim();
   if (!expected) return null;
-  const match = String(text || '').trim().match(/^GROK_CREW_OK\s+(\S+)\s+(.+)$/i);
+  const raw = String(text || '').replace(/[“”"'`]/g, ' ').trim();
+  if (!raw) return null;
+  const line = raw.split(/\r?\n/).map((item) => item.trim()).find((item) => /GROK_CREW_OK/i.test(item)) || raw;
+  const match = line.match(/GROK_CREW_OK\s+(\S+)\s+(.+)$/i);
   if (!match) return null;
   if (match[1].toUpperCase() !== expected.toUpperCase()) return null;
   const name = match[2].trim().slice(0, 80);

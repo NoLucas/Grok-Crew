@@ -10,6 +10,7 @@ const {
   linkedByKind,
   parseConnectReply,
   remoteConnectPaste,
+  suggestedConnectReply,
   upsertLinkedBot,
 } = await import('./desktop-bot-links.ts');
 
@@ -20,6 +21,12 @@ describe('remote bot links', () => {
     assert.equal(parseConnectReply('GROK_CREW_OK 7K2M9Q Grok', 'AAAAAA'), null);
     assert.equal(parseConnectReply('GROK_CREW_OK 7K2M9Q Grok', ''), null);
     assert.equal(parseConnectReply('hello', '7K2M9Q'), null);
+    assert.equal(parseConnectReply('', '7K2M9Q'), null);
+    assert.deepEqual(
+      parseConnectReply('first line\nGROK_CREW_OK 7K2M9Q Grok\n', '7K2M9Q'),
+      { name: 'Grok' },
+    );
+    assert.equal(suggestedConnectReply('grok', '7K2M9Q'), 'GROK_CREW_OK 7K2M9Q Grok');
   });
 
   it('remote paste never points at a clone or this PC API', () => {

@@ -10,6 +10,7 @@ import {
   parseConnectReply,
   remoteConnectPaste,
   removeLinkedBot,
+  suggestedConnectReply,
   upsertLinkedBot,
   writeBotLinks,
 } from './desktop-bot-links';
@@ -109,6 +110,7 @@ export function DesktopBotPanel({
     setError('');
     setBlockedKind('');
     setOpenKind(kind);
+    if (links.pairCode) setPaste(suggestedConnectReply(kind, links.pairCode));
     const text = remoteConnectPaste(kind, links.pairCode, language);
     try {
       if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
@@ -138,9 +140,16 @@ export function DesktopBotPanel({
   };
 
   const confirmReply = (kind: Exclude<BotKind, 'same_pc'>) => {
-    const parsed = parseConnectReply(paste, links.pairCode);
+    const source = paste.trim() || (links.pairCode ? suggestedConnectReply(kind, links.pairCode) : '');
+    const parsed = parseConnectReply(source, links.pairCode);
     if (!parsed) {
-      setError(t('한 줄이 GROK_CREW_OK 코드 이름 이어야 합니다.', 'The line must be GROK_CREW_OK code name.', '必须是 GROK_CREW_OK 代码 名称 这一行。', 'GROK_CREW_OK コード 名前 の一行にしてください。'));
+      if (!links.pairCode) {
+        setError(t('연결 코드가 아직 없습니다. 잠시 후 다시 눌러 주세요.', 'The connect code is not ready yet. Try again in a moment.', '连接代码还没好。请稍后再按。', '接続コードがまだありません。少ししてから押してください。'));
+      } else if (!/GROK_CREW_OK/i.test(source)) {
+        setError(t(`한 줄이 GROK_CREW_OK ${links.pairCode} 이름 이어야 합니다.`, `The line must be GROK_CREW_OK ${links.pairCode} name.`, `必须是 GROK_CREW_OK ${links.pairCode} 名称 这一行。`, `GROK_CREW_OK ${links.pairCode} 名前 の一行にしてください。`));
+      } else {
+        setError(t(`코드가 ${links.pairCode} 이어야 합니다.`, `The code must be ${links.pairCode}.`, `代码必须是 ${links.pairCode}。`, `コードは ${links.pairCode} にしてください。`));
+      }
       return;
     }
     const next = upsertLinkedBot(links, {
@@ -221,7 +230,11 @@ export function DesktopBotPanel({
                         {copied === item.id ? t('복사했습니다', 'Copied', '已复制', 'コピーしました') : t('연결 글 복사', 'Copy the connect text', '复制连接文字', '接続文をコピー')}
                       </button>
                       {open ? null : (
-                        <button type="button" className="desktop-secondary" onClick={() => { setOpenKind(item.id); setError(''); }}>
+                        <button type="button" className="desktop-secondary" onClick={() => {
+                          setOpenKind(item.id);
+                          setError('');
+                          if (links.pairCode) setPaste(suggestedConnectReply(item.id, links.pairCode));
+                        }}>
                           {t('답 붙이기', 'Paste the reply', '贴回复', '返信を貼る')}
                         </button>
                       )}
@@ -235,7 +248,7 @@ export function DesktopBotPanel({
                     <input
                       value={paste}
                       onChange={(event) => setPaste(event.currentTarget.value)}
-                      placeholder={`GROK_CREW_OK ${links.pairCode || 'CODE'} ${item.id === 'custom' ? 'Agent' : item.en}`}
+                      placeholder={links.pairCode ? suggestedConnectReply(item.id, links.pairCode) : `GROK_CREW_OK CODE ${item.en}`}
                     />
                     <button type="button" className="desktop-secondary" disabled={!links.pairCode} onClick={() => confirmReply(item.id)}>
                       {t('이 줄로 연결', 'Connect with this line', '用这行连接', 'この行で接続')}
