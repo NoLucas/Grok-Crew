@@ -2,7 +2,7 @@
 
 <p align="center"><a href="README.md">English</a> &nbsp;·&nbsp; <strong>한국어</strong> &nbsp;·&nbsp; <a href="README.zh.md">简体中文</a> &nbsp;·&nbsp; <a href="README.ja.md">日本語</a></p>
 
-**[Windows에서 열기](https://grok-crew-local.jinegcc.chatgpt.site#install)** — 홈페이지에서 이메일을 남기면 [`GrokCrew-Windows.exe`](https://github.com/NoLucas/Grok-crew-test/releases/latest)를 받습니다. 홈페이지는 이미 있습니다. 받기 문만 연결합니다. `docs/HOMEPAGE.ko.md`.
+**[Windows에서 열기](https://github.com/NoLucas/Grok-crew-test/releases/latest)** — [`GrokCrew-Windows.exe`](https://github.com/NoLucas/Grok-crew-test/releases/latest)를 받아 더블클릭합니다. 공개 사이트는 없습니다. `docs/HOMEPAGE.ko.md`.
 
 다섯 번입니다. 받는다 → 연다 → 연결한다 → 자동에서 적는다 → 붙인다.
 

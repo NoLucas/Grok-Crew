@@ -54,7 +54,9 @@ export function leadRecord(email: string, createdAt = new Date().toISOString()):
   };
 }
 
-export const EXISTING_HOME_ORIGIN = 'https://grok-crew-local.jinegcc.chatgpt.site';
+/** Live chatgpt.site is disconnected. Do not allow it to call this app. */
+export const DISCONNECTED_HOME_ORIGIN = 'https://grok-crew-local.jinegcc.chatgpt.site';
+export const EXISTING_HOME_ORIGIN = DISCONNECTED_HOME_ORIGIN;
 
 export function localLeadsPath(): string {
   const override = String(process.env.GROK_CREW_LEADS_PATH || '').trim();
@@ -67,7 +69,7 @@ export function allowedGetOrigins(): string[] {
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
-  return [EXISTING_HOME_ORIGIN, ...extra];
+  return extra;
 }
 
 export function isAllowedGetOrigin(origin: string, requestUrl?: string): boolean {

@@ -2,7 +2,7 @@
 
 <p align="center"><strong>English</strong> &nbsp;·&nbsp; <a href="README.ko.md">한국어</a> &nbsp;·&nbsp; <a href="README.zh.md">简体中文</a> &nbsp;·&nbsp; <a href="README.ja.md">日本語</a></p>
 
-**[Open on Windows](https://grok-crew-local.jinegcc.chatgpt.site#install)** — leave an email on the existing homepage, then get [`GrokCrew-Windows.exe`](https://github.com/NoLucas/Grok-crew-test/releases/latest). The site is already live; this repo only opens the file door. `docs/HOMEPAGE.ko.md`.
+**[Open on Windows](https://github.com/NoLucas/Grok-crew-test/releases/latest)** — get [`GrokCrew-Windows.exe`](https://github.com/NoLucas/Grok-crew-test/releases/latest) and double-click. There is no public site. `docs/HOMEPAGE.ko.md`.
 
 Five steps. Receive → open → connect → write in Auto → paste.
 
