@@ -7,7 +7,7 @@ export const PASTE_TARGET = 'Cursor';
 export const DEFAULT_RECIPE_ID = 'instagram_reel';
 
 export type AutoMode = 'hand_off' | 'own_file';
-export type MaterialWay = 'make' | 'find';
+export type AutoSourceMode = 'own' | 'collect' | 'own_and_collect';
 export type AutoPhaseId = 'connect' | 'sent' | 'working' | 'cut' | 'save';
 export type AutoLamp = 'off' | 'yellow' | 'green' | 'red';
 export type AutoMachine =
@@ -35,23 +35,54 @@ export type AutoJobInput = {
   goal?: string;
   recipeId: string;
   language: string;
-  materialWay?: MaterialWay;
+  useOwn?: boolean;
+  useScrape?: boolean;
+  ownedPaths?: string[];
   collectQuery?: string;
 };
 
+export function cleanOwnedPaths(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const paths: string[] = [];
+  for (const item of value) {
+    const path = String(item || '').trim();
+    if (!path || seen.has(path)) continue;
+    seen.add(path);
+    paths.push(path);
+    if (paths.length >= 40) break;
+  }
+  return paths;
+}
+
+export function ownedFileName(path: string): string {
+  const parts = String(path || '').replace(/\\/g, '/').split('/');
+  return parts[parts.length - 1] || path;
+}
+
+export function autoSourceMode(input: { useOwn?: boolean; useScrape?: boolean }): AutoSourceMode | '' {
+  if (input.useOwn && input.useScrape) return 'own_and_collect';
+  if (input.useOwn) return 'own';
+  if (input.useScrape) return 'collect';
+  return '';
+}
+
 export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
   const heading = String(input.title || '').trim();
+  const ownedPaths = cleanOwnedPaths(input.ownedPaths);
+  const useOwn = Boolean(input.useOwn && ownedPaths.length);
+  const useScrape = Boolean(input.useScrape);
+  const sourceMode = autoSourceMode({ useOwn, useScrape }) || 'own';
   const body: Record<string, unknown> = {
     title: heading,
     goal: String(input.goal || '').trim() || heading,
     recipe_id: input.recipeId,
-    source_mode: 'bot',
+    source_mode: sourceMode,
     language: input.language,
     upload: false,
   };
-  if (input.materialWay === 'find') {
-    body.collect_query = String(input.collectQuery || '').trim();
-  }
+  if (useScrape) body.collect_query = String(input.collectQuery || '').trim();
+  if (useOwn) body.owned_paths = ownedPaths;
   return body;
 }
 
@@ -164,14 +195,19 @@ export function suggestRecipeId(text: string, lastRecipeId?: string): string {
 export function canStartAuto(input: {
   title: string;
   attached: boolean;
-  materialWay?: MaterialWay;
+  useOwn?: boolean;
+  useScrape?: boolean;
+  ownedPaths?: string[];
   collectQuery?: string;
 }): AutoStartCheck {
   if (!String(input.title || '').trim()) return { ok: false, reason: 'title' };
   if (!input.attached) return { ok: false, reason: 'connect' };
-  if (input.materialWay === 'find' && !String(input.collectQuery || '').trim()) {
-    return { ok: false, reason: 'materials' };
-  }
+  const ownedPaths = cleanOwnedPaths(input.ownedPaths);
+  const useOwn = Boolean(input.useOwn);
+  const useScrape = Boolean(input.useScrape);
+  if (!useOwn && !useScrape) return { ok: false, reason: 'materials' };
+  if (useOwn && !ownedPaths.length) return { ok: false, reason: 'materials' };
+  if (useScrape && !String(input.collectQuery || '').trim()) return { ok: false, reason: 'materials' };
   return { ok: true };
 }
 

@@ -19,7 +19,7 @@ from edit_spec import COLLECTOR_DOOR, EDITOR_DOOR, get_spec, normalize_agent, se
 from style_recipes import needs_collector, normalize_license, normalize_origin
 
 MATERIALS_SCHEMA = "grok-crew.materials/v1"
-ALLOWED_MEDIA_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm"}
+ALLOWED_MEDIA_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm", ".png", ".jpg", ".jpeg", ".webp", ".gif"}
 MAX_MEDIA_BYTES = int(os.getenv("HANDOFF_MAX_MEDIA_BYTES", str(2 * 1024 ** 3)))
 RESERVED = {".git", ".processed"}
 _PULL_LOCK = threading.Lock()
@@ -195,7 +195,7 @@ def write_owned_materials(spec_id: str, paths: list[Any] | tuple[Any, ...] | str
     else:
         items = [str(item).strip() for item in (paths or []) if str(item).strip()]
     if not items:
-        raise ValueError("owned_paths must include at least one local video file.")
+        raise ValueError("owned_paths must include at least one local video or image.")
     folder = materials_folder(spec_id)
     folder.mkdir(parents=True, exist_ok=True)
     existing = _read_manifest(folder) or {}
@@ -231,7 +231,7 @@ def write_owned_materials(spec_id: str, paths: list[Any] | tuple[Any, ...] | str
         known.add(dest.name)
         copied.append(dest.name)
     if not clips:
-        raise ValueError("owned_paths must include at least one local video file.")
+        raise ValueError("owned_paths must include at least one local video or image.")
     written = {
         "schema": MATERIALS_SCHEMA,
         "edit_spec_id": spec_id,

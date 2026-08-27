@@ -385,6 +385,37 @@ def test_bot_invite_uses_operator_find_query_not_recipe_default(studio):
     assert "찾아올 것" not in long_invite["text"]
 
 
+def test_auto_invite_names_scrape_list_or_owned_stills(studio, tmp_path):
+    still = tmp_path / "sign.png"
+    still.write_bytes(b"png-bytes")
+    scrape = create_spec({
+        "title": "Cafe open",
+        "goal": "Hands and the sign",
+        "language": "ko",
+        "source_mode": "collect",
+        "recipe_id": "instagram_reel",
+        "collect_query": "카페 오픈 손·간판",
+    })
+    scrape_text = spec_invite(scrape["id"], "ko")["text"]
+    assert "찾아올 것: 카페 오픈 손·간판" in scrape_text
+    assert "스크랩 봇" in scrape_text
+    assert scrape["collect_query"] == "카페 오픈 손·간판"
+    assert scrape["crew"] is True
+
+    owned = create_spec({
+        "title": "My stills",
+        "goal": "Cut the sign",
+        "language": "ko",
+        "source_mode": "own",
+        "recipe_id": "instagram_reel",
+        "owned_paths": [str(still)],
+    })
+    owned_text = spec_invite(owned["id"], "ko")["text"]
+    assert "넣은 영상·사진" in owned_text
+    assert "찾아올 것" not in owned_text
+    assert owned["source_mode"] == "own"
+
+
 def test_http_invite_and_bot_pack(live_server):
     created = json.loads(urlopen(Request(
         f"{live_server}/api/v2/edit-specs",

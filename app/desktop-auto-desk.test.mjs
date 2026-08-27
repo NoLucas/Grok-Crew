@@ -10,6 +10,7 @@ const {
   attachedBotName,
   autoHeaderDot,
   autoJobPayload,
+  autoSourceMode,
   autoMachineState,
   autoPhaseLamps,
   botSeenSeconds,
@@ -40,59 +41,77 @@ describe('auto desk start rules', () => {
     assert.deepEqual(canStartAuto({ title: '', attached: true }), { ok: false, reason: 'title' });
     assert.deepEqual(canStartAuto({ title: '   ', attached: true }), { ok: false, reason: 'title' });
     assert.deepEqual(canStartAuto({ title: '15초 훅 릴', attached: false }), { ok: false, reason: 'connect' });
-    assert.deepEqual(canStartAuto({ title: '15초 훅 릴', attached: true }), { ok: true });
+    assert.deepEqual(canStartAuto({ title: '15초 훅 릴', attached: true }), { ok: false, reason: 'materials' });
     assert.deepEqual(canStartAuto({
       title: '15초 훅 릴',
       attached: true,
-      materialWay: 'find',
+      useScrape: true,
       collectQuery: '',
     }), { ok: false, reason: 'materials' });
     assert.deepEqual(canStartAuto({
       title: '15초 훅 릴',
       attached: true,
-      materialWay: 'find',
-      collectQuery: '카페 오픈 공개 클립',
+      useOwn: true,
+      ownedPaths: [],
+    }), { ok: false, reason: 'materials' });
+    assert.deepEqual(canStartAuto({
+      title: '15초 훅 릴',
+      attached: true,
+      useScrape: true,
+      collectQuery: '카페 오픈 손·간판',
     }), { ok: true });
     assert.deepEqual(canStartAuto({
       title: '15초 훅 릴',
       attached: true,
-      materialWay: 'make',
+      useOwn: true,
+      ownedPaths: ['/tmp/sign.png'],
     }), { ok: true });
   });
 });
 
 describe('auto desk job payload', () => {
-  it('keeps one bot and only sends a find query when the operator asked to find', () => {
-    assert.deepEqual(autoJobPayload({
-      title: '15초 훅 릴',
-      recipeId: 'instagram_reel',
-      language: 'ko',
-      materialWay: 'make',
-      collectQuery: 'ignore this leftover',
-    }), {
-      title: '15초 훅 릴',
-      goal: '15초 훅 릴',
-      recipe_id: 'instagram_reel',
-      source_mode: 'bot',
-      language: 'ko',
-      upload: false,
-    });
+  it('records own files, the scrape list, or both on the existing spec fields', () => {
+    assert.equal(autoSourceMode({ useOwn: true, useScrape: true }), 'own_and_collect');
     assert.deepEqual(autoJobPayload({
       title: '카페 오픈',
       goal: '손과 간판',
       recipeId: 'tiktok_tight',
       language: 'ko',
-      materialWay: 'find',
+      useScrape: true,
       collectQuery: '  카페 오픈 공개 클립  ',
     }), {
       title: '카페 오픈',
       goal: '손과 간판',
       recipe_id: 'tiktok_tight',
-      source_mode: 'bot',
+      source_mode: 'collect',
       language: 'ko',
       upload: false,
       collect_query: '카페 오픈 공개 클립',
     });
+    assert.deepEqual(autoJobPayload({
+      title: '내 컷',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useOwn: true,
+      ownedPaths: ['/tmp/talk.mp4', '/tmp/sign.png'],
+    }), {
+      title: '내 컷',
+      goal: '내 컷',
+      recipe_id: 'instagram_reel',
+      source_mode: 'own',
+      language: 'ko',
+      upload: false,
+      owned_paths: ['/tmp/talk.mp4', '/tmp/sign.png'],
+    });
+    assert.deepEqual(autoJobPayload({
+      title: '둘 다',
+      recipeId: 'youtube_short',
+      language: 'ko',
+      useOwn: true,
+      useScrape: true,
+      ownedPaths: ['/tmp/talk.mp4'],
+      collectQuery: '간판 클로즈업',
+    }).source_mode, 'own_and_collect');
   });
 });
 

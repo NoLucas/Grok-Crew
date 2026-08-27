@@ -8,6 +8,7 @@ import {
   RECIPE_ORDER,
   attachedBotName,
   autoJobPayload,
+  autoSourceMode,
   autoMachineState,
   autoPhaseLamps,
   botSeenSeconds,
@@ -24,9 +25,9 @@ import {
   suggestRecipeId,
   waitElapsedSeconds,
   writeAutoPrefs,
+  ownedFileName,
   type AutoMode,
   type AutoPhaseId,
-  type MaterialWay,
 } from './desktop-auto-state';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { DesktopNewsCard } from './desktop-news-card';
@@ -115,8 +116,11 @@ export function AutoDesk({
   const [mode, setMode] = useState<AutoMode>('hand_off');
   const [title, setTitle] = useState(wait?.title ?? '');
   const [goal, setGoal] = useState('');
-  const [materialWay, setMaterialWay] = useState<MaterialWay>('make');
+  const [useOwn, setUseOwn] = useState(false);
+  const [useScrape, setUseScrape] = useState(true);
+  const [ownedPaths, setOwnedPaths] = useState<string[]>([]);
   const [collectQuery, setCollectQuery] = useState('');
+  const [ownOver, setOwnOver] = useState(false);
   const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
   const [recipeTouched, setRecipeTouched] = useState(false);
   const recipeId = recipeTouched ? pickedRecipeId : suggestRecipeId(title, prefs.recipeId);
@@ -127,7 +131,6 @@ export function AutoDesk({
   const [sendFailed, setSendFailed] = useState(false);
   const [error, setError] = useState('');
   const [inviteText, setInviteText] = useState('');
-  const [ownOver, setOwnOver] = useState(false);
   const [cutOver, setCutOver] = useState(false);
   const [askPublish, setAskPublish] = useState(false);
   const [replaceAsk, setReplaceAsk] = useState(false);
@@ -135,6 +138,7 @@ export function AutoDesk({
   const pingedSpecRef = useRef('');
   const pendingCutRef = useRef<File | null>(null);
   const cutInputRef = useRef<HTMLInputElement>(null);
+  const ownInputRef = useRef<HTMLInputElement>(null);
   const attachedName = attachedBotName(roster, remoteNames);
   const attached = Boolean(attachedName);
   const hasProject = Boolean(previewUrl || projectTitle);
@@ -173,10 +177,22 @@ export function AutoDesk({
   const styleLabel = selected
     ? localized(selected.name, language, selected.id)
     : t('인스타 릴', 'Instagram Reel', 'Instagram Reel', 'Instagram リール');
-  const wayLabel = materialWay === 'find'
-    ? t('적어 둔 곳에서 찾아옴', 'Find what you named', '从你写下的地方找', '書いたところから探す')
-    : t('봇이 원본을 만듦', 'The bot makes the source', '机器人做原片', 'ボットが原本を作る');
-  const startReady = canStartAuto({ title, attached, materialWay, collectQuery }).ok;
+  const sourceMode = autoSourceMode({ useOwn, useScrape });
+  const wayLabel = sourceMode === 'own_and_collect'
+    ? t('내 파일 + 스크랩', 'My files + scrape', '我的文件 + 抓取', '自分のファイル + 収集')
+    : sourceMode === 'collect'
+      ? t('스크랩 봇이 가져옴', 'The scrape bot fetches it', '抓取机器人去取', '収集ボットが持ってくる')
+      : sourceMode === 'own'
+        ? t('내가 넣은 파일', 'Files I put in', '我放进的文件', '自分が入れたファイル')
+        : t('자료 아직 없음', 'No materials yet', '还没有资料', '資料はまだない');
+  const startReady = canStartAuto({
+    title,
+    attached,
+    useOwn,
+    useScrape,
+    ownedPaths,
+    collectQuery,
+  }).ok;
   const seenSeconds = botSeenSeconds(roster, connectedAt, nowMs);
   const seenLabel = seenSeconds === null ? '' : formatSince(seenSeconds, language);
   const elapsedLabel = wait ? formatElapsed(waitElapsedSeconds(wait.copiedAt, nowMs), language) : '';
@@ -219,12 +235,16 @@ export function AutoDesk({
   }, [language, pullStatus, t, wait?.specId, wait?.title]);
 
   const startJob = async () => {
-    const check = canStartAuto({ title, attached, materialWay, collectQuery });
+    const check = canStartAuto({ title, attached, useOwn, useScrape, ownedPaths, collectQuery });
     if (!check.ok) {
       setError(check.reason === 'title'
         ? t('오늘 올릴 말을 적어 주세요.', 'Write what you will post today.', '请写下今天要发的话。', '今日出す言葉を書いてください。')
         : check.reason === 'materials'
-          ? t('찾아올 곳이나 주제를 적어 주세요.', 'Write what to find, or where.', '请写下要找的内容或来源。', '探す場所か題を書いてください。')
+          ? !useOwn && !useScrape
+            ? t('자료를 내가 넣을지, 스크랩 봇이 가져올지 고르세요.', 'Choose my files, the scrape bot, or both.', '请选择放自己的文件、让抓取机器人去取，或两者。', '自分のファイルか、収集ボットか、両方を選んでください。')
+            : useOwn && !ownedPaths.length
+              ? t('영상이나 사진을 넣으세요.', 'Put in a video or an image.', '请放入视频或图片。', '映像か写真を入れてください。')
+              : t('어떤 자료를 가져올지 적어 주세요. 그걸 알아야 자를 수 있습니다.', 'Write what to fetch. The cut needs that list.', '请写下要取的资料。剪辑需要这份清单。', '何を持ってくるか書いてください。それが分からないと切れません。')
         : t('먼저 연결하세요.', 'Connect first.', '请先连接。', '先に接続してください。'));
       return;
     }
@@ -241,7 +261,9 @@ export function AutoDesk({
           goal,
           recipeId,
           language,
-          materialWay,
+          useOwn,
+          useScrape,
+          ownedPaths,
           collectQuery,
         })),
       });
@@ -276,6 +298,52 @@ export function AutoDesk({
     } finally {
       setSaving(false);
     }
+  };
+
+  const addOwnedFiles = (files: FileList | File[] | null | undefined) => {
+    if (!files || !files.length) return;
+    const next: string[] = [];
+    for (const file of Array.from(files)) {
+      const path = droppedFilePath(file);
+      if (!path) {
+        setError(t('이 창에서 놓으세요. 브라우저에서는 파일 위치를 알 수 없습니다.', 'Drop it in this window. The browser cannot see the file path.', '请放到这个窗口。浏览器看不到文件位置。', 'この窓に置いてください。ブラウザでは場所が分かりません。'));
+        return;
+      }
+      next.push(path);
+    }
+    setOwnedPaths((current) => {
+      const seen = new Set(current);
+      const merged = [...current];
+      for (const path of next) {
+        if (seen.has(path)) continue;
+        seen.add(path);
+        merged.push(path);
+        if (merged.length >= 40) break;
+      }
+      return merged;
+    });
+    setUseOwn(true);
+    if (error) setError('');
+  };
+
+  const takeMaterialFiles = (event: DragEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    setOwnOver(false);
+    addOwnedFiles(event.dataTransfer.files);
+  };
+
+  const pickMaterialFiles = async () => {
+    const picker = typeof window !== 'undefined' ? window.grokCrew?.selectMedia : undefined;
+    if (picker) {
+      const picked = await picker();
+      if (picked) {
+        setOwnedPaths((current) => current.includes(picked) || current.length >= 40 ? current : [...current, picked]);
+        setUseOwn(true);
+        if (error) setError('');
+      }
+      return;
+    }
+    ownInputRef.current?.click();
   };
 
   const takeOwnFile = (event: DragEvent<HTMLButtonElement>) => {
@@ -414,8 +482,8 @@ export function AutoDesk({
     <div className="desktop-spec-desk desktop-auto-desk">
       <div className="desktop-spec-hero desktop-auto-hero">
         <span>✦</span>
-        <h1>{t('오늘 올릴 말과 어떤 영상인지만 적습니다', 'Write today’s line and what kind of video', '只写今天要发的话和什么样的视频', '今日出す言葉と、どんな映像かを書く')}</h1>
-        <p>{t('자료는 붙은 봇이 만들거나, 적어 둔 공개 곳에서 찾습니다. 이 앱은 긁지 않습니다. 연결은 연결 메뉴에서만 합니다.', 'The attached bot makes the source, or finds public clips you named. This app does not scrape. Connections stay in Connect.', '原片由接上的机器人做，或从你写下的公开来源找。这个应用不抓站。连接只在连接菜单里做。', '原本は付けたボットが作るか、書いた公開の場所から探します。このアプリは掻きません。接続は接続メニューだけです。')}</p>
+        <h1>{t('오늘 올릴 말, 어떤 영상, 자료가 뭔지', 'Today’s line, the kind of video, and the materials', '今天要发的话、什么样的视频、什么资料', '今日出す言葉、どんな映像か、資料は何か')}</h1>
+        <p>{t('영상·사진을 넣거나, 스크랩 봇이 가져올 것을 적습니다. 그걸 알아야 자를 수 있습니다. 이 앱은 긁지 않습니다.', 'Put videos or images, or write what the scrape bot should fetch. The cut needs that list. This app does not scrape.', '放入视频或图片，或写下抓取机器人要取的东西。剪辑需要这份清单。这个应用不抓站。', '映像や写真を入れるか、収集ボットが持ってくるものを書く。それが分からないと切れません。このアプリは掻きません。')}</p>
       </div>
 
       {!studioReady ? (
@@ -503,7 +571,8 @@ export function AutoDesk({
             <section className="desktop-auto-card" aria-label={t('이번 일', 'This job', '这次任务', '今回の仕事')}>
               <b>{t('이번 일', 'This job', '这次任务', '今回の仕事')}</b>
               <p>{`${attachedName} · ${styleLabel} · ${wayLabel}`}</p>
-              {materialWay === 'find' && collectQuery.trim() ? <p>{collectQuery.trim()}</p> : null}
+              {useOwn && ownedPaths.length ? <p>{ownedPaths.map(ownedFileName).join(', ')}</p> : null}
+              {useScrape && collectQuery.trim() ? <p>{t(`가져올 것 · ${collectQuery.trim()}`, `Fetch · ${collectQuery.trim()}`, `要取 · ${collectQuery.trim()}`, `持ってくるもの · ${collectQuery.trim()}`)}</p> : null}
               <p>{t('하지 않음: 올리지 않음 · 화질 잠금 유지 · 이 PC에만 저장 · 이 앱이 사이트를 긁지 않음', 'Will not: post · change quality · leave this PC · scrape a site', '不会：发布 · 改画质 · 离开这台电脑 · 抓站', 'しないこと: 上げない · 画質を変えない · この PC だけに保存 · このアプリは掻かない')}</p>
               <p>{t('끝: 컷이 이 창에 뜨면 저장을 묻습니다. 이 창은 봇이 읽었는지 모릅니다.', 'Done when the cut appears here and we ask to save. This window does not know if the bot read it.', '结束：成片出现在这里并询问保存。这个窗口不知道机器人读没读。', '終わり: カットがここに出たら保存を聞きます。この窓はボットが読んだか知りません。')}</p>
             </section>
@@ -545,48 +614,94 @@ export function AutoDesk({
             <div className="desktop-spec-source-grid">
               <button
                 type="button"
-                className={materialWay === 'make' ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
-                aria-pressed={materialWay === 'make'}
+                className={useOwn ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                aria-pressed={useOwn}
                 onClick={() => {
-                  setMaterialWay('make');
+                  setUseOwn((value) => !value);
                   if (error) setError('');
                 }}
               >
-                <b>{t('봇이 원본을 만듦', 'The bot makes the source', '机器人做原片', 'ボットが原本を作る')}</b>
-                <span>{t('붙은 봇이 화면을 만들고 첫 컷을 합니다. 이 PC는 사이트를 긁지 않습니다.', 'The attached bot makes the pictures and the first cut. This PC does not scrape.', '接上的机器人做画面和第一刀。这台电脑不抓站。', '付けたボットが画面と最初のカットを作る。この PC は掻きません。')}</span>
+                <b>{t('내가 넣음', 'I put them in', '我来放', '自分が入れる')}</b>
+                <span>{t('이 PC의 영상이나 사진을 자료함에 둡니다. 봇이 그걸로 자릅니다.', 'Videos or images on this PC go in the materials box. The bot cuts those.', '这台电脑上的视频或图片进资料盒。机器人用那些来剪。', 'この PC の映像や写真を資料箱に置く。ボットはそれで切る。')}</span>
               </button>
               <button
                 type="button"
-                className={materialWay === 'find' ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
-                aria-pressed={materialWay === 'find'}
+                className={useScrape ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                aria-pressed={useScrape}
                 onClick={() => {
-                  setMaterialWay('find');
+                  setUseScrape((value) => !value);
                   if (error) setError('');
                 }}
               >
-                <b>{t('적어 둔 곳에서 찾아옴', 'Find what you named', '从你写下的地方找', '書いたところから探す')}</b>
-                <span>{t('주제나 공개 주소를 적으면, 붙은 봇이 공개 클립만 모은 뒤 자릅니다.', 'Name a topic or public page. The attached bot gathers public clips, then cuts.', '写下题目或公开地址。接上的机器人只收集公开片段再剪。', '題や公開の住所を書く。付けたボットが公開クリップだけ集めて切る。')}</span>
+                <b>{t('스크랩 봇이 가져옴', 'The scrape bot fetches them', '抓取机器人去取', '収集ボットが持ってくる')}</b>
+                <span>{t('어떤 자료를 가져올지 이 칸에 적습니다. 스크랩 봇만 공개 클립을 모읍니다.', 'Write what to fetch in this form. Only the scrape bot gathers public clips.', '在这里写下要取什么。只有抓取机器人收集公开片段。', '何を持ってくるかをここに書く。公開クリップを集めるのは収集ボットだけ。')}</span>
               </button>
             </div>
           </fieldset>
-          {materialWay === 'find' ? (
+          {useOwn ? (
+            <section className="desktop-auto-own">
+              <input
+                ref={ownInputRef}
+                type="file"
+                accept="video/mp4,video/quicktime,video/webm,image/png,image/jpeg,image/webp,.mp4,.mov,.webm,.m4v,.mkv,.png,.jpg,.jpeg,.webp"
+                multiple
+                hidden
+                onChange={(event) => {
+                  addOwnedFiles(event.currentTarget.files);
+                  event.currentTarget.value = '';
+                }}
+              />
+              <button
+                type="button"
+                className={ownOver ? 'desktop-simple-drop is-over' : 'desktop-simple-drop'}
+                disabled={locked}
+                onClick={() => void pickMaterialFiles()}
+                onDragEnter={(event) => { event.preventDefault(); setOwnOver(true); }}
+                onDragOver={(event) => { event.preventDefault(); setOwnOver(true); }}
+                onDragLeave={() => setOwnOver(false)}
+                onDrop={takeMaterialFiles}
+              >
+                <b>{ownOver
+                  ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
+                  : t('영상이나 사진을 여기 놓기', 'Drop a video or an image here', '把视频或图片放这里', '映像や写真をここに置く')}</b>
+                <span>{t('여러 장을 넣을 수 있습니다. 경로는 적지 마세요.', 'You can add more than one. Do not type a path.', '可以放多份。不要填写路径。', '何枚でも置けます。パスは書かないでください。')}</span>
+              </button>
+              {ownedPaths.length ? (
+                <ul className="desktop-auto-owned-list">
+                  {ownedPaths.map((path) => (
+                    <li key={path}>
+                      <span>{ownedFileName(path)}</span>
+                      <button
+                        type="button"
+                        className="desktop-auto-chip"
+                        onClick={() => setOwnedPaths((current) => current.filter((item) => item !== path))}
+                      >
+                        {t('빼기', 'Remove', '去掉', '外す')}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+          ) : null}
+          {useScrape ? (
             <>
               <label className="desktop-spec-field desktop-spec-wide">
-                <span>{t('찾아올 것', 'Find', '要找什么', '探してくるもの')}</span>
+                <span>{t('어떤 자료를 가져올지', 'What to fetch', '要取什么资料', '何を持ってくるか')}</span>
                 <textarea
                   value={collectQuery}
                   onChange={(event) => {
                     setCollectQuery(event.target.value);
                     if (error) setError('');
                   }}
-                  placeholder={t('공개 페이지, 주제, 쓸 수 있는 주소. 로그인 막힌 인스타·틱톡은 적지 마세요.', 'A public page, topic, or allowed URL. Do not name login-walled Instagram or TikTok.', '公开页面、题目、能用的地址。不要写登录墙后的 Instagram 或 TikTok。', '公開ページ、題、使える住所。ログインで閉じた Instagram や TikTok は書かない。')}
+                  placeholder={t('예: 카페 오픈 손·간판 클로즈업, 쓸 수 있는 공개 페이지. 로그인 막힌 인스타·틱톡은 적지 마세요.', 'Example: cafe-open hands and sign close-ups, a public page you may use. Do not name login-walled Instagram or TikTok.', '例如：咖啡馆开业的手和招牌特写、能用的公开页面。不要写登录墙后的 Instagram 或 TikTok。', '例: カフェ開店の手・看板のクローズアップ、使える公開ページ。ログインで閉じた Instagram や TikTok は書かない。')}
                   rows={3}
                   aria-invalid={Boolean(error) && !collectQuery.trim()}
                   disabled={saving}
                 />
               </label>
               <p className="desktop-spec-meta">
-                {t('이 앱은 스크래퍼가 아닙니다. 붙은 봇이 공개된 클립만 찾습니다. 로그인 막힌 인스타·틱톡은 안 됩니다.', 'This app is not a scraper. The attached bot finds public clips only. Login-walled Instagram or TikTok is off limits.', '这个应用不是抓取器。接上的机器人只找公开片段。登录墙后的 Instagram 或 TikTok 不行。', 'このアプリはスクレイパーではありません。付けたボットは公開クリップだけ探します。ログインで閉じた Instagram や TikTok はだめです。')}
+                {t('이 목록이 규격에 남습니다. 스크랩 봇은 이것만 모읍니다. 이 앱은 스크래퍼가 아닙니다.', 'This list stays on the spec. The scrape bot gathers only that. This app is not a scraper.', '这份清单会留在规格里。抓取机器人只收集这些。这个应用不是抓取器。', 'この一覧が仕様に残ります。収集ボットはこれだけ集めます。このアプリはスクレイパーではありません。')}
               </p>
             </>
           ) : (

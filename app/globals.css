@@ -7370,6 +7370,29 @@ select {
 .desktop-auto-gate { margin: 0; color: var(--desktop-muted); font-size: 13px; line-height: 1.5; }
 .desktop-auto-own { display: grid; gap: 8px; }
 .desktop-auto-own > p { margin: 0; color: var(--desktop-muted); font-size: 13px; line-height: 1.45; }
+.desktop-auto-owned-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.desktop-auto-owned-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.desktop-auto-owned-list span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .desktop-auto-phases {
   list-style: none;
   margin: 0;

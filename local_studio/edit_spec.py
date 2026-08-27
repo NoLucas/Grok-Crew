@@ -817,21 +817,38 @@ def _invite_length(spec: dict[str, Any], language: str) -> str:
 
 def _invite_find_block(spec: dict[str, Any], language: str) -> str:
     query = _invite_find_query(spec)
+    mode = source_mode_of(spec)
     if language.startswith("ko"):
+        if mode == "own":
+            return "운영자가 넣은 영상·사진으로 첫 컷을 만듭니다. 새로 찾지 마세요.\n"
         if query:
+            owned = (
+                "운영자가 넣은 파일은 남기고, 아래에 적은 것만 더 찾습니다.\n"
+                if mode == "own_and_collect"
+                else ""
+            )
             return (
-                f"자료: 운영자가 적은 곳에서 공개로 쓸 수 있는 클립만 모으세요.\n"
+                f"자료: 운영자가 적은 것만 스크랩 봇이 공개로 모읍니다.\n"
                 f"찾아올 것: {query}\n"
+                f"{owned}"
                 "이 앱은 스크래퍼가 아닙니다. 로그인 막힌 인스타/틱톡은 긁지 마세요.\n"
-                "모은 뒤 그 자료로 첫 컷을 만듭니다.\n"
+                "모은 자료는 자료함에 두고, 그걸로 첫 컷을 만듭니다.\n"
             )
         return "원본과 첫 컷을 당신이 만듭니다. 운영자는 영상을 주지 않습니다.\n"
+    if mode == "own":
+        return "Cut the videos or images the operator put in. Do not hunt a new source.\n"
     if query:
+        owned = (
+            "Keep the operator files. Fetch only what is named below.\n"
+            if mode == "own_and_collect"
+            else ""
+        )
         return (
-            f"Materials: gather only public clips from what the operator named.\n"
+            f"Materials: the scrape bot gathers only the public clips the operator named.\n"
             f"Find: {query}\n"
+            f"{owned}"
             "This app is not a scraper. Do not scrape login-walled Instagram or TikTok.\n"
-            "After you gather, make the first cut from those clips.\n"
+            "Put gathered clips in the materials box, then make the first cut from those.\n"
         )
     return "You make the source and the first cut. The operator will not attach footage.\n"
 
