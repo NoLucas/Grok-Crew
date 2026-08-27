@@ -91,6 +91,10 @@
           "grok-crew-studio*",
           "**/*"
         ]
+      },
+      {
+        "from": "desktop/icons",
+        "to": "icons"
       }
     ],
     "win": {

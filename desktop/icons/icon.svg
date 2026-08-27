@@ -1,10 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
   <defs>
-    <linearGradient id="desk" x1="40" y1="28" x2="216" y2="228" gradientUnits="userSpaceOnUse">
+    <linearGradient id="desk" x1="36" y1="24" x2="220" y2="232" gradientUnits="userSpaceOnUse">
       <stop stop-color="#5d57ef"/>
       <stop offset="1" stop-color="#918bff"/>
     </linearGradient>
+    <mask id="reel">
+      <rect width="256" height="256" fill="#fff"/>
+      <rect x="114.2" y="91.5" width="27.6" height="73" rx="13.8" fill="#000"/>
+    </mask>
   </defs>
-  <rect x="8" y="8" width="240" height="240" rx="76" fill="url(#desk)"/>
-  <text x="128" y="176" text-anchor="middle" fill="#fff" font-family="Inter, DejaVu Sans, sans-serif" font-size="148" font-weight="800">G</text>
+  <rect x="8" y="8" width="240" height="240" rx="72" fill="url(#desk)"/>
+  <g fill="#fff" mask="url(#reel)">
+    <circle cx="128" cy="96.8" r="50.7"/>
+    <circle cx="155" cy="143.6" r="50.7"/>
+    <circle cx="101" cy="143.6" r="50.7"/>
+  </g>
 </svg>

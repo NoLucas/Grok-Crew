@@ -6901,9 +6901,10 @@ select {
 .desktop-brand { display: flex; align-items: center; gap: 10px; }
 .desktop-logo {
   display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px;
-  color: white; background: linear-gradient(145deg, #5d57ef, #918bff); font-weight: 800;
+  color: white; background: linear-gradient(145deg, #5d57ef, #918bff);
   box-shadow: 0 5px 15px rgba(93, 87, 239, .22);
 }
+.desktop-logo-mark { display: block; width: 22px; height: 22px; }
 .desktop-brand div { display: grid; gap: 1px; }
 .desktop-brand b { font-size: var(--desktop-fs); letter-spacing: -.02em; font-weight: var(--desktop-weight-heavy); }
 .desktop-brand small { color: var(--desktop-muted); font-size: 13px; }

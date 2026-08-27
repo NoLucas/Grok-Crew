@@ -15,6 +15,7 @@ import type { TimelineHistoryAction, TimelineHistoryResult, TimelineHistoryState
 import type { Timeline, TrackType } from './timeline/types';
 import { isUnclaimedHold, remoteDeskVisible, remoteNeedsAttention } from './desktop-remote';
 import { SpecDesk } from './desktop-spec-desk';
+import { DesktopLogoMark } from './desktop-logo-mark';
 import { SimpleDesk } from './desktop-simple-desk';
 import { HandoffFolderBoard, type HandoffFolder } from './desktop-handoff-folder';
 import { appearanceDataAttrs, useDesktopAppearance } from './desktop-appearance';
@@ -1089,7 +1090,7 @@ export default function DesktopWorkspace() {
     <main className={`desktop-shell${editToolsOpen ? ' has-timeline' : ' is-form'}`} {...appearanceDataAttrs(appearance)}>
       <header className="desktop-titlebar">
         <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="gear" />
-        <div className="desktop-brand"><span className="desktop-logo">G</span><div><b>Grok Crew</b><small>{t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
+        <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
           <button type="button" className={activePanel === 'setup' ? 'active' : ''} aria-current={activePanel === 'setup' ? 'page' : undefined} onClick={() => setActivePanel('setup')}>{t('설정', 'Setup', '设置', '設定')}</button>
           <button type="button" className={activePanel === 'edit' ? 'active' : ''} aria-current={activePanel === 'edit' ? 'page' : undefined} onClick={() => setActivePanel('edit')}>{t('편집', 'Edit', '编辑', '編集')}</button>
