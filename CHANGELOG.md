@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Signed install without a business: publisher is the person’s legal name. Azure/EV are out for a Korea individual for now. The open door is an individual standard stamp, or keep the three pictures.
 - The signed-install plan now starts with a plain-language walkthrough of the blue Windows screen, the publisher stamp, and what the maintainer actually has to buy and lock away.
 - Signed Windows install is the current track. The plan is `docs/SIGNED_INSTALL.ko.md`: publisher name and Azure Trusted Signing (or EV) stay outside the repo; the release job stays unsigned until those secrets exist; no server or P5 in this track.
 - The locked build list is `docs/BUILD.ko.md`: keep the guest loop (open → connect → one line → paste → save on this PC). Do not add a company server or a new `/api/v2` for that loop. P5 stays a contract.
