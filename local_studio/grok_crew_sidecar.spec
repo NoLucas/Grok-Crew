@@ -15,6 +15,7 @@ a = Analysis(
         (str(root / "bot-guide.ko.json"), "."),
         (str(root / "bot-guide.zh.json"), "."),
         (str(root / "bot-guide.ja.json"), "."),
+        (str(root / "advanced-tools.json"), "."),
     ] + copy_metadata("imageio") + copy_metadata("imageio-ffmpeg") + copy_metadata("moviepy"),
     hiddenimports=collect_submodules("moviepy") + ["requests"],
 )

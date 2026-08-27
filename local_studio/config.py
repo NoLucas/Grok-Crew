@@ -31,6 +31,7 @@ BUNDLED_CAPTION_FONT = BASE_DIR / "assets" / "fonts" / "NotoSansKR-Bold.ttf"
 DATA_DIR = Path(os.getenv("LOCAL_STUDIO_DATA", BASE_DIR / "data")).resolve()
 WORKSPACE_DIR = Path(os.getenv("LOCAL_STUDIO_WORKSPACE", BASE_DIR / "workspace")).resolve()
 DB_PATH = DATA_DIR / "studio.db"
+ADVANCED_TOOLS_PATH = Path(os.getenv("ADVANCED_TOOLS_PATH", BASE_DIR / "advanced-tools.json")).resolve()
 BOT_GUIDE_PATH = BASE_DIR / "bot-guide.json"
 BOT_GUIDE_KO_PATH = BASE_DIR / "bot-guide.ko.json"
 BOT_GUIDE_ZH_PATH = BASE_DIR / "bot-guide.zh.json"

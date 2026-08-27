@@ -3,57 +3,55 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ADVANCED_TOOLS,
-  ADVANCED_TOOLS_NEVER,
-  ADVANCED_TOOLS_RULE,
   ADVANCED_TOOLS_SCHEMA,
   draftAdvancedTools,
-  formatToolApi,
+  featuredAdvancedTools,
   liveAdvancedTools,
-  localizeQuad,
+  moreAdvancedTools,
+  primaryToolApi,
+  toolCatalogPayload,
   type AdvancedTool,
+  type ToolCatalogPayload,
 } from './advanced-tools';
 import { useLanguage } from './language';
 import { SiteHeader } from './site-header';
-
-type CatalogPayload = {
-  schema: string;
-  rule: string;
-  cli: string;
-  never: string[];
-  tools: Array<{
-    id: string;
-    url: string;
-    live: boolean;
-    name: string;
-    use_when: string;
-    never: string;
-    bot_api: { read: string[]; write: string[] };
-    cli: string[];
-  }>;
-};
 
 function studioBase() {
   return typeof window !== 'undefined' && window.grokCrew?.apiBase ? window.grokCrew.apiBase : 'http://127.0.0.1:7214';
 }
 
-function ToolLink({
+function ToolCard({
   tool,
   t,
 }: {
   tool: AdvancedTool;
   t: (ko: string, en: string, zh: string, ja: string) => string;
 }) {
-  const apiLine = formatToolApi(tool);
+  const apiLine = primaryToolApi(tool);
   return (
-    <Link href={tool.url} className={tool.live ? 'tools-card is-live' : 'tools-card'}>
-      <div>
+    <Link href={tool.url} className={tool.screenLive ? 'tools-card is-live' : 'tools-card'}>
+      <div className="tools-card-head">
         <b>{t(...tool.name)}</b>
-        {tool.live ? <span>{t('실행', 'Live', '运行', '稼働')}</span> : <span>{t('초안', 'Draft', '草稿', '草案')}</span>}
+        <div className="tools-card-badges">
+          <span className={tool.screenLive ? 'tools-badge live' : 'tools-badge draft'}>
+            {tool.screenLive
+              ? t('화면 실행', 'Screen live', '画面：运行', '画面 稼働')
+              : t('화면 초안', 'Screen draft', '画面：草稿', '画面 草案')}
+          </span>
+          <span className={tool.apiLive ? 'tools-badge api-live' : 'tools-badge api-none'}>
+            {tool.apiLive
+              ? t('API 있음', 'API live', 'API：活着', 'API あり')
+              : t('API 없음', 'No API', 'API：无', 'API なし')}
+          </span>
+        </div>
       </div>
-      <p>{t(...tool.detail)}</p>
-      {apiLine ? <code className="tools-card-api">{apiLine}</code> : <code className="tools-card-api is-empty">{t('봇 API 없음 · 사람용 초안', 'No bot API · human draft', '无机器人 API · 给人看的草稿', 'ボット API なし · 人用の草案')}</code>}
-      <small>{t(...tool.never)}</small>
+      {apiLine ? (
+        <code className="tools-card-api">{apiLine}</code>
+      ) : (
+        <code className="tools-card-api is-empty">
+          {t('봇이 치는 API 없음', 'No bot API', '没有机器人可打的 API', 'ボットが叩く API なし')}
+        </code>
+      )}
       <em>{t('열기', 'Open', '打开', '開く')} →</em>
     </Link>
   );
@@ -61,11 +59,15 @@ function ToolLink({
 
 export default function LegacyTools() {
   const { t, language } = useLanguage();
-  const [catalog, setCatalog] = useState<CatalogPayload | null>(null);
+  const [catalog, setCatalog] = useState<ToolCatalogPayload | null>(null);
   const [catalogState, setCatalogState] = useState<'loading' | 'ready' | 'fallback'>('loading');
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const liveTools = useMemo(() => liveAdvancedTools(), []);
   const previewTools = useMemo(() => draftAdvancedTools(), []);
+  const extraTools = useMemo(() => moreAdvancedTools(), []);
+  const featuredCount = useMemo(() => featuredAdvancedTools().length, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,7 +75,7 @@ export default function LegacyTools() {
       void fetch(`${studioBase()}/api/v2/tools?lang=${language}`)
         .then(async (response) => {
           if (!response.ok) throw new Error(String(response.status));
-          return response.json() as Promise<CatalogPayload>;
+          return response.json() as Promise<ToolCatalogPayload>;
         })
         .then((payload) => {
           if (cancelled) return;
@@ -93,25 +95,7 @@ export default function LegacyTools() {
     };
   }, [language]);
 
-  const fallbackCatalog = useMemo<CatalogPayload>(
-    () => ({
-      schema: ADVANCED_TOOLS_SCHEMA,
-      rule: localizeQuad(ADVANCED_TOOLS_RULE, language),
-      cli: 'python local_studio/grok_crew.py tools [--lang ko]',
-      never: ADVANCED_TOOLS_NEVER.map((item) => localizeQuad(item, language)),
-      tools: ADVANCED_TOOLS.map((tool) => ({
-        id: tool.id,
-        url: tool.url,
-        live: tool.live,
-        name: localizeQuad(tool.name, language),
-        use_when: localizeQuad(tool.useWhen, language),
-        never: localizeQuad(tool.never, language),
-        bot_api: { read: tool.botApi.read, write: tool.botApi.write },
-        cli: tool.cli,
-      })),
-    }),
-    [language],
-  );
+  const fallbackCatalog = useMemo(() => toolCatalogPayload(language), [language]);
   const shownCatalog = catalog ?? fallbackCatalog;
   const catalogJson = JSON.stringify(shownCatalog, null, 2);
 
@@ -129,78 +113,143 @@ export default function LegacyTools() {
           <div>
             <p className="kicker">{t('고급 도구', 'ADVANCED TOOLS', '高级工具', '高度なツール')}</p>
             <h1>
-              {t('예전 콘솔을', 'Older consoles,', '旧控制台', '以前のコンソールを')}
+              {t('카드만 고르면 됩니다.', 'Pick a card.', '选一张卡片即可。', 'カードを選ぶだけです。')}
               <br />
-              <span>{t('부드러운 낮으로 모아 두었습니다.', 'kept in a soft-day desk.', '用柔昼收在这里。', 'やわらかい昼にまとめています。')}</span>
+              <span>{t('규칙과 JSON은 접혀 있습니다.', 'Rules and JSON stay folded.', '规则和 JSON 都收着。', 'ルールと JSON は折りたたんであります。')}</span>
             </h1>
             <p>
               {t(
-                '컷과 쇼츠 게시는 기본 화면에 그대로 있습니다. 여기서 실제로 도는 것은 렌더 대기열과 봇 기록뿐입니다. 봇은 이 화면을 긁지 않고 GET /api/v2/tools를 읽습니다.',
-                'Cuts and short-form publishing stay on the main screen. Only the render queue and bot log still run here. Bots read GET /api/v2/tools instead of scraping this page.',
-                '剪辑和短视频发布仍在主画面。这里真正运行的只有渲染队列和机器人记录。机器人读 GET /api/v2/tools，不抓这个页面。',
-                'カットとショート公開は基本画面のままです。ここで実際に動くのはレンダーキューとボット記録だけです。ボットはこの画面を掻かず GET /api/v2/tools を読みます。',
+                '기본 화면은 그대로 둡니다. 허브에는 실행 두 개와, 봇이 실제로 치는 운영·컷 맵·설명서만 둡니다. 에이전트·패킷처럼 API가 없는 초안은 더보기 아래입니다.',
+                'The main screen stays put. This hub keeps the two live consoles plus operations, the cut map, and the bot guide. Agent, packet, and other API-less drafts sit under More.',
+                '主画面不动。这里只放两个运行台，以及机器人会打的运营、剪辑图和说明书。智能体、数据包这类没有 API 的草稿在“更多”下面。',
+                '基本画面はそのままです。ハブには稼働コンソール 2 つと、ボットが実際に叩く運用・カットマップ・ガイドだけを置きます。エージェントやパケットなど API のない草案は「もっと見る」の下です。',
               )}
             </p>
             <div className="tools-hero-actions">
-              <Link href="/">{t('기본 화면으로', 'Back to the main screen', '回到主画面', '基本画面へ')}</Link>
-              <Link href="/production" className="tools-secondary-action">{t('제작 콘솔 열기', 'Open Production', '打开制作台', '制作コンソールを開く')}</Link>
+              <Link href="/" target="_blank" rel="noopener noreferrer">
+                {t('기본 화면으로', 'Open main screen', '打开主画面', '基本画面を開く')}
+              </Link>
+              <Link href="/production" className="tools-secondary-action">
+                {t('제작 콘솔 열기', 'Open Production', '打开制作台', '制作コンソールを開く')}
+              </Link>
             </div>
           </div>
           <aside>
-            <span>{t('이 기기에서만', 'THIS DEVICE ONLY', '仅限本设备', 'この端末のみ')}</span>
-            <b>GET /api/v2/tools</b>
-            <p>{t('사이트를 긁지 않습니다. 문은 편집과 수집을 섞지 않습니다.', 'This app does not scrape sites. Editor and collector doors stay separate.', '不抓网站。剪辑门和收集门不混用。', 'サイトは掻きません。編集と収集のドアは混ぜません。')}</p>
-          </aside>
-        </section>
-
-        <section className="tools-bot" aria-live="polite">
-          <div className="tools-section-head">
-            <h2>{t('봇이 쓰는 목록', 'Catalog for bots', '给机器人的目录', 'ボット用カタログ')}</h2>
+            <span>{t('사람 화면 · 봇 API', 'HUMAN SCREEN · BOT API', '人看的画面 · 机器人 API', '人の画面 · ボット API')}</span>
+            <b>{t('배지를 둘로', 'Two badges', '两枚徽章', 'バッジは二つ')}</b>
             <p>
-              {catalogState === 'ready'
-                ? t('Local Studio에서 방금 받은 카탈로그입니다.', 'This catalog just came from Local Studio.', '这份目录刚从 Local Studio 取得。', 'Local Studio から今受け取ったカタログです。')
-                : catalogState === 'loading'
-                  ? t('카탈로그를 불러오는 중입니다.', 'Loading the catalog.', '正在读取目录。', 'カタログを読み込んでいます。')
-                  : t('로컬 서비스에 연결하지 못해 내장 목록을 표시합니다.', 'Local Studio is unavailable, so the built-in catalog is shown.', '无法连接本地服务，正在显示内置目录。', 'ローカルサービスに接続できないため、内蔵カタログを表示しています。')}
+              {t(
+                '화면: 실행|초안. API: 있음|없음. 운영 센터는 화면은 초안, API는 살아 있습니다. 테마는 기본 화면 설정을 따릅니다.',
+                'Screen: live or draft. API: live or none. Operations is a draft screen with live APIs. Theme follows the main-screen setting.',
+                '画面：运行或草稿。API：有或无。运营中心画面是草稿，API 是活的。主题跟主画面设置。',
+                '画面：稼働か草案。API：ありかなしか。運用センターは画面が草案で、API は生きています。テーマは基本画面の設定に従います。',
+              )}
             </p>
-          </div>
-          <div className="tools-bot-panel">
-            <p>{shownCatalog.rule}</p>
-            <ol>
-              {shownCatalog.never.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ol>
-            <div className="tools-bot-actions">
-              <code>{shownCatalog.cli}</code>
-              <button type="button" onClick={() => void copyCatalog()}>
-                {copied
-                  ? t('JSON 복사됨', 'JSON copied', '已复制 JSON', 'JSON をコピーしました')
-                  : t('카탈로그 JSON 복사', 'Copy catalog JSON', '复制目录 JSON', 'カタログ JSON をコピー')}
-              </button>
-            </div>
-            <pre>{catalogJson}</pre>
-          </div>
+          </aside>
         </section>
 
         <section className="tools-section">
           <div className="tools-section-head">
             <h2>{t('실행', 'Live', '运行', '稼働')}</h2>
-            <p>{t('Local Studio가 켜져 있으면 여기서 실제 작업이 돌아갑니다.', 'These pages can start real jobs when Local Studio is on.', 'Local Studio 开启时，这些页面会启动真实任务。', 'Local Studio が起動していれば、ここで実ジョブが始まります。')}</p>
+            <p>{t('이 두 화면에서 렌더와 봇 기록이 됩니다.', 'These two screens still render and record bots.', '这两个页面仍会渲染并记录机器人。', 'この 2 画面ではレンダーとボット記録が残ります。')}</p>
           </div>
           <div className="tools-grid tools-grid-live">
-            {liveTools.map((tool) => <ToolLink key={tool.url} tool={tool} t={t} />)}
+            {liveTools.map((tool) => (
+              <ToolCard key={tool.id} tool={tool} t={t} />
+            ))}
           </div>
         </section>
 
         <section className="tools-section">
           <div className="tools-section-head">
-            <h2>{t('기획·미리보기', 'Planning & preview', '策划与预览', '企画・プレビュー')}</h2>
-            <p>{t('초안과 안내입니다. 컷을 바꾸거나 렌더를 시작하지 않습니다. 적힌 API만 호출하세요.', 'Drafts and guides. They do not change a cut or start a render. Call only the listed APIs.', '草稿和说明。不会改剪辑，也不会开始渲染。只调用列出的 API。', '草案と案内です。カットは変えず、レンダーも始めません。書かれた API だけを呼んでください。')}</p>
+            <h2>{t('초안 · 살아 있는 API', 'Draft screens, live APIs', '草稿画面，活着的 API', '草案画面 · 生きている API')}</h2>
+            <p>{t('화면은 기획이고, 적힌 API는 실제입니다. 렌더는 시작하지 않습니다.', 'The screens are planning. The listed APIs are real. They do not start a render.', '画面是策划，列出的 API 是真的。不会开始渲染。', '画面は企画で、書かれた API は本物です。レンダーは始めません。')}</p>
           </div>
           <div className="tools-grid">
-            {previewTools.map((tool) => <ToolLink key={tool.url} tool={tool} t={t} />)}
+            {previewTools.map((tool) => (
+              <ToolCard key={tool.id} tool={tool} t={t} />
+            ))}
           </div>
+        </section>
+
+        <section className="tools-more">
+          <button type="button" className="tools-more-toggle" onClick={() => setMoreOpen((value) => !value)}>
+            {moreOpen
+              ? t('더보기 접기', 'Hide more', '收起更多', 'もっと見るを閉じる')
+              : t(`더보기 · API 없는 초안 등 ${extraTools.length}개`, `More · ${extraTools.length} drafts`, `更多 · ${extraTools.length} 个草稿`, `もっと見る · 草案 ${extraTools.length}`)}
+          </button>
+          {moreOpen ? (
+            <div className="tools-grid">
+              {extraTools.map((tool) => (
+                <ToolCard key={tool.id} tool={tool} t={t} />
+              ))}
+            </div>
+          ) : (
+            <p className="tools-more-hint">
+              {t(
+                `허브에는 ${featuredCount}개만 둡니다. 편집실·터미널·에이전트·패킷은 여기 아래입니다.`,
+                `The hub shows ${featuredCount} cards. Edit lab, terminal, agent, and packet sit here.`,
+                `枢纽只放 ${featuredCount} 张。编辑室、终端、智能体、数据包在这里。`,
+                `ハブには ${featuredCount} 枚だけ置きます。編集ラボ・ターミナル・エージェント・パケットはここにあります。`,
+              )}
+            </p>
+          )}
+        </section>
+
+        <section className="tools-bot">
+          <button type="button" className="tools-catalog-toggle" onClick={() => setCatalogOpen((value) => !value)}>
+            {catalogOpen
+              ? t('카탈로그 접기', 'Hide catalog', '收起目录', 'カタログを閉じる')
+              : t('카탈로그 보기', 'Show catalog', '查看目录', 'カタログを見る')}
+          </button>
+          {catalogOpen ? (
+            <div className="tools-bot-panel" aria-live="polite">
+              <p>
+                {catalogState === 'ready'
+                  ? t(
+                      '같은 local_studio/advanced-tools.json을 Local Studio가 방금 읽었습니다. 봇은 HTML이 아니라 이 JSON을 칩니다.',
+                      'Local Studio just read the same local_studio/advanced-tools.json. Bots hit this JSON, not the HTML.',
+                      'Local Studio 刚读了同一份 local_studio/advanced-tools.json。机器人打这份 JSON，不打 HTML。',
+                      'Local Studio が同じ local_studio/advanced-tools.json を今読みました。ボットは HTML ではなくこの JSON を叩きます。',
+                    )
+                  : catalogState === 'loading'
+                    ? t('카탈로그를 불러오는 중입니다.', 'Loading the catalog.', '正在读取目录。', 'カタログを読み込んでいます。')
+                    : t(
+                        '로컬 서비스에 연결하지 못해 같은 파일의 화면 복사본을 표시합니다.',
+                        'Local Studio is unavailable, so the same file’s in-page copy is shown.',
+                        '无法连接本地服务，正在显示同一文件的页面副本。',
+                        'ローカルサービスに接続できないため、同じファイルの画面コピーを表示しています。',
+                      )}
+              </p>
+              <p>{shownCatalog.rule}</p>
+              <ol>
+                {shownCatalog.never.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ol>
+              <div className="tools-bot-actions">
+                <code>{shownCatalog.cli}</code>
+                <a href={`${studioBase()}/api/v2/tools?lang=${language}`} target="_blank" rel="noreferrer">
+                  GET /api/v2/tools
+                </a>
+                <button type="button" onClick={() => void copyCatalog()}>
+                  {copied
+                    ? t('JSON 복사됨', 'JSON copied', '已复制 JSON', 'JSON をコピーしました')
+                    : t('카탈로그 JSON 복사', 'Copy catalog JSON', '复制目录 JSON', 'カタログ JSON をコピー')}
+                </button>
+              </div>
+              <pre>{catalogJson}</pre>
+            </div>
+          ) : (
+            <p className="tools-more-hint">
+              {t(
+                '규칙·금지·JSON은 봇 설명서와 이 버튼 뒤에만 있습니다.',
+                'Rules, bans, and JSON stay behind this button and the bot guide.',
+                '规则、禁令和 JSON 只在这个按钮和机器人说明书后面。',
+                'ルール・禁止・JSON はこのボタンとボットガイドの後ろにだけあります。',
+              )}
+            </p>
+          )}
         </section>
       </main>
     </>

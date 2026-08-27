@@ -1,14 +1,26 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { LanguageSwitcher, useLanguage } from './language';
 import Link from 'next/link';
 import { PlanningBanner } from './planning-banner';
-import { setToolsDayTheme } from './tools-day';
+import { APPEARANCE_CHANGE_EVENT } from './desktop-appearance';
+import { applyToolsShell, clearToolsShell, loadToolsTheme } from './tools-day';
 import { useWorkspaceProfile } from './workspace-profile';
 
-const sections = [
-  { id: 'desktop', href: '/', ko: '화면', en: 'Screen', zh: '画面', ja: '画面', live: true },
+type HeaderSection = {
+  id: string;
+  href: string;
+  ko: string;
+  en: string;
+  zh: string;
+  ja: string;
+  live?: boolean;
+  newTab?: boolean;
+};
+
+const sections: HeaderSection[] = [
+  { id: 'desktop', href: '/', ko: '화면', en: 'Screen', zh: '画面', ja: '画面', live: true, newTab: true },
   { id: 'tools', href: '/tools', ko: '도구', en: 'Tools', zh: '工具', ja: 'ツール' },
   { id: 'production', href: '/production', ko: '제작', en: 'Production', zh: '制作', ja: '制作', live: true },
   { id: 'bots', href: '/bots', ko: '봇 확인', en: 'Bot check', zh: '机器人检查', ja: 'ボット確認', live: true },
@@ -29,16 +41,23 @@ const sections = [
 const primarySections = sections.slice(0, 4);
 const moreSections = sections.slice(4);
 
-function NavLabel({ section, t }: { section: (typeof sections)[number]; t: (ko: string, en: string, zh: string, ja: string) => string }) {
+function NavLabel({ section, t }: { section: HeaderSection; t: (ko: string, en: string, zh: string, ja: string) => string }) {
   return <>{t(section.ko, section.en, section.zh, section.ja)}{section.live ? <span className="nav-live-dot" title={t('이 페이지에서 실제 렌더·게시·봇 기록이 일어납니다', 'Real render, publish, or bot activity happens on this page', '这个页面会发生真实的渲染、发布或机器人记录', 'このページでは実際にレンダー・公開・ボット記録が発生します')}>{t('실행', 'LIVE', '运行中', '稼働中')}</span> : null}</>;
 }
 
 export function SiteHeader({ current }: { current: string }) {
   const { t } = useLanguage();
   const { profile } = useWorkspaceProfile();
-  useEffect(() => {
-    setToolsDayTheme(true);
-    return () => setToolsDayTheme(false);
+  useLayoutEffect(() => {
+    const apply = () => applyToolsShell(loadToolsTheme());
+    apply();
+    window.addEventListener(APPEARANCE_CHANGE_EVENT, apply);
+    window.addEventListener('storage', apply);
+    return () => {
+      window.removeEventListener(APPEARANCE_CHANGE_EVENT, apply);
+      window.removeEventListener('storage', apply);
+      clearToolsShell();
+    };
   }, []);
   return (
     <>
@@ -49,7 +68,13 @@ export function SiteHeader({ current }: { current: string }) {
         </Link>
         <nav aria-label={t('고급 도구 메뉴', 'Advanced tools navigation', '高级工具导航', '高度なツールのナビ')}>
           {primarySections.map((section) => (
-            <Link className={section.id === current ? 'current' : ''} href={section.href} key={section.id}>
+            <Link
+              className={section.id === current ? 'current' : ''}
+              href={section.href}
+              key={section.id}
+              target={section.newTab ? '_blank' : undefined}
+              rel={section.newTab ? 'noopener noreferrer' : undefined}
+            >
               <NavLabel section={section} t={t} />
             </Link>
           ))}

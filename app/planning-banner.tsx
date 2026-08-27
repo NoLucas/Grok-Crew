@@ -21,10 +21,10 @@ export function PlanningBanner({ current }: { current: string }) {
               )
             : onIndex
               ? t(
-                  '아래 목록에서 실행과 초안을 고르세요. 대부분 기획·미리보기입니다.',
-                  'Pick a live console or a draft below. Most pages are planning and preview.',
-                  '在下面选择运行中的控制台或草稿。多数页面只是策划和预览。',
-                  '下の一覧から稼働中のコンソールか草案を選んでください。ほとんどは企画とプレビューです。',
+                  '아래 카드에서 실행과 초안을 고르세요. JSON은 카탈로그 보기 뒤에 있습니다.',
+                  'Pick a live or draft card below. JSON stays behind Show catalog.',
+                  '在下面的卡片里选运行或草稿。JSON 在“查看目录”后面。',
+                  '下のカードから稼働か草案を選んでください。JSON は「カタログを見る」の後ろです。',
                 )
               : t(
                   '이 페이지는 기획·미리보기입니다. 실제 편집, 렌더, 게시는 기본 화면에서 합니다.',
@@ -36,7 +36,7 @@ export function PlanningBanner({ current }: { current: string }) {
       </div>
       <div className="planning-banner-actions">
         {onIndex ? null : <Link href="/tools" className="planning-banner-secondary">{t('도구 목록', 'Tool list', '工具列表', 'ツール一覧')}</Link>}
-        <Link href="/">{t('기본 화면 열기', 'Open main screen', '打开主画面', '基本画面を開く')}</Link>
+        <Link href="/" target="_blank" rel="noopener noreferrer">{t('기본 화면 열기', 'Open main screen', '打开主画面', '基本画面を開く')}</Link>
       </div>
     </aside>
   );

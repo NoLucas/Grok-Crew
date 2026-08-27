@@ -10,6 +10,8 @@
   --yellow: #f5c400;
   --lime: #b8f85a;
   --red: #ff5b52;
+  --input: #0a0a0a;
+  --header-bg: rgba(10, 10, 10, 0.94);
 }
 * {
   box-sizing: border-box;
@@ -419,8 +421,8 @@ select {
   width: 100%;
   padding: 9px 10px;
   border: 1px solid #343434;
-  background: #0b0b0b;
-  color: #f4f4f1;
+  background: var(--input);
+  color: var(--text);
   outline: none;
   font-size: 11px;
   font-weight: 500;
@@ -2071,10 +2073,10 @@ select {
 .inspector-scroll select {
   width: 100%;
   padding: 7px;
-  border: 1px solid #353535;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #0a0a0a;
-  color: white;
+  background: var(--input);
+  color: var(--text);
   font-size: 10px;
 }
 .inspector-scroll input[type="range"] {
@@ -2122,7 +2124,7 @@ select {
   min-height: 34px;
   overflow: hidden;
   border-radius: 5px;
-  background: #0b0b0b;
+  background: var(--bg);
 }
 .visual-track {
   display: flex;
@@ -2290,8 +2292,8 @@ select {
   padding: 8px;
   border: 1px solid #373737;
   border-radius: 6px;
-  background: #0a0a0a;
-  color: white;
+  background: var(--input);
+  color: var(--text);
   font-size: 10px;
 }
 .marker-add button,
@@ -3501,9 +3503,9 @@ select {
   display: grid;
   gap: 7px;
   padding: 22px;
-  border: 1px solid #433b1a;
+  border: 1px solid var(--line);
   border-radius: 15px;
-  background: linear-gradient(135deg, #171509, #111);
+  background: var(--surface);
 }
 .production-health.ready {
   border-color: rgba(184, 248, 90, 0.45);
@@ -3526,17 +3528,17 @@ select {
 .production-health p {
   min-height: 32px;
   margin: 0;
-  color: #b2b0a3;
+  color: var(--soft);
   font-size: 10px;
   line-height: 1.5;
 }
 .production-health button {
   justify-self: start;
   padding: 8px 10px;
-  border: 1px solid #4d4932;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0d0d0d;
-  color: #ddd;
+  background: var(--input);
+  color: var(--text);
   font-size: 9px;
   font-weight: 800;
 }
@@ -3613,8 +3615,8 @@ select {
   border: 1px solid #383838;
   border-radius: 7px;
   outline: 0;
-  background: #0a0a0a;
-  color: #e4e4dd;
+  background: var(--input);
+  color: var(--text);
   font-size: 11px;
 }
 .blueprint-card textarea {
@@ -3788,10 +3790,10 @@ select {
   gap: 5px;
   width: 100%;
   padding: 12px;
-  border: 1px solid #303030;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #0d0d0d;
-  color: #ddd;
+  background: var(--input);
+  color: var(--text);
   text-align: left;
 }
 .project-list button.chosen {
@@ -4119,8 +4121,8 @@ select {
   padding: 8px;
   border: 1px solid #393939;
   border-radius: 6px;
-  background: #0a0a0a;
-  color: #deded8;
+  background: var(--input);
+  color: var(--text);
   font-size: 9px;
 }
 .finish-grid input[type="range"] {
@@ -4131,9 +4133,9 @@ select {
   width: 100%;
   height: 34px;
   padding: 2px;
-  border: 1px solid #3b3b3b;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #0a0a0a;
+  background: var(--input);
 }
 .finish-grid p {
   margin: 0;
@@ -4885,9 +4887,9 @@ select {
   display: grid;
   gap: 8px;
   padding: 22px;
-  border: 1px solid rgba(184, 248, 90, 0.4);
+  border: 1px solid color-mix(in srgb, var(--lime) 40%, var(--line));
   border-radius: 15px;
-  background: linear-gradient(135deg, #10170d, #111);
+  background: var(--surface);
 }
 .guide-source span,
 .guide-card-head span {
@@ -4916,7 +4918,7 @@ select {
   padding: 8px 10px;
   border: 1px solid var(--yellow);
   border-radius: 7px;
-  background: #0c0c0b;
+  background: var(--input);
   color: var(--yellow);
   font-size: 9px;
   font-weight: 800;
@@ -5530,7 +5532,7 @@ select {
   min-height: 68px;
   padding: 0 30px;
   border-bottom: 1px solid var(--line);
-  background: rgba(10, 10, 10, 0.94);
+  background: var(--header-bg);
   backdrop-filter: blur(14px);
 }
 .site-header nav {
@@ -5562,12 +5564,12 @@ select {
   gap: 16px;
   margin: 0;
   padding: 10px 18px;
-  border-bottom: 1px solid var(--line, #e6e2d8);
-  background: #fff8e8;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--yellow) 16%, var(--surface));
 }
-.planning-banner.live { background: #f4f8ec; }
+.planning-banner.live { background: color-mix(in srgb, var(--lime) 16%, var(--surface)); }
 .planning-banner b { display: block; font-size: 13px; }
-.planning-banner p { margin: 3px 0 0; color: var(--soft, #6b6b66); font-size: 12px; line-height: 1.45; }
+.planning-banner p { margin: 3px 0 0; color: var(--soft); font-size: 12px; line-height: 1.45; }
 .planning-banner-actions {
   display: flex;
   flex-wrap: wrap;
@@ -5577,8 +5579,8 @@ select {
   flex: 0 0 auto;
   padding: 7px 12px;
   border-radius: 8px;
-  background: var(--text, #1d1d1b);
-  color: #fff;
+  background: var(--text);
+  color: var(--bg);
   font-size: 11px;
   font-weight: 750;
   text-decoration: none;
@@ -5586,8 +5588,8 @@ select {
 }
 .planning-banner a.planning-banner-secondary {
   background: transparent;
-  border: 1px solid #1d1d1b;
-  color: #1d1d1b;
+  border: 1px solid var(--text);
+  color: var(--text);
 }
 @media (max-width: 720px) {
   .planning-banner { flex-wrap: wrap; }
@@ -5643,9 +5645,9 @@ select {
   display: none;
   min-width: 145px;
   padding: 7px;
-  border: 1px solid #393939;
+  border: 1px solid var(--line);
   border-radius: 0 0 10px 10px;
-  background: #111;
+  background: var(--surface);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
 }
 .header-more[open] > div {
@@ -5661,7 +5663,7 @@ select {
 .header-more > div a:hover,
 .header-more > div a.current {
   border: 0;
-  background: #211c05;
+  background: var(--surface-2);
   color: var(--yellow);
 }
 .site-header .language-switcher {
@@ -5994,13 +5996,13 @@ select {
   display: grid;
   gap: 8px;
   padding: 22px;
-  border: 1px solid #343434;
+  border: 1px solid var(--line);
   border-radius: 15px;
-  background: #121212;
+  background: var(--surface);
 }
 .ops-health.ready {
-  border-color: rgba(184, 248, 90, 0.38);
-  background: linear-gradient(135deg, #11180e, #101010);
+  border-color: color-mix(in srgb, var(--lime) 38%, var(--line));
+  background: var(--surface);
 }
 .ops-health span,
 .ops-card-head span,
@@ -6051,7 +6053,7 @@ select {
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 11px;
-  background: #121212;
+  background: var(--surface);
 }
 .ops-project-bar > div {
   display: grid;
@@ -6182,7 +6184,7 @@ select {
   padding: 17px;
   border: 1px solid var(--line);
   border-radius: 13px;
-  background: #121212;
+  background: var(--surface);
 }
 .ops-card:hover {
   border-color: #484848;
@@ -6420,13 +6422,13 @@ select {
   display: grid;
   gap: 8px;
   padding: 22px;
-  border: 1px solid #393939;
+  border: 1px solid var(--line);
   border-radius: 15px;
-  background: #111;
+  background: var(--surface);
 }
 .terminal-health.ready {
-  border-color: rgba(245, 196, 0, 0.42);
-  background: linear-gradient(135deg, #171408, #111);
+  border-color: color-mix(in srgb, var(--yellow) 42%, var(--line));
+  background: var(--surface);
 }
 .terminal-health span,
 .terminal-card-head span {
@@ -6498,7 +6500,7 @@ select {
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 13px;
-  background: #121212;
+  background: var(--surface);
 }
 .terminal-card-head {
   display: flex;
@@ -8346,7 +8348,7 @@ select {
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: 15px;
-  background: #121212;
+  background: var(--surface);
 }
 .privacy-card-head {
   display: flex;
@@ -8913,7 +8915,7 @@ select {
 .tools-hero > div > p:last-of-type {
   max-width: 560px;
   margin: 16px 0 0;
-  color: #a7a7a0;
+  color: var(--soft);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -8932,17 +8934,17 @@ select {
   font-weight: 800;
 }
 .tools-hero-actions .tools-secondary-action {
-  background: #171717;
-  border: 1px solid #3d3d3d;
-  color: #eee;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
 }
 .tools-hero aside {
   display: grid;
   gap: 8px;
   padding: 18px;
-  border: 1px solid #3d3520;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #14120c;
+  background: var(--surface);
 }
 .tools-hero aside > span {
   color: #aaa06e;
@@ -8956,7 +8958,7 @@ select {
 }
 .tools-hero aside > p {
   margin: 0;
-  color: #a7a7a0;
+  color: var(--soft);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -8982,36 +8984,57 @@ select {
 .tools-card {
   display: grid;
   gap: 8px;
-  min-height: 148px;
+  min-height: 132px;
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #111;
+  background: var(--surface);
+  text-decoration: none;
+  color: inherit;
 }
-.tools-card:hover { border-color: #4a4a4a; background: #161616; }
-.tools-card.is-live { border-color: #3d4a22; background: #12160e; }
+.tools-card:hover { border-color: color-mix(in srgb, var(--text) 28%, var(--line)); background: var(--surface-2); }
+.tools-card.is-live { border-color: color-mix(in srgb, var(--lime) 35%, var(--line)); background: color-mix(in srgb, var(--lime) 8%, var(--surface)); }
+.tools-card-head,
 .tools-card > div {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
+.tools-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
 .tools-card b { font-size: 15px; }
-.tools-card span {
+.tools-card span,
+.tools-badge {
   padding: 2px 6px;
   border-radius: 4px;
-  background: #222;
+  background: var(--surface-2);
   color: var(--soft);
   font-size: 10px;
   font-weight: 800;
+  white-space: nowrap;
 }
-.tools-card.is-live span {
-  background: rgba(184, 248, 90, 0.12);
+.tools-badge.live,
+.tools-card.is-live .tools-badge.live {
+  background: color-mix(in srgb, var(--lime) 16%, var(--surface));
   color: var(--lime);
+}
+.tools-badge.api-live {
+  background: color-mix(in srgb, var(--yellow) 16%, var(--surface));
+  color: var(--yellow);
+}
+.tools-badge.draft,
+.tools-badge.api-none {
+  background: var(--bg);
+  color: var(--soft);
 }
 .tools-card p {
   margin: 0;
-  color: #a7a7a0;
+  color: var(--soft);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -9102,7 +9125,75 @@ select {
   font: 12px/1.45 var(--font-geist-mono), ui-monospace, monospace;
 }
 
-/* Soft-day chrome for every advanced-tools page. Matches desktop 부드러운 낮. */
+.tools-more { margin-top: 36px; }
+.tools-more-hint {
+  margin: 10px 0 0;
+  color: var(--soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.tools-more-toggle,
+.tools-catalog-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tools-more-toggle:hover,
+.tools-catalog-toggle:hover {
+  background: var(--surface-2);
+}
+.tools-bot-actions a {
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Advanced tools follow the desk appearance tokens. Default is soft day. */
+html.tools-shell,
+html.tools-shell body {
+  background: var(--bg);
+  color: var(--text);
+}
+html.tools-shell[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --surface-2: #f8f8fa;
+  --line: #dedfe4;
+  --soft: #3d4148;
+  --text: #191a1d;
+  --yellow: #b27616;
+  --lime: #2fa66f;
+  --red: #dc554c;
+  --input: #fafafa;
+  --header-bg: rgba(250, 250, 251, 0.97);
+}
+html.tools-shell[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #12141a;
+  --surface: #1b1e26;
+  --surface-2: #16181f;
+  --line: #2d323c;
+  --soft: #a8aeb8;
+  --text: #eceef3;
+  --yellow: #e0b25a;
+  --lime: #4ecb8d;
+  --red: #f07a72;
+  --input: #14171e;
+  --header-bg: rgba(18, 20, 26, 0.96);
+}
+html.tools-shell[data-theme="low-light"],
 html.tools-day,
 html.tools-day body {
   color-scheme: light;
@@ -9115,175 +9206,39 @@ html.tools-day body {
   --yellow: #9a6a14;
   --lime: #2b8f5f;
   --red: #c44d46;
-  background: #e4e1d7;
-  color: #2b2924;
+  --input: #e8e4da;
+  --header-bg: rgba(236, 232, 222, 0.96);
 }
-html.tools-day .site-header {
-  background: rgba(236, 232, 222, 0.96);
-  border-bottom-color: #c8c3b6;
+html.tools-shell[data-theme="low-dark"] {
+  color-scheme: dark;
+  --bg: #1a1c1f;
+  --surface: #23262b;
+  --surface-2: #1f2125;
+  --line: #34383e;
+  --soft: #8b8f96;
+  --text: #c5c8ce;
+  --yellow: #c4a05a;
+  --lime: #4aa87a;
+  --red: #d4766d;
+  --input: #1c1e22;
+  --header-bg: rgba(26, 28, 31, 0.96);
 }
-html.tools-day .wordmark span { color: #2b2924; }
-html.tools-day .header-more > div {
-  border-color: #c8c3b6;
-  background: #efece3;
-  box-shadow: 0 14px 28px rgba(43, 41, 36, 0.12);
-}
-html.tools-day .header-more > div a:hover,
-html.tools-day .header-more > div a.current {
-  background: #ddd8cc;
-  color: #2b2924;
-}
-html.tools-day .planning-banner {
-  background: #efe8d4;
-  border-bottom-color: #c8c3b6;
-}
-html.tools-day .planning-banner.live { background: #e4ead8; }
-html.tools-day .planning-banner a {
-  background: #2b2924;
-  color: #f4f1e8;
-}
-html.tools-day .planning-banner a.planning-banner-secondary {
-  background: transparent;
-  border-color: #2b2924;
-  color: #2b2924;
-}
+html.tools-shell input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+html.tools-shell textarea,
+html.tools-shell select,
 html.tools-day input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
 html.tools-day textarea,
 html.tools-day select {
-  background: #e8e4da;
-  border-color: #c8c3b6;
-  color: #2b2924;
+  background: var(--input);
+  border-color: var(--line);
+  color: var(--text);
 }
-html.tools-day .tools-hero > div > p:last-of-type,
-html.tools-day .production-hero > div > p:last-child,
-html.tools-day .guide-hero > div > p:last-child,
-html.tools-day .agent-hero > div > p:last-child,
-html.tools-day .ops-hero > div > p:last-child,
-html.tools-day .cut-hero > div > p:last-child,
-html.tools-day .terminal-hero > div > p:last-child,
-html.tools-day .connect-hero > div > p:last-child,
-html.tools-day .privacy-hero > p:last-child {
-  color: #5a564c;
-}
-html.tools-day .tools-hero-actions .tools-secondary-action {
-  background: #efece3;
-  border-color: #c8c3b6;
-  color: #2b2924;
-}
-html.tools-day .tools-hero aside,
-html.tools-day .production-health,
-html.tools-day .guide-source,
-html.tools-day .ops-health,
-html.tools-day .terminal-health,
-html.tools-day .agent-hero-stats article {
-  background: #efece3;
-  border-color: #c8c3b6;
-}
-html.tools-day .tools-hero aside > span { color: #9a6a14; }
-html.tools-day .tools-card,
-html.tools-day .production-card,
-html.tools-day .guide-card,
-html.tools-day .guide-steps article,
-html.tools-day .guide-feature-grid > article,
-html.tools-day .guide-page-grid article,
-html.tools-day .ops-card,
-html.tools-day .terminal-card,
-html.tools-day .terminal-command-list article,
-html.tools-day .agent-card,
-html.tools-day .cut-card,
-html.tools-day .cut-stats article,
-html.tools-day .privacy-card,
-html.tools-day .packet-form,
-html.tools-day .packet-preview,
-html.tools-day .export-preview,
-html.tools-day .export-actions,
-html.tools-day .gate-chip {
-  background: #efece3;
-  border-color: #c8c3b6;
-}
-html.tools-day .tools-card:hover {
-  background: #e9e5db;
-  border-color: #b4ae9f;
-}
-html.tools-day .tools-card.is-live {
-  background: #e7ecdf;
-  border-color: #b7c4a6;
-}
-html.tools-day .tools-card span {
-  background: #e4e1d7;
-  color: #5a564c;
-}
-html.tools-day .tools-card.is-live span {
-  background: rgba(43, 143, 95, 0.12);
-  color: #2b8f5f;
-}
-html.tools-day .tools-card p,
-html.tools-day .production-health p,
-html.tools-day .production-note,
-html.tools-day .guide-source p,
-html.tools-day .ops-health p,
-html.tools-day .terminal-health p {
-  color: #5a564c;
-}
-html.tools-day .production-health button,
-html.tools-day .guide-source button,
-html.tools-day .guide-card-head button,
-html.tools-day .ops-health button,
-html.tools-day .ops-card button,
-html.tools-day .terminal-health button,
-html.tools-day .terminal-card button,
-html.tools-day .terminal-flow-head > button {
-  background: #e8e4da;
-  border-color: #c8c3b6;
-  color: #2b2924;
-}
-html.tools-day .production-note,
-html.tools-day .cut-note,
-html.tools-day .guide-first,
-html.tools-day .guide-never,
-html.tools-day .ops-message,
-html.tools-day .terminal-rule,
-html.tools-day .agent-alert,
-html.tools-day .agent-note {
-  background: #e7ecdf;
-  border-color: #b7c4a6;
-  color: #3d4a36;
-}
-html.tools-day .job-list,
-html.tools-day .project-list,
-html.tools-day .job-row,
-html.tools-day .empty-job,
-html.tools-day .ops-task-list article,
-html.tools-day .ops-recovery-list article,
-html.tools-day .ops-mini-list span,
-html.tools-day .terminal-card pre,
-html.tools-day .terminal-flow > pre,
-html.tools-day .packet-preview pre,
-html.tools-day .inspector-scroll input,
-html.tools-day .inspector-scroll select,
-html.tools-day .edit-track {
-  background: #e8e4da;
-  border-color: #c8c3b6;
-  color: #2b2924;
-}
-html.tools-day .inspector-scroll h3,
-html.tools-day .inspector-head b,
-html.tools-day .inspector-scroll label {
-  color: #5a564c;
-}
-html.tools-day .visual-track span { color: #efece3; }
-html.tools-day .header-meta { color: #5a564c; }
+html.tools-shell .wordmark span,
+html.tools-day .wordmark span { color: var(--text); }
+html.tools-shell .header-meta,
+html.tools-day .header-meta { color: var(--soft); }
+html.tools-shell .nav-live-dot,
 html.tools-day .nav-live-dot {
-  background: rgba(43, 143, 95, 0.12);
-  color: #2b8f5f;
-}
-html.tools-day .test-switch {
-  background: #efece3;
-  border-color: #c8c3b6;
-  color: #2b2924;
-}
-html.tools-day .test-switch.on {
-  background: #f3e4e2;
-  border-color: #c44d46;
-  color: #c44d46;
+  background: color-mix(in srgb, var(--lime) 16%, var(--surface));
+  color: var(--lime);
 }

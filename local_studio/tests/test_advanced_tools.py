@@ -10,8 +10,23 @@ def test_catalog_lists_live_production_and_bot_check():
     assert catalog["same_pc_only"] is True
     by_id = {tool["id"]: tool for tool in catalog["tools"]}
     assert by_id["production"]["live"] is True
+    assert by_id["production"]["screen_live"] is True
+    assert by_id["production"]["api_live"] is True
     assert by_id["bots"]["live"] is True
     assert by_id["edit"]["live"] is False
+    assert by_id["operations"]["live"] is False
+    assert by_id["operations"]["screen_live"] is False
+    assert by_id["operations"]["api_live"] is True
+    assert by_id["operations"]["hub"] == "featured"
+    assert by_id["agent"]["api_live"] is False
+    assert by_id["agent"]["hub"] == "more"
+    assert {tool["id"] for tool in catalog["tools"] if tool["hub"] == "featured"} == {
+        "production",
+        "bots",
+        "cut",
+        "operations",
+        "bot-guide",
+    }
     assert "POST /api/projects/{id}/render" in by_id["production"]["bot_api"]["write"]
     assert "GET /api/v2/tools" in by_id["hub"]["bot_api"]["read"]
     assert "HTML" in catalog["rule"] or "긁" in catalog["rule"]
