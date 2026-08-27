@@ -178,6 +178,28 @@ describe('auto desk job payload', () => {
       useScrape: true,
       collectQuery: '간판',
       wantTts: true,
+      voiceGender: 'male',
+      voiceFeel: 'calm',
+      voiceAccent: 'en-gb',
+    }).must_keep), /차분한 남자 · 영국 영어/);
+    assert.match(String(autoJobPayload({
+      title: 'TTS 켬',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useScrape: true,
+      collectQuery: '간판',
+      wantTts: true,
+      voiceGender: 'male',
+      voiceFeel: 'calm',
+      voiceAccent: 'en-gb',
+    }).must_keep), /bm_lewis 하나만/);
+    assert.match(String(autoJobPayload({
+      title: 'TTS 켬',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useScrape: true,
+      collectQuery: '간판',
+      wantTts: true,
       voiceModelId: 'zonos-v0.1',
     }).must_keep), /Zonos-v0.1 하나만/);
   });

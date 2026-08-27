@@ -1,5 +1,18 @@
 import { connectedBot, type CrewRoster } from './desktop-bot-connect';
 import { DEFAULT_VOICE_MODEL_ID, resolveVoiceModelId, voiceMustKeep, type VoiceModelId } from './desktop-voice-models';
+import {
+  DEFAULT_VOICE_ACCENT,
+  DEFAULT_VOICE_FEEL,
+  DEFAULT_VOICE_GENDER,
+  resolveVoiceAccent,
+  resolveVoiceFeel,
+  resolveVoiceGender,
+  resolveVoicePersona,
+  voicePersonaKeep,
+  type VoiceAccent,
+  type VoiceFeel,
+  type VoiceGender,
+} from './desktop-voice-personas';
 import type { DeskPullStatus, DeskWaitState } from './desktop-wait-state';
 
 export const AUTO_PREFS_KEY = 'grok-crew-auto-prefs';
@@ -29,6 +42,10 @@ export type AutoPrefs = {
   wantDubbing?: boolean;
   wantTts?: boolean;
   voiceModelId?: VoiceModelId;
+  voiceGender?: VoiceGender;
+  voiceFeel?: VoiceFeel;
+  voiceAccent?: VoiceAccent;
+  voiceSaved?: boolean;
 };
 
 export type AutoStartCheck =
@@ -48,6 +65,9 @@ export type AutoJobInput = {
   wantDubbing?: boolean;
   wantTts?: boolean;
   voiceModelId?: VoiceModelId;
+  voiceGender?: VoiceGender;
+  voiceFeel?: VoiceFeel;
+  voiceAccent?: VoiceAccent;
 };
 
 export function titleFromPrompt(title: string, goal = ''): string {
@@ -101,10 +121,18 @@ export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
   };
   if (useScrape) body.collect_query = String(input.collectQuery || '').trim() || prompt;
   if (useOwn) body.owned_paths = ownedPaths;
+  const persona = input.wantTts
+    ? resolveVoicePersona({
+      gender: input.voiceGender,
+      feel: input.voiceFeel,
+      accent: input.voiceAccent,
+    })
+    : undefined;
   const keep = voiceMustKeep({
     wantDubbing: input.wantDubbing,
     wantTts: input.wantTts,
     voiceModelId: input.voiceModelId,
+    personaKeep: persona ? voicePersonaKeep(persona) : undefined,
   });
   if (keep) body.must_keep = keep;
   return body;
@@ -136,7 +164,18 @@ function storage(): Storage | null {
 }
 
 export function emptyAutoPrefs(): AutoPrefs {
-  return { recipeId: DEFAULT_RECIPE_ID, recentTitles: [], wantCaptions: false, wantDubbing: false, wantTts: false, voiceModelId: DEFAULT_VOICE_MODEL_ID };
+  return {
+    recipeId: DEFAULT_RECIPE_ID,
+    recentTitles: [],
+    wantCaptions: false,
+    wantDubbing: false,
+    wantTts: false,
+    voiceModelId: DEFAULT_VOICE_MODEL_ID,
+    voiceGender: DEFAULT_VOICE_GENDER,
+    voiceFeel: DEFAULT_VOICE_FEEL,
+    voiceAccent: DEFAULT_VOICE_ACCENT,
+    voiceSaved: false,
+  };
 }
 
 function cleanTitles(value: unknown): string[] {
@@ -169,6 +208,10 @@ export function readAutoPrefs(): AutoPrefs {
       wantDubbing: Boolean(parsed.wantDubbing),
       wantTts: Boolean(parsed.wantTts),
       voiceModelId: resolveVoiceModelId(parsed.voiceModelId),
+      voiceGender: resolveVoiceGender(parsed.voiceGender),
+      voiceFeel: resolveVoiceFeel(parsed.voiceFeel),
+      voiceAccent: resolveVoiceAccent(parsed.voiceAccent),
+      voiceSaved: Boolean(parsed.voiceSaved),
     };
   } catch {
     return emptyAutoPrefs();
@@ -187,6 +230,10 @@ export function writeAutoPrefs(prefs: Partial<AutoPrefs>): AutoPrefs {
     wantDubbing: prefs.wantDubbing !== undefined ? Boolean(prefs.wantDubbing) : Boolean(current.wantDubbing),
     wantTts: prefs.wantTts !== undefined ? Boolean(prefs.wantTts) : Boolean(current.wantTts),
     voiceModelId: resolveVoiceModelId(prefs.voiceModelId ?? current.voiceModelId),
+    voiceGender: resolveVoiceGender(prefs.voiceGender ?? current.voiceGender),
+    voiceFeel: resolveVoiceFeel(prefs.voiceFeel ?? current.voiceFeel),
+    voiceAccent: resolveVoiceAccent(prefs.voiceAccent ?? current.voiceAccent),
+    voiceSaved: prefs.voiceSaved !== undefined ? Boolean(prefs.voiceSaved) : Boolean(current.voiceSaved),
   };
   storage()?.setItem(AUTO_PREFS_KEY, JSON.stringify(next));
   return next;

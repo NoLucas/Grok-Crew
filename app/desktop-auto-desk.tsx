@@ -34,7 +34,23 @@ import { withCrewInvite } from './bot-skills';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { DesktopNewsCard } from './desktop-news-card';
 import { DesktopVoiceSetup } from './desktop-voice-setup';
-import { confirmVoiceChoice, voiceModelLabel, type VoiceDownloadStatus, type VoiceModelId } from './desktop-voice-models';
+import { confirmVoiceChoice, type VoiceDownloadStatus, type VoiceModelId } from './desktop-voice-models';
+import {
+  VOICE_ACCENTS,
+  VOICE_FEELS,
+  VOICE_GENDERS,
+  resolveVoiceAccent,
+  resolveVoiceFeel,
+  resolveVoiceGender,
+  resolveVoicePersona,
+  voiceAccentLabel,
+  voiceFeelLabel,
+  voiceGenderLabel,
+  voicePersonaLabel,
+  type VoiceAccent,
+  type VoiceFeel,
+  type VoiceGender,
+} from './desktop-voice-personas';
 import { useLanguage } from './language';
 import { formatCheckTime, type DeskPullStatus, type DeskWaitState } from './desktop-wait-state';
 
@@ -132,7 +148,12 @@ export function AutoDesk({
   const [wantDubbing, setWantDubbing] = useState(Boolean(prefs.wantDubbing));
   const [wantTts, setWantTts] = useState(Boolean(prefs.wantTts));
   const [voiceModelId, setVoiceModelId] = useState<VoiceModelId>(() => confirmVoiceChoice(prefs.voiceModelId));
-  const [voiceOpen, setVoiceOpen] = useState(Boolean(prefs.wantTts));
+  const [voiceGender, setVoiceGender] = useState<VoiceGender>(() => resolveVoiceGender(prefs.voiceGender));
+  const [voiceFeel, setVoiceFeel] = useState<VoiceFeel>(() => resolveVoiceFeel(prefs.voiceFeel));
+  const [voiceAccent, setVoiceAccent] = useState<VoiceAccent>(() => resolveVoiceAccent(prefs.voiceAccent));
+  const [voiceSaved, setVoiceSaved] = useState(Boolean(prefs.voiceSaved));
+  const [engineOpen, setEngineOpen] = useState(false);
+  const voicePersona = resolveVoicePersona({ gender: voiceGender, feel: voiceFeel, accent: voiceAccent });
   const [ownOver, setOwnOver] = useState(false);
   const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
   const [recipeTouched, setRecipeTouched] = useState(false);
@@ -193,12 +214,12 @@ export function AutoDesk({
     : t('인스타 릴', 'Instagram Reel', 'Instagram Reel', 'Instagram リール');
   const sourceMode = autoSourceMode({ useOwn, useScrape });
   const wayLabel = sourceMode === 'own_and_collect'
-    ? t('내 파일 + 스크랩', 'My files + scrape', '我的文件 + 抓取', '自分のファイル + 収集')
+    ? t('내 영상 + 공개 장면', 'My clips + public scenes', '我的影像 + 公开镜头', '自分の映像 + 公開の場面')
     : sourceMode === 'collect'
-      ? t('스크랩 봇이 가져옴', 'The scrape bot fetches it', '抓取机器人去取', '収集ボットが持ってくる')
+      ? t('공개 장면을 찾아옴', 'Find public scenes', '去找公开镜头', '公開の場面を探す')
       : sourceMode === 'own'
-        ? t('내가 넣은 파일', 'Files I put in', '我放进的文件', '自分が入れたファイル')
-        : t('자료 아직 없음', 'No materials yet', '还没有资料', '資料はまだない');
+        ? t('내가 넣은 영상', 'Clips I put in', '我放进的影像', '自分が入れた映像')
+        : t('화면 아직 없음', 'No pictures yet', '还没有画面', '画面はまだない');
   const startReady = canStartAuto({
     title,
     goal,
@@ -256,13 +277,13 @@ export function AutoDesk({
     const check = canStartAuto({ title, goal: nextGoal, attached, useOwn, useScrape, ownedPaths, collectQuery });
     if (!check.ok) {
       setError(check.reason === 'title'
-        ? t('기획자에게 영상 주소나 원하는 편집을 적어 주세요.', 'Tell the planner a video URL or how to edit.', '请对策划写下视频地址或想要的剪法。', '企画者に映像の住所か編集方法を書いてください。')
+        ? t('만들고 싶은 영상을 적어 주세요. 주소여도 됩니다.', 'Write the video you want. A URL is fine.', '请写下想做的视频。地址也可以。', '作りたい映像を書いてください。住所でもよいです。')
         : check.reason === 'materials'
           ? !useOwn && !useScrape
-            ? t('자료를 내가 넣을지, 스크랩 봇이 가져올지 고르세요.', 'Choose my files, the scrape bot, or both.', '请选择放自己的文件、让抓取机器人去取，或两者。', '自分のファイルか、収集ボットか、両方を選んでください。')
+            ? t('내 영상·사진을 넣을지, 공개 장면을 찾아올지 고르세요.', 'Choose your files, public scenes, or both.', '请选择放自己的影像，或找公开镜头，或两者。', '自分の映像を入れるか、公開の場面を探すか、両方を選んでください。')
             : useOwn && !ownedPaths.length
               ? t('영상이나 사진을 넣으세요.', 'Put in a video or an image.', '请放入视频或图片。', '映像か写真を入れてください。')
-              : t('어떤 자료를 가져올지 적어 주세요. 그걸 알아야 자를 수 있습니다.', 'Write what to fetch. The cut needs that list.', '请写下要取的资料。剪辑需要这份清单。', '何を持ってくるか書いてください。それが分からないと切れません。')
+              : t('어떤 장면을 찾아올지 적어 주세요. 그걸 알아야 자를 수 있습니다.', 'Write which scenes to find. The cut needs that list.', '请写下要找的镜头。剪辑需要这份清单。', 'どの場面を探すか書いてください。それが分からないと切れません。')
         : t('먼저 연결하세요.', 'Connect first.', '请先连接。', '先に接続してください。'));
       return;
     }
@@ -287,19 +308,41 @@ export function AutoDesk({
           wantDubbing,
           wantTts,
           voiceModelId,
+          voiceGender,
+          voiceFeel,
+          voiceAccent,
         })),
       });
       const record = created.edit_spec as { id?: string };
       if (!record?.id) throw new Error(t('규격을 저장하지 못했습니다.', 'Could not save the spec.', '无法保存规格。', '仕様を保存できませんでした。'));
       const invite = await request(`/api/v2/edit-specs/${record.id}/invite?lang=${encodeURIComponent(language)}`);
-      const text = withCrewInvite(String(invite.text || ''), language, { captions: wantCaptions, dubbing: wantDubbing, tts: wantTts, voiceModelId });
+      const text = withCrewInvite(String(invite.text || ''), language, {
+        captions: wantCaptions,
+        dubbing: wantDubbing,
+        tts: wantTts,
+        voiceModelId,
+        voiceGender,
+        voiceFeel,
+        voiceAccent,
+      });
       if (!text.trim()) throw new Error(t('초대문을 만들지 못했습니다.', 'Could not make the invite.', '无法生成邀请。', '招待文を作れませんでした。'));
       setInviteText(text);
       if (again.trim()) {
         setGoal(nextGoal);
         setRevisePrompt('');
       }
-      setPrefs(writeAutoPrefs({ recipeId, wantCaptions, wantDubbing, wantTts, voiceModelId }));
+      setPrefs(writeAutoPrefs({
+        recipeId,
+        wantCaptions,
+        wantDubbing,
+        wantTts,
+        voiceModelId,
+        voiceGender,
+        voiceFeel,
+        voiceAccent,
+        voiceSaved: wantTts ? true : voiceSaved,
+      }));
+      if (wantTts) setVoiceSaved(true);
       if (wantTts && onChangeVoiceModel) void onChangeVoiceModel(confirmVoiceChoice(voiceModelId));
       setPrefs(rememberRecentTitle(heading));
       const nextWait: DeskWaitState = {
@@ -509,8 +552,8 @@ export function AutoDesk({
     <div className="desktop-spec-desk desktop-auto-desk">
       <div className="desktop-spec-hero desktop-auto-hero">
         <span>✦</span>
-        <h1>{t('기획자에게 말하고, 자료가 오면 편집자가 자릅니다', 'Tell the planner, then the editor cuts the materials', '对策划说，资料到了由剪辑来剪', '企画者に言い、資料が来たら編集者が切る')}</h1>
-        <p>{t('영상 주소나 원하는 편집을 적습니다. 기획자가 방식을 정하고, 스크래핑 또는 내 파일로 자료를 모은 뒤 편집자가 자릅니다. 이 앱은 긁지 않습니다.', 'Write a video URL or how to edit. The planner chooses the method, scrape or your files supply the clips, the editor cuts. This app does not scrape.', '写下视频地址或想要的剪法。策划定方法，抓取或你的文件供素材，剪辑来剪。这个应用不抓站。', '映像の住所か編集方法を書く。企画者がやり方を決め、収集か自分のファイルで資料を集め、編集者が切る。このアプリは掻きません。')}</p>
+        <h1>{t('만들고 싶은 영상을 적으면, 자른 파일이 이 창으로 돌아옵니다', 'Write the video you want. The cut comes back to this window.', '写下想做的视频，剪好的文件会回到这个窗口。', '作りたい映像を書くと、切ったファイルがこの窓に戻ります')}</h1>
+        <p>{t('주소거나, 어떤 장면으로 자를지 적습니다. 내 영상·사진을 넣거나 공개 장면을 찾아오게 할 수 있습니다. 이 프로그램은 사이트를 긁지 않습니다.', 'A URL, or how to cut it. Add your clips or ask for public scenes. This program does not scrape sites.', '可以是地址，或怎么剪。放自己的影像，或找公开镜头。这个程序不抓站。', '住所でも、どう切るかでもよい。自分の映像を入れるか、公開の場面を探させる。このプログラムは掻きません。')}</p>
       </div>
 
       {!studioReady ? (
@@ -538,16 +581,16 @@ export function AutoDesk({
 
       <div className="desktop-auto-modes" role="tablist" aria-label={t('시작 방법', 'How to start', '开始方式', '始め方')}>
         <button type="button" role="tab" aria-selected={mode === 'hand_off'} className={mode === 'hand_off' ? 'is-selected' : ''} onClick={() => setMode('hand_off')}>
-          {t('맡겨서 만들기', 'Hand it off', '交给它来做', '任せて作る')}
+          {t('봇에게 맡기기', 'Ask the bot', '交给机器人', 'ボットに任せる')}
         </button>
         <button type="button" role="tab" aria-selected={mode === 'own_file'} className={mode === 'own_file' ? 'is-selected' : ''} onClick={() => setMode('own_file')}>
-          {t('내 파일로 시작', 'Start with my file', '用自己的文件开始', '自分のファイルで始める')}
+          {t('내 영상으로 바로 열기', 'Open my video now', '马上打开我的视频', '自分の映像で開く')}
         </button>
       </div>
 
       {mode === 'own_file' ? (
         <section className="desktop-auto-own">
-          <p>{t('원본이 이 PC에 있으면 봇 없이 타임라인이 열립니다.', 'If the footage is on this PC, the timeline opens without a bot.', '若原片在这台电脑，不用机器人也会打开时间线。', '原本がこの PC にあれば、ボットなしでタイムラインが開きます。')}</p>
+          <p>{t('이 컴퓨터에 영상이 있으면, 봇 없이 바로 잘라 볼 화면이 열립니다.', 'If the video is on this computer, the cut screen opens without a bot.', '若视频在这台电脑，不用机器人也会打开剪辑画面。', 'このパソコンに映像があれば、ボットなしで切る画面が開きます。')}</p>
           <button
             type="button"
             className={ownOver ? 'desktop-simple-drop is-over' : 'desktop-simple-drop'}
@@ -572,54 +615,49 @@ export function AutoDesk({
             void startJob();
           }}
         >
-          <label className="desktop-spec-field desktop-spec-wide">
-            <span>{t('기획자에게 말하기', 'Tell the planner', '对策划说', '企画者に言う')}</span>
-            <textarea
-              value={goal}
-              onChange={(event) => {
-                setGoal(event.target.value);
-                if (error) setError('');
-              }}
-              placeholder={t('영상 주소, 또는 원하는 편집. 예: 카페 오픈 15초 훅, 손과 간판 클로즈업.', 'A video URL, or how to edit. Example: a 15s cafe-open hook, hands and sign close-ups.', '视频地址，或想要的剪法。例如：咖啡馆开业 15 秒钩子、手和招牌特写。', '映像の住所、または編集方法。例: カフェ開店の15秒フック、手と看板のクローズアップ。')}
-              rows={4}
-              aria-invalid={Boolean(error) && !titleFromPrompt(title, goal)}
-              disabled={saving}
-            />
-          </label>
-          <label className="desktop-spec-field">
-            <span>{t('제목 · 비우면 기획 말의 첫 줄', 'Title · first line of the prompt if empty', '标题 · 留空则用策划第一行', 'タイトル · 空なら企画の一行目')}</span>
-            <input
-              value={title}
-              onChange={(event) => {
-                setTitle(event.target.value);
-                if (error) setError('');
-              }}
-              placeholder={t('15초 훅 릴', '15s hook Reel', '15秒钩子 Reel', '15秒フックのリール')}
-              disabled={saving}
-            />
-          </label>
-          {recentTitles.length ? (
-            <div className="desktop-auto-chips" aria-label={t('최근 제목', 'Recent titles', '最近标题', '最近のタイトル')}>
-              {recentTitles.map((item) => (
-                <button key={item} type="button" className="desktop-auto-chip" onClick={() => { setTitle(item); if (error) setError(''); }}>
-                  {item}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          {attached && titleFromPrompt(title, goal) ? (
-            <section className="desktop-auto-card" aria-label={t('이번 일', 'This job', '这次任务', '今回の仕事')}>
-              <b>{t('이번 일', 'This job', '这次任务', '今回の仕事')}</b>
-              <p>{`${attachedName} · ${styleLabel} · ${wayLabel}`}</p>
-              <p>{t(`자막 ${wantCaptions ? '켬' : '끔'} · 더빙 ${wantDubbing ? '켬' : '끔'} · TTS ${wantTts ? `켬 · ${voiceModelLabel(voiceModelId)}` : '끔'}`, `Captions ${wantCaptions ? 'on' : 'off'} · Dubbing ${wantDubbing ? 'on' : 'off'} · TTS ${wantTts ? `on · ${voiceModelLabel(voiceModelId)}` : 'off'}`, `字幕${wantCaptions ? '开' : '关'} · 配音${wantDubbing ? '开' : '关'} · TTS ${wantTts ? `开 · ${voiceModelLabel(voiceModelId)}` : '关'}`, `字幕${wantCaptions ? 'オン' : 'オフ'} · 吹き替え${wantDubbing ? 'オン' : 'オフ'} · TTS ${wantTts ? `オン · ${voiceModelLabel(voiceModelId)}` : 'オフ'}`)}</p>
-              {useOwn && ownedPaths.length ? <p>{ownedPaths.map(ownedFileName).join(', ')}</p> : null}
-              {useScrape && collectQuery.trim() ? <p>{t(`가져올 것 · ${collectQuery.trim()}`, `Fetch · ${collectQuery.trim()}`, `要取 · ${collectQuery.trim()}`, `持ってくるもの · ${collectQuery.trim()}`)}</p> : null}
-              <p>{t('하지 않음: 올리지 않음 · 화질 잠금 유지 · 이 PC에만 저장 · 이 앱이 사이트를 긁지 않음', 'Will not: post · change quality · leave this PC · scrape a site', '不会：发布 · 改画质 · 离开这台电脑 · 抓站', 'しないこと: 上げない · 画質を変えない · この PC だけに保存 · このアプリは掻かない')}</p>
-              <p>{t('끝: 컷이 이 창에 뜨면 저장을 묻습니다. 이 창은 봇이 읽었는지 모릅니다.', 'Done when the cut appears here and we ask to save. This window does not know if the bot read it.', '结束：成片出现在这里并询问保存。这个窗口不知道机器人读没读。', '終わり: カットがここに出たら保存を聞きます。この窓はボットが読んだか知りません。')}</p>
-            </section>
-          ) : null}
-          <fieldset className="desktop-spec-recipes">
-            <legend>{t('어떤 형태로', 'What shape', '什么形态', 'どんな形')}</legend>
+          <section className="desktop-auto-step">
+            <b>{t('1. 오늘 만들 영상', '1. The video today', '1. 今天要做的视频', '1. 今日作る映像')}</b>
+            <label className="desktop-spec-field desktop-spec-wide">
+              <span>{t('만들고 싶은 것', 'What you want', '想做的', '作りたいもの')}</span>
+              <textarea
+                value={goal}
+                onChange={(event) => {
+                  setGoal(event.target.value);
+                  if (error) setError('');
+                }}
+                placeholder={t('예: 카페 오픈 15초, 손과 간판이 먼저. 주소여도 됩니다.', 'Example: a 15s cafe open, hands and the sign first. A URL is fine.', '例如：咖啡馆开业 15 秒，手先出、再出招牌。地址也可以。', '例: カフェ開店15秒、手と看板が先。住所でもよい。')}
+                rows={4}
+                aria-invalid={Boolean(error) && !titleFromPrompt(title, goal)}
+                disabled={saving}
+              />
+            </label>
+            <p className="desktop-spec-meta">
+              {t('영상 주소거나, 어떤 장면으로 자를지. 어려운 말은 필요 없습니다.', 'A video URL, or how to cut it. No special words needed.', '视频地址，或怎么剪。不用难词。', '映像の住所か、どう切るか。難しい言葉は要りません。')}
+            </p>
+            <label className="desktop-spec-field">
+              <span>{t('영상 이름 · 없어도 됩니다', 'Name · optional', '视频名 · 可以不填', '映像の名前 · なくてもよい')}</span>
+              <input
+                value={title}
+                onChange={(event) => {
+                  setTitle(event.target.value);
+                  if (error) setError('');
+                }}
+                placeholder={t('비우면 위의 첫 줄을 씁니다', 'Leave empty to use the first line above', '留空就用上面第一行', '空なら上の一行目を使う')}
+                disabled={saving}
+              />
+            </label>
+            {recentTitles.length ? (
+              <div className="desktop-auto-chips" aria-label={t('최근 이름', 'Recent names', '最近名字', '最近の名前')}>
+                {recentTitles.map((item) => (
+                  <button key={item} type="button" className="desktop-auto-chip" onClick={() => { setTitle(item); if (error) setError(''); }}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </section>
+          <fieldset className="desktop-spec-recipes desktop-auto-step">
+            <legend>{t('2. 어디에 올릴 모양', '2. Where you will post it', '2. 发到哪里的样子', '2. どこに上げる形')}</legend>
             <div className="desktop-spec-recipe-grid">
               {cards.length ? cards.map((recipe) => (
                 <button
@@ -640,8 +678,8 @@ export function AutoDesk({
               )}
             </div>
           </fieldset>
-          <fieldset className="desktop-spec-sources">
-            <legend>{t('자료는 어디서', 'Where do the pictures come from', '画面从哪来', '資料はどこから')}</legend>
+          <fieldset className="desktop-spec-sources desktop-auto-step">
+            <legend>{t('3. 화면은 어디서', '3. Where the pictures come from', '3. 画面从哪来', '3. 画面はどこから')}</legend>
             <div className="desktop-spec-source-grid">
               <button
                 type="button"
@@ -652,8 +690,8 @@ export function AutoDesk({
                   if (error) setError('');
                 }}
               >
-                <b>{t('내가 넣음', 'I put them in', '我来放', '自分が入れる')}</b>
-                <span>{t('이 PC의 영상이나 사진을 자료함에 둡니다. 봇이 그걸로 자릅니다.', 'Videos or images on this PC go in the materials box. The bot cuts those.', '这台电脑上的视频或图片进资料盒。机器人用那些来剪。', 'この PC の映像や写真を資料箱に置く。ボットはそれで切る。')}</span>
+                <b>{t('내 영상·사진', 'My video or photos', '我的视频或照片', '自分の映像・写真')}</b>
+                <span>{t('이 컴퓨터에 있는 파일을 넣습니다. 그걸로 자릅니다.', 'Put files from this computer. Those get cut.', '放入这台电脑上的文件。用那些来剪。', 'このパソコンのファイルを入れる。それで切る。')}</span>
               </button>
               <button
                 type="button"
@@ -664,8 +702,8 @@ export function AutoDesk({
                   if (error) setError('');
                 }}
               >
-                <b>{t('스크랩 봇이 가져옴', 'The scrape bot fetches them', '抓取机器人去取', '収集ボットが持ってくる')}</b>
-                <span>{t('어떤 자료를 가져올지 이 칸에 적습니다. 스크랩 봇만 공개 클립을 모읍니다.', 'Write what to fetch in this form. Only the scrape bot gathers public clips.', '在这里写下要取什么。只有抓取机器人收集公开片段。', '何を持ってくるかをここに書く。公開クリップを集めるのは収集ボットだけ。')}</span>
+                <b>{t('공개 장면 찾아오기', 'Find public scenes', '找公开镜头', '公開の場面を探す')}</b>
+                <span>{t('아래 칸에 어떤 장면을 원하는지 적습니다. 붙은 봇만 공개된 것을 모읍니다.', 'Write the scenes you want below. Only the attached bot gathers public clips.', '在下面写下想要的镜头。只有接上的机器人收集公开的。', '下の欄に欲しい場面を書く。付けるボットだけが公開のものを集める。')}</span>
               </button>
             </div>
           </fieldset>
@@ -718,21 +756,21 @@ export function AutoDesk({
           {useScrape ? (
             <>
               <label className="desktop-spec-field desktop-spec-wide">
-                <span>{t('어떤 자료를 가져올지', 'What to fetch', '要取什么资料', '何を持ってくるか')}</span>
+                <span>{t('어떤 장면을 찾아올까요?', 'Which scenes should it find?', '要找哪些镜头？', 'どの場面を探しますか？')}</span>
                 <textarea
                   value={collectQuery}
                   onChange={(event) => {
                     setCollectQuery(event.target.value);
                     if (error) setError('');
                   }}
-                  placeholder={t('예: 카페 오픈 손·간판 클로즈업, 쓸 수 있는 공개 페이지. 로그인 막힌 인스타·틱톡은 적지 마세요.', 'Example: cafe-open hands and sign close-ups, a public page you may use. Do not name login-walled Instagram or TikTok.', '例如：咖啡馆开业的手和招牌特写、能用的公开页面。不要写登录墙后的 Instagram 或 TikTok。', '例: カフェ開店の手・看板のクローズアップ、使える公開ページ。ログインで閉じた Instagram や TikTok は書かない。')}
+                  placeholder={t('예: 카페 오픈, 손과 간판. 로그인해야 하는 인스타·틱톡은 적지 마세요.', 'Example: cafe open, hands and the sign. Do not name login-walled Instagram or TikTok.', '例如：咖啡馆开业、手和招牌。不要写必须登录的 Instagram 或 TikTok。', '例: カフェ開店、手と看板。ログインが要る Instagram や TikTok は書かない。')}
                   rows={3}
                   aria-invalid={Boolean(error) && !collectQuery.trim()}
                   disabled={saving}
                 />
               </label>
               <p className="desktop-spec-meta">
-                {t('비우면 기획 말을 씨앗으로 씁니다. 스크랩 봇은 기획된 공개 자료만 모읍니다. 이 앱은 스크래퍼가 아닙니다.', 'If empty, the planner prompt is the seed. The scrape bot gathers only the planned public clips. This app is not a scraper.', '留空则用策划的话当种子。抓取机器人只收集计划里的公开资料。这个应用不是抓取器。', '空なら企画の言葉を種にする。収集ボットは計画された公開資料だけ集める。このアプリはスクレイパーではありません。')}
+                {t('비우면 위에서 적은 말로 찾습니다. 이 프로그램은 사이트를 긁지 않습니다. 붙은 봇이 공개된 것만 모읍니다.', 'If empty, it uses the words above. This program does not scrape. The attached bot gathers public clips only.', '留空就用上面的话去找。这个程序不抓站。接上的机器人只收集公开的。', '空なら上に書いた言葉で探す。このプログラムは掻きません。付けるボットが公開のものだけ集める。')}
               </p>
             </>
           ) : (
@@ -740,8 +778,8 @@ export function AutoDesk({
               {t(`${styleLabel}로 보여요. 화질은 여기서 고르지 않습니다. 이 PC는 사이트를 긁지 않습니다.`, `This looks like ${styleLabel}. Quality is not chosen here. This PC does not scrape.`, `看起来像 ${styleLabel}。画质不在这里选。这台电脑不抓站。`, `${styleLabel} に見えます。画質はここでは選びません。この PC は掻きません。`)}
             </p>
           )}
-          <fieldset className="desktop-spec-sources desktop-auto-voice">
-            <legend>{t('자막 · 더빙 · TTS', 'Captions · dubbing · TTS', '字幕 · 配音 · TTS', '字幕 · 吹き替え · TTS')}</legend>
+          <fieldset className="desktop-spec-sources desktop-auto-voice desktop-auto-step">
+            <legend>{t('4. 글자 · 소리', '4. Words and sound', '4. 字和声音', '4. 文字と音')}</legend>
             <div className="desktop-spec-source-grid desktop-auto-voice-grid">
               <button
                 type="button"
@@ -749,8 +787,8 @@ export function AutoDesk({
                 aria-pressed={wantCaptions}
                 onClick={() => setWantCaptions((value) => !value)}
               >
-                <b>{wantCaptions ? t('자막 켬', 'Captions on', '字幕开', '字幕オン') : t('자막 끔', 'Captions off', '字幕关', '字幕オフ')}</b>
-                <span>{t('켜면 말 구간만 인식해 자막을 붙입니다. 원본과 보낼 곳이 다르면 자막만 바꿉니다.', 'When on, only speech windows become captions. If source and destination differ, captions change only.', '打开后只识别说话段落并加字幕。源语言和去向不同时只改字幕。', 'オンなら話している区間だけ字幕にする。元と送り先が違うときは字幕だけ変える。')}</span>
+                <b>{wantCaptions ? t('자막 넣기 · 켬', 'Captions · on', '加字幕 · 开', '字幕を入れる · オン') : t('자막 넣기', 'Add captions', '加字幕', '字幕を入れる')}</b>
+                <span>{t('말하는 구간에만 글자를 붙입니다. 꺼 두면 자막을 만들지 않습니다.', 'Puts words only on speech. Off means no captions.', '只在说话的段落加字。关着就不做字幕。', '話しているところだけ字を付ける。オフなら字幕は作らない。')}</span>
               </button>
               <button
                 type="button"
@@ -758,60 +796,159 @@ export function AutoDesk({
                 aria-pressed={wantDubbing}
                 onClick={() => setWantDubbing((value) => !value)}
               >
-                <b>{wantDubbing ? t('더빙 켬', 'Dubbing on', '配音开', '吹き替えオン') : t('더빙 끔', 'Dubbing off', '配音关', '吹き替えオフ')}</b>
-                <span>{t('켜면 운영자 음성이 있으면 그것만. 없으면 원본 소리. TTS와 따로입니다.', 'When on, use the operator’s audio if present. If none, keep the original. Separate from TTS.', '打开后有操作员语音就只用那个。没有就保留原声。和 TTS 分开。', 'オンなら運営者の音声があればそれだけ。なければ元の音。TTS とは別。')}</span>
+                <b>{wantDubbing ? t('내 목소리로 · 켬', 'My voice · on', '用我的声音 · 开', '自分の声で · オン') : t('내 목소리로', 'Use my voice', '用我的声音', '自分の声で')}</b>
+                <span>{t('내가 넣은 음성 파일이 있으면 그걸 씁니다. 없으면 원본 소리입니다.', 'Uses an audio file you added. If none, keeps the original.', '有你放的声音文件就用那个。没有就留原声。', '入れた音声があればそれを使う。なければ元の音。')}</span>
               </button>
               <button
                 type="button"
                 className={wantTts ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
                 aria-pressed={wantTts}
-                onClick={() => {
-                  setWantTts((value) => {
-                    const next = !value;
-                    setVoiceOpen(next);
-                    return next;
-                  });
-                }}
+                onClick={() => setWantTts((value) => !value)}
               >
-                <b>{wantTts ? t('TTS 켬', 'TTS on', 'TTS 开', 'TTS オン') : t('TTS 끔', 'TTS off', 'TTS 关', 'TTS オフ')}</b>
-                <span>{t(`켜면 이 PC의 ${voiceModelLabel(voiceModelId)} 하나만 목소리를 만듭니다. 더빙이 꺼져 있으면 원본을 덮지 않습니다.`, `When on, only ${voiceModelLabel(voiceModelId)} on this PC makes a voice. If dubbing is off, do not cover the original.`, `打开后只用这台电脑上的 ${voiceModelLabel(voiceModelId)} 做声音。配音关着就不要盖原声。`, `オンならこの PC の ${voiceModelLabel(voiceModelId)} だけ声を作る。吹き替えがオフなら元の音を覆わない。`)}</span>
+                <b>{wantTts ? t('목소리 만들기 · 켬', 'Make a voice · on', '做声音 · 开', '声を作る · オン') : t('목소리 만들기', 'Make a voice', '做声音', '声を作る')}</b>
+                <span>{t('이 컴퓨터가 말을 만듭니다. 꺼 두면 목소리를 만들지 않습니다.', 'This computer makes the speech. Off means no generated voice.', '这台电脑做说话。关着就不做声音。', 'このパソコンが話しを作る。オフなら声は作らない。')}</span>
               </button>
             </div>
             <p className="desktop-spec-meta">
-              {t('꺼 두면 그 일을 하지 않습니다. TTS를 켠 사람만 목소리를 고르고 받습니다.', 'Leave a switch off and that work stays unused. Only people who turn TTS on pick and download a voice.', '关着就不会做那件事。只有打开 TTS 的人才选声音并下载。', 'オフならその仕事はしません。TTS をオンにした人だけ声を選び受け取ります。')}
+              {t('필요한 것만 켜세요. 세 가지 모두 꺼 두어도 됩니다.', 'Turn on only what you need. All three can stay off.', '只开需要的。三个都可以关着。', '必要なものだけオン。三つともオフでよい。')}
             </p>
-            {wantTts && onChangeVoiceModel ? (
+            {wantTts ? (
               <div className="desktop-auto-voice-pick">
-                <button type="button" className="desktop-secondary" onClick={() => setVoiceOpen((value) => !value)}>
-                  {voiceOpen ? t('목소리 접기', 'Hide voice', '收起声音', '声を閉じる') : t('목소리 바꾸기', 'Change voice', '换声音', '声を変える')}
-                </button>
-                {voiceOpen ? (
-                  <DesktopVoiceSetup
-                    variant="panel"
-                    selected={voiceModelId}
-                    studioReady={studioReady}
-                    download={voiceDownload}
-                    onSelect={setVoiceModelId}
-                    onConfirm={() => {
-                      const next = confirmVoiceChoice(voiceModelId);
-                      setVoiceModelId(next);
-                      setPrefs(writeAutoPrefs({ wantTts: true, voiceModelId: next }));
-                      void onChangeVoiceModel(next);
-                    }}
-                  />
+                <section className="desktop-voice-persona" aria-label={t('어떤 목소리', 'Which voice', '哪种声音', 'どんな声')}>
+                  <b>{t('어떤 목소리로 시작할까요', 'How should the voice start', '用哪种声音开始', 'どんな声で始めますか')}</b>
+                  <p>{t('성별, 느낌, 말투를 고릅니다. 사람을 복제하지 않습니다. 마음에 들면 저장하세요. 다음에도 그 목소리입니다.', 'Pick gender, feel, and how it sounds. It does not clone a person. Save the one you like. Next time it stays.', '选性别、感觉、听起来像哪国话。不克隆人。喜欢就保存。下次还是这个。', '性別・感じ・話し方を選ぶ。人の声は複製しない。気に入ったら保存。次もその声。')}</p>
+                  <div className="desktop-auto-filter">
+                    <span>{t('성별', 'Gender', '性别', '性別')}</span>
+                    <div className="desktop-auto-chips" role="radiogroup" aria-label={t('성별', 'Gender', '性别', '性別')}>
+                      {VOICE_GENDERS.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          role="radio"
+                          aria-checked={voiceGender === item}
+                          className={voiceGender === item ? 'desktop-auto-chip is-selected' : 'desktop-auto-chip'}
+                          onClick={() => { setVoiceGender(item); setVoiceSaved(false); }}
+                        >
+                          {voiceGenderLabel(item, language)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="desktop-auto-filter">
+                    <span>{t('느낌', 'Feel', '感觉', '感じ')}</span>
+                    <div className="desktop-auto-chips" role="radiogroup" aria-label={t('느낌', 'Feel', '感觉', '感じ')}>
+                      {VOICE_FEELS.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          role="radio"
+                          aria-checked={voiceFeel === item}
+                          className={voiceFeel === item ? 'desktop-auto-chip is-selected' : 'desktop-auto-chip'}
+                          onClick={() => { setVoiceFeel(item); setVoiceSaved(false); }}
+                        >
+                          {voiceFeelLabel(item, language)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="desktop-auto-filter">
+                    <span>{t('말투', 'How it sounds', '听起来', '話し方')}</span>
+                    <div className="desktop-auto-chips" role="radiogroup" aria-label={t('말투', 'How it sounds', '听起来', '話し方')}>
+                      {VOICE_ACCENTS.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          role="radio"
+                          aria-checked={voiceAccent === item}
+                          className={voiceAccent === item ? 'desktop-auto-chip is-selected' : 'desktop-auto-chip'}
+                          onClick={() => { setVoiceAccent(item); setVoiceSaved(false); }}
+                        >
+                          {voiceAccentLabel(item, language)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={`desktop-voice-saved${voiceSaved ? ' is-saved' : ''}`}>
+                    <p>
+                      {t(
+                        `지금 목소리 · ${voicePersonaLabel(voicePersona, language)}`,
+                        `This voice · ${voicePersonaLabel(voicePersona, language)}`,
+                        `现在的声音 · ${voicePersonaLabel(voicePersona, language)}`,
+                        `今の声 · ${voicePersonaLabel(voicePersona, language)}`,
+                      )}
+                    </p>
+                    <button
+                      type="button"
+                      className="desktop-primary"
+                      onClick={() => {
+                        setPrefs(writeAutoPrefs({
+                          wantTts: true,
+                          voiceGender,
+                          voiceFeel,
+                          voiceAccent,
+                          voiceModelId,
+                          voiceSaved: true,
+                        }));
+                        setVoiceSaved(true);
+                      }}
+                    >
+                      {voiceSaved
+                        ? t('이 목소리로 저장됨', 'Saved this voice', '已保存这个声音', 'この声で保存した')
+                        : t('이 목소리로 저장', 'Save this voice', '保存这个声音', 'この声で保存')}
+                    </button>
+                  </div>
+                  <p className="desktop-spec-meta">
+                    {voiceSaved
+                      ? t('이 컴퓨터에 기억했습니다. 다음에 열어도 이 목소리로 시작합니다.', 'Remembered on this computer. Next open starts with this voice.', '已记在这台电脑。下次打开还用这个声音。', 'このパソコンに覚えました。次に開いてもこの声で始まります。')
+                      : t('미리듣기는 이 창에서 재생하지 않습니다. 고른 값은 저장하면 남고, 만들기를 눌러도 남습니다.', 'This window does not play a preview. Save keeps the pick. Start keeps it too.', '这个窗口不播放试听。保存会留下选择。按开始也会留下。', 'この窓では試し聞きしません。保存すれば残る。作り始めても残る。')}
+                  </p>
+                </section>
+                {onChangeVoiceModel ? (
+                  <>
+                    <button type="button" className="desktop-secondary" onClick={() => setEngineOpen((value) => !value)}>
+                      {engineOpen
+                        ? t('엔진 접기', 'Hide engine', '收起引擎', 'エンジンを閉じる')
+                        : t('고급 · 이 컴퓨터 엔진', 'Advanced · this PC’s engine', '高级 · 这台电脑的引擎', '上級 · このパソコンのエンジン')}
+                    </button>
+                    {engineOpen ? (
+                      <DesktopVoiceSetup
+                        variant="panel"
+                        selected={voiceModelId}
+                        studioReady={studioReady}
+                        download={voiceDownload}
+                        onSelect={setVoiceModelId}
+                        onConfirm={() => {
+                          const next = confirmVoiceChoice(voiceModelId);
+                          setVoiceModelId(next);
+                          setPrefs(writeAutoPrefs({ wantTts: true, voiceModelId: next, voiceGender, voiceFeel, voiceAccent, voiceSaved }));
+                          void onChangeVoiceModel(next);
+                        }}
+                      />
+                    ) : null}
+                  </>
                 ) : null}
               </div>
             ) : null}
           </fieldset>
+          {attached && titleFromPrompt(title, goal) ? (
+            <section className="desktop-auto-card" aria-label={t('이렇게 만듭니다', 'This is what we will make', '就这样做', 'こう作ります')}>
+              <b>{t('이렇게 만듭니다', 'This is what we will make', '就这样做', 'こう作ります')}</b>
+              <p>{`${attachedName} · ${styleLabel} · ${wayLabel}`}</p>
+              <p>{t(`자막 ${wantCaptions ? '켬' : '끔'} · 내 목소리 ${wantDubbing ? '켬' : '끔'} · 목소리 만들기 ${wantTts ? `켬 · ${voicePersonaLabel(voicePersona, language)}` : '끔'}`, `Captions ${wantCaptions ? 'on' : 'off'} · My voice ${wantDubbing ? 'on' : 'off'} · Make a voice ${wantTts ? `on · ${voicePersonaLabel(voicePersona, language)}` : 'off'}`, `字幕${wantCaptions ? '开' : '关'} · 我的声音${wantDubbing ? '开' : '关'} · 做声音 ${wantTts ? `开 · ${voicePersonaLabel(voicePersona, language)}` : '关'}`, `字幕${wantCaptions ? 'オン' : 'オフ'} · 自分の声${wantDubbing ? 'オン' : 'オフ'} · 声を作る ${wantTts ? `オン · ${voicePersonaLabel(voicePersona, language)}` : 'オフ'}`)}</p>
+              {useOwn && ownedPaths.length ? <p>{ownedPaths.map(ownedFileName).join(', ')}</p> : null}
+              {useScrape && collectQuery.trim() ? <p>{t(`찾아올 장면 · ${collectQuery.trim()}`, `Scenes · ${collectQuery.trim()}`, `要找的镜头 · ${collectQuery.trim()}`, `探す場面 · ${collectQuery.trim()}`)}</p> : null}
+              <p>{t('하지 않음: 올리지 않음 · 화질은 그대로 · 이 컴퓨터에만 저장 · 이 프로그램이 사이트를 긁지 않음', 'Will not: post · change quality · leave this computer · scrape a site', '不会：发布 · 改画质 · 离开这台电脑 · 抓站', 'しないこと: 上げない · 画質はそのまま · このパソコンだけに保存 · このプログラムは掻かない')}</p>
+            </section>
+          ) : null}
           {!attached ? (
-            <p className="desktop-auto-gate">{t('아직 안 붙었으면 시작이 안 됩니다. 연결 열기를 누르세요. 다른 PC 봇은 일을 복사해 그 창에 붙이고, 끝난 파일만 이 창에 놓습니다.', 'Nothing is attached, so Start stays off. Open Connect. An other-PC bot gets the job as text and drops the finished file here.', '还没接上就不能开始。请打开连接。另一台电脑的机器人只收任务文字，再把完成文件放到这里。', 'まだ付いていなければ始まりません。接続を開いてください。別 PC のボットは仕事を貼り、完成ファイルだけこの窓に置きます。')}</p>
+            <p className="desktop-auto-gate">{t('아직 안 붙었으면 만들기가 안 됩니다. 연결 열기를 누르세요. 다른 컴퓨터의 봇은 일을 복사해 그 창에 붙이고, 끝난 파일만 이 창에 놓습니다.', 'Nothing is attached, so Make stays off. Open Connect. A bot on another computer gets the job as text and drops the finished file here.', '还没接上就不能做。请打开连接。另一台电脑的机器人只收任务文字，再把完成文件放到这里。', 'まだ付いていなければ作れません。接続を開いてください。別のパソコンのボットは仕事を貼り、完成ファイルだけこの窓に置きます。')}</p>
           ) : null}
           <button type="submit" className="desktop-primary" disabled={locked || !startReady}>
             {saving
               ? t('보내는 중…', 'Sending…', '发送中…', '送信中…')
               : copied
                 ? t('복사했습니다', 'Copied', '已复制', 'コピーしました')
-                : t('이걸로 시작', 'Start with this', '用这个开始', 'これで始める')}
+                : t('이걸로 만들기', 'Make this', '用这个做', 'これで作る')}
           </button>
         </form>
       )}
@@ -844,7 +981,7 @@ export function AutoDesk({
       {waitingHandOff ? (
         <section className={`desktop-simple-wait is-${pullStatus === 'failed' ? 'failed' : 'busy'}`} role="status">
           <b>{t('봇이 작업 중 · 창을 끄지 마세요', 'The bot is working · do not close this window', '机器人正在工作 · 不要关掉这个窗口', 'ボットが作業中 · この窓を閉じないでください')}</b>
-          <p>{t(`복사했습니다. 먼저 ${pasteTarget} 창에 붙이세요. 그다음 스크래핑·편집자 순입니다. 끝나면 이 탭에 미리보기가 생깁니다.`, `Copied. Paste it in the ${pasteTarget} window first, then scraper and editor. A preview appears in this tab when it is done.`, `已复制。先贴到 ${pasteTarget} 窗口，再是抓取和剪辑。完成后预览会出现在这个标签。`, `コピーしました。まず ${pasteTarget} の窓に貼り、次に収集・編集者です。終わるとこのタブにプレビューが出ます。`)}</p>
+          <p>{t(`복사했습니다. 먼저 ${pasteTarget} 창에 붙이세요. 끝나면 이 탭에 미리보기가 생깁니다.`, `Copied. Paste it in the ${pasteTarget} window first. A preview appears in this tab when it is done.`, `已复制。先贴到 ${pasteTarget} 窗口。完成后预览会出现在这个标签。`, `コピーしました。まず ${pasteTarget} の窓に貼ってください。終わるとこのタブにプレビューが出ます。`)}</p>
         </section>
       ) : null}
 
@@ -945,11 +1082,11 @@ export function AutoDesk({
               </div>
             </section>
           ) : null}
-          <section className="desktop-auto-card" aria-label={t('기획자에게 다시', 'Tell the planner again', '再对策划说', '企画者にもう一度')}>
-            <b>{t('마음에 안 들면 기획자에게 다시', 'If you do not like it, tell the planner again', '不满意就再对策划说', '気に入らなければ企画者にもう一度')}</b>
-            <p>{t('넣고 싶은 장면이나 고칠 점을 적으면, 기획자가 다시 정하고 스크래핑·편집자가 다시 일합니다.', 'Write the scene you want or what to fix. The planner revises, then scraper and editor work again.', '写下想加的镜头或要改的地方。策划重定，抓取和剪辑再做。', '入れたい場面や直したい点を書く。企画者がやり直し、収集と編集者が再作業。')}</p>
+          <section className="desktop-auto-card" aria-label={t('마음에 안 들면 다시', 'If you do not like it, say it again', '不满意就再说', '気に入らなければもう一度')}>
+            <b>{t('마음에 안 들면 다시 말하기', 'If you do not like it, say it again', '不满意就再说一遍', '気に入らなければもう一度言う')}</b>
+            <p>{t('넣고 싶은 장면이나 고칠 점만 적으면 다시 자릅니다.', 'Write the scene you want or what to fix, and it will cut again.', '写下想加的镜头或要改的地方，就会再剪。', '入れたい場面や直したい点だけ書けば、もう一度切ります。')}</p>
             <label className="desktop-spec-field desktop-spec-wide">
-              <span>{t('다시 말할 것', 'What to change', '再要说的', 'やり直し')}</span>
+              <span>{t('고칠 점', 'What to change', '要改的', '直したい点')}</span>
               <textarea
                 value={revisePrompt}
                 onChange={(event) => setRevisePrompt(event.target.value)}
@@ -966,7 +1103,7 @@ export function AutoDesk({
             >
               {saving
                 ? t('보내는 중…', 'Sending…', '发送中…', '送信中…')
-                : t('기획자에게 다시 보내기', 'Send to the planner again', '再发给策划', '企画者にもう一度送る')}
+                : t('이 말로 다시 만들기', 'Make it again with this', '用这句话再做', 'この言葉でもう一度作る')}
             </button>
           </section>
         </section>

@@ -1,6 +1,7 @@
 /** Built-in role skills. Bots read these on connect. This app does not scrape. */
 
 import { resolveVoiceModelId, voiceModelLabel } from './desktop-voice-models';
+import { resolveVoicePersona, voicePersonaLabel } from './desktop-voice-personas';
 
 export const BOT_ROLES = ['planner', 'scraper', 'editor'] as const;
 export type BotRole = (typeof BOT_ROLES)[number];
@@ -278,6 +279,9 @@ export type VoiceInvite = {
   dubbing?: boolean;
   tts?: boolean;
   voiceModelId?: string;
+  voiceGender?: string;
+  voiceFeel?: string;
+  voiceAccent?: string;
 };
 
 function dubbingInviteLine(language: string, dubbing: boolean): string {
@@ -288,26 +292,33 @@ function dubbingInviteLine(language: string, dubbing: boolean): string {
   return dubbing ? '더빙: 켬. 운영자 음성이 있으면 그것만. 없으면 원본 소리.' : '더빙: 끔. 더빙하지 않습니다. 원본 소리를 바꾸지 않습니다.';
 }
 
-function ttsInviteLine(language: string, tts: boolean, voiceModelId?: string): string {
-  const label = voiceModelLabel(resolveVoiceModelId(voiceModelId));
+function ttsInviteLine(language: string, voice: VoiceInvite): string {
+  const tts = Boolean(voice.tts);
+  const label = voiceModelLabel(resolveVoiceModelId(voice.voiceModelId));
+  const persona = resolveVoicePersona({
+    gender: voice.voiceGender,
+    feel: voice.voiceFeel,
+    accent: voice.voiceAccent,
+  });
+  const who = voicePersonaLabel(persona, language);
   const lang = language.slice(0, 2);
   if (lang === 'zh') {
     return tts
-      ? `TTS：开。只用这台电脑上的 ${label}。不要用别的 TTS。配音关着就不要盖原声。`
+      ? `TTS：开。只用这台电脑上的 ${label}。声音是 ${who}，说话人 ${persona.speakerId}。不要用别的 TTS。配音关着就不要盖原声。不要克隆人。`
       : 'TTS：关。不要做 TTS，不要生成声音。';
   }
   if (lang === 'ja') {
     return tts
-      ? `TTS：オン。この PC の ${label} だけ。他の TTS は使わない。吹き替えがオフなら元の音を覆わない。`
+      ? `TTS：オン。この PC の ${label} だけ。声は ${who}、話者 ${persona.speakerId}。他の TTS は使わない。吹き替えがオフなら元の音を覆わない。人の声は複製しない。`
       : 'TTS：オフ。TTS を作らない。声を生成しない。';
   }
   if (lang === 'en') {
     return tts
-      ? `TTS: on. Use only ${label} on this PC. Do not use another TTS. If dubbing is off, do not cover the original.`
+      ? `TTS: on. Use only ${label} on this PC. Voice: ${who}, speaker ${persona.speakerId}. Do not use another TTS. If dubbing is off, do not cover the original. Do not clone a person.`
       : 'TTS: off. Do not make TTS. Do not generate a voice.';
   }
   return tts
-    ? `TTS: 켬. 이 PC의 ${label} 하나만. 다른 TTS는 쓰지 않습니다. 더빙이 꺼져 있으면 원본 소리를 덮지 않습니다.`
+    ? `TTS: 켬. 이 PC의 ${label} 하나만. 목소리는 ${who}. 화자 ${persona.speakerId}만. 다른 TTS는 쓰지 않습니다. 더빙이 꺼져 있으면 원본 소리를 덮지 않습니다. 사람을 복제하지 않습니다.`
     : 'TTS: 끔. TTS를 만들지 않습니다. 목소리를 생성하지 않습니다.';
 }
 
@@ -328,7 +339,7 @@ export function voiceInviteBlock(language = 'ko', voice: VoiceInvite = {}): stri
   return [
     captionLine,
     dubbingInviteLine(language, Boolean(voice.dubbing)),
-    ttsInviteLine(language, Boolean(voice.tts), voice.voiceModelId),
+    ttsInviteLine(language, voice),
   ].join('\n');
 }
 
