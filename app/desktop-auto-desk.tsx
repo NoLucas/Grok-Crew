@@ -867,7 +867,7 @@ export function AutoDesk({
           ) : null}
           <section className="desktop-auto-card" aria-label={t('기획자에게 다시', 'Tell the planner again', '再对策划说', '企画者にもう一度')}>
             <b>{t('마음에 안 들면 기획자에게 다시', 'If you do not like it, tell the planner again', '不满意就再对策划说', '気に入らなければ企画者にもう一度')}</b>
-            <p>{t('넣고 싶은 장면이나 고칠 점을 적으면, 기획자가 다시 정하고 스크래핑·편집자가 다시 일합니다. 이 창은 읽었는지 모릅니다.', 'Write the scene you want or what to fix. The planner revises, then scraper and editor work again. This window does not know if they read it.', '写下想加的镜头或要改的地方。策划重定，抓取和剪辑再做。这个窗口不知道他们读没读。', '入れたい場面や直したい点を書く。企画者がやり直し、収集と編集者が再作業。この窓は読んだか知りません。')}</p>
+            <p>{t('넣고 싶은 장면이나 고칠 점을 적으면, 기획자가 다시 정하고 스크래핑·편집자가 다시 일합니다.', 'Write the scene you want or what to fix. The planner revises, then scraper and editor work again.', '写下想加的镜头或要改的地方。策划重定，抓取和剪辑再做。', '入れたい場面や直したい点を書く。企画者がやり直し、収集と編集者が再作業。')}</p>
             <label className="desktop-spec-field desktop-spec-wide">
               <span>{t('다시 말할 것', 'What to change', '再要说的', 'やり直し')}</span>
               <textarea

@@ -7189,6 +7189,21 @@ select {
   width: min(920px, 100%);
   justify-self: center;
 }
+.desktop-bot-family {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 12px;
+  background: var(--desktop-card, #fff);
+}
+.desktop-bot-family:first-of-type { margin-top: 8px; }
+.desktop-bot-family > h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
 .desktop-bot-list {
   list-style: none;
   margin: 0;

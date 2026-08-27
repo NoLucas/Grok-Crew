@@ -8,7 +8,7 @@ Five steps. Receive → open → connect → write in Auto → paste.
 
 1. **Receive** — one file, `GrokCrew-Windows.exe`.
 2. **Open** — double-click. If the blue shield appears, More info → Run anyway.
-3. **Connect** — open **Connect**. Other-PC seats are Grok Bot and Agent as planner, scraper, and editor. The connect text includes that role skill. Paste it, then paste the one-line `GROK_CREW_OK` reply. A green light and **Connected** means it is attached.
+3. **Connect** — open **Connect**. Other-PC seats sit in two groups: Grok Bot and Agent. Copy the connect text on planner, scraper, or editor and it is attached. Paste that text in the bot window.
 4. **Write** — today’s line in the **Auto** tab.
 5. **Paste** — Start copies the job. Paste it in that bot window. When the cut arrives, the preview stays on this tab and asks you to save.
 
