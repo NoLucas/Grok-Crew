@@ -4,8 +4,28 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
-- Connect pair codes now come from `crypto.getRandomValues`, not `Math.random`. Stored bot rows must be a known kind, place, and status. GitHub token login failures no longer echo the raw error (the token is cleared). Advanced spec doors can be closed after they open. Export’s Post chip shows the real policy. No new `/api/v2` field.
-- Every desk tab now uses the same staged composer as Auto. Connect shows one bot family at a time and folds same-PC, Local Studio, GitHub, and “open a file.” Setup is a style row plus four chips (shape / length / sound / pace). Edit keeps the monitor and timeline first; handoff files and proxies sit in details. Export leads with local render; post, EDL/OTIO, and receipts open from chips. Advanced spec is title + goal plus style/source chips; outboxes open after save. Sidebar versions and inspector GitHub/builder extras fold. No new `/api/v2` field.
+## 1.0.0 - 2026-08-27
+
+Local 1.0. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.0` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.md`.
+
+### Since 0.2.1
+
+Older Grok-Crew was a browser workspace. 1.0.0 is the PC window: attach a Grok Bot or Agent, paste, save on this PC. Free on this track. No account.
+
+- Connect · Auto · Setup · Edit · Export share one composer: one job, then chips. Unused panels stay folded.
+- Other-PC seats are **Grok Bot** and **Agent**, each as planner, scraper, and editor. Built-in skills live in `public/bot-skills/` and are pasted on connect (`planner` + `edit-plan`, `scraper` + `public-pick`, `editor` + `cut-to-plan`). The desk does not scrape.
+- Connect only copies attach text. There is no reply-paste field. `127.0.0.1` stays closed to the bot.
+- Captions, dubbing, and TTS stay off until the guest turns them on. First open does not block on a voice picker.
+- Pair codes use `crypto.getRandomValues`. Stored bot rows must be a known kind, place, and status. GitHub token login failures no longer echo the raw error; the token is cleared.
+- Advanced spec doors can be closed after they open. Export’s Post chip shows the real policy.
+- Finished files stay on this PC. A GitHub inbox is optional. The public site track is closed; get the exe from the GitHub Release.
+- When source and destination differ (Chinese clip → Korean cut), the planner writes both, the scraper keeps the named source, and the editor changes hook/captions/on-screen words only. Do not swap in a lookalike. Login walls stay closed.
+- Role extras name a market (ko / en / zh / ja). The scraper picks public pages for that language. Login walls stay closed.
+- The Connect row formerly labeled Runner is now **Grok 제작기** / Grok builder. It is this app’s Grok Build worker, not the Grok Bot chat.
+- Auto records materials before a cut starts. Login-walled Instagram/TikTok stay off limits.
+- The current track is free: one GitHub Release exe, no account, no card, no stamp.
+
+The bullets below were already in the 1.0 desk and stay part of this tag.
 - Auto is a staged composer, not a wall of cards. The first screen is one prompt plus three summary chips (pictures / where / sound). Those panes and TTS stay available, but they open only when asked. After Make, the desk swaps to a paste-and-wait stage; after a cut, it swaps to preview and save. Help, news, and “say it again” sit in folded details. No new `/api/v2` field.
 - Auto captions, dubbing, and **TTS** stay **off** until the operator turns them on. Captions on runs VAD then whisper.cpp. Dubbing on uses operator audio only; if none, keep the original. TTS on uses one chosen model (Kokoro-82M if they only press Next; Step Audio EditX or Zonos-v0.1 have hardware warnings). TTS off never generates a voice. First open does not block on the voice picker. Additive `GET /api/v2/first-run` `voice_model` and `POST /api/v2/first-run/voice-model`.
 - When source and destination differ (Chinese clip → Korean cut), the planner writes both, the scraper keeps the named source, and the editor changes hook/captions/on-screen words only. Do not swap in a lookalike Korean video. Login walls stay closed.
@@ -38,9 +58,7 @@ All notable changes to Grok Crew are documented here.
 - Helper copy under “values the bot must keep”, the status line, and Remote bot can be folded. Error and loading status stay visible.
 - The bot-lock note can be dismissed with “don’t show again.” That choice stays on this computer.
 
-## 1.0.0 - 2026-08-26
-
-Local 1.0. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.0` GitHub Release. Notes: `docs/RELEASE_NOTES.v1.0.md`.
+### Already in this tag
 
 - Desktop shows the saved folder after a bot drop: media under `inputs/handoff/` and clips in `handoff-materials/`, with previews. Listing stays inside those two roots.
 - The folder board stays collapsed to one row until the operator opens it. The file list sits beside the preview. Right-click a file to preview, enlarge, reveal the original, or delete it. Source files stay locked.

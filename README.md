@@ -1,10 +1,40 @@
 # Grok Crew
 
-A program on the guest’s PC. Attach a bot they already use. The finished file lands in **their folder**.
+<p align="center">
+  <img src="docs/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
+</p>
 
-Opens with no account. Not a website subscription.
+**v1.0.0** · with Grok Bot · free now
 
-[Get Windows](https://github.com/NoLucas/Grok-Crew/releases) · [한국어](README.ko.md) · [中文](README.zh.md) · [日本語](README.ja.md)
+You do not have to stay up cutting Shorts by hand.
+Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
+No account. No card. No per-cut credits. Download it and open it.
+
+[Get Windows](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0) · [한국어](README.ko.md) · [中文](README.zh.md) · [日本語](README.ja.md)
+
+---
+
+## Who this is for
+
+- **People tired of cutting Shorts alone.** They write what they want, paste it into the bot window, and save here. They do not have to build a timeline from zero.
+- **Free on this track.** There is no sign-in. It is not a subscription. There are no credits per cut.
+- **The file stays on this PC.** This is not a cloud editor.
+
+This window is not a “we generate the video” subscription. It is a program that attaches a bot they already use.
+
+---
+
+## Built-in skills for bots and agents
+
+On connect, the seat already gets its skill. They do not have to write a planner, scraper, or editor prompt from scratch.
+
+| Seat | Base skill | Extra skill that ships with it |
+|---|---|---|
+| **Grok Bot / Agent planner** | `planner` — turn today’s line into a cut plan | `edit-plan` — a short plan the other two seats can read |
+| **Grok Bot / Agent scraper** | `scraper` — pick public pages only | `public-pick` — do not name login-walled social apps |
+| **Grok Bot / Agent editor** | `editor` — cut to the plan | `cut-to-plan` — keep scene order and the named market’s pace |
+
+The source files live in [`public/bot-skills/`](public/bot-skills/). Copying the attach text takes that seat’s skills with it. This program does not scrape.
 
 ---
 
@@ -17,6 +47,21 @@ Opens with no account. Not a website subscription.
 5. When the preview appears, **save on this PC**. Posting is later, and only if they want it.
 
 If attach fails, **Connect** says how to fix it. Do not open Auto first.
+
+---
+
+## What changed in v1.0.0
+
+Older Grok-Crew (0.2.1) was closer to a browser workspace. 1.0.0 is **a window on this PC**.
+
+- Connect, Auto, Setup, Edit, and Export share one writing style: one job, then chips.
+- **Grok Bot** and **Agent** attach as planner, scraper, and editor. Built-in skills go with the seat.
+- Connect only copies attach text. They do not paste a reply back here. The bot never sees `127.0.0.1`.
+- Captions, dubbing, and TTS stay off until they turn them on.
+- Finished files stay on this PC. A GitHub inbox is optional.
+- Pair codes use cryptographic randomness. GitHub token errors do not echo the token.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the release notes](docs/RELEASE_NOTES.v1.0.md).
 
 ---
 
@@ -33,18 +78,7 @@ Each tab is **one job**. Extra tools stay behind chips until they ask.
 | **Export** | Save on this PC first. Post, swap, and history are chips. |
 | **Advanced spec** | Title and goal. Style, source, collect, and files are chips. Send/receive opens only after they save. |
 
-Captions, dubbing, and TTS run only when the guest turns them on. All three start off.
-
 **Version history** in the sidebar and GitHub / maker in the inspector stay folded until they open them.
-
----
-
-## What changed
-
-- Every tab uses the same writing style: one job, then chips. Features stayed. Unused panels stay closed.
-- **Connect** only copies attach text. They do not paste a reply back into this window.
-- Finished files stay **on this PC**. Posting is after save, and only if they ask.
-- Git handoff is only a **guest-owned private repo** they turn on. There is no company inbox. The program works without it.
 
 ---
 
@@ -62,18 +96,16 @@ Captions, dubbing, and TTS run only when the guest turns them on. All three star
 
 Guests can ignore this. Open the installer and use the desk.
 
-For people who build or change the code:
-
 | Job | What we use |
 |---|---|
 | Window | Electron — a program on this PC. |
 | Desk | React and TypeScript — Connect, Auto, Setup, Edit, Export. |
-| Cut | A Python sidecar on this PC (Local Studio). It talks to this window only. It does not upload the cut. |
+| Cut | A Python sidecar on this PC (Local Studio). It talks to this window only. |
 | Store | SQLite on this PC. No account server. |
 | Encode | ffmpeg and MoviePy, on this PC, when they save. |
 | Captions | whisper.cpp, only if they turn captions on. |
 | Voice | One chosen TTS engine, only if they turn TTS on. |
-| Other-PC bots | This window and a folder on this PC by default. Git only if they set their own private remote. |
+| Bot skills | Markdown in `public/bot-skills/`, pasted on connect. |
 
 Voice models are not in the installer. They download only after the guest turns that tool on.
 
