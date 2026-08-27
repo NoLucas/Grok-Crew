@@ -40,6 +40,8 @@ describe('built-in bot skills', () => {
     assert.match(planner, /나라 버릇/);
     assert.match(planner, /中文\(zh\)/);
     assert.match(planner, /日本語\(ja\)/);
+    assert.match(planner, /원본과 보낼 곳이 다르면/);
+    assert.match(planner, /중국 영상 → 한국 컷/);
     assert.doesNotMatch(planner, /git clone/);
     assert.match(scraper, /공개/);
     assert.match(scraper, /로그인 막힌/);
@@ -53,6 +55,8 @@ describe('built-in bot skills', () => {
     assert.match(editor, /첫 1–2초/);
     assert.match(editor, /컷을 더 자주/);
     assert.match(editor, /효과는 과하지 않게/);
+    assert.match(editor, /중국 영상 → 한국 컷/);
+    assert.match(editor, /한글 자막/);
     assert.deepEqual(ROLE_EXTRA_SKILLS.planner, ['edit-plan']);
     assert.deepEqual(ROLE_EXTRA_SKILLS.scraper, ['public-pick']);
     assert.deepEqual(ROLE_EXTRA_SKILLS.editor, ['cut-to-plan']);

@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- When source and destination differ (Chinese clip → Korean cut), the planner writes both, the scraper keeps the named source, and the editor changes hook/captions/on-screen words only. Do not swap in a lookalike Korean video. Login walls stay closed.
 - Role extras now name a market (ko / en / zh / ja): planner writes country style, cut density, and effects; scraper picks public pages for that language, not Korea-only; editor follows that cut/effect density. Login walls stay closed. No new `/api/v2` field.
 - Each Other-PC role now gets one extra skill on connect: planner `edit-plan`, scraper `public-pick`, editor `cut-to-plan`. Full text stays in `public/bot-skills/`. The desk still does not scrape. No new `/api/v2` field.
 - Connect Other-PC seats sit in two groups, **Grok Bot** and **Agent**. Copying the connect text attaches that seat. There is no reply-paste field. Auto’s “tell the planner again” card no longer says this window does not know if they read it.
