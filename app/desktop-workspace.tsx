@@ -1701,8 +1701,8 @@ export default function DesktopWorkspace() {
 
             {activePanel === 'export' && <div className="desktop-export-grid is-composer">
               <section className="desktop-auto-lead">
-                <p className="desktop-auto-kicker">{t('파일로 받기', 'Get the file', '拿到文件', 'ファイルで受け取る')}</p>
-                <h2>{outputReady ? t('컷이 준비됐습니다', 'The cut is ready', '成片已就绪', 'カットの準備ができました') : t('이 PC에서 파일을 만듭니다', 'This PC makes the file', '这台电脑生成文件', 'このPCでファイルを作ります')}</h2>
+                <h1>{outputReady ? t('컷이 준비됐습니다', 'The cut is ready', '成片已就绪', 'カットの準備ができました') : t('이 PC에서 파일을 만듭니다', 'This PC makes the file', '这台电脑生成文件', 'このPCでファイルを作ります')}</h1>
+                <p>{t('이 PC에서 파일을 만듭니다. 올리기와 교환은 필요할 때만 엽니다.', 'This PC makes the file. Open posting and exchange only when you need them.', '这台电脑生成文件。发布和交换需要时再开。', 'このPCでファイルを作る。投稿と交換は必要なときだけ開く。')}</p>
               </section>
               <section className="desktop-auto-composer-card desktop-render-card">
                 <div className={`desktop-render-state ${outputReady ? 'ready' : ''}`}>
