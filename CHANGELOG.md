@@ -4,7 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
-- The existing homepage at `https://grok-crew-local.jinegcc.chatgpt.site` stays the public site. `#install` now takes one email and returns `GrokCrew-Windows.exe`. `POST /api/get` stores the line in `data/leads.jsonl` or optional AWS S3. No payment, OAuth, or new landing page. The lock is `docs/HOMEPAGE.ko.md`.
+- The existing homepage stays the public site. Pro and Team purchase buttons are **Coming soon** — no checkout. Copy now matches the guest loop (open → connect → one line → paste → save on this PC). Auto-publish, local-API editing, and OAuth claims are gone. Header and favicon use the shutter-play mark. `#install` still takes one email and returns `GrokCrew-Windows.exe`. `connect-install.js` applies the same patches on the live chatgpt.site. The lock is `docs/HOMEPAGE.ko.md`.
 - Future-customer contact is optional: Auto shows a skippable **News later** email card. Today’s job never waits on it. GitHub downloads stay anonymous until the operator sets `NEXT_PUBLIC_GROK_CREW_NEWS_URL`. The lock is `docs/LEADS.ko.md`.
 - The current track is free: one GitHub Release exe, no account, no card, no stamp. Paid install and a publisher stamp wait until money is collected. The lock is `docs/FREE.ko.md`.
 - Other doors besides a stamp: keep the three pictures, an individual standard stamp, or (later, not this track) the Microsoft Store. Self-signed certs, a friend’s company stamp, and the open-source-only stamp stay closed.

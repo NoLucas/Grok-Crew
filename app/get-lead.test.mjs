@@ -97,6 +97,31 @@ describe('homepage email door', () => {
     const html = readFileSync(new URL('../public/existing-home.html', import.meta.url), 'utf8');
     assert.match(html, /id="getLead"/);
     assert.match(html, /Grok에게 맡기고/);
+    assert.match(html, /파일을 받을 이메일/);
+    assert.match(html, /name@example.com/);
     assert.equal(html.includes('git clone'), false);
+  });
+
+  it('blocks Pro and Team purchase and matches the guest loop', () => {
+    const html = readFileSync(new URL('../public/existing-home.html', import.meta.url), 'utf8');
+    assert.match(html, /Coming soon/);
+    assert.equal(html.includes('Pro 확인하기'), false);
+    assert.equal(html.includes('Team 확인하기'), false);
+    assert.equal(html.includes('Instagram, TikTok, YouTube로 자동 게시'), false);
+    assert.equal(html.includes('로컬 API로 편집'), false);
+    assert.equal(html.includes('수동 OAuth'), false);
+    assert.match(html, /이 PC에 두는 프로그램/);
+    assert.match(html, /사람이 봇 창에 붙인다/);
+    assert.match(html, /src="\/app-mark.png"/);
+    assert.equal((html.match(/Coming soon/g) || []).length >= 4, true);
+  });
+
+  it('lets the live-site script block paid cards and open the email door', () => {
+    const script = readFileSync(new URL('../public/connect-install.js', import.meta.url), 'utf8');
+    assert.match(script, /Coming soon/);
+    assert.match(script, /파일을 받을 이메일/);
+    assert.match(script, /app-mark\.png/);
+    assert.match(script, /blockPaidPlans/);
+    assert.equal(script.includes('git clone'), false);
   });
 });

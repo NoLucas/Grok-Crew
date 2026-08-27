@@ -17,8 +17,8 @@ const install = `      <div class="terminal reveal delay-3" id="install" aria-la
         </div>
         <form class="get-form" id="getLead">
           <label>
-            <span>이메일</span>
-            <input type="email" name="email" autocomplete="email" required placeholder="you@example.com">
+            <span>파일을 받을 이메일</span>
+            <input type="email" name="email" autocomplete="email" required placeholder="name@example.com">
           </label>
           <label class="get-honey" aria-hidden="true">
             <span>Company</span>
@@ -50,6 +50,43 @@ html = html.replace(
   'Requires Node.js 22+ · Python 3.10+ · No Grok Crew cloud account · No API key',
   'Windows 파일 하나 · 계정 없음 · 지금은 무료',
 );
+html = html.replaceAll('https://github.com/NoLucas/Grok-Crew', 'https://github.com/NoLucas/Grok-crew-test');
+html = html.replaceAll('<span class="brand-mark">G</span>', '<span class="brand-mark"><img src="/app-mark.png" alt="" width="28" height="28"></span>');
+html = html.replace(
+  /<article class="price-card featured[\s\S]*?<\/article>\s*<article class="price-card reveal delay-3">[\s\S]*?<\/article>/,
+  `          <article class="price-card featured soon reveal delay-2">
+            <span class="popular soon">Coming soon</span>
+            <span class="plan">Pro</span>
+            <div class="price">$39 <small>1회 결제</small></div>
+            <p class="price-note">나중에 한 사람 한 PC 권리를 열 때 이야기입니다.</p>
+            <p class="price-proof">지금은 살 수 없음 · 결제 문을 열지 않음</p>
+            <ul class="features">
+              <li>한 사람 한 PC 권리</li>
+              <li>받아서 바로 열리는 설치</li>
+              <li>연결을 더 짧게</li>
+              <li>도장은 돈을 받을 때</li>
+            </ul>
+            <button class="btn btn-primary btn-soon" type="button" disabled>Coming soon</button>
+            <p class="soon-note">열리면 위에 남긴 이메일로만 알립니다</p>
+          </article>
+          <article class="price-card soon reveal delay-3">
+            <span class="popular soon">Coming soon</span>
+            <span class="plan">Team</span>
+            <div class="price">$8 <small>/ 시트 / 월</small></div>
+            <p class="price-note">팀 공동 편집 테이블은 열지 않습니다. 각자 자기 PC입니다.</p>
+            <p class="price-proof">지금은 살 수 없음 · 결제 문을 열지 않음</p>
+            <ul class="features">
+              <li>각자 자기 프로그램</li>
+              <li>일과 끝난 파일만 옮김</li>
+              <li>구름 위 공동 편집 없음</li>
+            </ul>
+            <button class="btn btn-secondary btn-soon" type="button" disabled>Coming soon</button>
+            <p class="soon-note">지금은 살 수 없습니다</p>
+          </article>`,
+);
+if (html.includes('Pro 확인하기') || html.includes('Team 확인하기')) {
+  throw new Error('Connected homepage still sells Pro or Team.');
+}
 
 const formCss = `
     .get-form, .get-ready { padding:22px 20px 24px; }
