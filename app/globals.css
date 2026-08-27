@@ -4121,11 +4121,11 @@ select {
 .finish-grid input[type="number"] {
   width: 100%;
   padding: 8px;
-  border: 1px solid #393939;
+  border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--input);
   color: var(--text);
-  font-size: 9px;
+  font-size: 14px;
 }
 .finish-grid input[type="range"] {
   width: 100%;
@@ -4141,8 +4141,8 @@ select {
 }
 .finish-grid p {
   margin: 0;
-  color: #777;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.45;
 }
 .finish-toggle {
@@ -4151,9 +4151,10 @@ select {
   align-items: center;
   gap: 7px !important;
   padding: 8px;
-  border: 1px solid #35321f;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #111107;
+  background: var(--input);
+  color: var(--text);
 }
 .finish-toggle input {
   accent-color: var(--yellow);
@@ -4169,17 +4170,17 @@ select {
   gap: 12px;
   margin-top: 11px;
   padding: 10px;
-  border: 1px solid #363323;
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: #0c0c0b;
-  color: #aaa9a0;
+  background: var(--input);
+  color: var(--text);
   font:
-    9px/1.45 var(--font-geist-mono),
+    13px/1.45 var(--font-geist-mono),
     monospace;
 }
 .finish-readout b {
   color: var(--yellow);
-  font-size: 9px;
+  font-size: 13px;
   white-space: nowrap;
 }
 @media (max-width: 1120px) {
@@ -9400,6 +9401,8 @@ html.tools-shell .instagram-card,
 html.tools-shell .approval-check,
 html.tools-shell .bot-card pre,
 html.tools-shell .finish-grid > article,
+html.tools-shell .finish-toggle,
+html.tools-shell .finish-readout,
 html.tools-shell .project-list button,
 html.tools-shell .ops-task-list article,
 html.tools-shell .ops-recovery-list article,
