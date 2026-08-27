@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Each Other-PC role now gets one extra skill on connect: planner `edit-plan`, scraper `public-pick`, editor `cut-to-plan`. Full text stays in `public/bot-skills/`. The desk still does not scrape. No new `/api/v2` field.
 - Connect Other-PC seats sit in two groups, **Grok Bot** and **Agent**. Copying the connect text attaches that seat. There is no reply-paste field. Auto’s “tell the planner again” card no longer says this window does not know if they read it.
 - Connect Other-PC seats are **Grok Bot** and **Agent**, each as planner, scraper, and editor. Built-in skills live in `public/bot-skills/` and are pasted on connect. Auto is a planner prompt (URL or how to edit); scrape can seed from that prompt; after a cut you can tell the planner again. The desk still does not scrape. No new `/api/v2` field.
 - The Connect row formerly labeled Runner is now **Grok 제작기** / Grok builder. It is this app’s Grok Build worker, not AWS or GitHub Actions, and not the Grok Bot chat you paste into. Internal `runner_id` contracts stay.

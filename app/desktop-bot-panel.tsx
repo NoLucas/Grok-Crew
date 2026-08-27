@@ -156,7 +156,7 @@ export function DesktopBotPanel({
       <div className="desktop-spec-hero">
         <span>✦</span>
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('다른 PC는 Grok Bot과 Agent를 기획자·스크래핑·편집자로 붙입니다. 붙으면 그 역할 스킬을 읽습니다. 설정·편집·내보내기는 봇이 붙은 뒤에 켜집니다.', 'Other-PC seats are Grok Bot and Agent as planner, scraper, and editor. A connected bot reads that role skill. Setup, Edit, and Export turn on after a bot is attached.', '另一台电脑把 Grok Bot 和 Agent 接成策划、抓取、剪辑。接上后阅读该角色技能。设置、编辑、导出要等机器人接上后才打开。', '別 PC は Grok Bot と Agent を企画・収集・編集で付けます。付くとその役割スキルを読みます。設定・編集・書き出しはボットが付いてから開きます。')}</p>
+        <p>{t('다른 PC는 Grok Bot과 Agent를 기획자·스크래핑·편집자로 붙입니다. 붙으면 그 역할 스킬과 보조 스킬을 읽습니다. 설정·편집·내보내기는 봇이 붙은 뒤에 켜집니다.', 'Other-PC seats are Grok Bot and Agent as planner, scraper, and editor. A connected bot reads that role skill plus one extra. Setup, Edit, and Export turn on after a bot is attached.', '另一台电脑把 Grok Bot 和 Agent 接成策划、抓取、剪辑。接上后阅读该角色技能和一项辅助技能。设置、编辑、导出要等机器人接上后才打开。', '別 PC は Grok Bot と Agent を企画・収集・編集で付けます。付くとその役割スキルと補助スキルを読みます。設定・編集・書き出しはボットが付いてから開きます。')}</p>
       </div>
 
       <section className={`desktop-simple-card desktop-connect-summary${connected ? ' is-ready' : ''}`} aria-live="polite">

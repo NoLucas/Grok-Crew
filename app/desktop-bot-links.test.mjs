@@ -40,6 +40,7 @@ describe('remote bot links', () => {
       assert.match(text, /GROK_CREW_OK 7K2M9Q Grok Bot/);
       assert.match(text, /127\.0\.0\.1/);
       assert.match(text, /grok-crew-planner/);
+      assert.match(text, /grok-crew-edit-plan/);
       assert.doesNotMatch(text, /Claude/);
       assert.doesNotMatch(text, /Cursor/);
       assert.doesNotMatch(text, /git clone/);
@@ -47,6 +48,8 @@ describe('remote bot links', () => {
     }
     assert.match(remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper'), /Agent 스크래핑/);
     assert.match(remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper'), /grok-crew-scraper/);
+    assert.match(remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper'), /grok-crew-public-pick/);
+    assert.match(remoteConnectPaste('grok', '7K2M9Q', 'ko', 'editor'), /grok-crew-cut-to-plan/);
   });
 
   it('treats a linked remote bot as connected and ignores waiting', () => {

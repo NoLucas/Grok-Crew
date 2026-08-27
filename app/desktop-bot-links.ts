@@ -146,7 +146,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
   if (lang === 'ko') {
     return [
       `당신은 Grok Crew와 연결합니다. 이름은 ${who}입니다.`,
-      `역할은 ${job}입니다. 연결할 때 아래 스킬을 읽고 그 일만 합니다.`,
+      `역할은 ${job}입니다. 연결할 때 아래 역할 스킬과 보조 스킬을 읽고 그 일만 합니다.`,
       '다른 컴퓨터에서는 127.0.0.1에 붙지 마세요. 이 창을 열 수 없습니다.',
       `연결 코드: ${pairCode}`,
       '',
@@ -161,7 +161,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
   if (lang === 'zh') {
     return [
       `你正在连接 Grok Crew。名字是 ${who}。`,
-      `角色是 ${job}。连接后阅读下面的技能，只做那件事。`,
+      `角色是 ${job}。连接后阅读下面的角色技能和一项辅助技能，只做那件事。`,
       '另一台电脑不要连接 127.0.0.1。打不开这个窗口。',
       `连接代码：${pairCode}`,
       '',
@@ -176,7 +176,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
   if (lang === 'ja') {
     return [
       `あなたは Grok Crew と接続します。名前は ${who} です。`,
-      `役割は ${job} です。下のスキルを読んで、その仕事だけします。`,
+      `役割は ${job} です。下の役割スキルと補助スキルを読んで、その仕事だけします。`,
       '別のコンピュータから 127.0.0.1 に接続しないでください。この窓は開けません。',
       `接続コード: ${pairCode}`,
       '',
@@ -190,7 +190,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
   }
   return [
     `You are connecting to Grok Crew as ${who}.`,
-    `Your role is ${job}. Read the skill below and only do that job.`,
+    `Your role is ${job}. Read the role skill and one extra below and only do that job.`,
     'Do not connect to 127.0.0.1 from another computer.',
     `Connection code: ${pairCode}`,
     '',

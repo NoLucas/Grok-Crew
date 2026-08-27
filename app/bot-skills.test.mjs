@@ -4,7 +4,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const {
+  BOT_SKILL_PATHS,
+  ROLE_EXTRA_SKILLS,
   crewOrderBlock,
+  extraSkillText,
   isBotRole,
   roleLabel,
   seatName,
@@ -32,11 +35,20 @@ describe('built-in bot skills', () => {
     const editor = skillText('editor');
     assert.match(planner, /기획자/);
     assert.match(planner, /다시 말하면/);
+    assert.match(planner, /grok-crew-edit-plan/);
+    assert.match(planner, /컷 계획서/);
     assert.doesNotMatch(planner, /git clone/);
     assert.match(scraper, /공개/);
     assert.match(scraper, /로그인 막힌/);
+    assert.match(scraper, /grok-crew-public-pick/);
+    assert.match(scraper, /비슷한 것/);
     assert.match(editor, /기획자가 정한 방법/);
-    for (const text of [planner, scraper, editor]) {
+    assert.match(editor, /grok-crew-cut-to-plan/);
+    assert.match(editor, /첫 1–2초/);
+    assert.deepEqual(ROLE_EXTRA_SKILLS.planner, ['edit-plan']);
+    assert.deepEqual(ROLE_EXTRA_SKILLS.scraper, ['public-pick']);
+    assert.deepEqual(ROLE_EXTRA_SKILLS.editor, ['cut-to-plan']);
+    for (const text of [planner, scraper, editor, extraSkillText('planner'), extraSkillText('scraper'), extraSkillText('editor')]) {
       assert.match(text, /127\.0\.0\.1/);
       assert.doesNotMatch(text, /git clone/);
     }
@@ -50,13 +62,21 @@ describe('built-in bot skills', () => {
     assert.match(text, /편집자/);
     assert.match(text, /이 앱은 긁지 않는다/);
     assert.match(text, /\/bot-skills\/planner\.md/);
+    assert.match(text, /\/bot-skills\/edit-plan\.md/);
+    assert.match(text, /\/bot-skills\/public-pick\.md/);
+    assert.match(text, /\/bot-skills\/cut-to-plan\.md/);
     assert.equal(crewOrderBlock('en').includes('This app does not scrape'), true);
   });
 
   it('keeps the public skill files in lockstep', () => {
     const root = join(process.cwd(), 'public', 'bot-skills');
-    assert.match(readFileSync(join(root, 'planner.md'), 'utf8'), /기획자/);
-    assert.match(readFileSync(join(root, 'scraper.md'), 'utf8'), /스크래핑/);
-    assert.match(readFileSync(join(root, 'editor.md'), 'utf8'), /편집자/);
+    const publicSkill = (name) => readFileSync(join(root, name), 'utf8').trim();
+    assert.equal(skillText('planner'), `${publicSkill('planner.md')}\n\n${publicSkill('edit-plan.md')}`);
+    assert.equal(skillText('scraper'), `${publicSkill('scraper.md')}\n\n${publicSkill('public-pick.md')}`);
+    assert.equal(skillText('editor'), `${publicSkill('editor.md')}\n\n${publicSkill('cut-to-plan.md')}`);
+    assert.equal(extraSkillText('planner'), publicSkill('edit-plan.md'));
+    assert.equal(BOT_SKILL_PATHS['edit-plan'], '/bot-skills/edit-plan.md');
+    assert.equal(BOT_SKILL_PATHS['public-pick'], '/bot-skills/public-pick.md');
+    assert.equal(BOT_SKILL_PATHS['cut-to-plan'], '/bot-skills/cut-to-plan.md');
   });
 });

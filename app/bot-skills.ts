@@ -7,6 +7,15 @@ export const BOT_SKILL_PATHS = {
   planner: '/bot-skills/planner.md',
   scraper: '/bot-skills/scraper.md',
   editor: '/bot-skills/editor.md',
+  'edit-plan': '/bot-skills/edit-plan.md',
+  'public-pick': '/bot-skills/public-pick.md',
+  'cut-to-plan': '/bot-skills/cut-to-plan.md',
+} as const;
+
+export const ROLE_EXTRA_SKILLS = {
+  planner: ['edit-plan'],
+  scraper: ['public-pick'],
+  editor: ['cut-to-plan'],
 } as const;
 
 export function isBotRole(value: unknown): value is BotRole {
@@ -58,6 +67,33 @@ description: Turn the operator prompt into an edit plan. Do not cut or scrape.
 - 올리지 않습니다.
 `;
 
+const EDIT_PLAN_SKILL = `---
+name: grok-crew-edit-plan
+description: Write a short cut plan the scraper and editor can follow.
+---
+
+# 컷 계획서
+
+기획자만 씁니다. 스크래핑·편집자가 그대로 읽게 짧게 적습니다.
+
+## 적을 것
+1. 한 줄 목표 — 이 컷이 끝나는 느낌.
+2. 길이 — 초. 형태가 있으면 그 길이를 지킵니다.
+3. 훅 — 맨 앞 1–2초에 무엇을 보여줄지.
+4. 장면 순서 — 번호, 무엇을 보여 주는지, 대략 몇 초.
+5. 가져올 것 — 공개 페이지·사진·클립 이름만. 로그인 막힌 인스타·틱톡·유튜브는 적지 않습니다.
+6. 자를 방법 — 편집자에게 넘기는 한 줄. 예: 훅 뒤 간판, 손은 짧게.
+
+## 주소가 오면
+그 영상의 쓸 장면만 계획에 적습니다. 직접 긁거나 자르지 않습니다.
+
+## 다시 오면
+운영자가 고치라는 말만 반영합니다. 계획 전체를 새로 꾸미지 않습니다.
+
+## 하지 말 것
+127.0.0.1을 열지 않습니다. 로그인 막힌 인스타·틱톡·유튜브를 가져올 것에 적지 않습니다.
+`;
+
 const SCRAPER_SKILL = `---
 name: grok-crew-scraper
 description: Fetch only the public clips the planner named. Do not cut.
@@ -78,6 +114,30 @@ description: Fetch only the public clips the planner named. Do not cut.
 - 이 앱은 스크래퍼가 아닙니다. 당신이 모읍니다.
 - 127.0.0.1에 붙지 않습니다.
 - 컷을 만들지 않습니다. 편집자 봇이 자릅니다.
+`;
+
+const PUBLIC_PICK_SKILL = `---
+name: grok-crew-public-pick
+description: Choose only usable public clips named in the plan.
+---
+
+# 공개 자료 고르기
+
+스크래핑만 씁니다. 기획 목록 밖을 찾지 않습니다.
+
+## 고르는 법
+1. 기획자가 적은 이름과 맞는 공개 페이지만 봅니다.
+2. 운영자가 지정한 저장소·파일이 있으면 그걸 먼저 씁니다.
+3. 쓸 수 있는 클립·사진만 고릅니다. 출처가 보이면 이름 옆에 적습니다.
+4. 흔들리거나 어두운 것만 있으면, 없는 장면이라고 적고 넘어갑니다.
+
+## 건너뛰기
+- 로그인·결제 뒤에 있는 인스타·틱톡·유튜브.
+- 쓸 수 있는지 모르는 워터마크·재배포 금지 표시.
+- 목록에 없는 “비슷한 것”.
+
+## 넘기는 법
+모은 파일을 자료함 또는 초대문 폴더에 둡니다. 무엇을 왜 골랐는지 한 줄씩만 적습니다. 자르지 않습니다. 127.0.0.1에 붙지 않습니다.
 `;
 
 const EDITOR_SKILL = `---
@@ -102,10 +162,43 @@ description: Cut the owned and collected clips using the planner's method.
 - 사이트를 긁지 않습니다.
 `;
 
+const CUT_TO_PLAN_SKILL = `---
+name: grok-crew-cut-to-plan
+description: Cut in the planned order and return one finished file.
+---
+
+# 계획대로 자르기
+
+편집자만 씁니다. 기획에 없는 장면을 만들지 않습니다.
+
+## 자르는 법
+1. 계획이 훅을 시키면 첫 1–2초에 그 화면을 둡니다.
+2. 장면 번호 순서대로 붙입니다. 빠지면 있는 것만 자르고, 빠진 번호를 한 줄로 적습니다.
+3. 자료는 운영자 파일과 스크래핑이 가져온 것만 씁니다.
+4. 화질·해상도·프레임은 규격 그대로입니다. 더 선명하게 바꾸지 않습니다.
+
+## 끝내는 법
+끝난 컷 파일 하나를 편집 인박스에 둡니다. 묻지 않고 올리지 않습니다. 다시 계획이 오면 그 계획으로만 다시 자릅니다. 127.0.0.1에 붙지 않습니다. 사이트를 긁지 않습니다.
+`;
+
+const CORE_SKILLS: Record<BotRole, string> = {
+  planner: PLANNER_SKILL,
+  scraper: SCRAPER_SKILL,
+  editor: EDITOR_SKILL,
+};
+
+const EXTRA_SKILLS: Record<BotRole, string> = {
+  planner: EDIT_PLAN_SKILL,
+  scraper: PUBLIC_PICK_SKILL,
+  editor: CUT_TO_PLAN_SKILL,
+};
+
+export function extraSkillText(role: BotRole): string {
+  return EXTRA_SKILLS[role].trim();
+}
+
 export function skillText(role: BotRole): string {
-  if (role === 'planner') return PLANNER_SKILL.trim();
-  if (role === 'scraper') return SCRAPER_SKILL.trim();
-  return EDITOR_SKILL.trim();
+  return [CORE_SKILLS[role].trim(), extraSkillText(role)].join('\n\n');
 }
 
 export function crewOrderBlock(language = 'ko'): string {
@@ -134,15 +227,17 @@ export function crewOrderBlock(language = 'ko'): string {
   ].join('\n');
 }
 
+const SKILL_INDEX = '/bot-skills/planner.md · /bot-skills/edit-plan.md · /bot-skills/scraper.md · /bot-skills/public-pick.md · /bot-skills/editor.md · /bot-skills/cut-to-plan.md';
+
 export function withCrewInvite(invite: string, language = 'ko'): string {
   const text = String(invite || '').trim();
   const lang = language.slice(0, 2);
   const skillNote = lang === 'zh'
-    ? '连接时收到的技能继续用。完整技能在 /bot-skills/planner.md · scraper.md · editor.md。'
+    ? `连接时收到的技能继续用。角色核心和一项辅助技能在 ${SKILL_INDEX}。`
     : lang === 'ja'
-      ? '接続でもらったスキルを使い続ける。全文は /bot-skills/planner.md · scraper.md · editor.md。'
+      ? `接続でもらったスキルを使い続ける。役割の本体と補助スキルは ${SKILL_INDEX}。`
       : lang === 'en'
-        ? 'Keep using the skill you received at connect. Full skills: /bot-skills/planner.md · scraper.md · editor.md.'
-        : '연결할 때 받은 스킬을 그대로 쓰세요. 전문은 /bot-skills/planner.md · scraper.md · editor.md.';
+        ? `Keep using the skill you received at connect. Role core plus one extra: ${SKILL_INDEX}.`
+        : `연결할 때 받은 스킬을 그대로 쓰세요. 역할 코어와 보조 스킬은 ${SKILL_INDEX}.`;
   return [text, '', crewOrderBlock(language), skillNote, '', skillText('planner')].filter(Boolean).join('\n');
 }
