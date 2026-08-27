@@ -7393,6 +7393,50 @@ select {
   border-top: 0;
   padding-top: 0;
 }
+.desktop-auto-composer { gap: 8px; }
+.desktop-auto-name em {
+  margin-left: 6px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--desktop-muted);
+  font-size: 12px;
+}
+.desktop-auto-nested {
+  padding: 10px;
+  border: 1px dashed var(--desktop-line);
+  border-radius: 12px;
+  background: var(--desktop-input);
+}
+.desktop-auto-nested .desktop-spec-meta { text-align: left; }
+.desktop-auto-nested small { display: block; margin-top: 6px; }
+.desktop-auto-shapes { display: grid; gap: 8px; }
+.desktop-auto-shape-chips { padding-top: 2px; }
+.desktop-auto-switches {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.desktop-auto-switches button {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 12px;
+  background: var(--desktop-input);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.desktop-auto-switches button.is-on {
+  border-color: var(--desktop-blue);
+  background: #eef5ff;
+}
+.desktop-auto-switches b { font-size: 14px; letter-spacing: -.02em; }
+.desktop-auto-switches span { color: var(--desktop-muted); font-size: 12px; line-height: 1.35; }
+@media (max-width: 920px) {
+  .desktop-auto-switches { grid-template-columns: 1fr; }
+}
 .desktop-auto-step > b,
 .desktop-auto-step legend {
   padding: 0;

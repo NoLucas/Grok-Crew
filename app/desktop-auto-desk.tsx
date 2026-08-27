@@ -508,9 +508,9 @@ export function AutoDesk({
     },
     {
       id: 'sent',
-      label: t('일 보냄', 'Job sent', '已发送', '仕事を送った'),
+      label: t('보냄', 'Sent', '已发送', '送った'),
       note: sendFailed
-        ? t('규격을 저장하지 못했습니다', 'Could not save the spec', '无法保存规格', '仕様を保存できませんでした')
+        ? t('일을 저장하지 못했습니다', 'Could not save the job', '无法保存任务', '仕事を保存できませんでした')
         : wait
           ? t(`복사함 · ${pasteTarget} 창에 붙이면 됩니다`, `Copied · paste it in the ${pasteTarget} window`, `已复制 · 请贴到 ${pasteTarget} 窗口`, `コピー済み · ${pasteTarget} の窓に貼ってください`)
           : clipboardBlocked
@@ -530,7 +530,7 @@ export function AutoDesk({
     },
     {
       id: 'cut',
-      label: t('컷 도착', 'Cut arrived', '成片到达', 'カット到着'),
+      label: t('영상 도착', 'Video arrived', '视频到了', '映像到着'),
       note: hasProject || pullStatus === 'arrived'
         ? t('미리보기', 'Preview', '预览', 'プレビュー')
         : t('아직', 'Not yet', '还没有', 'まだ'),
@@ -552,8 +552,8 @@ export function AutoDesk({
     <div className="desktop-spec-desk desktop-auto-desk">
       <div className="desktop-spec-hero desktop-auto-hero">
         <span>✦</span>
-        <h1>{t('만들고 싶은 영상을 적으면, 자른 파일이 이 창으로 돌아옵니다', 'Write the video you want. The cut comes back to this window.', '写下想做的视频，剪好的文件会回到这个窗口。', '作りたい映像を書くと、切ったファイルがこの窓に戻ります')}</h1>
-        <p>{t('주소거나, 어떤 장면으로 자를지 적습니다. 내 영상·사진을 넣거나 공개 장면을 찾아오게 할 수 있습니다. 이 프로그램은 사이트를 긁지 않습니다.', 'A URL, or how to cut it. Add your clips or ask for public scenes. This program does not scrape sites.', '可以是地址，或怎么剪。放自己的影像，或找公开镜头。这个程序不抓站。', '住所でも、どう切るかでもよい。自分の映像を入れるか、公開の場面を探させる。このプログラムは掻きません。')}</p>
+        <h1>{t('오늘 만들 영상을 적으세요', 'Write the video you want today', '写下今天要做的视频', '今日作る映像を書いてください')}</h1>
+        <p>{t('적고, 화면을 넣고, 만들기를 누르면 됩니다.', 'Write it, add pictures, then press Make.', '写下、放画面、再按开始即可。', '書いて、画面を入れて、作るを押せばよい。')}</p>
       </div>
 
       {!studioReady ? (
@@ -572,7 +572,7 @@ export function AutoDesk({
           </b>
           <p>{attached
             ? t(`마지막 스타일 · ${styleLabel}. 붙이거나 끊는 것은 연결에서만 합니다.`, `Last style · ${styleLabel}. Attach or remove a bot only in Connect.`, `上次风格 · ${styleLabel}。接上或断开只在连接里做。`, `前回のスタイル · ${styleLabel}。付ける・切るは接続だけです。`)
-            : t('아직 안 붙음. 자동은 제목보다 연결이 먼저입니다.', 'Nothing is attached. Auto waits for Connect first.', '还没接上。自动要先连接。', 'まだ付いていません。自動は接続が先です。')}</p>
+            : t('아직 봇이 없습니다. 먼저 연결하세요.', 'No bot yet. Connect first.', '还没有机器人。请先连接。', 'まだボットがありません。先に接続してください。')}</p>
         </div>
         <button type="button" className="desktop-secondary" onClick={onOpenBots}>
           {t('연결 열기', 'Open Connect', '打开连接', '接続を開く')}
@@ -615,10 +615,9 @@ export function AutoDesk({
             void startJob();
           }}
         >
-          <section className="desktop-auto-step">
-            <b>{t('1. 오늘 만들 영상', '1. The video today', '1. 今天要做的视频', '1. 今日作る映像')}</b>
+          <section className="desktop-auto-step desktop-auto-composer">
             <label className="desktop-spec-field desktop-spec-wide">
-              <span>{t('만들고 싶은 것', 'What you want', '想做的', '作りたいもの')}</span>
+              <span>{t('어떤 영상을 만들까요?', 'What video should we make?', '要做什么样的视频？', 'どんな映像を作りますか？')}</span>
               <textarea
                 value={goal}
                 onChange={(event) => {
@@ -632,17 +631,17 @@ export function AutoDesk({
               />
             </label>
             <p className="desktop-spec-meta">
-              {t('영상 주소거나, 어떤 장면으로 자를지. 어려운 말은 필요 없습니다.', 'A video URL, or how to cut it. No special words needed.', '视频地址，或怎么剪。不用难词。', '映像の住所か、どう切るか。難しい言葉は要りません。')}
+              {t('하고 싶은 말만 적으면 됩니다. 주소여도 됩니다.', 'Just write what you want. A URL is fine.', '想说的话就行。地址也可以。', 'したいことだけ書けばよい。住所でもよい。')}
             </p>
-            <label className="desktop-spec-field">
-              <span>{t('영상 이름 · 없어도 됩니다', 'Name · optional', '视频名 · 可以不填', '映像の名前 · なくてもよい')}</span>
+            <label className="desktop-spec-field desktop-auto-name">
+              <span>{t('이름', 'Name', '名字', '名前')} <em>{t('없어도 됨', 'optional', '可以不填', 'なくてもよい')}</em></span>
               <input
                 value={title}
                 onChange={(event) => {
                   setTitle(event.target.value);
                   if (error) setError('');
                 }}
-                placeholder={t('비우면 위의 첫 줄을 씁니다', 'Leave empty to use the first line above', '留空就用上面第一行', '空なら上の一行目を使う')}
+                placeholder={t('비우면 위의 첫 줄', 'First line above if empty', '留空就用上面第一行', '空なら上の一行目')}
                 disabled={saving}
               />
             </label>
@@ -656,30 +655,11 @@ export function AutoDesk({
               </div>
             ) : null}
           </section>
-          <fieldset className="desktop-spec-recipes desktop-auto-step">
-            <legend>{t('2. 어디에 올릴 모양', '2. Where you will post it', '2. 发到哪里的样子', '2. どこに上げる形')}</legend>
-            <div className="desktop-spec-recipe-grid">
-              {cards.length ? cards.map((recipe) => (
-                <button
-                  key={recipe.id}
-                  type="button"
-                  className={recipe.id === recipeId ? 'desktop-spec-recipe is-selected' : 'desktop-spec-recipe'}
-                  aria-pressed={recipe.id === recipeId}
-                  onClick={() => {
-                    setRecipeTouched(true);
-                    setPickedRecipeId(recipe.id);
-                  }}
-                >
-                  <b>{localized(recipe.name, language, recipe.id)}</b>
-                  <span>{localized(recipe.summary, language, '')}</span>
-                </button>
-              )) : (
-                <p className="desktop-spec-meta">{t('스타일 목록을 아직 읽지 못했습니다.', 'Could not load styles yet.', '还没读到风格列表。', 'スタイル一覧をまだ読めません。')}</p>
-              )}
-            </div>
-          </fieldset>
           <fieldset className="desktop-spec-sources desktop-auto-step">
-            <legend>{t('3. 화면은 어디서', '3. Where the pictures come from', '3. 画面从哪来', '3. 画面はどこから')}</legend>
+            <legend>{t('화면 넣기', 'Add pictures', '放入画面', '画面を入れる')}</legend>
+            <p className="desktop-spec-meta">
+              {t('내 파일을 넣거나, 찾고 싶은 장면을 적으세요. 둘 다 해도 됩니다.', 'Add your files, or write the scenes to find. You can do both.', '放自己的文件，或写下要找的镜头。也可以两个都做。', '自分のファイルを入れるか、探したい場面を書く。両方でもよい。')}
+            </p>
             <div className="desktop-spec-source-grid">
               <button
                 type="button"
@@ -690,8 +670,8 @@ export function AutoDesk({
                   if (error) setError('');
                 }}
               >
-                <b>{t('내 영상·사진', 'My video or photos', '我的视频或照片', '自分の映像・写真')}</b>
-                <span>{t('이 컴퓨터에 있는 파일을 넣습니다. 그걸로 자릅니다.', 'Put files from this computer. Those get cut.', '放入这台电脑上的文件。用那些来剪。', 'このパソコンのファイルを入れる。それで切る。')}</span>
+                <b>{t('내 영상·사진 넣기', 'Add my video or photos', '放入我的视频或照片', '自分の映像・写真を入れる')}</b>
+                <span>{t('이 컴퓨터에 있는 파일을 고릅니다.', 'Pick files on this computer.', '选择这台电脑上的文件。', 'このパソコンのファイルを選ぶ。')}</span>
               </button>
               <button
                 type="button"
@@ -702,116 +682,129 @@ export function AutoDesk({
                   if (error) setError('');
                 }}
               >
-                <b>{t('공개 장면 찾아오기', 'Find public scenes', '找公开镜头', '公開の場面を探す')}</b>
-                <span>{t('아래 칸에 어떤 장면을 원하는지 적습니다. 붙은 봇만 공개된 것을 모읍니다.', 'Write the scenes you want below. Only the attached bot gathers public clips.', '在下面写下想要的镜头。只有接上的机器人收集公开的。', '下の欄に欲しい場面を書く。付けるボットだけが公開のものを集める。')}</span>
+                <b>{t('장면 찾아오기', 'Find scenes', '找镜头', '場面を探す')}</b>
+                <span>{t('찾고 싶은 장면을 적으면, 붙은 봇이 공개된 것만 모읍니다.', 'Write the scenes you want. The attached bot gathers public clips only.', '写下想找的镜头。接上的机器人只收集公开的。', '探したい場面を書く。付けるボットが公開のものだけ集める。')}</span>
               </button>
             </div>
-          </fieldset>
-          {useOwn ? (
-            <section className="desktop-auto-own">
-              <input
-                ref={ownInputRef}
-                type="file"
-                accept="video/mp4,video/quicktime,video/webm,image/png,image/jpeg,image/webp,.mp4,.mov,.webm,.m4v,.mkv,.png,.jpg,.jpeg,.webp"
-                multiple
-                hidden
-                onChange={(event) => {
-                  addOwnedFiles(event.currentTarget.files);
-                  event.currentTarget.value = '';
-                }}
-              />
-              <button
-                type="button"
-                className={ownOver ? 'desktop-simple-drop is-over' : 'desktop-simple-drop'}
-                disabled={locked}
-                onClick={() => void pickMaterialFiles()}
-                onDragEnter={(event) => { event.preventDefault(); setOwnOver(true); }}
-                onDragOver={(event) => { event.preventDefault(); setOwnOver(true); }}
-                onDragLeave={() => setOwnOver(false)}
-                onDrop={takeMaterialFiles}
-              >
-                <b>{ownOver
-                  ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
-                  : t('영상이나 사진을 여기 놓기', 'Drop a video or an image here', '把视频或图片放这里', '映像や写真をここに置く')}</b>
-                <span>{t('여러 장을 넣을 수 있습니다. 경로는 적지 마세요.', 'You can add more than one. Do not type a path.', '可以放多份。不要填写路径。', '何枚でも置けます。パスは書かないでください。')}</span>
-              </button>
-              {ownedPaths.length ? (
-                <ul className="desktop-auto-owned-list">
-                  {ownedPaths.map((path) => (
-                    <li key={path}>
-                      <span>{ownedFileName(path)}</span>
-                      <button
-                        type="button"
-                        className="desktop-auto-chip"
-                        onClick={() => setOwnedPaths((current) => current.filter((item) => item !== path))}
-                      >
-                        {t('빼기', 'Remove', '去掉', '外す')}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </section>
-          ) : null}
-          {useScrape ? (
-            <>
-              <label className="desktop-spec-field desktop-spec-wide">
-                <span>{t('어떤 장면을 찾아올까요?', 'Which scenes should it find?', '要找哪些镜头？', 'どの場面を探しますか？')}</span>
+            {useOwn ? (
+              <section className="desktop-auto-own desktop-auto-nested">
+                <input
+                  ref={ownInputRef}
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/webm,image/png,image/jpeg,image/webp,.mp4,.mov,.webm,.m4v,.mkv,.png,.jpg,.jpeg,.webp"
+                  multiple
+                  hidden
+                  onChange={(event) => {
+                    addOwnedFiles(event.currentTarget.files);
+                    event.currentTarget.value = '';
+                  }}
+                />
+                <button
+                  type="button"
+                  className={ownOver ? 'desktop-simple-drop is-over' : 'desktop-simple-drop'}
+                  disabled={locked}
+                  onClick={() => void pickMaterialFiles()}
+                  onDragEnter={(event) => { event.preventDefault(); setOwnOver(true); }}
+                  onDragOver={(event) => { event.preventDefault(); setOwnOver(true); }}
+                  onDragLeave={() => setOwnOver(false)}
+                  onDrop={takeMaterialFiles}
+                >
+                  <b>{ownOver
+                    ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
+                    : t('여기 놓거나 눌러서 고르기', 'Drop here, or tap to pick', '放这里，或点一下选择', 'ここに置くか、押して選ぶ')}</b>
+                  <span>{t('여러 장을 넣을 수 있습니다.', 'You can add more than one.', '可以放多份。', '何枚でも置けます。')}</span>
+                </button>
+                {ownedPaths.length ? (
+                  <ul className="desktop-auto-owned-list">
+                    {ownedPaths.map((path) => (
+                      <li key={path}>
+                        <span>{ownedFileName(path)}</span>
+                        <button
+                          type="button"
+                          className="desktop-auto-chip"
+                          onClick={() => setOwnedPaths((current) => current.filter((item) => item !== path))}
+                        >
+                          {t('빼기', 'Remove', '去掉', '外す')}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </section>
+            ) : null}
+            {useScrape ? (
+              <label className="desktop-spec-field desktop-spec-wide desktop-auto-nested">
+                <span>{t('찾고 싶은 장면', 'Scenes to find', '要找的镜头', '探したい場面')}</span>
                 <textarea
                   value={collectQuery}
                   onChange={(event) => {
                     setCollectQuery(event.target.value);
                     if (error) setError('');
                   }}
-                  placeholder={t('예: 카페 오픈, 손과 간판. 로그인해야 하는 인스타·틱톡은 적지 마세요.', 'Example: cafe open, hands and the sign. Do not name login-walled Instagram or TikTok.', '例如：咖啡馆开业、手和招牌。不要写必须登录的 Instagram 或 TikTok。', '例: カフェ開店、手と看板。ログインが要る Instagram や TikTok は書かない。')}
-                  rows={3}
+                  placeholder={t('예: 카페 오픈, 손과 간판. 비우면 위에서 적은 말로 찾습니다.', 'Example: cafe open, hands and the sign. Empty uses the words above.', '例如：咖啡馆开业、手和招牌。留空就用上面的话。', '例: カフェ開店、手と看板。空なら上の言葉で探す。')}
+                  rows={2}
                   aria-invalid={Boolean(error) && !collectQuery.trim()}
                   disabled={saving}
                 />
+                <small className="desktop-spec-meta">
+                  {t('이 프로그램은 사이트를 긁지 않습니다. 로그인해야 하는 인스타·틱톡은 적지 마세요.', 'This program does not scrape. Do not name login-walled Instagram or TikTok.', '这个程序不抓站。不要写必须登录的 Instagram 或 TikTok。', 'このプログラムは掻きません。ログインが要る Instagram や TikTok は書かない。')}
+                </small>
               </label>
-              <p className="desktop-spec-meta">
-                {t('비우면 위에서 적은 말로 찾습니다. 이 프로그램은 사이트를 긁지 않습니다. 붙은 봇이 공개된 것만 모읍니다.', 'If empty, it uses the words above. This program does not scrape. The attached bot gathers public clips only.', '留空就用上面的话去找。这个程序不抓站。接上的机器人只收集公开的。', '空なら上に書いた言葉で探す。このプログラムは掻きません。付けるボットが公開のものだけ集める。')}
-              </p>
-            </>
-          ) : (
-            <p className="desktop-spec-meta">
-              {t(`${styleLabel}로 보여요. 화질은 여기서 고르지 않습니다. 이 PC는 사이트를 긁지 않습니다.`, `This looks like ${styleLabel}. Quality is not chosen here. This PC does not scrape.`, `看起来像 ${styleLabel}。画质不在这里选。这台电脑不抓站。`, `${styleLabel} に見えます。画質はここでは選びません。この PC は掻きません。`)}
-            </p>
-          )}
+            ) : null}
+          </fieldset>
+          <fieldset className="desktop-auto-step desktop-auto-shapes">
+            <legend>{t('어디에 올릴까요', 'Where will you post it?', '要发到哪里？', 'どこに上げますか')}</legend>
+            <div className="desktop-auto-chips desktop-auto-shape-chips" role="radiogroup" aria-label={t('올릴 곳', 'Where to post', '发布到', '上げる先')}>
+              {cards.length ? cards.map((recipe) => (
+                <button
+                  key={recipe.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={recipe.id === recipeId}
+                  className={recipe.id === recipeId ? 'desktop-auto-chip is-selected' : 'desktop-auto-chip'}
+                  onClick={() => {
+                    setRecipeTouched(true);
+                    setPickedRecipeId(recipe.id);
+                  }}
+                >
+                  {localized(recipe.name, language, recipe.id)}
+                </button>
+              )) : (
+                <p className="desktop-spec-meta">{t('모양 목록을 아직 읽지 못했습니다.', 'Could not load the shapes yet.', '还没读到样子列表。', '形の一覧をまだ読めません。')}</p>
+              )}
+            </div>
+          </fieldset>
           <fieldset className="desktop-spec-sources desktop-auto-voice desktop-auto-step">
-            <legend>{t('4. 글자 · 소리', '4. Words and sound', '4. 字和声音', '4. 文字と音')}</legend>
-            <div className="desktop-spec-source-grid desktop-auto-voice-grid">
+            <legend>{t('글자와 소리', 'Words and sound', '字和声音', '文字と音')}</legend>
+            <div className="desktop-auto-switches">
               <button
                 type="button"
-                className={wantCaptions ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                className={wantCaptions ? 'is-on' : ''}
                 aria-pressed={wantCaptions}
                 onClick={() => setWantCaptions((value) => !value)}
               >
-                <b>{wantCaptions ? t('자막 넣기 · 켬', 'Captions · on', '加字幕 · 开', '字幕を入れる · オン') : t('자막 넣기', 'Add captions', '加字幕', '字幕を入れる')}</b>
-                <span>{t('말하는 구간에만 글자를 붙입니다. 꺼 두면 자막을 만들지 않습니다.', 'Puts words only on speech. Off means no captions.', '只在说话的段落加字。关着就不做字幕。', '話しているところだけ字を付ける。オフなら字幕は作らない。')}</span>
+                <b>{t('자막', 'Captions', '字幕', '字幕')}</b>
+                <span>{wantCaptions ? t('켬 · 말하는 구간에 글자', 'On · words on speech', '开 · 说话处加字', 'オン · 話しているところに字') : t('끔', 'Off', '关', 'オフ')}</span>
               </button>
               <button
                 type="button"
-                className={wantDubbing ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                className={wantDubbing ? 'is-on' : ''}
                 aria-pressed={wantDubbing}
                 onClick={() => setWantDubbing((value) => !value)}
               >
-                <b>{wantDubbing ? t('내 목소리로 · 켬', 'My voice · on', '用我的声音 · 开', '自分の声で · オン') : t('내 목소리로', 'Use my voice', '用我的声音', '自分の声で')}</b>
-                <span>{t('내가 넣은 음성 파일이 있으면 그걸 씁니다. 없으면 원본 소리입니다.', 'Uses an audio file you added. If none, keeps the original.', '有你放的声音文件就用那个。没有就留原声。', '入れた音声があればそれを使う。なければ元の音。')}</span>
+                <b>{t('내 목소리', 'My voice', '我的声音', '自分の声')}</b>
+                <span>{wantDubbing ? t('켬 · 내가 넣은 소리', 'On · audio I added', '开 · 我放的声音', 'オン · 入れた音') : t('끔', 'Off', '关', 'オフ')}</span>
               </button>
               <button
                 type="button"
-                className={wantTts ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                className={wantTts ? 'is-on' : ''}
                 aria-pressed={wantTts}
                 onClick={() => setWantTts((value) => !value)}
               >
-                <b>{wantTts ? t('목소리 만들기 · 켬', 'Make a voice · on', '做声音 · 开', '声を作る · オン') : t('목소리 만들기', 'Make a voice', '做声音', '声を作る')}</b>
-                <span>{t('이 컴퓨터가 말을 만듭니다. 꺼 두면 목소리를 만들지 않습니다.', 'This computer makes the speech. Off means no generated voice.', '这台电脑做说话。关着就不做声音。', 'このパソコンが話しを作る。オフなら声は作らない。')}</span>
+                <b>{t('목소리 만들기', 'Make a voice', '做声音', '声を作る')}</b>
+                <span>{wantTts ? t('켬 · 이 컴퓨터가 말함', 'On · this computer speaks', '开 · 这台电脑说话', 'オン · このパソコンが話す') : t('끔', 'Off', '关', 'オフ')}</span>
               </button>
             </div>
-            <p className="desktop-spec-meta">
-              {t('필요한 것만 켜세요. 세 가지 모두 꺼 두어도 됩니다.', 'Turn on only what you need. All three can stay off.', '只开需要的。三个都可以关着。', '必要なものだけオン。三つともオフでよい。')}
-            </p>
             {wantTts ? (
               <div className="desktop-auto-voice-pick">
                 <section className="desktop-voice-persona" aria-label={t('어떤 목소리', 'Which voice', '哪种声音', 'どんな声')}>
@@ -941,7 +934,7 @@ export function AutoDesk({
             </section>
           ) : null}
           {!attached ? (
-            <p className="desktop-auto-gate">{t('아직 안 붙었으면 만들기가 안 됩니다. 연결 열기를 누르세요. 다른 컴퓨터의 봇은 일을 복사해 그 창에 붙이고, 끝난 파일만 이 창에 놓습니다.', 'Nothing is attached, so Make stays off. Open Connect. A bot on another computer gets the job as text and drops the finished file here.', '还没接上就不能做。请打开连接。另一台电脑的机器人只收任务文字，再把完成文件放到这里。', 'まだ付いていなければ作れません。接続を開いてください。別のパソコンのボットは仕事を貼り、完成ファイルだけこの窓に置きます。')}</p>
+            <p className="desktop-auto-gate">{t('봇을 먼저 연결해야 만들 수 있습니다. 연결 열기를 누르세요.', 'Connect a bot first, then you can make it. Open Connect.', '请先连接机器人，才能开始做。请打开连接。', '先にボットを接続すると作れます。接続を開いてください。')}</p>
           ) : null}
           <button type="submit" className="desktop-primary" disabled={locked || !startReady}>
             {saving

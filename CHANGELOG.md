@@ -4,7 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
-- Auto copy is for a guest, not a developer: today’s video, optional name, where it will post, my clips or public scenes, captions / my voice / make a voice. TTS on lets them pick gender, feel, and accent (how it sounds — not a race clone). Save keeps that voice on this PC. No new `/api/v2` field; the invite and `must_keep` name the speaker.
+- Auto is a guest create flow: “What video should we make?”, then add pictures (my files or scenes to find, nested under that choice), then where to post as chips, then words and sound as switches. TTS on lets them pick gender, feel, and accent and save it. No planner/scrape jargon on the form. No new `/api/v2` field.
 - Auto captions, dubbing, and **TTS** stay **off** until the operator turns them on. Captions on runs VAD then whisper.cpp. Dubbing on uses operator audio only; if none, keep the original. TTS on uses one chosen model (Kokoro-82M if they only press Next; Step Audio EditX or Zonos-v0.1 have hardware warnings). TTS off never generates a voice. First open does not block on the voice picker. Additive `GET /api/v2/first-run` `voice_model` and `POST /api/v2/first-run/voice-model`.
 - When source and destination differ (Chinese clip → Korean cut), the planner writes both, the scraper keeps the named source, and the editor changes hook/captions/on-screen words only. Do not swap in a lookalike Korean video. Login walls stay closed.
 - Role extras now name a market (ko / en / zh / ja): planner writes country style, cut density, and effects; scraper picks public pages for that language, not Korea-only; editor follows that cut/effect density. Login walls stay closed. No new `/api/v2` field.
