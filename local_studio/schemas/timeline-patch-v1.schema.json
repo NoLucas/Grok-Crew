@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "grok-crew.timeline-patch/v1",
+  "type": "object",
+  "required": ["schema", "base_revision", "origin", "operations"],
+  "properties": {
+    "schema": { "const": "grok-crew.timeline-patch/v1" },
+    "base_revision": { "type": "integer", "minimum": 1 },
+    "origin": { "enum": ["human", "remote_bot", "local_system"] },
+    "created_by": { "type": "string" },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 250,
+      "items": {
+        "type": "object",
+        "required": ["op"],
+        "properties": {
+          "op": { "enum": ["add_asset", "remove_asset", "add_track", "update_track", "remove_track", "add_clip", "update_clip", "move_clip", "trim_clip", "remove_clip", "split_clip", "ripple_trim", "roll_edit", "slip_clip", "slide_clip", "set_settings", "add_marker", "remove_marker"] },
+          "asset_id": { "type": "string", "minLength": 1 },
+          "track_id": { "type": "string", "minLength": 1 },
+          "clip_id": { "type": "string", "minLength": 1 },
+          "left_clip_id": { "type": "string", "minLength": 1 },
+          "right_clip_id": { "type": "string", "minLength": 1 },
+          "previous_clip_id": { "type": "string", "minLength": 1 },
+          "next_clip_id": { "type": "string", "minLength": 1 },
+          "marker_id": { "type": "string", "minLength": 1 },
+          "timeline_start": { "type": "number", "minimum": 0 },
+          "at": { "type": "number", "minimum": 0 },
+          "edge": { "enum": ["start", "end"] },
+          "source_in": { "type": "number", "minimum": 0 },
+          "changes": { "type": "object", "minProperties": 1 },
+          "asset": { "type": "object" },
+          "track": { "type": "object" },
+          "clip": { "type": "object" },
+          "marker": {
+            "type": "object",
+            "required": ["id", "at"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "at": { "type": "number", "minimum": 0 },
+              "label": { "type": "string", "maxLength": 120 }
+            },
+            "additionalProperties": true
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "op": { "const": "add_asset" } }, "required": ["op"] },
+            "then": { "required": ["asset"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "remove_asset" } }, "required": ["op"] },
+            "then": { "required": ["asset_id"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "add_track" } }, "required": ["op"] },
+            "then": { "required": ["track"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "add_clip" } }, "required": ["op"] },
+            "then": { "required": ["track_id", "clip"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "move_clip" } }, "required": ["op"] },
+            "then": { "required": ["clip_id", "timeline_start"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "trim_clip" } }, "required": ["op"] },
+            "then": { "required": ["clip_id", "edge", "at"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "split_clip" } }, "required": ["op"] },
+            "then": { "required": ["clip_id", "at"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "ripple_trim" } }, "required": ["op"] },
+            "then": {
+              "required": ["clip_id", "edge", "at"],
+              "properties": { "edge": { "const": "end" } }
+            }
+          },
+          {
+            "if": { "properties": { "op": { "const": "roll_edit" } }, "required": ["op"] },
+            "then": { "required": ["left_clip_id", "right_clip_id", "at"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "slip_clip" } }, "required": ["op"] },
+            "then": { "required": ["clip_id", "source_in"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "slide_clip" } }, "required": ["op"] },
+            "then": { "required": ["clip_id", "previous_clip_id", "next_clip_id", "timeline_start"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "update_track" } }, "required": ["op"] },
+            "then": { "required": ["track_id", "changes"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "update_clip" } }, "required": ["op"] },
+            "then": { "required": ["clip_id", "changes"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "set_settings" } }, "required": ["op"] },
+            "then": { "required": ["changes"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "add_marker" } }, "required": ["op"] },
+            "then": { "required": ["marker"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "remove_marker" } }, "required": ["op"] },
+            "then": { "required": ["marker_id"] }
+          }
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

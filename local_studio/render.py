@@ -6,7 +6,591 @@ from contextlib import ExitStack
 from pathlib import Path
 from typing import Any, Callable
 
+from audio_fx import apply_audio_fx, normalize_audio_fx
+from color import apply_color, normalize_color, waveform_scope
+from compositing import apply_compositing, normalize_compositing
 from config import PLATFORM_PRESETS, caption_font, workspace_path
+from keyframes import has_keyframes, keyframe_value, speed_time_mapper
+from motion import apply_tracker_position, ease_ratio, normalize_motion, stabilize_layer
+from render_contract import snapshot_at, timeline_render_contract
+from sequence import prepare_timeline
+
+
+def _asset_path(value: str) -> Path:
+    """Resolve a v2 asset; absolute paths outside the workspace are rejected."""
+    return workspace_path(value)
+
+
+def original_asset_path(asset: dict[str, Any]) -> Path:
+    """Final output always resolves the immutable original, never its proxy."""
+    return _asset_path(str(asset.get("path", "")))
+
+
+DRAFT_PREVIEW_MAX_WIDTH = 540
+
+
+def encoder_settings(quality: str) -> tuple[str, str]:
+    """Return (bitrate, libx264 preset). Balanced/high prefer speed over tiny files."""
+    bitrate = {"compact": "3500k", "balanced": "6000k", "high": "9000k"}.get(quality, "6000k")
+    preset = {"compact": "veryfast", "balanced": "faster", "high": "medium"}.get(quality, "faster")
+    return bitrate, preset
+
+
+def draft_preview_size(
+    width: int,
+    height: int,
+    max_width: int = DRAFT_PREVIEW_MAX_WIDTH,
+) -> tuple[int, int]:
+    """Cap program-monitor composites so scrubbing does not decode 1080p."""
+    width = max(2, int(width))
+    height = max(2, int(height))
+    max_width = max(2, int(max_width))
+    if width > max_width:
+        height = max(2, int(round(height * (max_width / width))))
+        width = max_width
+    width -= width % 2
+    height -= height % 2
+    return max(2, width), max(2, height)
+
+
+def preview_asset_path(
+    asset: dict[str, Any],
+    proxy_paths: dict[str, Path] | None = None,
+) -> Path:
+    """Draft preview may use a ready proxy; missing files fall back to the original."""
+    asset_id = str(asset.get("id", ""))
+    if proxy_paths and asset_id in proxy_paths:
+        candidate = proxy_paths[asset_id]
+        if isinstance(candidate, Path) and candidate.is_file():
+            return candidate
+    return original_asset_path(asset)
+
+
+def close_owned(owned_clips: list[Any] | None) -> None:
+    """Close MoviePy clips in reverse creation order; swallow close errors."""
+    if not owned_clips:
+        return
+    for item in reversed(owned_clips):
+        try:
+            item.close()
+        except Exception:
+            pass
+
+
+def _apply_dynamic_crop(layer: Any, keyframes: dict[str, list[dict[str, Any]]], transform: dict[str, Any]) -> Any:
+    if not has_keyframes(keyframes, "crop_left", "crop_right", "crop_top", "crop_bottom"):
+        return layer
+    import numpy as np
+    from PIL import Image
+
+    width, height = int(layer.w), int(layer.h)
+
+    def crop_frame(get_frame: Callable[[float], Any], at: float) -> Any:
+        frame = get_frame(at)
+        left = keyframe_value(keyframes, "crop_left", at, float(transform.get("crop_left", 0)))
+        right = keyframe_value(keyframes, "crop_right", at, float(transform.get("crop_right", 0)))
+        top = keyframe_value(keyframes, "crop_top", at, float(transform.get("crop_top", 0)))
+        bottom = keyframe_value(keyframes, "crop_bottom", at, float(transform.get("crop_bottom", 0)))
+        x1, x2 = int(width * left), max(int(width * left) + 1, int(width * (1 - right)))
+        y1, y2 = int(height * top), max(int(height * top) + 1, int(height * (1 - bottom)))
+        cropped = frame[y1:y2, x1:x2]
+        is_mask = cropped.dtype.kind == "f"
+        image = Image.fromarray(
+            np.clip(cropped * 255 if is_mask else cropped, 0, 255).astype("uint8"),
+        ).resize((width, height), Image.Resampling.BICUBIC)
+        value = np.asarray(image)
+        return value / 255.0 if is_mask else value
+
+    return layer.transform(crop_frame, apply_to=["mask"], keep_duration=True)
+
+
+def _apply_dynamic_opacity(layer: Any, keyframes: dict[str, list[dict[str, Any]]], default: float) -> Any:
+    if not has_keyframes(keyframes, "opacity"):
+        return layer.with_opacity(default) if default != 1 else layer
+    from moviepy import ColorClip
+
+    mask = layer.mask
+    if mask is None:
+        mask = ColorClip(size=layer.size, color=1, is_mask=True).with_duration(layer.duration)
+    mask = mask.transform(
+        lambda get_frame, at: get_frame(at) * keyframe_value(keyframes, "opacity", at, default),
+        keep_duration=True,
+    )
+    return layer.with_mask(mask)
+
+
+def _apply_dynamic_volume(audio: Any, keyframes: dict[str, list[dict[str, Any]]], default: float) -> Any:
+    if audio is None:
+        return None
+    if not has_keyframes(keyframes, "volume"):
+        if default == 1:
+            return audio
+        from moviepy import afx
+        return audio.with_effects([afx.MultiplyVolume(default)])
+
+    def multiply(get_frame: Callable[[Any], Any], at: Any) -> Any:
+        import numpy as np
+
+        frame = get_frame(at)
+        if isinstance(at, (int, float)):
+            return frame * keyframe_value(keyframes, "volume", float(at), default)
+        times = np.asarray(at)
+        gains = np.array([
+            keyframe_value(keyframes, "volume", float(value), default)
+            for value in times.flat
+        ]).reshape(times.shape)
+        return frame * gains if getattr(frame, "ndim", 1) == 1 else frame * gains[:, None]
+
+    return audio.transform(multiply, keep_duration=True)
+
+
+def _apply_transitions(layer: Any, clip_data: dict[str, Any], vfx: Any) -> Any:
+    effects: list[Any] = []
+    for field, fade_effect, crossfade_effect in (
+        ("transition_in", vfx.FadeIn, vfx.CrossFadeIn),
+        ("transition_out", vfx.FadeOut, vfx.CrossFadeOut),
+    ):
+        transition = clip_data.get(field)
+        if not isinstance(transition, dict):
+            continue
+        duration = float(transition.get("duration", 0))
+        if duration <= 0:
+            continue
+        effect = crossfade_effect if transition.get("type") == "crossfade" else fade_effect
+        effects.append(effect(duration))
+    return layer.with_effects(effects) if effects else layer
+
+
+def _compose_timeline_v2(
+    project: dict[str, Any],
+    progress_cb: Callable[[int], None] | None = None,
+    should_cancel: Callable[[], bool] | None = None,
+    preview: dict[str, Any] | None = None,
+    *,
+    for_sample: bool = False,
+) -> dict[str, Any]:
+    """Build the Timeline v2 composite. Caller owns the returned clips.
+
+    Does not close clips and never writes a file. Preview sampling may pass
+    `for_sample=True` so draft quality can use proxies and a capped frame size.
+    Final render must call this with `for_sample=False`.
+    """
+    try:
+        from moviepy import (
+            AudioFileClip,
+            ColorClip,
+            CompositeAudioClip,
+            CompositeVideoClip,
+            ImageClip,
+            TextClip,
+            VideoFileClip,
+            afx,
+            vfx,
+        )
+    except ImportError as exc:
+        raise RuntimeError("MoviePy is not installed. Install local_studio/requirements.txt first.") from exc
+
+    timeline = prepare_timeline(project["timeline_json"])
+    settings = timeline.get("settings") if isinstance(timeline.get("settings"), dict) else {}
+    assets = {str(item.get("id")): item for item in timeline.get("assets", []) if isinstance(item, dict)}
+    tracks = sorted(
+        (item for item in timeline.get("tracks", []) if isinstance(item, dict)),
+        key=lambda item: int(item.get("order", 0)),
+    )
+    contract = timeline_render_contract(timeline)
+
+    platform = str(settings.get("platform", "reels_tiktok_shorts"))
+    preset = PLATFORM_PRESETS.get(platform, PLATFORM_PRESETS["reels_tiktok_shorts"])
+    target_w = max(2, int(settings.get("width", preset["width"])))
+    target_h = max(2, int(settings.get("height", preset["height"])))
+    target_w -= target_w % 2
+    target_h -= target_h % 2
+    fps = int(contract["fps"])
+    quality = str(settings.get("quality", "balanced"))
+    bitrate, encoder_preset = encoder_settings(quality)
+    preview_options = preview if isinstance(preview, dict) else {}
+    preview_quality = "draft" if preview_options.get("quality") == "draft" else "full"
+    is_draft = for_sample and preview_quality == "draft"
+    proxy_paths = preview_options.get("proxy_paths") if is_draft else None
+    if not isinstance(proxy_paths, dict):
+        proxy_paths = None
+    if is_draft:
+        max_width = preview_options.get("max_width", DRAFT_PREVIEW_MAX_WIDTH)
+        try:
+            cap = int(max_width)
+        except (TypeError, ValueError):
+            cap = DRAFT_PREVIEW_MAX_WIDTH
+        target_w, target_h = draft_preview_size(target_w, target_h, cap)
+    background = str(settings.get("background", "#000000"))
+    try:
+        bg_rgb = tuple(int(background.lstrip("#")[index:index + 2], 16) for index in (0, 2, 4))
+    except (TypeError, ValueError):
+        bg_rgb = (0, 0, 0)
+
+    active_track_ids = set(contract["active_track_ids"])
+    active_clips = [
+        (track, clip)
+        for track in tracks
+        if track.get("id") in active_track_ids
+        for clip in track.get("clips", [])
+        if isinstance(clip, dict)
+    ]
+    if not active_clips:
+        raise RuntimeError("No active clips are available to render.")
+    duration = float(contract["duration"])
+    if duration <= 0:
+        raise RuntimeError("Timeline duration must be positive.")
+
+    output = Path(project.get("output_path") or "outputs/preview.mp4")
+    font_path = caption_font()
+    visual_layers: list[Any] = [ColorClip(size=(target_w, target_h), color=bg_rgb).with_duration(duration)]
+    audio_layers: list[Any] = []
+    dialogue_audio_layers: list[Any] = []
+    ducking_audio_layers: list[tuple[Any, float]] = []
+    owned_clips: list[Any] = []
+    used_proxy_ids: set[str] = set()
+    total = max(len(active_clips), 1)
+
+    def source_for(asset: dict[str, Any]) -> Path:
+        if is_draft:
+            resolved = preview_asset_path(asset, proxy_paths)
+            if resolved != original_asset_path(asset):
+                used_proxy_ids.add(str(asset.get("id", "")))
+            return resolved
+        return original_asset_path(asset)
+
+    try:
+        for index, (track, clip_data) in enumerate(active_clips):
+            if should_cancel and should_cancel():
+                raise RuntimeError("Render cancelled.")
+            kind = str(track.get("type", "video"))
+            start = float(clip_data.get("timeline_start", 0))
+            clip_duration = float(clip_data.get("duration", 0))
+            keyframes = clip_data.get("keyframes") if isinstance(clip_data.get("keyframes"), dict) else {}
+            asset = assets.get(str(clip_data.get("asset_id")))
+            layer = None
+
+            if kind == "caption":
+                text = str(clip_data.get("text", "")).strip()
+                if not text:
+                    continue
+                if not font_path:
+                    raise RuntimeError("No usable local font was found for captions. Set LOCAL_STUDIO_FONT or install a system font.")
+                style = clip_data.get("style") if isinstance(clip_data.get("style"), dict) else {}
+                size = max(18, min(int(style.get("size", settings.get("caption_size", 78))), 180))
+                color = str(style.get("color", settings.get("caption_color", "#FFFFFF")))
+                stroke = max(0, min(int(style.get("stroke", settings.get("caption_stroke", 3))), 12))
+                layer = TextClip(
+                    font=font_path,
+                    text=text,
+                    font_size=size,
+                    color=color,
+                    stroke_color="black",
+                    stroke_width=stroke,
+                    size=(max(240, int(target_w * .86)), max(size * 2, int(target_h * .08))),
+                    method="caption",
+                    vertical_align="center",
+                )
+                y_percent = max(0, min(float(style.get("position_y", settings.get("caption_y", 74))), 100))
+                y = max(0, min(int(target_h * y_percent / 100 - layer.h / 2), target_h - int(layer.h)))
+                layer = layer.with_start(start).with_duration(clip_duration).with_position(("center", y))
+                layer = _apply_transitions(layer, clip_data, vfx)
+                visual_layers.append(layer)
+                owned_clips.append(layer)
+            elif kind == "audio":
+                if not asset or asset.get("kind") not in {"audio", "video"}:
+                    continue
+                source_path = source_for(asset)
+                if not source_path.exists():
+                    raise RuntimeError(f"Timeline asset does not exist: {source_path}")
+                source_audio = AudioFileClip(str(source_path))
+                owned_clips.append(source_audio)
+                source_in = max(0, float(clip_data.get("source_in", 0)))
+                source_out = min(float(clip_data.get("source_out", source_in + clip_duration)), float(source_audio.duration))
+                layer = source_audio.subclipped(source_in, source_out)
+                source_span = max(0.001, source_out - source_in)
+                if has_keyframes(keyframes, "speed"):
+                    layer = layer.time_transform(
+                        speed_time_mapper(clip_duration, source_span, keyframes),
+                        keep_duration=True,
+                    ).with_duration(clip_duration)
+                elif abs(source_span - clip_duration) > .001:
+                    layer = layer.time_transform(
+                        lambda at, ratio=source_span / clip_duration: at * ratio,
+                        keep_duration=True,
+                    ).with_duration(clip_duration)
+                audio_config = clip_data.get("audio") if isinstance(clip_data.get("audio"), dict) else {}
+                if audio_config.get("muted"):
+                    continue
+                volume = max(0, min(float(audio_config.get("volume", 1)), 4))
+                layer = _apply_dynamic_volume(layer, keyframes, volume)
+                track_volume = max(0, min(float(track.get("volume", 1)), 4))
+                if track_volume != 1:
+                    layer = layer.with_effects([afx.MultiplyVolume(track_volume)])
+                layer = apply_audio_fx(layer, normalize_audio_fx(track.get("audio_fx")))
+                layer = layer.with_start(start).with_duration(clip_duration)
+                if track.get("role", "dialogue") == "dialogue":
+                    dialogue_audio_layers.append(layer)
+                if track.get("role") == "music" and track.get("ducking"):
+                    ducking_audio_layers.append((layer, max(0, min(float(track.get("duck_level", .35)), 1))))
+                else:
+                    audio_layers.append(layer)
+                owned_clips.append(layer)
+            elif kind in {"video", "overlay"}:
+                if not asset or asset.get("kind") not in {"video", "image", "title"}:
+                    continue
+                if asset.get("kind") == "title":
+                    text = str(clip_data.get("text") or asset.get("text") or asset.get("name") or "").strip()
+                    if not text or not font_path:
+                        continue
+                    style = clip_data.get("style") if isinstance(clip_data.get("style"), dict) else {}
+                    layer = TextClip(
+                        font=font_path,
+                        text=text,
+                        font_size=max(18, min(int(style.get("size", 92)), 220)),
+                        color=str(style.get("color", "#FFFFFF")),
+                        stroke_color=str(style.get("stroke_color", "#000000")),
+                        stroke_width=max(0, min(int(style.get("stroke", 2)), 12)),
+                        size=(max(240, int(target_w * .88)), max(120, int(target_h * .24))),
+                        method="caption",
+                        text_align="center",
+                        vertical_align="center",
+                    ).with_duration(clip_duration)
+                else:
+                    source_path = source_for(asset)
+                    if not source_path.exists():
+                        raise RuntimeError(f"Timeline asset does not exist: {source_path}")
+                if asset.get("kind") == "image":
+                    layer = ImageClip(str(source_path)).with_duration(clip_duration)
+                elif asset.get("kind") == "video":
+                    open_kwargs: dict[str, Any] = {}
+                    if is_draft:
+                        open_kwargs["target_resolution"] = (target_w, None)
+                        open_kwargs["resize_algorithm"] = "fast_bilinear"
+                    source_video = VideoFileClip(str(source_path), **open_kwargs)
+                    owned_clips.append(source_video)
+                    source_in = max(0, float(clip_data.get("source_in", 0)))
+                    source_out = min(float(clip_data.get("source_out", source_in + clip_duration)), float(source_video.duration))
+                    if source_out <= source_in:
+                        continue
+                    layer = source_video.subclipped(source_in, source_out)
+                    source_span = source_out - source_in
+                    if has_keyframes(keyframes, "speed"):
+                        layer = layer.time_transform(
+                            speed_time_mapper(clip_duration, source_span, keyframes),
+                            apply_to=["mask", "audio"],
+                            keep_duration=True,
+                        ).with_duration(clip_duration)
+                    elif abs(source_span - clip_duration) > .001:
+                        layer = layer.with_effects([vfx.MultiplySpeed(source_span / clip_duration)])
+                transform = clip_data.get("transform") if isinstance(clip_data.get("transform"), dict) else {}
+                layer = _apply_dynamic_crop(layer, keyframes, transform)
+                scale = max(.05, min(float(transform.get("scale", 1)), 8))
+                fit = min(target_w / float(layer.w), target_h / float(layer.h)) * scale
+                if has_keyframes(keyframes, "scale"):
+                    layer = layer.with_effects([
+                        vfx.Resize(lambda at: fit / scale * keyframe_value(keyframes, "scale", at, scale)),
+                    ])
+                else:
+                    layer = layer.resized(fit)
+                rotation = float(transform.get("rotation", 0))
+                if has_keyframes(keyframes, "rotation"):
+                    layer = layer.with_effects([
+                        vfx.Rotate(
+                            lambda at: keyframe_value(keyframes, "rotation", at, rotation),
+                            expand=True,
+                        ),
+                    ])
+                elif rotation:
+                    layer = layer.rotated(rotation, expand=True)
+                opacity = max(0, min(float(transform.get("opacity", 1)), 1))
+                layer = _apply_dynamic_opacity(layer, keyframes, opacity)
+                x_value, y_value = transform.get("x", "center"), transform.get("y", "center")
+                if has_keyframes(keyframes, "x", "y"):
+                    position = lambda at: (
+                        keyframe_value(keyframes, "x", at, float(x_value) if isinstance(x_value, (int, float)) else 0),
+                        keyframe_value(keyframes, "y", at, float(y_value) if isinstance(y_value, (int, float)) else 0),
+                    )
+                else:
+                    position = (x_value, y_value)
+                layer = apply_color(layer, normalize_color(clip_data.get("color")))
+                layer = apply_compositing(layer, normalize_compositing(clip_data.get("compositing")))
+                motion = normalize_motion(clip_data.get("motion"), clip_duration)
+                layer = stabilize_layer(layer, bool(motion.get("stabilize")))
+                if motion.get("speed_ramp", {}).get("enabled") and has_keyframes(keyframes, "speed"):
+                    ease = str(motion["speed_ramp"].get("ease", "linear"))
+                    mapper = speed_time_mapper(clip_duration, max(0.001, float(clip_data.get("source_out", clip_duration)) - float(clip_data.get("source_in", 0))), keyframes)
+                    layer = layer.time_transform(
+                        lambda at, inner=mapper, kind=ease: inner(clip_duration * ease_ratio(at / max(clip_duration, 0.001), kind)),
+                        apply_to=["mask", "audio"],
+                        keep_duration=True,
+                    )
+                layer = layer.with_start(start).with_duration(clip_duration)
+                layer = apply_tracker_position(layer, motion, position)
+                layer = _apply_transitions(layer, clip_data, vfx)
+                audio_config = clip_data.get("audio") if isinstance(clip_data.get("audio"), dict) else {}
+                if layer.audio and (audio_config.get("muted") or track.get("muted")):
+                    layer = layer.without_audio()
+                elif layer.audio:
+                    volume = max(0, min(float(audio_config.get("volume", 1)), 4))
+                    clip_audio = _apply_dynamic_volume(layer.audio, keyframes, volume)
+                    track_volume = max(0, min(float(track.get("volume", 1)), 4))
+                    if track_volume != 1:
+                        clip_audio = clip_audio.with_effects([afx.MultiplyVolume(track_volume)])
+                    clip_audio = apply_audio_fx(clip_audio, normalize_audio_fx(track.get("audio_fx")))
+                    if track.get("role", "dialogue") == "dialogue":
+                        dialogue_audio_layers.append(clip_audio)
+                    if track.get("role") == "music" and track.get("ducking"):
+                        ducking_audio_layers.append((clip_audio, max(0, min(float(track.get("duck_level", .35)), 1))))
+                        layer = layer.without_audio()
+                    else:
+                        layer = layer.with_audio(clip_audio)
+                visual_layers.append(layer)
+                owned_clips.append(layer)
+
+            if progress_cb:
+                progress_cb(min(88, int(88 * (index + 1) / total)))
+
+        if len(visual_layers) == 1 and not audio_layers:
+            raise RuntimeError("No renderable video, image, caption, or audio clips were found.")
+        if ducking_audio_layers:
+            if is_draft or not dialogue_audio_layers:
+                audio_layers.extend(layer for layer, _floor in ducking_audio_layers)
+            else:
+                dialogue_mix = CompositeAudioClip(dialogue_audio_layers).with_duration(duration)
+                owned_clips.append(dialogue_mix)
+                for music_layer, floor in ducking_audio_layers:
+                    gain_at = _dialogue_duck_gain(dialogue_mix, duration, floor)
+                    ducked = _apply_music_ducking(music_layer, gain_at)
+                    audio_layers.append(ducked)
+                    owned_clips.append(ducked)
+        final = CompositeVideoClip(visual_layers, size=(target_w, target_h)).with_duration(duration)
+        owned_clips.append(final)
+        if audio_layers:
+            combined = CompositeAudioClip(([final.audio] if final.audio else []) + audio_layers)
+            owned_clips.append(combined)
+            with_audio = final.with_audio(combined)
+            if with_audio is not final:
+                owned_clips.append(with_audio)
+            final = with_audio
+        return {
+            "final": final,
+            "owned_clips": owned_clips,
+            "width": target_w,
+            "height": target_h,
+            "fps": fps,
+            "duration": duration,
+            "contract": contract,
+            "used_proxy": bool(used_proxy_ids),
+            "is_draft": is_draft,
+            "timeline": timeline,
+            "platform": platform,
+            "bitrate": bitrate,
+            "encoder_preset": encoder_preset,
+            "output": output,
+        }
+    except BaseException:
+        close_owned(owned_clips)
+        raise
+
+
+def sample_composed_frame(
+    composed: dict[str, Any],
+    sample_at: float,
+    timeline: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Read one frame + RMS from an already-composed timeline. Does not close clips."""
+    import numpy as np
+
+    final = composed["final"]
+    duration = float(composed["duration"])
+    fps = int(composed["fps"])
+    is_draft = bool(composed.get("is_draft"))
+    snapshot_timeline = timeline if isinstance(timeline, dict) else composed.get("timeline")
+    if not isinstance(snapshot_timeline, dict):
+        snapshot_timeline = {}
+    time = min(max(float(sample_at), 0.0), max(duration - (1 / max(fps, 1)), 0.0))
+    frame = final.get_frame(time)
+    audio_rms = 0.0
+    if final.audio:
+        if is_draft:
+            times = np.array([max(time, 0.001)])
+            samples = final.audio.to_soundarray(tt=np.minimum(times, duration - 0.001), fps=8_000)
+        else:
+            times = np.array([max(time + offset, 0.001) for offset in (0.011, 0.023, 0.037)])
+            samples = final.audio.to_soundarray(tt=np.minimum(times, duration - 0.001), fps=44_100)
+        audio_rms = float(np.sqrt(np.mean(np.square(samples))))
+    logical = snapshot_at(snapshot_timeline, time)
+    return {
+        "at": time,
+        "width": composed["width"],
+        "height": composed["height"],
+        "fps": fps,
+        "frame": frame,
+        "audio_rms": audio_rms,
+        "caption": logical["caption"],
+        "active_clip_ids": logical["active_clip_ids"],
+        "render_contract": composed.get("contract") or timeline_render_contract(snapshot_timeline),
+        "scopes": {} if is_draft else waveform_scope(frame),
+        "preview_quality": "draft" if is_draft else "full",
+        "used_proxy": bool(composed.get("used_proxy")),
+    }
+
+
+def _render_timeline_v2(
+    project: dict[str, Any],
+    progress_cb: Callable[[int], None] | None = None,
+    should_cancel: Callable[[], bool] | None = None,
+    sample_at: float | None = None,
+    preview: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Render the immutable multi-track timeline used by the desktop editor.
+
+    The first desktop milestone intentionally implements the effects represented
+    by the public v2 data model (track ordering, trims, static transforms, audio
+    levels and captions) without flattening it back into the legacy cut list.
+    More advanced effects can therefore be added without another persistence
+    migration.
+    """
+    composed: dict[str, Any] | None = None
+    try:
+        composed = _compose_timeline_v2(
+            project,
+            progress_cb=progress_cb,
+            should_cancel=should_cancel,
+            preview=preview,
+            for_sample=sample_at is not None,
+        )
+        if sample_at is not None:
+            return sample_composed_frame(composed, sample_at)
+        output = Path(composed["output"])
+        output.parent.mkdir(parents=True, exist_ok=True)
+        final = composed["final"]
+        has_audio = bool(final.audio)
+        if progress_cb:
+            progress_cb(92)
+        final.write_videofile(
+            str(output), fps=composed["fps"], codec="libx264", audio_codec="aac",
+            bitrate=composed["bitrate"], threads=4, logger=None,
+            ffmpeg_params=["-preset", composed["encoder_preset"], "-movflags", "+faststart"],
+        )
+    finally:
+        if composed is not None:
+            close_owned(composed["owned_clips"])
+    if progress_cb:
+        progress_cb(100)
+    timeline = composed["timeline"]
+    contract = composed["contract"]
+    return {
+        "output_path": str(output), "format": "mp4", "video": "H.264",
+        "audio": "AAC" if has_audio else "none",
+        "width": composed["width"], "height": composed["height"],
+        "platform": composed["platform"], "fps": composed["fps"],
+        "bitrate": composed["bitrate"],
+        "timeline_schema": timeline["schema"], "revision": timeline.get("revision"),
+        "duration": composed["duration"], "frame_count": contract["frame_count"],
+        "render_contract": contract,
+    }
 
 
 def _smooth_gain_targets(targets: list[float], attack: float, release: float) -> list[float]:
@@ -64,7 +648,35 @@ def _apply_music_ducking(music, gain_at):
     return music.transform(duck, keep_duration=True)
 
 
+def sample_timeline_frame(
+    timeline: dict[str, Any],
+    at: float,
+    *,
+    preview: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return _render_timeline_v2(
+        {"timeline_json": timeline, "output_path": "outputs/preview.mp4"},
+        sample_at=at,
+        preview=preview,
+    )
+
+
+def sample_cached_timeline_frame(
+    project_id: str,
+    timeline: dict[str, Any],
+    at: float,
+    *,
+    preview: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Sample using the revision-scoped preview composite cache."""
+    from preview_cache import preview_composite_cache
+
+    return preview_composite_cache.sample(project_id, timeline, at, preview)
+
+
 def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] | None = None, should_cancel: Callable[[], bool] | None = None) -> dict[str, Any]:
+    if project.get("timeline_json", {}).get("schema") == "grok-crew.timeline/v2":
+        return _render_timeline_v2(project, progress_cb=progress_cb, should_cancel=should_cancel)
     try:
         from moviepy import AudioFileClip, ColorClip, CompositeAudioClip, CompositeVideoClip, TextClip, VideoFileClip, afx, concatenate_videoclips, vfx
     except ImportError as exc:
@@ -87,11 +699,9 @@ def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] |
     if fps not in {24, 30, 60}:
         fps = 30
     quality = str(settings.get("quality", "balanced"))
-    bitrate = {"compact": "3500k", "balanced": "6000k", "high": "9000k"}.get(quality, "6000k")
-    # libx264 encoder preset: trades file-size efficiency for encode speed. "compact" is
-    # meant for quick review/draft renders, so it uses the fastest preset rather than the
-    # ffmpeg default ("medium"), which is a large, low-risk win for iteration speed.
-    encoder_preset = {"compact": "veryfast", "balanced": "medium", "high": "slow"}.get(quality, "medium")
+    # libx264 encoder preset: trades file-size efficiency for encode speed. Balanced and
+    # high stay sharp enough for short-form delivery while avoiding the slowest presets.
+    bitrate, encoder_preset = encoder_settings(quality)
     crop_anchor = str(settings.get("crop_anchor", "center"))
     if crop_anchor not in {"left", "center", "right"}:
         crop_anchor = "center"
@@ -254,5 +864,3 @@ def render_moviepy(project: dict[str, Any], progress_cb: Callable[[int], None] |
     if progress_cb:
         progress_cb(100)
     return {"output_path": str(output), "format": "mp4", "video": "H.264", "audio": "AAC" if has_audio else "none", "width": target_w, "height": target_h, "platform": platform, "fps": fps, "bitrate": bitrate, "render_settings": {"crop_anchor": crop_anchor, "speed": speed, "look": look, "captions_enabled": captions_enabled, "quality": quality}}
-
-

@@ -1,0 +1,39 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { describe, it } from 'node:test';
+
+function src(name) {
+  return readFileSync(new URL(`./${name}`, import.meta.url), 'utf8');
+}
+
+describe('desk composer restage', () => {
+  it('Connect shows one family at a time and folds extras', () => {
+    const text = src('desktop-bot-panel.tsx');
+    assert.match(text, /data-stage="compose"/);
+    assert.match(text, /봇 붙이기/);
+    assert.equal(text.includes('desktop-spec-hero'), false);
+    assert.match(text, /이 PC에서 봇 쓰기/);
+    assert.match(text, /이 창의 다른 연결/);
+    assert.match(text, /봇 없이 영상 열기/);
+    assert.equal((text.match(/<h1>/g) || []).length, 1);
+  });
+
+  it('Setup and Export use option chips, not four cards at once', () => {
+    const text = src('desktop-workspace.tsx');
+    assert.match(text, /desktop-setup-grid is-composer/);
+    assert.match(text, /desktop-export-grid is-composer/);
+    assert.match(text, /setupPane === 'shape'/);
+    assert.match(text, /exportPane === 'post'/);
+    assert.match(text, /desktop-version-fold/);
+    assert.match(text, /미리보기 프록시/);
+    assert.equal(text.includes('desktop-card-title'), false);
+  });
+
+  it('Advanced spec starts with a composer and folds doors', () => {
+    const text = src('desktop-spec-desk.tsx');
+    assert.match(text, /is-composer/);
+    assert.match(text, /specPane/);
+    assert.match(text, /보낼함과 받기/);
+    assert.equal(text.includes('desktop-spec-hero'), false);
+  });
+});

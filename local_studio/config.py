@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,9 +28,10 @@ def load_dotenv() -> None:
 load_dotenv()
 
 BUNDLED_CAPTION_FONT = BASE_DIR / "assets" / "fonts" / "NotoSansKR-Bold.ttf"
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = Path(os.getenv("LOCAL_STUDIO_DATA", BASE_DIR / "data")).resolve()
 WORKSPACE_DIR = Path(os.getenv("LOCAL_STUDIO_WORKSPACE", BASE_DIR / "workspace")).resolve()
 DB_PATH = DATA_DIR / "studio.db"
+ADVANCED_TOOLS_PATH = Path(os.getenv("ADVANCED_TOOLS_PATH", BASE_DIR / "advanced-tools.json")).resolve()
 BOT_GUIDE_PATH = BASE_DIR / "bot-guide.json"
 BOT_GUIDE_KO_PATH = BASE_DIR / "bot-guide.ko.json"
 BOT_GUIDE_ZH_PATH = BASE_DIR / "bot-guide.zh.json"
@@ -45,10 +47,28 @@ def parse_allowed_origins(raw: str) -> frozenset[str]:
     return frozenset(origins) if origins else frozenset({"http://localhost:3000", "http://127.0.0.1:3000"})
 
 
+_LOOPBACK_ORIGIN = re.compile(r"^https?://(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$")
+
+
+def origin_is_allowed(origin: str | None, allowed: frozenset[str] | None = None) -> bool:
+    """Same-origin (missing Origin) and loopback preview ports can call the sidecar.
+
+    A present but empty Origin is not trusted. Remote websites stay blocked.
+    Extra non-loopback origins still come from LOCAL_STUDIO_ALLOWED_ORIGINS.
+    """
+    if origin is None:
+        return True
+    origin = origin.strip()
+    if not origin:
+        return False
+    allowlist = ALLOWED_ORIGINS if allowed is None else allowed
+    return origin in allowlist or bool(_LOOPBACK_ORIGIN.fullmatch(origin))
+
+
 ALLOWED_ORIGINS = parse_allowed_origins(os.getenv("LOCAL_STUDIO_ALLOWED_ORIGINS", ""))
 SITE_BASE_URL = "http://localhost:3000"
-BROWSER_PAGE_PATHS = {"/", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy"}
-PUBLIC_GET_PATHS = frozenset({"/health", "/api/terminal-contract", "/api/bot-guide", "/api/bot-entry", "/downloads/grok-crew.py"})
+BROWSER_PAGE_PATHS = {"/", "/tools", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy"}
+PUBLIC_GET_PATHS = frozenset({"/health", "/api/terminal-contract", "/api/bot-guide", "/api/bot-entry", "/api/v2/tools", "/downloads/grok-crew.py", "/downloads/grok-crew-bot.zip"})
 DEFAULT_EDIT_METHOD = {
     "schema": "local-video-workspace.edit-method/v1",
     "hook_strategy": "payoff_first",
@@ -97,10 +117,44 @@ def workspace_path(value: str) -> Path:
     return resolved
 
 
-def require_path(value: Any, field: str) -> Path:
+def require_path(value: object, field: str) -> Path:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field} is required.")
     return workspace_path(value)
+
+
+_GIT_REMOTE = re.compile(r"^(https://|git@|ssh://git@)", re.IGNORECASE)
+_GIT_BRANCH = re.compile(r"^[A-Za-z0-9._/-]+$")
+
+
+def require_git_remote(value: str) -> str:
+    text = str(value or "").strip()
+    if not text or text.startswith("-") or any(ch.isspace() for ch in text):
+        raise ValueError("HANDOFF_REPO_REMOTE must be an https or ssh git URL.")
+    if any(ch in text for ch in "?;#\\$`|"):
+        raise ValueError("HANDOFF_REPO_REMOTE must be an https or ssh git URL.")
+    lowered = text.lower()
+    if lowered.startswith(("ext::", "file:", "fd::")):
+        raise ValueError("HANDOFF_REPO_REMOTE must be an https or ssh git URL.")
+    if not _GIT_REMOTE.match(text):
+        raise ValueError("HANDOFF_REPO_REMOTE must be an https or ssh git URL.")
+    return text
+
+
+def require_git_branch(value: str) -> str:
+    text = str(value or "").strip() or "handoff-inbox"
+    if text.startswith("-") or ".." in text or not _GIT_BRANCH.fullmatch(text):
+        raise ValueError("HANDOFF_BRANCH is not a valid branch name.")
+    return text
+
+
+def workspace_relative(path: Path | str) -> str:
+    """Return a workspace-relative path, or just the filename if the path is outside."""
+    resolved = Path(path).expanduser().resolve()
+    try:
+        return resolved.relative_to(WORKSPACE_DIR.resolve()).as_posix()
+    except ValueError:
+        return resolved.name
 
 
 def caption_font() -> str | None:
@@ -124,5 +178,3 @@ def caption_font() -> str | None:
         "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
     ]
     return next((candidate for candidate in candidates if candidate and Path(candidate).exists()), None)
-
-

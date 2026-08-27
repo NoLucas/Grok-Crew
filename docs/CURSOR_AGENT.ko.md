@@ -1,0 +1,47 @@
+# Cursor 에이전트는 이렇게 붙습니다
+
+2026-08-26에 이 화면에서 실제로 확인한 경로입니다. Cursor Cloud Agent가 저장소를 열고, 같은 PC의 Local Studio에 체크인하고, 편집 인박스에 패키지를 두면 컷이 들어옵니다.
+
+역할 이름은 항상 **편집 Agent** / **수집 Agent**입니다. `created_by: Cursor`여도 역할은 편집 Agent로 저장됩니다. 브랜드를 역할로 바꾸지 않습니다.
+
+## 확인한 것
+
+| 경로 | 결과 |
+|---|---|
+| Cursor Cloud Agent (`cursor.com/agents`) | 이 세션이 `main`에 붙어 실행 중 |
+| 같은 PC 체크인 `POST /api/bot-entry` | `bot_id=cursor-cloud-verify`, `display_name=Cursor` → `auto_local`, roster에 보임 |
+| 첫 화면과 같은 규격 저장 | `source_mode: bot`, `crew: false`, `door: editor`, `waiting_for_bot` |
+| `GET /api/v2/edit-specs/{id}/invite` | `handoff-inbox/editor` 절대경로. `git clone` 없음 |
+| 편집 인박스에 `created_by: Cursor` 패키지 | `POST /handoff/pull { door: "editor" }`가 프로젝트를 만듦 |
+
+원격 Cursor 에이전트는 `127.0.0.1`에 붙지 않습니다. 초대문의 폴더에만 둡니다.
+
+## 같은 컴퓨터의 Cursor
+
+Grok Crew가 이 PC에서 켜져 있을 때:
+
+```sh
+python grok-crew.py entry --bot-id cursor-desk --display-name "Cursor" --purpose edit_video
+```
+
+스크립트는 `http://127.0.0.1:7214/downloads/grok-crew.py`입니다. 토큰이 켜져 있으면 런타임에서만 받습니다. `.env`를 읽지 않습니다.
+
+끝난 컷은 `local_studio/workspace/handoff-inbox/editor/`에 둡니다. 화면이 받기 버튼 없이 엽니다.
+
+## 다른 컴퓨터의 Cursor
+
+Cursor는 Grok Crew와 붙는 공식 연결 API를 제공하지 않습니다. 연결 메뉴의 다른 PC 칸에서 Cursor 브랜드 줄은 없습니다. 같은 PC 체크인만 남습니다.
+
+다른 PC에서 직접 만든 에이전트를 붙이려면 **내가 만든 에이전트** 줄을 씁니다. 그 에이전트는 `127.0.0.1`을 열지 않습니다.
+
+## 폴더 판과 규격 잠금
+
+같은 PC면 `GET /api/v2/handoff/folders`로 `inputs/handoff/` 패키지와 `handoff-materials/` 클립을 봅니다. 원격이면 이 PC 화면이 그 폴더를 한 줄로 접어둡니다. 펼치면 목록이 왼쪽, 미리보기가 옆입니다. 파일을 오른쪽 클릭하면 미리보기, 크게 보기, 원본 파일 보기, 삭제를 고릅니다. 프로젝트 원본은 지울 수 없습니다.
+
+화질은 운영자가 규격에서 정한 값입니다. 봇은 화질을 바꾸지 않습니다. 화면 비율과 자막은 운영자가 설정 탭에서 바꿀 수 있습니다. 템포·룩·추가 클립·훅·오디오도 필요할 때 바꿉니다. 잠긴 이유는 그 화면에 적혀 있습니다.
+
+## 하지 않는 것
+
+- Cursor만 편집 봇으로 고정하기
+- 원격 에이전트가 loopback API를 호출하게 하기
+- `/agent` 레거시 콘솔을 Cursor Cloud Agent 연결로 쓰기. 그 페이지는 프롬프트 계약 초안입니다.

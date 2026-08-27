@@ -28,9 +28,56 @@ def test_workspace_path_rejects_traversal_outside_workspace(studio):
         studio.workspace_path("../../../../Windows/win.ini")
 
 
+def test_git_remote_and_branch_reject_injection():
+    with pytest.raises(ValueError):
+        config.require_git_remote("-u")
+    with pytest.raises(ValueError):
+        config.require_git_remote("ext::sh -c evil")
+    with pytest.raises(ValueError):
+        config.require_git_remote("file:///tmp/repo")
+    with pytest.raises(ValueError):
+        config.require_git_remote("https://example.com/repo.git\n-c core.sshCommand=evil")
+    with pytest.raises(ValueError):
+        config.require_git_remote("https://example.com/repo.git?upload-pack=evil")
+    assert config.require_git_remote("https://github.com/NoLucas/handoff-inbox.git")
+    assert config.require_git_remote("git@github.com:NoLucas/handoff-inbox.git")
+    assert config.require_git_branch("handoff-inbox") == "handoff-inbox"
+    with pytest.raises(ValueError):
+        config.require_git_branch("-delete")
+    with pytest.raises(ValueError):
+        config.require_git_branch("../main")
+
+
 def test_workspace_path_rejects_absolute_path_outside_workspace(studio):
     with pytest.raises(ValueError):
         studio.workspace_path("C:/Windows/win.ini" if os.name == "nt" else "/etc/passwd")
+
+
+def test_original_asset_path_rejects_absolute_path_outside_workspace(studio):
+    from render import original_asset_path
+
+    with pytest.raises(ValueError):
+        original_asset_path({"path": "C:/Windows/win.ini" if os.name == "nt" else "/etc/passwd"})
+
+
+def test_validate_timeline_rejects_asset_path_outside_workspace(studio):
+    from desktop_domain import validate_timeline
+
+    timeline = {
+        "schema": "grok-crew.timeline/v2",
+        "revision": 1,
+        "settings": {"width": 1080, "height": 1920, "fps": 30, "quality": "balanced"},
+        "assets": [{
+            "id": "leak",
+            "kind": "video",
+            "name": "Outside",
+            "path": "C:/Windows/win.ini" if os.name == "nt" else "/etc/passwd",
+        }],
+        "tracks": [],
+        "markers": [],
+    }
+    with pytest.raises(ValueError, match="workspace"):
+        validate_timeline(timeline)
 
 
 # -- validated_edit_method ----------------------------------------------------
@@ -77,6 +124,18 @@ def test_parse_allowed_origins_accepts_comma_separated_override():
     assert origins == frozenset({"https://studio.example.com", "http://localhost:5173"})
 
 
+def test_loopback_preview_ports_are_allowed_without_env_override():
+    defaults = config.parse_allowed_origins("")
+    assert config.origin_is_allowed("http://127.0.0.1:43123", defaults) is True
+    assert config.origin_is_allowed("http://localhost:43127", defaults) is True
+    assert config.origin_is_allowed("http://evil.example", defaults) is False
+    assert config.origin_is_allowed("https://127.0.0.1.evil.example", defaults) is False
+    assert config.origin_is_allowed(None, defaults) is True
+    assert config.origin_is_allowed("", defaults) is False
+    assert config.origin_is_allowed("   ", defaults) is False
+    assert config.origin_is_allowed("null", defaults) is False
+
+
 # -- render._smooth_gain_targets: the music-ducking envelope follower (pure Python,
 # -- no MoviePy/numpy needed, so it stays covered even though the rest of render.py
 # -- requires ffmpeg and isn't unit tested here) -------------------------------------
@@ -116,6 +175,18 @@ def test_quality_report_flags_zero_length_clip(studio):
     report = studio.quality_report(project["id"], "pre_render", {})
     checks = {check["rule"]: check for check in report["payload"]["checks"]}
     assert checks["clip_ranges"]["level"] == "error"
+
+
+def test_quality_and_inspect_reject_source_outside_workspace(studio):
+    import db
+
+    project = make_project(studio, [{"in": 0.0, "out": 1.0, "keep": True}])
+    with db.db() as conn:
+        conn.execute("UPDATE projects SET source_path = ? WHERE id = ?", ("/etc/passwd", project["id"]))
+    with pytest.raises(ValueError, match="inside local_studio/workspace"):
+        studio.quality_report(project["id"], "pre_render", {})
+    with pytest.raises(ValueError, match="inside local_studio/workspace"):
+        studio.inspect_project_media(project["id"], {})
 
 
 # -- job lifecycle -------------------------------------------------------------

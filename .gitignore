@@ -10,6 +10,8 @@
 
 # testing
 /coverage
+/tmp/
+/data/
 
 # next.js
 /.next/
@@ -35,6 +37,9 @@ yarn-error.log*
 .vercel
 next-env.d.ts
 /dist/
+/build/
+/release/
+/public/GrokCrew-Windows.exe
 /.wrangler/
 /outputs/
 /work/

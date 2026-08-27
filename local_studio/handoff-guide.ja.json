@@ -1,13 +1,80 @@
 {
   "schema": "local-video-workspace.handoff-guide/v1",
-  "purpose": "Local Studio のループバック API に直接アクセスできないリモート/クラウドホストのボットのための契約です。このPCへのネットワーク呼び出しの代わりに、専用の git ブランチを通じて完成した素材と編集計画を引き継ぎます。",
+  "purpose": "Local Studio のループバック API に直接アクセスできないリモート/クラウドボット向けの契約です。操作者は仕様だけ書きます。ボットが素材と編集を作り、このPCへ接続せず専用 git ブランチで渡します。",
+  "roles": {
+    "operator": "仕様だけ書く（タイトル、目的、長さ、字幕、ルック）。ドアは編集（フォルダ editor/）か収集・他エージェント（フォルダ collector/）のどちらか一方。保存するとそのドアの送信箱に spec.json が入る。原版は付けない。",
+    "grok_door": "編集ドア。フォルダ名は editor/。残った grok/ は読み取りだけ。割り当てた編集ボットだけ。Runner ペアリングもこのドアだけ。collector/ は使わない。",
+    "other_agent_door": "収集・他エージェントドア。フォルダ名は collector/。残った agents/ は読み取りだけ。割り当てた収集ボット、またはクルー以外の他エージェント。editor/ と Runner は使わない。",
+    "bot": "自分のドアの送信箱から spec.json を読み、素材を用意して編集し、動画ファイルと edit_spec_id・project.door 入りの bundle.json を同じドアの受信箱へ push する。操作者が決めた画質はそのまま。画面比と字幕は設定で変えられる。テンポ・ルック・B-roll・フック・音声は操作者がデスクで後から変えられる。"
+  },
+  "operator_locks": {
+    "locked": ["quality"],
+    "reason": "画質だけがデスクで決めた値です。カットや render_settings で画質を変えないでください。画面比と字幕は設定で変えられます。残りの編集操作は操作者に開いています。",
+    "folder_board": "パッケージを置いたあと、操作者はデスクで inputs/handoff/ または handoff-materials/ を開きます。一覧は左、プレビューは横です。右クリックでプレビュー・拡大・原本表示・削除を選びます。消したファイルは使わないでください。リモートボットは 127.0.0.1 に接続しません。"
+  },
+  "style_recipes": {
+    "purpose": "名前付きレシピが長さ、画面比、フック、速度、字幕、ルック、収集ヒントを埋める。ドアではない。",
+    "ids": ["instagram_reel", "tiktok_tight", "youtube_short", "youtube_long"]
+  },
+  "source_modes": {
+    "collect": "収集ボットがクリップを集める。送信箱は二つ。状態は waiting_for_collector。",
+    "own": "操作者のファイルだけ。編集送信箱だけ。状態は waiting_for_editor。",
+    "own_and_collect": "操作者の本編＋収集 Bロール。送信箱は二つ。owned クリップは残す。"
+  },
+  "crew": {
+    "purpose": "仕様は一つ、ボットは二人。収集ボットが素材を集め、編集ボットがそのクリップだけ切る。このデスクはサイトを掻かない。",
+    "collector": {
+      "door": "collector",
+      "outbox": "local_studio/workspace/handoff-outbox/collector/{edit_spec_id}/",
+      "drop": "local_studio/workspace/handoff-materials/{edit_spec_id}/",
+      "git_drop": "materials/{edit_spec_id}/",
+      "files": ["manifest.json", "source clips"],
+      "clip_fields": ["file", "origin (owned|collected|bundled-sample)", "license (operator|stock|public|unknown)", "source_url"],
+      "do_not": "完成カットを受信箱に入れない。操作者が使ってよい出典だけ集める。ログイン壁の Instagram/TikTok は掻かない。owned クリップは消さない。"
+    },
+    "editor": {
+      "door": "editor",
+      "outbox": "local_studio/workspace/handoff-outbox/editor/{edit_spec_id}/",
+      "read": "local_studio/workspace/handoff-materials/{edit_spec_id}/manifest.json",
+      "return": "local_studio/workspace/handoff-inbox/editor/",
+      "git_return": "editor/"
+    }
+  },
+  "outbox": {
+    "purpose": "操作者が仕様を保存すると、このPCがそのドアの送信箱に spec.json と brief.txt を書く。ボットは自分のドアだけ読む。127.0.0.1 には接続しない。同じドアの受信箱がカットを受け取ると、送信箱フォルダは .processed/ へ移る。",
+    "schema": "grok-crew.outbox-spec/v1",
+    "local_root": "local_studio/workspace/handoff-outbox/",
+    "git_root": "outbox/",
+    "files": ["spec.json", "brief.txt"],
+    "rule": "自分のドアだけ読む。完成パッケージは同じドアの受信箱（editor/ または collector/）へ返す。outbox/ に映像を置かない。"
+  },
+  "doors": {
+    "editor": {
+      "outbox": "local_studio/workspace/handoff-outbox/editor/{edit_spec_id}/",
+      "git_outbox": "outbox/editor/{edit_spec_id}/",
+      "inbox": "local_studio/workspace/handoff-inbox/editor/",
+      "git_prefix": "editor/",
+      "bundle_project_door": "editor",
+      "created_by": "割り当てた編集ボット名",
+      "runner": true
+    },
+    "collector": {
+      "outbox": "local_studio/workspace/handoff-outbox/collector/{edit_spec_id}/",
+      "git_outbox": "outbox/collector/{edit_spec_id}/",
+      "inbox": "local_studio/workspace/handoff-inbox/collector/",
+      "git_prefix": "collector/",
+      "bundle_project_door": "collector",
+      "created_by": "割り当てた収集ボットまたは他エージェント名",
+      "runner": false
+    }
+  },
   "why_this_exists": "Local Studio は設計上 127.0.0.1 にのみバインドされ、別のマシンやコンテナからはアクセスできません(README.md と CONTRIBUTING.md を参照)。このチャネルはリモート API ではなくオフラインの引き継ぎであり、本リポジトリがリモートボットから受け付けるのは、下記に指定されたブランチへの git push だけです。",
   "channel": {
     "medium": "git",
     "repository": "https://github.com/NoLucas/handoff-inbox.git",
     "branch": "main",
     "rule": "本リポジトリの main ブランチにのみコミットを push してください。ローカル運用者のマシンに属する IP アドレスやホスト名に接続を試みないでください——このリポジトリだけが許可されたチャネルです。",
-    "folder_naming": "1回の提出につきトップレベルフォルダを1つ、'<UTC タイムスタンプ>-<短いスラッグ>' の形式で命名します(例: 2026-08-23T07-19-00Z-payoff-hook)。フォルダ名は提出ごとに一意である必要があり、重複検出に使われます。"
+    "folder_naming": "出す仕様は outbox/editor/{edit_spec_id}/ または outbox/collector/{edit_spec_id}/（spec.json + brief.txt）。戻すカットは editor/ または collector/ の下、名前は '<UTC タイムスタンプ>-<短いスラッグ>'（例: editor/2026-08-23T07-19-00Z-payoff-hook）。残った grok/ と agents/ 受信箱は読み取りだけ。outbox/ に映像を置かない。編集の受け取りは collector/ を取り込まず、収集の受け取りは editor/ を取り込みません。"
   },
   "limits": {
     "media_extensions": [".mp4", ".mov", ".mkv", ".avi", ".webm"],
@@ -28,6 +95,9 @@
         "output_path": "レンダー結果のワークスペース相対パス。例: outputs/handoff/<フォルダ名>.mp4",
         "timeline": { "clips": [{ "in": 0, "out": 1.4, "keep": true, "caption": "文字列", "word_timings": "任意、bot-guide.json を参照" }], "render_settings": "任意。Production の Finish Rack と同じフィールド(platform、quality、caption_bg、music_track など)" },
         "caption": "Instagram キャプションのテキスト、最大2200文字",
+        "edit_spec_id": "操作者の仕様を満たすときは必須 — 渡された id をそのまま入れる",
+        "door": "必須: editor または collector。grok と agent は別名として受け付ける。受信箱フォルダと仕様と一致させる",
+        "created_by": "デスクが送り主を見分ける名前。チェックインしたボット名、または操作者が書いた名前。Grok や Claude と決めつけない。",
         "handoff_auto_upload_requested": "真偽値、任意——下記 auto_upload_policy を参照"
       },
       "jobs": [

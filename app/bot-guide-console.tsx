@@ -44,6 +44,21 @@ type Guide = {
   };
   never: string[];
   heartbeat_example: Record<string, unknown>;
+  advanced_tools?: {
+    schema: string;
+    rule: string;
+    cli: string;
+    never: string[];
+    tools: Array<{
+      id: string;
+      url: string;
+      live: boolean;
+      name: string;
+      use_when: string;
+      never: string;
+      bot_api: { read: string[]; write: string[] };
+    }>;
+  };
 };
 
 const studio = "http://127.0.0.1:7214";
@@ -406,6 +421,34 @@ export default function BotGuideConsole() {
                   <h3>{page.name}</h3>
                   <p>{page.purpose}</p>
                   <small><b>{t("봇 사용", "Bot use", "机器人用途", "ボット利用")}</b>{page.bot_use}</small>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+        {guide.advanced_tools && (
+          <section className="guide-pages">
+            <div className="guide-section-head">
+              <p className="kicker">{t("고급 도구", "ADVANCED TOOLS", "高级工具", "高度なツール")}</p>
+              <h2>
+                {t("봇이 콘솔을", "Bots use the catalog,", "机器人用目录", "ボットはカタログを")}
+                <span> {t("API로 씁니다", "not the HTML", "而不是 HTML", "HTML ではなく API で使う")}</span>
+              </h2>
+              <p>{guide.advanced_tools.rule}</p>
+            </div>
+            <div className="guide-page-grid">
+              {guide.advanced_tools.tools.map((tool) => (
+                <article key={tool.id}>
+                  <div>
+                    <i>{tool.live ? t("실행", "LIVE", "运行", "稼働") : t("초안", "DRAFT", "草稿", "草案")}</i>
+                    <code>{tool.url}</code>
+                  </div>
+                  <h3>{tool.name}</h3>
+                  <p>{tool.use_when}</p>
+                  <small>
+                    <b>{t("봇 API", "Bot API", "机器人 API", "ボット API")}</b>
+                    {[...tool.bot_api.read, ...tool.bot_api.write].join(" · ") || t("없음", "none", "无", "なし")}
+                  </small>
                 </article>
               ))}
             </div>
