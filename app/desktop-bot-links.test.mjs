@@ -8,6 +8,7 @@ const {
   emptyBotLinks,
   hasConnectedBot,
   linkedByKind,
+  linkedBySeat,
   parseConnectReply,
   remoteConnectPaste,
   suggestedConnectReply,
@@ -26,21 +27,26 @@ describe('remote bot links', () => {
       parseConnectReply('first line\nGROK_CREW_OK 7K2M9Q Grok\n', '7K2M9Q'),
       { name: 'Grok' },
     );
-    assert.equal(suggestedConnectReply('grok', '7K2M9Q'), 'GROK_CREW_OK 7K2M9Q Grok Bot');
+    assert.equal(suggestedConnectReply('grok', '7K2M9Q', 'planner'), 'GROK_CREW_OK 7K2M9Q Grok Bot 기획자');
+    assert.equal(suggestedConnectReply('custom', '7K2M9Q', 'scraper'), 'GROK_CREW_OK 7K2M9Q Agent 스크래핑');
+    assert.equal(suggestedConnectReply('grok', '7K2M9Q', 'editor'), 'GROK_CREW_OK 7K2M9Q Grok Bot 편집자');
   });
 
-  it('remote paste never points at a clone or this PC API', () => {
+  it('remote paste includes the role skill and never points at a clone or this PC API', () => {
     for (const language of ['ko', 'en', 'zh', 'ja']) {
-      const text = remoteConnectPaste('grok', '7K2M9Q', language);
-      assert.match(text, /Grok/);
+      const text = remoteConnectPaste('grok', '7K2M9Q', language, 'planner');
+      assert.match(text, /Grok Bot/);
       assert.match(text, /7K2M9Q/);
       assert.match(text, /GROK_CREW_OK 7K2M9Q Grok Bot/);
       assert.match(text, /127\.0\.0\.1/);
+      assert.match(text, /grok-crew-planner/);
       assert.doesNotMatch(text, /Claude/);
       assert.doesNotMatch(text, /Cursor/);
       assert.doesNotMatch(text, /git clone/);
       assert.doesNotMatch(text, /bot-entry/);
     }
+    assert.match(remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper'), /Agent 스크래핑/);
+    assert.match(remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper'), /grok-crew-scraper/);
   });
 
   it('treats a linked remote bot as connected and ignores waiting', () => {
@@ -87,5 +93,17 @@ describe('remote bot links', () => {
     });
     assert.equal(linkedByKind(mixed.bots, 'grok')?.status, 'connected');
     assert.equal(linkedByKind(waiting.bots, 'cursor'), undefined);
+    const seated = upsertLinkedBot(emptyBotLinks(), {
+      id: 'g-plan',
+      name: 'Grok Bot 기획자',
+      kind: 'grok',
+      role: 'planner',
+      place: 'other_pc',
+      status: 'connected',
+      pairCode: '7K2M9Q',
+    });
+    assert.equal(linkedBySeat(seated.bots, 'grok', 'planner')?.name, 'Grok Bot 기획자');
+    assert.equal(linkedBySeat(seated.bots, 'grok', 'editor'), undefined);
+    assert.equal(linkedBySeat(mixed.bots, 'grok', 'editor')?.status, 'connected');
   });
 });

@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Connect Other-PC seats are **Grok Bot** and **Agent**, each as planner, scraper, and editor. Built-in skills live in `public/bot-skills/` and are pasted on connect. Auto is a planner prompt (URL or how to edit); scrape can seed from that prompt; after a cut you can tell the planner again. The desk still does not scrape. No new `/api/v2` field.
 - The Connect row formerly labeled Runner is now **Grok 제작기** / Grok builder. It is this app’s Grok Build worker, not AWS or GitHub Actions, and not the Grok Bot chat you paste into. Internal `runner_id` contracts stay.
 - Connect Other-PC cards are **Grok Bot** and a custom agent only. Claude and Cursor brand rows are gone — those products do not offer a pairing API. Same-PC check-in stays. The suggested Grok reply is `GROK_CREW_OK <code> Grok Bot`.
 - The public site track is closed. This repo no longer serves `/get`, does not rewrite `/` into a landing page, and does not let chatgpt.site call `POST /api/get`. Get the Windows file from the GitHub Release. The lock is `docs/HOMEPAGE.ko.md`.

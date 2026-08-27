@@ -3,7 +3,7 @@ import type { DeskPullStatus, DeskWaitState } from './desktop-wait-state';
 
 export const AUTO_PREFS_KEY = 'grok-crew-auto-prefs';
 export const RECIPE_ORDER = ['instagram_reel', 'tiktok_tight', 'youtube_short', 'youtube_long'] as const;
-export const PASTE_TARGET = 'Grok Bot';
+export const PASTE_TARGET = 'Grok Bot 기획자';
 export const DEFAULT_RECIPE_ID = 'instagram_reel';
 
 export type AutoMode = 'hand_off' | 'own_file';
@@ -41,6 +41,13 @@ export type AutoJobInput = {
   collectQuery?: string;
 };
 
+export function titleFromPrompt(title: string, goal = ''): string {
+  const heading = String(title || '').trim();
+  if (heading) return heading;
+  const first = String(goal || '').trim().split(/\r?\n/).find((line) => line.trim());
+  return first ? first.trim().slice(0, 80) : '';
+}
+
 export function cleanOwnedPaths(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
@@ -68,20 +75,21 @@ export function autoSourceMode(input: { useOwn?: boolean; useScrape?: boolean })
 }
 
 export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
-  const heading = String(input.title || '').trim();
+  const prompt = String(input.goal || '').trim();
+  const heading = titleFromPrompt(input.title, prompt);
   const ownedPaths = cleanOwnedPaths(input.ownedPaths);
   const useOwn = Boolean(input.useOwn && ownedPaths.length);
   const useScrape = Boolean(input.useScrape);
   const sourceMode = autoSourceMode({ useOwn, useScrape }) || 'own';
   const body: Record<string, unknown> = {
     title: heading,
-    goal: String(input.goal || '').trim() || heading,
+    goal: prompt || heading,
     recipe_id: input.recipeId,
     source_mode: sourceMode,
     language: input.language,
     upload: false,
   };
-  if (useScrape) body.collect_query = String(input.collectQuery || '').trim();
+  if (useScrape) body.collect_query = String(input.collectQuery || '').trim() || prompt;
   if (useOwn) body.owned_paths = ownedPaths;
   return body;
 }
@@ -195,19 +203,22 @@ export function suggestRecipeId(text: string, lastRecipeId?: string): string {
 export function canStartAuto(input: {
   title: string;
   attached: boolean;
+  goal?: string;
   useOwn?: boolean;
   useScrape?: boolean;
   ownedPaths?: string[];
   collectQuery?: string;
 }): AutoStartCheck {
-  if (!String(input.title || '').trim()) return { ok: false, reason: 'title' };
+  if (!titleFromPrompt(input.title, input.goal)) return { ok: false, reason: 'title' };
   if (!input.attached) return { ok: false, reason: 'connect' };
   const ownedPaths = cleanOwnedPaths(input.ownedPaths);
   const useOwn = Boolean(input.useOwn);
   const useScrape = Boolean(input.useScrape);
+  const prompt = String(input.goal || '').trim();
+  const scrapeList = String(input.collectQuery || '').trim() || prompt;
   if (!useOwn && !useScrape) return { ok: false, reason: 'materials' };
   if (useOwn && !ownedPaths.length) return { ok: false, reason: 'materials' };
-  if (useScrape && !String(input.collectQuery || '').trim()) return { ok: false, reason: 'materials' };
+  if (useScrape && !scrapeList) return { ok: false, reason: 'materials' };
   return { ok: true };
 }
 

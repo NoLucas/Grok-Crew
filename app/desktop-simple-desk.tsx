@@ -36,7 +36,7 @@ type SimpleDeskProps = {
 };
 
 const RECIPE_ORDER = ['instagram_reel', 'tiktok_tight', 'youtube_short', 'youtube_long'] as const;
-const PASTE_TARGET = 'Grok Bot';
+const PASTE_TARGET = 'Grok Bot 기획자';
 
 function localized(map: { ko?: string; en?: string; zh?: string; ja?: string } | undefined, language: string, fallback: string) {
   if (!map) return fallback;

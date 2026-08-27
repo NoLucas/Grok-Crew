@@ -22,6 +22,7 @@ const {
   shouldAskReplaceCut,
   shouldPingCut,
   suggestRecipeId,
+  titleFromPrompt,
   waitElapsedSeconds,
   writeAutoPrefs,
 } = await import('./desktop-auto-state.ts');
@@ -66,6 +67,13 @@ describe('auto desk start rules', () => {
       useOwn: true,
       ownedPaths: ['/tmp/sign.png'],
     }), { ok: true });
+    assert.equal(titleFromPrompt('', '카페 오픈 15초\n손과 간판'), '카페 오픈 15초');
+    assert.deepEqual(canStartAuto({
+      title: '',
+      goal: 'https://example.com/open',
+      attached: true,
+      useScrape: true,
+    }), { ok: true });
   });
 });
 
@@ -87,6 +95,21 @@ describe('auto desk job payload', () => {
       language: 'ko',
       upload: false,
       collect_query: '카페 오픈 공개 클립',
+    });
+    assert.deepEqual(autoJobPayload({
+      title: '',
+      goal: 'https://example.com/open',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useScrape: true,
+    }), {
+      title: 'https://example.com/open',
+      goal: 'https://example.com/open',
+      recipe_id: 'instagram_reel',
+      source_mode: 'collect',
+      language: 'ko',
+      upload: false,
+      collect_query: 'https://example.com/open',
     });
     assert.deepEqual(autoJobPayload({
       title: '내 컷',

@@ -3,14 +3,15 @@
 import { useMemo, useState } from 'react';
 import { connectPaste, connectedBot, type CrewRoster } from './desktop-bot-connect';
 import { botSeenSeconds, formatSince } from './desktop-auto-state';
+import { BOT_ROLES, roleLabel, seatName, type BotRole } from './bot-skills';
 import {
-  type BotKind,
   type BotLinkState,
   type LinkedBot,
-  linkedByKind,
+  linkedBySeat,
   parseConnectReply,
   remoteConnectPaste,
   removeLinkedBot,
+  seatId,
   suggestedConnectReply,
   upsertLinkedBot,
   writeBotLinks,
@@ -50,10 +51,16 @@ type BotPanelProps = {
   onOpenOwnFile?: () => void;
 };
 
-const OTHER_KINDS: Array<{ id: Exclude<BotKind, 'same_pc'>; ko: string; en: string; zh: string; ja: string }> = [
+const OTHER_FAMILIES: Array<{ id: 'grok' | 'custom'; ko: string; en: string; zh: string; ja: string }> = [
   { id: 'grok', ko: 'Grok Bot', en: 'Grok Bot', zh: 'Grok Bot', ja: 'Grok Bot' },
-  { id: 'custom', ko: '내가 만든 에이전트', en: 'My agent', zh: '我做的智能体', ja: '自分のエージェント' },
+  { id: 'custom', ko: 'Agent', en: 'Agent', zh: 'Agent', ja: 'Agent' },
 ];
+
+type OtherSeat = { kind: 'grok' | 'custom'; role: BotRole };
+
+const OTHER_SEATS: OtherSeat[] = OTHER_FAMILIES.flatMap((family) => (
+  BOT_ROLES.map((role) => ({ kind: family.id, role }))
+));
 
 function Lamp({ on, label }: { on: boolean; label: string }) {
   return (
@@ -75,7 +82,7 @@ export function DesktopBotPanel({
   onOpenOwnFile,
 }: BotPanelProps) {
   const { language, t } = useLanguage();
-  const [openKind, setOpenKind] = useState<Exclude<BotKind, 'same_pc'>>('grok');
+  const [openSeat, setOpenSeat] = useState<OtherSeat>({ kind: 'grok', role: 'planner' });
   const [copied, setCopied] = useState('');
   const [blockedKind, setBlockedKind] = useState('');
   const [paste, setPaste] = useState('');
@@ -85,20 +92,21 @@ export function DesktopBotPanel({
   const connected = Boolean(local) || Boolean(liveLink);
   const seenSeconds = botSeenSeconds(roster, liveLink?.connectedAt);
   const seenLabel = seenSeconds === null ? '' : formatSince(seenSeconds, language);
+  const openKey = `${openSeat.kind}-${openSeat.role}`;
 
   const connectText = useMemo(
-    () => remoteConnectPaste(openKind, links.pairCode, language),
-    [language, links.pairCode, openKind],
+    () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role),
+    [language, links.pairCode, openSeat.kind, openSeat.role],
   );
   const localText = useMemo(() => connectPaste(language), [language]);
 
-  const markWaiting = (kind: Exclude<BotKind, 'same_pc'>) => {
+  const markWaiting = (seat: OtherSeat) => {
     if (!links.pairCode) return;
-    const found = OTHER_KINDS.find((item) => item.id === kind);
     const waiting: LinkedBot = {
-      id: `${kind}-${links.pairCode}`,
-      name: found ? t(found.ko, found.en, found.zh, found.ja) : kind,
-      kind,
+      id: seatId(seat.kind, seat.role, links.pairCode),
+      name: seatName(seat.kind, seat.role, language),
+      kind: seat.kind,
+      role: seat.role,
       place: 'other_pc',
       status: 'waiting',
       pairCode: links.pairCode,
@@ -108,21 +116,21 @@ export function DesktopBotPanel({
     onLinksChange(next);
   };
 
-  const copyRemote = async (kind: Exclude<BotKind, 'same_pc'>) => {
+  const copyRemote = async (seat: OtherSeat) => {
     setError('');
     setBlockedKind('');
-    setOpenKind(kind);
-    if (links.pairCode) setPaste(suggestedConnectReply(kind, links.pairCode));
-    const text = remoteConnectPaste(kind, links.pairCode, language);
+    setOpenSeat(seat);
+    if (links.pairCode) setPaste(suggestedConnectReply(seat.kind, links.pairCode, seat.role));
+    const text = remoteConnectPaste(seat.kind, links.pairCode, language, seat.role);
     try {
       if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
       await navigator.clipboard.writeText(text);
-      setCopied(kind);
+      setCopied(`${seat.kind}-${seat.role}`);
       window.setTimeout(() => setCopied(''), 4000);
-      markWaiting(kind);
+      markWaiting(seat);
     } catch {
-      setBlockedKind(kind);
-      markWaiting(kind);
+      setBlockedKind(`${seat.kind}-${seat.role}`);
+      markWaiting(seat);
     }
     await onRefresh();
   };
@@ -141,8 +149,8 @@ export function DesktopBotPanel({
     await onRefresh();
   };
 
-  const confirmReply = (kind: Exclude<BotKind, 'same_pc'>) => {
-    const source = paste.trim() || (links.pairCode ? suggestedConnectReply(kind, links.pairCode) : '');
+  const confirmReply = (seat: OtherSeat) => {
+    const source = paste.trim() || (links.pairCode ? suggestedConnectReply(seat.kind, links.pairCode, seat.role) : '');
     const parsed = parseConnectReply(source, links.pairCode);
     if (!parsed) {
       if (!links.pairCode) {
@@ -155,9 +163,10 @@ export function DesktopBotPanel({
       return;
     }
     const next = upsertLinkedBot(links, {
-      id: `${kind}-${links.pairCode}`,
+      id: seatId(seat.kind, seat.role, links.pairCode),
       name: parsed.name,
-      kind,
+      kind: seat.kind,
+      role: seat.role,
       place: 'other_pc',
       status: 'connected',
       pairCode: links.pairCode,
@@ -180,7 +189,7 @@ export function DesktopBotPanel({
       <div className="desktop-spec-hero">
         <span>✦</span>
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('봇·Grok 제작기·GitHub 연결은 전부 여기서 합니다. 다른 PC가 맨 위입니다. 설정·편집·내보내기는 봇이 붙은 뒤에 켜집니다.', 'Every bot, Grok builder, and GitHub link lives here. Other PCs stay at the top. Setup, Edit, and Export turn on after a bot is attached.', '机器人、Grok 制作器、GitHub 都在这里连接。另一台电脑在最上面。设置、编辑、导出要等机器人接上后才打开。', 'ボット・Grok 制作機・GitHub の接続は全部ここです。別 PC が一番上。設定・編集・書き出しはボットが付いてから開きます。')}</p>
+        <p>{t('다른 PC는 Grok Bot과 Agent를 기획자·스크래핑·편집자로 붙입니다. 붙으면 그 역할 스킬을 읽습니다. 설정·편집·내보내기는 봇이 붙은 뒤에 켜집니다.', 'Other-PC seats are Grok Bot and Agent as planner, scraper, and editor. A connected bot reads that role skill. Setup, Edit, and Export turn on after a bot is attached.', '另一台电脑把 Grok Bot 和 Agent 接成策划、抓取、剪辑。接上后阅读该角色技能。设置、编辑、导出要等机器人接上后才打开。', '別 PC は Grok Bot と Agent を企画・収集・編集で付けます。付くとその役割スキルを読みます。設定・編集・書き出しはボットが付いてから開きます。')}</p>
       </div>
 
       <section className={`desktop-simple-card desktop-connect-summary${connected ? ' is-ready' : ''}`} aria-live="polite">
@@ -192,30 +201,32 @@ export function DesktopBotPanel({
         />
         <p>{connected
           ? t('붙은 이름 옆의 초록불과 마지막 확인이 연결됨입니다. 끊기는 각 줄에서 합니다.', 'The green light and last check next to a name mean connected. Remove it on that row.', '名字旁边的绿灯和上次确认就是已连接。断开在该行操作。', '名前の横の緑と最後の確認が接続済みです。切るはその行で。')
-          : t('다른 PC의 Grok Bot이나 내가 만든 에이전트부터 붙이세요.', 'Attach Grok Bot or your agent on another PC first.', '先接另一台电脑上的 Grok Bot 或自己的智能体。', '先に別 PC の Grok Bot か自分のエージェントを付けてください。')}</p>
+          : t('다른 PC의 Grok Bot 또는 Agent를 기획자·스크래핑·편집자로 붙이세요.', 'Attach a Grok Bot or Agent as planner, scraper, or editor on another PC first.', '先接另一台电脑上的 Grok Bot 或 Agent，角色是策划、抓取或剪辑。', '先に別 PC の Grok Bot か Agent を企画・収集・編集で付けてください。')}</p>
       </section>
 
       <section className="desktop-simple-card">
         <h2>{t('다른 PC', 'Other PC', '另一台电脑', '別の PC')}</h2>
-        <p>{t('Grok Bot이나 내가 만든 에이전트는 연결 글을 그 창에 붙인 뒤, 봇이 보낸 한 줄을 다시 붙입니다. 그 봇은 이 주소를 열 수 없습니다.', 'Grok Bot or your agent pastes the connect line, then you paste its one-line reply. That bot cannot open this address.', 'Grok Bot 或自己的智能体先贴连接文字，再把它们回的一行贴回来。那个机器人打不开这个地址。', 'Grok Bot か自分のエージェントは接続文を貼り、返ってきた一行を戻します。そのボットはこの住所を開けません。')}</p>
+        <p>{t('연결 글에 그 역할 스킬이 들어 있습니다. 창에 붙인 뒤, 봇이 보낸 한 줄을 다시 붙입니다. 그 봇은 이 주소를 열 수 없습니다.', 'The connect text includes that role skill. Paste it, then paste the one-line reply. That bot cannot open this address.', '连接文字里有该角色技能。贴过去，再把回的一行贴回来。那个机器人打不开这个地址。', '接続文にその役割スキルが入っています。貼って、返ってきた一行を戻します。そのボットはこの住所を開けません。')}</p>
         {links.pairCode ? <p className="desktop-spec-meta">{t(`연결 코드 ${links.pairCode}`, `Code ${links.pairCode}`, `连接代码 ${links.pairCode}`, `接続コード ${links.pairCode}`)}</p> : null}
         <ul className="desktop-bot-list">
-          {OTHER_KINDS.map((item) => {
-            const row = linkedByKind(links.bots, item.id);
+          {OTHER_SEATS.map((seat) => {
+            const row = linkedBySeat(links.bots, seat.kind, seat.role);
             const on = row?.status === 'connected';
-            const open = openKind === item.id && !on;
+            const key = `${seat.kind}-${seat.role}`;
+            const open = openKey === key && !on;
+            const label = seatName(seat.kind, seat.role, language);
             return (
-              <li key={item.id} className={on ? 'is-connected' : ''}>
+              <li key={key} className={on ? 'is-connected' : ''}>
                 <div className="desktop-connect-row">
                 <div>
-                  <b>{t(item.ko, item.en, item.zh, item.ja)}</b>
+                  <b>{label}</b>
                   <Lamp
                     on={on}
                     label={on
-                      ? t(`연결됨 · ${row?.name || item.ko}`, `Connected · ${row?.name || item.en}`, `已连接 · ${row?.name || item.zh}`, `接続済み · ${row?.name || item.ja}`)
+                      ? t(`연결됨 · ${row?.name || label}`, `Connected · ${row?.name || label}`, `已连接 · ${row?.name || label}`, `接続済み · ${row?.name || label}`)
                       : row?.status === 'waiting'
                         ? t('답 기다리는 중', 'Waiting for the reply', '等待回复', '返信待ち')
-                        : t('아직 아님', 'Not yet', '还没有', 'まだ')}
+                        : t(`${roleLabel(seat.role, language)} · 아직 아님`, `${roleLabel(seat.role, 'en')} · not yet`, `${roleLabel(seat.role, 'zh')} · 还没有`, `${roleLabel(seat.role, 'ja')} · まだ`)}
                   />
                 </div>
                 <div className="desktop-simple-copy-row">
@@ -227,15 +238,15 @@ export function DesktopBotPanel({
                         type="button"
                         className="desktop-primary"
                         disabled={!studioReady || !links.pairCode}
-                        onClick={() => { setOpenKind(item.id); void copyRemote(item.id); }}
+                        onClick={() => { setOpenSeat(seat); void copyRemote(seat); }}
                       >
-                        {copied === item.id ? t('복사했습니다', 'Copied', '已复制', 'コピーしました') : t('연결 글 복사', 'Copy the connect text', '复制连接文字', '接続文をコピー')}
+                        {copied === key ? t('복사했습니다', 'Copied', '已复制', 'コピーしました') : t('연결 글 복사', 'Copy the connect text', '复制连接文字', '接続文をコピー')}
                       </button>
                       {open ? null : (
                         <button type="button" className="desktop-secondary" onClick={() => {
-                          setOpenKind(item.id);
+                          setOpenSeat(seat);
                           setError('');
-                          if (links.pairCode) setPaste(suggestedConnectReply(item.id, links.pairCode));
+                          if (links.pairCode) setPaste(suggestedConnectReply(seat.kind, links.pairCode, seat.role));
                         }}>
                           {t('답 붙이기', 'Paste the reply', '贴回复', '返信を貼る')}
                         </button>
@@ -250,9 +261,9 @@ export function DesktopBotPanel({
                     <input
                       value={paste}
                       onChange={(event) => setPaste(event.currentTarget.value)}
-                      placeholder={links.pairCode ? suggestedConnectReply(item.id, links.pairCode) : `GROK_CREW_OK CODE ${item.en}`}
+                      placeholder={links.pairCode ? suggestedConnectReply(seat.kind, links.pairCode, seat.role) : `GROK_CREW_OK CODE ${label}`}
                     />
-                    <button type="button" className="desktop-secondary" disabled={!links.pairCode} onClick={() => confirmReply(item.id)}>
+                    <button type="button" className="desktop-secondary" disabled={!links.pairCode} onClick={() => confirmReply(seat)}>
                       {t('이 줄로 연결', 'Connect with this line', '用这行连接', 'この行で接続')}
                     </button>
                   </label>

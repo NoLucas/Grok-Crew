@@ -14,6 +14,7 @@ import {
   botSeenSeconds,
   canStartAuto,
   droppedFilePath,
+  titleFromPrompt,
   formatElapsed,
   formatSince,
   readAutoPrefs,
@@ -29,6 +30,7 @@ import {
   type AutoMode,
   type AutoPhaseId,
 } from './desktop-auto-state';
+import { withCrewInvite } from './bot-skills';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { DesktopNewsCard } from './desktop-news-card';
 import { useLanguage } from './language';
@@ -123,7 +125,8 @@ export function AutoDesk({
   const [ownOver, setOwnOver] = useState(false);
   const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
   const [recipeTouched, setRecipeTouched] = useState(false);
-  const recipeId = recipeTouched ? pickedRecipeId : suggestRecipeId(title, prefs.recipeId);
+  const recipeId = recipeTouched ? pickedRecipeId : suggestRecipeId(`${title} ${goal}`, prefs.recipeId);
+  const [revisePrompt, setRevisePrompt] = useState('');
   const [saving, setSaving] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -187,6 +190,7 @@ export function AutoDesk({
         : t('자료 아직 없음', 'No materials yet', '还没有资料', '資料はまだない');
   const startReady = canStartAuto({
     title,
+    goal,
     attached,
     useOwn,
     useScrape,
@@ -234,11 +238,14 @@ export function AutoDesk({
     }
   }, [language, pullStatus, t, wait?.specId, wait?.title]);
 
-  const startJob = async () => {
-    const check = canStartAuto({ title, attached, useOwn, useScrape, ownedPaths, collectQuery });
+  const startJob = async (again = '') => {
+    const nextGoal = again.trim()
+      ? t(`다시: ${again.trim()}${goal.trim() ? `\n\n${goal.trim()}` : ''}`, `Again: ${again.trim()}${goal.trim() ? `\n\n${goal.trim()}` : ''}`, `再来：${again.trim()}${goal.trim() ? `\n\n${goal.trim()}` : ''}`, `やり直し: ${again.trim()}${goal.trim() ? `\n\n${goal.trim()}` : ''}`)
+      : goal;
+    const check = canStartAuto({ title, goal: nextGoal, attached, useOwn, useScrape, ownedPaths, collectQuery });
     if (!check.ok) {
       setError(check.reason === 'title'
-        ? t('오늘 올릴 말을 적어 주세요.', 'Write what you will post today.', '请写下今天要发的话。', '今日出す言葉を書いてください。')
+        ? t('기획자에게 영상 주소나 원하는 편집을 적어 주세요.', 'Tell the planner a video URL or how to edit.', '请对策划写下视频地址或想要的剪法。', '企画者に映像の住所か編集方法を書いてください。')
         : check.reason === 'materials'
           ? !useOwn && !useScrape
             ? t('자료를 내가 넣을지, 스크랩 봇이 가져올지 고르세요.', 'Choose my files, the scrape bot, or both.', '请选择放自己的文件、让抓取机器人去取，或两者。', '自分のファイルか、収集ボットか、両方を選んでください。')
@@ -248,7 +255,7 @@ export function AutoDesk({
         : t('먼저 연결하세요.', 'Connect first.', '请先连接。', '先に接続してください。'));
       return;
     }
-    const heading = title.trim();
+    const heading = titleFromPrompt(title, nextGoal);
     setSaving(true);
     setError('');
     setSendFailed(false);
@@ -258,7 +265,7 @@ export function AutoDesk({
         method: 'POST',
         body: JSON.stringify(autoJobPayload({
           title: heading,
-          goal,
+          goal: nextGoal,
           recipeId,
           language,
           useOwn,
@@ -270,9 +277,13 @@ export function AutoDesk({
       const record = created.edit_spec as { id?: string };
       if (!record?.id) throw new Error(t('규격을 저장하지 못했습니다.', 'Could not save the spec.', '无法保存规格。', '仕様を保存できませんでした。'));
       const invite = await request(`/api/v2/edit-specs/${record.id}/invite?lang=${encodeURIComponent(language)}`);
-      const text = String(invite.text || '');
-      if (!text) throw new Error(t('초대문을 만들지 못했습니다.', 'Could not make the invite.', '无法生成邀请。', '招待文を作れませんでした。'));
+      const text = withCrewInvite(String(invite.text || ''), language);
+      if (!text.trim()) throw new Error(t('초대문을 만들지 못했습니다.', 'Could not make the invite.', '无法生成邀请。', '招待文を作れませんでした。'));
       setInviteText(text);
+      if (again.trim()) {
+        setGoal(nextGoal);
+        setRevisePrompt('');
+      }
       setPrefs(writeAutoPrefs({ recipeId }));
       setPrefs(rememberRecentTitle(heading));
       const nextWait: DeskWaitState = {
@@ -482,8 +493,8 @@ export function AutoDesk({
     <div className="desktop-spec-desk desktop-auto-desk">
       <div className="desktop-spec-hero desktop-auto-hero">
         <span>✦</span>
-        <h1>{t('오늘 올릴 말, 어떤 영상, 자료가 뭔지', 'Today’s line, the kind of video, and the materials', '今天要发的话、什么样的视频、什么资料', '今日出す言葉、どんな映像か、資料は何か')}</h1>
-        <p>{t('영상·사진을 넣거나, 스크랩 봇이 가져올 것을 적습니다. 그걸 알아야 자를 수 있습니다. 이 앱은 긁지 않습니다.', 'Put videos or images, or write what the scrape bot should fetch. The cut needs that list. This app does not scrape.', '放入视频或图片，或写下抓取机器人要取的东西。剪辑需要这份清单。这个应用不抓站。', '映像や写真を入れるか、収集ボットが持ってくるものを書く。それが分からないと切れません。このアプリは掻きません。')}</p>
+        <h1>{t('기획자에게 말하고, 자료가 오면 편집자가 자릅니다', 'Tell the planner, then the editor cuts the materials', '对策划说，资料到了由剪辑来剪', '企画者に言い、資料が来たら編集者が切る')}</h1>
+        <p>{t('영상 주소나 원하는 편집을 적습니다. 기획자가 방식을 정하고, 스크래핑 또는 내 파일로 자료를 모은 뒤 편집자가 자릅니다. 이 앱은 긁지 않습니다.', 'Write a video URL or how to edit. The planner chooses the method, scrape or your files supply the clips, the editor cuts. This app does not scrape.', '写下视频地址或想要的剪法。策划定方法，抓取或你的文件供素材，剪辑来剪。这个应用不抓站。', '映像の住所か編集方法を書く。企画者がやり方を決め、収集か自分のファイルで資料を集め、編集者が切る。このアプリは掻きません。')}</p>
       </div>
 
       {!studioReady ? (
@@ -545,8 +556,22 @@ export function AutoDesk({
             void startJob();
           }}
         >
+          <label className="desktop-spec-field desktop-spec-wide">
+            <span>{t('기획자에게 말하기', 'Tell the planner', '对策划说', '企画者に言う')}</span>
+            <textarea
+              value={goal}
+              onChange={(event) => {
+                setGoal(event.target.value);
+                if (error) setError('');
+              }}
+              placeholder={t('영상 주소, 또는 원하는 편집. 예: 카페 오픈 15초 훅, 손과 간판 클로즈업.', 'A video URL, or how to edit. Example: a 15s cafe-open hook, hands and sign close-ups.', '视频地址，或想要的剪法。例如：咖啡馆开业 15 秒钩子、手和招牌特写。', '映像の住所、または編集方法。例: カフェ開店の15秒フック、手と看板のクローズアップ。')}
+              rows={4}
+              aria-invalid={Boolean(error) && !titleFromPrompt(title, goal)}
+              disabled={saving}
+            />
+          </label>
           <label className="desktop-spec-field">
-            <span>{t('오늘 올릴 말', 'What you will post today', '今天要发的话', '今日出す言葉')}</span>
+            <span>{t('제목 · 비우면 기획 말의 첫 줄', 'Title · first line of the prompt if empty', '标题 · 留空则用策划第一行', 'タイトル · 空なら企画の一行目')}</span>
             <input
               value={title}
               onChange={(event) => {
@@ -554,7 +579,6 @@ export function AutoDesk({
                 if (error) setError('');
               }}
               placeholder={t('15초 훅 릴', '15s hook Reel', '15秒钩子 Reel', '15秒フックのリール')}
-              aria-invalid={Boolean(error) && !title.trim()}
               disabled={saving}
             />
           </label>
@@ -567,7 +591,7 @@ export function AutoDesk({
               ))}
             </div>
           ) : null}
-          {attached && title.trim() ? (
+          {attached && titleFromPrompt(title, goal) ? (
             <section className="desktop-auto-card" aria-label={t('이번 일', 'This job', '这次任务', '今回の仕事')}>
               <b>{t('이번 일', 'This job', '这次任务', '今回の仕事')}</b>
               <p>{`${attachedName} · ${styleLabel} · ${wayLabel}`}</p>
@@ -577,16 +601,6 @@ export function AutoDesk({
               <p>{t('끝: 컷이 이 창에 뜨면 저장을 묻습니다. 이 창은 봇이 읽었는지 모릅니다.', 'Done when the cut appears here and we ask to save. This window does not know if the bot read it.', '结束：成片出现在这里并询问保存。这个窗口不知道机器人读没读。', '終わり: カットがここに出たら保存を聞きます。この窓はボットが読んだか知りません。')}</p>
             </section>
           ) : null}
-          <label className="desktop-spec-field desktop-spec-wide">
-            <span>{t('어떤 영상을 만들지', 'What kind of video', '要做成什么样的视频', 'どんな映像にするか')}</span>
-            <textarea
-              value={goal}
-              onChange={(event) => setGoal(event.target.value)}
-              placeholder={t('비워 두면 제목과 같습니다. 예: 카페 오픈 15초 훅.', 'Leave empty to use the title. Example: a 15s cafe-open hook.', '留空则与标题相同。例如：咖啡馆开业 15 秒钩子。', '空ならタイトルと同じ。例: カフェ開店の15秒フック。')}
-              rows={3}
-              disabled={saving}
-            />
-          </label>
           <fieldset className="desktop-spec-recipes">
             <legend>{t('어떤 형태로', 'What shape', '什么形态', 'どんな形')}</legend>
             <div className="desktop-spec-recipe-grid">
@@ -701,7 +715,7 @@ export function AutoDesk({
                 />
               </label>
               <p className="desktop-spec-meta">
-                {t('이 목록이 규격에 남습니다. 스크랩 봇은 이것만 모읍니다. 이 앱은 스크래퍼가 아닙니다.', 'This list stays on the spec. The scrape bot gathers only that. This app is not a scraper.', '这份清单会留在规格里。抓取机器人只收集这些。这个应用不是抓取器。', 'この一覧が仕様に残ります。収集ボットはこれだけ集めます。このアプリはスクレイパーではありません。')}
+                {t('비우면 기획 말을 씨앗으로 씁니다. 스크랩 봇은 기획된 공개 자료만 모읍니다. 이 앱은 스크래퍼가 아닙니다.', 'If empty, the planner prompt is the seed. The scrape bot gathers only the planned public clips. This app is not a scraper.', '留空则用策划的话当种子。抓取机器人只收集计划里的公开资料。这个应用不是抓取器。', '空なら企画の言葉を種にする。収集ボットは計画された公開資料だけ集める。このアプリはスクレイパーではありません。')}
               </p>
             </>
           ) : (
@@ -750,7 +764,7 @@ export function AutoDesk({
       {waitingHandOff ? (
         <section className={`desktop-simple-wait is-${pullStatus === 'failed' ? 'failed' : 'busy'}`} role="status">
           <b>{t('봇이 작업 중 · 창을 끄지 마세요', 'The bot is working · do not close this window', '机器人正在工作 · 不要关掉这个窗口', 'ボットが作業中 · この窓を閉じないでください')}</b>
-          <p>{t(`복사했습니다. ${pasteTarget} 창에 붙이세요. 끝나면 이 탭에 미리보기가 생깁니다.`, `Copied. Paste it in the ${pasteTarget} window. A preview appears in this tab when it is done.`, `已复制。请粘贴到 ${pasteTarget} 窗口。完成后预览会出现在这个标签。`, `コピーしました。${pasteTarget} の窓に貼ってください。終わるとこのタブにプレビューが出ます。`)}</p>
+          <p>{t(`복사했습니다. 먼저 ${pasteTarget} 창에 붙이세요. 그다음 스크래핑·편집자 순입니다. 끝나면 이 탭에 미리보기가 생깁니다.`, `Copied. Paste it in the ${pasteTarget} window first, then scraper and editor. A preview appears in this tab when it is done.`, `已复制。先贴到 ${pasteTarget} 窗口，再是抓取和剪辑。完成后预览会出现在这个标签。`, `コピーしました。まず ${pasteTarget} の窓に貼り、次に収集・編集者です。終わるとこのタブにプレビューが出ます。`)}</p>
         </section>
       ) : null}
 
@@ -845,12 +859,36 @@ export function AutoDesk({
                 <button type="button" className="desktop-secondary" onClick={onOpenExport}>
                   {t('올릴까요?', 'Post it?', '要发布吗？', '上げますか？')}
                 </button>
-                <button type="button" className="desktop-secondary" onClick={() => { setTitle(''); setAskPublish(false); setGoal(''); }}>
+                <button type="button" className="desktop-secondary" onClick={() => { setTitle(''); setAskPublish(false); setGoal(''); setRevisePrompt(''); }}>
                   {t('다른 제목', 'Another title', '换个标题', '別のタイトル')}
                 </button>
               </div>
             </section>
           ) : null}
+          <section className="desktop-auto-card" aria-label={t('기획자에게 다시', 'Tell the planner again', '再对策划说', '企画者にもう一度')}>
+            <b>{t('마음에 안 들면 기획자에게 다시', 'If you do not like it, tell the planner again', '不满意就再对策划说', '気に入らなければ企画者にもう一度')}</b>
+            <p>{t('넣고 싶은 장면이나 고칠 점을 적으면, 기획자가 다시 정하고 스크래핑·편집자가 다시 일합니다. 이 창은 읽었는지 모릅니다.', 'Write the scene you want or what to fix. The planner revises, then scraper and editor work again. This window does not know if they read it.', '写下想加的镜头或要改的地方。策划重定，抓取和剪辑再做。这个窗口不知道他们读没读。', '入れたい場面や直したい点を書く。企画者がやり直し、収集と編集者が再作業。この窓は読んだか知りません。')}</p>
+            <label className="desktop-spec-field desktop-spec-wide">
+              <span>{t('다시 말할 것', 'What to change', '再要说的', 'やり直し')}</span>
+              <textarea
+                value={revisePrompt}
+                onChange={(event) => setRevisePrompt(event.target.value)}
+                placeholder={t('예: 간판 클로즈업을 두 번, 손 장면은 빼 주세요.', 'Example: two sign close-ups, drop the hands.', '例如：招牌特写两次，不要手的镜头。', '例: 看板クローズアップを二回、手の場面は外す。')}
+                rows={3}
+                disabled={saving}
+              />
+            </label>
+            <button
+              type="button"
+              className="desktop-primary"
+              disabled={locked || !revisePrompt.trim() || !attached}
+              onClick={() => void startJob(revisePrompt)}
+            >
+              {saving
+                ? t('보내는 중…', 'Sending…', '发送中…', '送信中…')
+                : t('기획자에게 다시 보내기', 'Send to the planner again', '再发给策划', '企画者にもう一度送る')}
+            </button>
+          </section>
         </section>
       ) : null}
 
