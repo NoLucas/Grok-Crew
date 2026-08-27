@@ -146,21 +146,38 @@ describe('auto desk job payload', () => {
       collectQuery: '간판',
       wantCaptions: true,
     }).captions, true);
-    assert.match(String(autoJobPayload({
+    const dubOnly = autoJobPayload({
       title: '더빙 켬',
       recipeId: 'instagram_reel',
       language: 'ko',
       useScrape: true,
       collectQuery: '간판',
       wantDubbing: true,
+    });
+    assert.match(String(dubOnly.must_keep), /운영자가 넣은 음성/);
+    assert.doesNotMatch(String(dubOnly.must_keep), /Kokoro-82M/);
+    assert.equal(autoJobPayload({
+      title: '둘 다 끔',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useScrape: true,
+      collectQuery: '간판',
+    }).must_keep, undefined);
+    assert.match(String(autoJobPayload({
+      title: 'TTS 켬',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useScrape: true,
+      collectQuery: '간판',
+      wantTts: true,
     }).must_keep), /Kokoro-82M 하나만/);
     assert.match(String(autoJobPayload({
-      title: '더빙 켬',
+      title: 'TTS 켬',
       recipeId: 'instagram_reel',
       language: 'ko',
       useScrape: true,
       collectQuery: '간판',
-      wantDubbing: true,
+      wantTts: true,
       voiceModelId: 'zonos-v0.1',
     }).must_keep), /Zonos-v0.1 하나만/);
   });
@@ -321,6 +338,7 @@ describe('auto desk prefs and names', () => {
   it('remembers the last style on this computer only', () => {
     memory.clear();
     assert.equal(readAutoPrefs().recipeId, DEFAULT_RECIPE_ID);
+    assert.equal(readAutoPrefs().wantTts, false);
     writeAutoPrefs({ recipeId: 'tiktok_tight' });
     assert.equal(readAutoPrefs().recipeId, 'tiktok_tight');
     rememberRecentTitle('15초 훅 릴');

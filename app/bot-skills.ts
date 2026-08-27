@@ -108,7 +108,7 @@ description: Write a short cut plan the scraper and editor can follow.
 127.0.0.1을 열지 않습니다. 로그인 막힌 인스타·틱톡·유튜브를 가져올 것에 적지 않습니다.
 
 ## 자동 스위치
-자막·더빙은 운영자가 자동에서 켠 뒤에만 계획에 적습니다. 초대문에 「자막 끔」이면 음성인식·자막을 시키지 않습니다. 「더빙 끔」이면 소리를 바꾸지 않습니다. 「더빙 켬」이면 운영자 음성이 있을 때 그것만. 없으면 초대문에 적힌 음성 모델 하나만 씁니다. 다른 TTS는 쓰지 않습니다.
+자막·더빙·TTS는 운영자가 자동에서 켠 뒤에만 계획에 적습니다. 초대문에 「자막 끔」이면 음성인식·자막을 시키지 않습니다. 「더빙 끔」이면 소리를 바꾸지 않습니다. 「TTS 끔」이면 목소리를 만들지 않습니다. 「TTS 켬」일 때만 초대문에 적힌 음성 모델 하나를 씁니다. 다른 TTS는 쓰지 않습니다.
 `;
 
 const SCRAPER_SKILL = `---
@@ -219,7 +219,7 @@ description: Cut in the planned order and return one finished file.
 6. 계획에 없는 한국 화면을 끼워 넣지 않습니다.
 
 ## 자동 스위치
-초대문에 「자막 끔」이면 음성인식·자막을 하지 않습니다. 「자막 켬」일 때만 말 구간을 자막·word_timings로 붙입니다. 「더빙 끔」이면 원본 소리를 유지합니다. 「더빙 켬」이면 운영자 음성이 있을 때 그것만. 없으면 초대문에 적힌 음성 모델 하나만 씁니다. 다른 TTS는 쓰지 않습니다.
+초대문에 「자막 끔」이면 음성인식·자막을 하지 않습니다. 「자막 켬」일 때만 말 구간을 자막·word_timings로 붙입니다. 「더빙 끔」이면 원본 소리를 유지합니다. 「TTS 끔」이면 목소리를 만들지 않습니다. 「TTS 켬」일 때만 초대문에 적힌 음성 모델 하나를 씁니다. 다른 TTS는 쓰지 않습니다.
 
 ## 끝내는 법
 끝난 컷 파일 하나를 편집 인박스에 둡니다. 묻지 않고 올리지 않습니다. 다시 계획이 오면 그 계획으로만 다시 자릅니다. 127.0.0.1에 붙지 않습니다. 사이트를 긁지 않습니다.
@@ -276,61 +276,59 @@ const SKILL_INDEX = '/bot-skills/planner.md · /bot-skills/edit-plan.md · /bot-
 export type VoiceInvite = {
   captions?: boolean;
   dubbing?: boolean;
+  tts?: boolean;
   voiceModelId?: string;
 };
 
-function dubbingInviteLine(language: string, dubbing: boolean, voiceModelId?: string): string {
+function dubbingInviteLine(language: string, dubbing: boolean): string {
+  const lang = language.slice(0, 2);
+  if (lang === 'zh') return dubbing ? '配音：开。有操作员语音就只用那个。没有就保留原声。' : '配音：关。不要配音，不要改原声。';
+  if (lang === 'ja') return dubbing ? '吹き替え：オン。運営者の音声があればそれだけ。なければ元の音。' : '吹き替え：オフ。吹き替えしない。元の音を変えない。';
+  if (lang === 'en') return dubbing ? 'Dubbing: on. Use the operator’s audio if present. If none, keep the original.' : 'Dubbing: off. Do not dub. Do not replace the original audio.';
+  return dubbing ? '더빙: 켬. 운영자 음성이 있으면 그것만. 없으면 원본 소리.' : '더빙: 끔. 더빙하지 않습니다. 원본 소리를 바꾸지 않습니다.';
+}
+
+function ttsInviteLine(language: string, tts: boolean, voiceModelId?: string): string {
   const label = voiceModelLabel(resolveVoiceModelId(voiceModelId));
   const lang = language.slice(0, 2);
   if (lang === 'zh') {
-    return dubbing
-      ? `配音：开。有操作员语音就只用那个。没有就只用这台电脑上的 ${label}。不要用别的 TTS。`
-      : '配音：关。不要配音，不要改原声。';
+    return tts
+      ? `TTS：开。只用这台电脑上的 ${label}。不要用别的 TTS。配音关着就不要盖原声。`
+      : 'TTS：关。不要做 TTS，不要生成声音。';
   }
   if (lang === 'ja') {
-    return dubbing
-      ? `吹き替え：オン。運営者の音声があればそれだけ。なければこの PC の ${label} だけ。他の TTS は使わない。`
-      : '吹き替え：オフ。吹き替えしない。元の音を変えない。';
+    return tts
+      ? `TTS：オン。この PC の ${label} だけ。他の TTS は使わない。吹き替えがオフなら元の音を覆わない。`
+      : 'TTS：オフ。TTS を作らない。声を生成しない。';
   }
   if (lang === 'en') {
-    return dubbing
-      ? `Dubbing: on. Use the operator’s audio if present. If none, use only ${label} on this PC. Do not use another TTS.`
-      : 'Dubbing: off. Do not dub. Do not replace the original audio.';
+    return tts
+      ? `TTS: on. Use only ${label} on this PC. Do not use another TTS. If dubbing is off, do not cover the original.`
+      : 'TTS: off. Do not make TTS. Do not generate a voice.';
   }
-  return dubbing
-    ? `더빙: 켬. 운영자 음성이 있으면 그것만. 없으면 이 PC의 ${label} 하나만. 다른 TTS는 쓰지 않습니다.`
-    : '더빙: 끔. 더빙하지 않습니다. 원본 소리를 바꾸지 않습니다.';
+  return tts
+    ? `TTS: 켬. 이 PC의 ${label} 하나만. 다른 TTS는 쓰지 않습니다. 더빙이 꺼져 있으면 원본 소리를 덮지 않습니다.`
+    : 'TTS: 끔. TTS를 만들지 않습니다. 목소리를 생성하지 않습니다.';
 }
 
 export function voiceInviteBlock(language = 'ko', voice: VoiceInvite = {}): string {
   const captions = Boolean(voice.captions);
-  const dubLine = dubbingInviteLine(language, Boolean(voice.dubbing), voice.voiceModelId);
   const lang = language.slice(0, 2);
-  if (lang === 'zh') {
-    return [
-      captions ? '字幕：开。只识别说话的段落，再写成字幕。源语言和去向不同时只改字幕，声音仍是原片。' : '字幕：关。不要语音识别，不要烧字幕。',
-      dubLine,
-    ].join('\n');
-  }
-  if (lang === 'ja') {
-    return [
-      captions ? '字幕：オン。話している区間だけ認識して字幕にする。元の言語と送り先が違うときは字幕だけ変える。音は元のまま。' : '字幕：オフ。音声認識も字幕焼き込みもしない。',
-      dubLine,
-    ].join('\n');
-  }
-  if (lang === 'en') {
-    return [
-      captions
-        ? 'Captions: on. Transcribe speech windows only and burn those lines. If source and destination differ, change captions only. Keep the original audio.'
-        : 'Captions: off. Do not run speech recognition. Do not burn captions.',
-      dubLine,
-    ].join('\n');
-  }
+  const captionLine = lang === 'zh'
+    ? (captions ? '字幕：开。只识别说话的段落，再写成字幕。源语言和去向不同时只改字幕，声音仍是原片。' : '字幕：关。不要语音识别，不要烧字幕。')
+    : lang === 'ja'
+      ? (captions ? '字幕：オン。話している区間だけ認識して字幕にする。元の言語と送り先が違うときは字幕だけ変える。音は元のまま。' : '字幕：オフ。音声認識も字幕焼き込みもしない。')
+      : lang === 'en'
+        ? (captions
+          ? 'Captions: on. Transcribe speech windows only and burn those lines. If source and destination differ, change captions only. Keep the original audio.'
+          : 'Captions: off. Do not run speech recognition. Do not burn captions.')
+        : (captions
+          ? '자막: 켬. 말 구간만 인식해 자막을 붙입니다. 원본 말과 보낼 곳이 다르면 자막만 바꿉니다. 소리는 원본입니다.'
+          : '자막: 끔. 음성인식하지 않습니다. 자막을 굽지 않습니다.');
   return [
-    captions
-      ? '자막: 켬. 말 구간만 인식해 자막을 붙입니다. 원본 말과 보낼 곳이 다르면 자막만 바꿉니다. 소리는 원본입니다.'
-      : '자막: 끔. 음성인식하지 않습니다. 자막을 굽지 않습니다.',
-    dubLine,
+    captionLine,
+    dubbingInviteLine(language, Boolean(voice.dubbing)),
+    ttsInviteLine(language, Boolean(voice.tts), voice.voiceModelId),
   ].join('\n');
 }
 

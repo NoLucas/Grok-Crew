@@ -9,7 +9,7 @@ Five steps. Receive → open → connect → write in Auto → paste.
 1. **Receive** — one file, `GrokCrew-Windows.exe`.
 2. **Open** — double-click. If the blue shield appears, More info → Run anyway.
 3. **Connect** — open **Connect**. Other-PC seats sit in two groups: Grok Bot and Agent. Copy the connect text on planner, scraper, or editor and it is attached. Paste that text in the bot window.
-4. **Write** — first open asks for one voice model. Next keeps Kokoro-82M. Then today’s line in the **Auto** tab.
+4. **Write** — today’s line in the **Auto** tab. Captions, dubbing, and TTS stay off until you turn them on. Turning TTS on asks for one voice. Next keeps Kokoro-82M.
 5. **Paste** — Start copies the job. Paste it in that bot window. When the cut arrives, the preview stays on this tab and asks you to save.
 
 To cut your own file, use **Start with my file** inside Auto. There is no login.

@@ -40,10 +40,10 @@ export function DesktopVoiceSetup({
         <h1 id="desktop-voice-title">{t('어떤 목소리를 받을까요', 'Which voice should this PC keep?', '要收下哪一个声音？', 'どの声を受け取りますか')}</h1>
         <p>
           {t(
-            '더빙에 쓸 목소리입니다. 한 번에 하나만 받습니다. 다른 모델은 꺼 둡니다. 다음만 누르면 Kokoro-82M입니다.',
-            'This is the dubbing voice. Only one model is kept. Next downloads Kokoro-82M.',
-            '这是配音用的声音。一次只收一个。只按下一步就是 Kokoro-82M。',
-            '吹き替え用の声です。一度に一つだけ受け取ります。次へだけ押せば Kokoro-82M です。',
+            'TTS를 켤 때 쓸 목소리입니다. 한 번에 하나만 받습니다. 자동에서 TTS가 꺼져 있으면 쓰지 않습니다. 다음만 누르면 Kokoro-82M입니다.',
+            'This is the TTS voice. Only one model is kept. If TTS is off in Auto, it is unused. Next downloads Kokoro-82M.',
+            '这是打开 TTS 时用的声音。一次只收一个。自动里 TTS 关着就不用。只按下一步就是 Kokoro-82M。',
+            'TTS をオンにしたときの声です。一度に一つだけ受け取ります。自動で TTS がオフなら使いません。次へだけ押せば Kokoro-82M です。',
           )}
         </p>
         <p className="desktop-voice-note">

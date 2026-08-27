@@ -10,6 +10,8 @@ const {
   VOICE_SETUP_KEY,
   confirmVoiceChoice,
   dubbingMustKeep,
+  operatorDubMustKeep,
+  voiceMustKeep,
   downloadPercent,
   emptyVoiceSetup,
   readVoiceSetup,
@@ -55,6 +57,13 @@ describe('voice model picker', () => {
     assert.equal(readVoiceSetup().modelId, 'zonos-v0.1');
     assert.equal(voiceModelLabel('step-audio-editx'), 'Step Audio EditX');
     assert.match(dubbingMustKeep('kokoro-82m'), /Kokoro-82M 하나만/);
+    assert.equal(voiceMustKeep({}), undefined);
+    assert.equal(voiceMustKeep({ wantDubbing: false, wantTts: false }), undefined);
+    assert.equal(voiceMustKeep({ wantDubbing: true }), operatorDubMustKeep());
+    assert.doesNotMatch(String(voiceMustKeep({ wantDubbing: true })), /Kokoro-82M/);
+    assert.match(String(voiceMustKeep({ wantTts: true })), /Kokoro-82M 하나만/);
+    assert.match(String(voiceMustKeep({ wantTts: true, voiceModelId: 'zonos-v0.1' })), /Zonos-v0.1 하나만/);
+    assert.match(String(voiceMustKeep({ wantDubbing: true, wantTts: true })), /Kokoro-82M 하나만/);
     assert.equal(downloadPercent({ received_bytes: 25, total_bytes: 100 }), 25);
   });
 });

@@ -86,12 +86,16 @@ describe('built-in bot skills', () => {
     assert.equal(crewOrderBlock('en').includes('This app does not scrape'), true);
     assert.match(text, /자막: 끔/);
     assert.match(text, /더빙: 끔/);
+    assert.match(text, /TTS: 끔/);
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { captions: true, dubbing: true }), /자막: 켬/);
-    assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { captions: true, dubbing: true }), /Kokoro-82M 하나만/);
-    assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { dubbing: true, voiceModelId: 'step-audio-editx' }), /Step Audio EditX 하나만/);
+    assert.doesNotMatch(withCrewInvite('제목: 카페 오픈', 'ko', { captions: true, dubbing: true }), /Kokoro-82M/);
+    assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true }), /TTS: 켬/);
+    assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true }), /Kokoro-82M 하나만/);
+    assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true, voiceModelId: 'step-audio-editx' }), /Step Audio EditX 하나만/);
     assert.match(voiceInviteBlock('en'), /Captions: off/);
-    assert.match(skillText('planner'), /초대문에 적힌 음성 모델 하나만/);
-    assert.match(skillText('editor'), /초대문에 적힌 음성 모델 하나만/);
+    assert.match(voiceInviteBlock('en'), /TTS: off/);
+    assert.match(skillText('planner'), /TTS 끔/);
+    assert.match(skillText('editor'), /TTS 끔/);
   });
 
   it('keeps the public skill files in lockstep', () => {

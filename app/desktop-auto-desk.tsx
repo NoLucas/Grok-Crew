@@ -130,8 +130,9 @@ export function AutoDesk({
   const [collectQuery, setCollectQuery] = useState('');
   const [wantCaptions, setWantCaptions] = useState(Boolean(prefs.wantCaptions));
   const [wantDubbing, setWantDubbing] = useState(Boolean(prefs.wantDubbing));
+  const [wantTts, setWantTts] = useState(Boolean(prefs.wantTts));
   const [voiceModelId, setVoiceModelId] = useState<VoiceModelId>(() => confirmVoiceChoice(prefs.voiceModelId));
-  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(Boolean(prefs.wantTts));
   const [ownOver, setOwnOver] = useState(false);
   const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
   const [recipeTouched, setRecipeTouched] = useState(false);
@@ -284,20 +285,22 @@ export function AutoDesk({
           collectQuery,
           wantCaptions,
           wantDubbing,
+          wantTts,
           voiceModelId,
         })),
       });
       const record = created.edit_spec as { id?: string };
       if (!record?.id) throw new Error(t('규격을 저장하지 못했습니다.', 'Could not save the spec.', '无法保存规格。', '仕様を保存できませんでした。'));
       const invite = await request(`/api/v2/edit-specs/${record.id}/invite?lang=${encodeURIComponent(language)}`);
-      const text = withCrewInvite(String(invite.text || ''), language, { captions: wantCaptions, dubbing: wantDubbing, voiceModelId });
+      const text = withCrewInvite(String(invite.text || ''), language, { captions: wantCaptions, dubbing: wantDubbing, tts: wantTts, voiceModelId });
       if (!text.trim()) throw new Error(t('초대문을 만들지 못했습니다.', 'Could not make the invite.', '无法生成邀请。', '招待文を作れませんでした。'));
       setInviteText(text);
       if (again.trim()) {
         setGoal(nextGoal);
         setRevisePrompt('');
       }
-      setPrefs(writeAutoPrefs({ recipeId, wantCaptions, wantDubbing, voiceModelId }));
+      setPrefs(writeAutoPrefs({ recipeId, wantCaptions, wantDubbing, wantTts, voiceModelId }));
+      if (wantTts && onChangeVoiceModel) void onChangeVoiceModel(confirmVoiceChoice(voiceModelId));
       setPrefs(rememberRecentTitle(heading));
       const nextWait: DeskWaitState = {
         specId: record.id,
@@ -608,7 +611,7 @@ export function AutoDesk({
             <section className="desktop-auto-card" aria-label={t('이번 일', 'This job', '这次任务', '今回の仕事')}>
               <b>{t('이번 일', 'This job', '这次任务', '今回の仕事')}</b>
               <p>{`${attachedName} · ${styleLabel} · ${wayLabel}`}</p>
-              <p>{t(`자막 ${wantCaptions ? '켬' : '끔'} · 더빙 ${wantDubbing ? '켬' : '끔'} · ${voiceModelLabel(voiceModelId)}`, `Captions ${wantCaptions ? 'on' : 'off'} · Dubbing ${wantDubbing ? 'on' : 'off'} · ${voiceModelLabel(voiceModelId)}`, `字幕${wantCaptions ? '开' : '关'} · 配音${wantDubbing ? '开' : '关'} · ${voiceModelLabel(voiceModelId)}`, `字幕${wantCaptions ? 'オン' : 'オフ'} · 吹き替え${wantDubbing ? 'オン' : 'オフ'} · ${voiceModelLabel(voiceModelId)}`)}</p>
+              <p>{t(`자막 ${wantCaptions ? '켬' : '끔'} · 더빙 ${wantDubbing ? '켬' : '끔'} · TTS ${wantTts ? `켬 · ${voiceModelLabel(voiceModelId)}` : '끔'}`, `Captions ${wantCaptions ? 'on' : 'off'} · Dubbing ${wantDubbing ? 'on' : 'off'} · TTS ${wantTts ? `on · ${voiceModelLabel(voiceModelId)}` : 'off'}`, `字幕${wantCaptions ? '开' : '关'} · 配音${wantDubbing ? '开' : '关'} · TTS ${wantTts ? `开 · ${voiceModelLabel(voiceModelId)}` : '关'}`, `字幕${wantCaptions ? 'オン' : 'オフ'} · 吹き替え${wantDubbing ? 'オン' : 'オフ'} · TTS ${wantTts ? `オン · ${voiceModelLabel(voiceModelId)}` : 'オフ'}`)}</p>
               {useOwn && ownedPaths.length ? <p>{ownedPaths.map(ownedFileName).join(', ')}</p> : null}
               {useScrape && collectQuery.trim() ? <p>{t(`가져올 것 · ${collectQuery.trim()}`, `Fetch · ${collectQuery.trim()}`, `要取 · ${collectQuery.trim()}`, `持ってくるもの · ${collectQuery.trim()}`)}</p> : null}
               <p>{t('하지 않음: 올리지 않음 · 화질 잠금 유지 · 이 PC에만 저장 · 이 앱이 사이트를 긁지 않음', 'Will not: post · change quality · leave this PC · scrape a site', '不会：发布 · 改画质 · 离开这台电脑 · 抓站', 'しないこと: 上げない · 画質を変えない · この PC だけに保存 · このアプリは掻かない')}</p>
@@ -738,8 +741,8 @@ export function AutoDesk({
             </p>
           )}
           <fieldset className="desktop-spec-sources desktop-auto-voice">
-            <legend>{t('자막과 더빙', 'Captions and dubbing', '字幕和配音', '字幕と吹き替え')}</legend>
-            <div className="desktop-spec-source-grid">
+            <legend>{t('자막 · 더빙 · TTS', 'Captions · dubbing · TTS', '字幕 · 配音 · TTS', '字幕 · 吹き替え · TTS')}</legend>
+            <div className="desktop-spec-source-grid desktop-auto-voice-grid">
               <button
                 type="button"
                 className={wantCaptions ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
@@ -756,13 +759,28 @@ export function AutoDesk({
                 onClick={() => setWantDubbing((value) => !value)}
               >
                 <b>{wantDubbing ? t('더빙 켬', 'Dubbing on', '配音开', '吹き替えオン') : t('더빙 끔', 'Dubbing off', '配音关', '吹き替えオフ')}</b>
-                <span>{t(`켜면 운영자 음성이 있으면 그것만. 없으면 ${voiceModelLabel(voiceModelId)} 하나만.`, `When on, use the operator’s audio if present. If none, only ${voiceModelLabel(voiceModelId)}.`, `打开后有操作员语音就只用那个。没有就只用 ${voiceModelLabel(voiceModelId)}。`, `オンなら運営者の音声があればそれだけ。なければ ${voiceModelLabel(voiceModelId)} だけ。`)}</span>
+                <span>{t('켜면 운영자 음성이 있으면 그것만. 없으면 원본 소리. TTS와 따로입니다.', 'When on, use the operator’s audio if present. If none, keep the original. Separate from TTS.', '打开后有操作员语音就只用那个。没有就保留原声。和 TTS 分开。', 'オンなら運営者の音声があればそれだけ。なければ元の音。TTS とは別。')}</span>
+              </button>
+              <button
+                type="button"
+                className={wantTts ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                aria-pressed={wantTts}
+                onClick={() => {
+                  setWantTts((value) => {
+                    const next = !value;
+                    setVoiceOpen(next);
+                    return next;
+                  });
+                }}
+              >
+                <b>{wantTts ? t('TTS 켬', 'TTS on', 'TTS 开', 'TTS オン') : t('TTS 끔', 'TTS off', 'TTS 关', 'TTS オフ')}</b>
+                <span>{t(`켜면 이 PC의 ${voiceModelLabel(voiceModelId)} 하나만 목소리를 만듭니다. 더빙이 꺼져 있으면 원본을 덮지 않습니다.`, `When on, only ${voiceModelLabel(voiceModelId)} on this PC makes a voice. If dubbing is off, do not cover the original.`, `打开后只用这台电脑上的 ${voiceModelLabel(voiceModelId)} 做声音。配音关着就不要盖原声。`, `オンならこの PC の ${voiceModelLabel(voiceModelId)} だけ声を作る。吹き替えがオフなら元の音を覆わない。`)}</span>
               </button>
             </div>
             <p className="desktop-spec-meta">
-              {t(`둘 다 꺼 두면 음성인식·자막·더빙을 쓰지 않습니다. 목소리는 ${voiceModelLabel(voiceModelId)} 하나.`, `Leave both off and speech recognition, captions, and dubbing stay unused. The voice is ${voiceModelLabel(voiceModelId)} only.`, `都关着就不会用语音识别、字幕、配音。声音只有 ${voiceModelLabel(voiceModelId)}。`, `どちらもオフなら音声認識・字幕・吹き替えは使いません。声は ${voiceModelLabel(voiceModelId)} だけ。`)}
+              {t('꺼 두면 그 일을 하지 않습니다. TTS를 켠 사람만 목소리를 고르고 받습니다.', 'Leave a switch off and that work stays unused. Only people who turn TTS on pick and download a voice.', '关着就不会做那件事。只有打开 TTS 的人才选声音并下载。', 'オフならその仕事はしません。TTS をオンにした人だけ声を選び受け取ります。')}
             </p>
-            {onChangeVoiceModel ? (
+            {wantTts && onChangeVoiceModel ? (
               <div className="desktop-auto-voice-pick">
                 <button type="button" className="desktop-secondary" onClick={() => setVoiceOpen((value) => !value)}>
                   {voiceOpen ? t('목소리 접기', 'Hide voice', '收起声音', '声を閉じる') : t('목소리 바꾸기', 'Change voice', '换声音', '声を変える')}
@@ -777,7 +795,7 @@ export function AutoDesk({
                     onConfirm={() => {
                       const next = confirmVoiceChoice(voiceModelId);
                       setVoiceModelId(next);
-                      setPrefs(writeAutoPrefs({ voiceModelId: next }));
+                      setPrefs(writeAutoPrefs({ wantTts: true, voiceModelId: next }));
                       void onChangeVoiceModel(next);
                     }}
                   />

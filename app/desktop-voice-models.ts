@@ -172,6 +172,21 @@ export function dubbingMustKeep(value?: unknown): string {
   return `더빙은 운영자 음성 파일이 있으면 그것만. 없으면 이 PC의 음성 모델 ${label} 하나만 쓴다. 다른 TTS는 쓰지 않는다.`;
 }
 
+export function operatorDubMustKeep(): string {
+  return '더빙은 운영자가 넣은 음성 파일만. 없으면 원본 소리. TTS를 만들지 않는다.';
+}
+
+export function voiceMustKeep(input: { wantDubbing?: boolean; wantTts?: boolean; voiceModelId?: unknown }): string | undefined {
+  const dubbing = Boolean(input.wantDubbing);
+  const tts = Boolean(input.wantTts);
+  if (!dubbing && !tts) return undefined;
+  if (dubbing && !tts) return operatorDubMustKeep();
+  if (!dubbing && tts) {
+    return `TTS는 이 PC의 음성 모델 ${voiceModelLabel(input.voiceModelId)} 하나만. 더빙이 꺼져 있으면 원본 소리를 덮지 않는다. 다른 TTS는 쓰지 않는다.`;
+  }
+  return dubbingMustKeep(input.voiceModelId);
+}
+
 export function downloadPercent(download?: VoiceDownloadStatus | null): number {
   const received = Number(download?.received_bytes || 0);
   const total = Number(download?.total_bytes || 0);
