@@ -1,13 +1,21 @@
 #!/usr/bin/env node
-/** Site track is closed. This process only serves the local Windows file. */
+/** Serves the public homepage and the Windows file for local preview. */
 
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 
 const root = new URL('..', import.meta.url);
+const publicDir = join(root.pathname, 'public');
 const port = Number(process.env.PORT || 43187);
-const exeName = 'GrokCrew-Windows.exe';
+const types = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml',
+  '.exe': 'application/octet-stream',
+};
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://127.0.0.1:${port}`);
@@ -16,22 +24,24 @@ const server = createServer(async (req, res) => {
     res.end();
     return;
   }
-  if (url.pathname === `/${exeName}`) {
-    try {
-      const data = await readFile(join(root.pathname, 'public', exeName));
-      res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
-      res.end(req.method === 'HEAD' ? undefined : data);
-      return;
-    } catch {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('Windows file is not in this folder.');
-      return;
-    }
+  const path = url.pathname === '/' || url.pathname === '/home'
+    ? 'home.html'
+    : url.pathname.replace(/^\/+/, '');
+  if (path.includes('..')) {
+    res.writeHead(400);
+    res.end();
+    return;
   }
-  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-  res.end('No public site. Grok Crew is the program on this PC.');
+  try {
+    const data = await readFile(join(publicDir, path));
+    res.writeHead(200, { 'Content-Type': types[extname(path)] || 'application/octet-stream' });
+    res.end(req.method === 'HEAD' ? undefined : data);
+  } catch {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Not found.');
+  }
 });
 
 server.listen(port, '127.0.0.1', () => {
-  console.log(`No public site. File only: http://127.0.0.1:${port}/${exeName}`);
+  console.log(`Homepage: http://127.0.0.1:${port}/home`);
 });

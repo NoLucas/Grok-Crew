@@ -22,6 +22,7 @@
   "scripts": {
     "dev": "vinext dev",
     "local": "node scripts/start-local.mjs",
+    "home": "node scripts/preview-homepage.mjs",
     "desktop": "node scripts/start-desktop.mjs",
     "typecheck": "tsc --noEmit",
     "desktop:smoke": "electron scripts/smoke-preload.mjs",

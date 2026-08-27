@@ -7,7 +7,7 @@ import { afterEach, describe, it } from 'node:test';
 register('./timeline/ts-resolver.helper.mjs', import.meta.url);
 
 const {
-  DISCONNECTED_HOME_ORIGIN,
+  HOME_ORIGIN,
   corsHeaders,
   downloadUrl,
   DEFAULT_DOWNLOAD_URL,
@@ -32,7 +32,7 @@ afterEach(() => {
   else process.env.GROK_CREW_DOWNLOAD_URL = previousDownload;
 });
 
-describe('email door without a public site', () => {
+describe('optional homepage news door', () => {
   it('accepts one email line and rejects empty or junk', () => {
     assert.equal(isGetEmail('you@example.com'), true);
     assert.equal(isGetEmail('  You@Example.COM  '), true);
@@ -71,12 +71,16 @@ describe('email door without a public site', () => {
     assert.match(text, /"email":"a@b.co"/);
   });
 
-  it('does not let the disconnected chatgpt.site call this app', () => {
-    assert.equal(isAllowedGetOrigin(DISCONNECTED_HOME_ORIGIN), false);
+  it('lets the connected homepage call this app and blocks strangers', () => {
+    assert.equal(isAllowedGetOrigin(HOME_ORIGIN), true);
     assert.equal(isAllowedGetOrigin('https://evil.example'), false);
     assert.equal(isAllowedGetOrigin('http://127.0.0.1:43173'), true);
-    const headers = corsHeaders(DISCONNECTED_HOME_ORIGIN);
-    assert.equal(headers['Access-Control-Allow-Origin'], undefined);
+    const headers = corsHeaders(HOME_ORIGIN);
+    assert.equal(headers['Access-Control-Allow-Origin'], HOME_ORIGIN);
+  });
+
+  it('points the Windows file at the Grok-Crew release', () => {
+    assert.match(DEFAULT_DOWNLOAD_URL, /NoLucas\/Grok-Crew\/releases/);
   });
 
   it('uses the download override when set', () => {

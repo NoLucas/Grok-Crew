@@ -1,5 +1,21 @@
 #!/usr/bin/env node
-/** Site track is closed. Do not rebuild a public homepage. */
+/** Print how to attach this repo's homepage script to the live page. */
 
-console.error('The public site track is closed. Grok Crew is the program on this PC. See docs/HOMEPAGE.ko.md.');
-process.exit(1);
+import { access } from 'node:fs/promises';
+import { join } from 'node:path';
+
+const root = new URL('..', import.meta.url);
+const home = join(root.pathname, 'public', 'home.html');
+const script = join(root.pathname, 'public', 'connect-install.js');
+const origin = String(process.env.GROK_CREW_PUBLIC_ORIGIN || 'http://127.0.0.1:43127').replace(/\/$/, '');
+
+await access(home);
+await access(script);
+
+console.log('Homepage is back on /home.');
+console.log(`Open: ${origin}/home`);
+console.log('');
+console.log('To connect the live chatgpt.site page, add this tag to that page:');
+console.log(`<script src="${origin}/connect-install.js" data-api="${origin}/api/get"></script>`);
+console.log('');
+console.log('This app already allows https://grok-crew-local.jinegcc.chatgpt.site to call POST /api/get.');
