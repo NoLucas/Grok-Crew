@@ -146,14 +146,14 @@ export function HandoffFolderBoard({
 
   useEffect(() => {
     if (!menu && !lightbox) return undefined;
-    const onKey = (event: KeyboardEvent) => {
+    const onKey = (event: globalThis.KeyboardEvent) => {
       if (event.key === 'Escape') {
         setMenu(null);
         setConfirmDelete('');
         setLightbox(null);
       }
     };
-    const onPointer = (event: MouseEvent) => {
+    const onPointer = (event: globalThis.MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenu(null);
         setConfirmDelete('');

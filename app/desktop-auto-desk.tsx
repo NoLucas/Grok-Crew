@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import { useMemo, useRef, useState, type DragEvent } from 'react';
 import type { CrewRoster } from './desktop-bot-connect';
 import {
   DEFAULT_RECIPE_ID,
@@ -15,7 +15,6 @@ import {
   studioDownloadBase,
   suggestRecipeId,
   writeAutoPrefs,
-  type AutoLamp,
   type AutoMode,
   type AutoPhaseId,
 } from './desktop-auto-state';
@@ -100,8 +99,9 @@ export function AutoDesk({
   const [mode, setMode] = useState<AutoMode>('hand_off');
   const [title, setTitle] = useState(wait?.title ?? '');
   const [goal, setGoal] = useState('');
-  const [recipeId, setRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
+  const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
   const [recipeTouched, setRecipeTouched] = useState(false);
+  const recipeId = recipeTouched ? pickedRecipeId : suggestRecipeId(title, prefs.recipeId);
   const [saving, setSaving] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -151,11 +151,6 @@ export function AutoDesk({
   const styleLabel = selected
     ? localized(selected.name, language, selected.id)
     : t('인스타 릴', 'Instagram Reel', 'Instagram Reel', 'Instagram リール');
-
-  useEffect(() => {
-    if (recipeTouched) return;
-    setRecipeId(suggestRecipeId(title, prefs.recipeId));
-  }, [prefs.recipeId, recipeTouched, title]);
 
   const startJob = async () => {
     const check = canStartAuto({ title, attached });
@@ -438,7 +433,7 @@ export function AutoDesk({
                   aria-pressed={recipe.id === recipeId}
                   onClick={() => {
                     setRecipeTouched(true);
-                    setRecipeId(recipe.id);
+                    setPickedRecipeId(recipe.id);
                   }}
                 >
                   <b>{localized(recipe.name, language, recipe.id)}</b>
