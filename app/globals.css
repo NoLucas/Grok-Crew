@@ -7166,6 +7166,70 @@ select {
 .desktop-simple-connect p { margin: 4px 0 0; color: #6a5840; font-size: 13px; line-height: 1.45; max-width: 46rem; }
 .desktop-simple-connect.is-ready { border-color: #cfead8; background: #f3faf5; }
 .desktop-simple-connect.is-ready p { color: var(--desktop-green); }
+.desktop-titlebar nav button.needs-bot::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: #c47b16;
+}
+.desktop-bot-room {
+  display: grid;
+  gap: 10px;
+  width: min(920px, 100%);
+  justify-self: center;
+}
+.desktop-bot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.desktop-bot-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--desktop-line);
+}
+.desktop-bot-list li:last-child { border-bottom: 0; }
+.desktop-bot-list li.is-empty {
+  color: var(--desktop-muted);
+  justify-content: flex-start;
+}
+.desktop-bot-list b { display: block; font-size: 14px; }
+.desktop-bot-list span { color: var(--desktop-muted); font-size: 12px; }
+.desktop-bot-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.desktop-bot-kinds button {
+  padding: 7px 10px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 999px;
+  background: var(--desktop-panel);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+.desktop-bot-kinds button.is-selected {
+  border-color: var(--desktop-blue);
+  background: #eef5ff;
+}
+.desktop-shell[data-theme="dark"] .desktop-bot-kinds button.is-selected,
+.desktop-shell[data-theme="low-dark"] .desktop-bot-kinds button.is-selected {
+  background: rgba(120, 170, 255, 0.18);
+}
+.desktop-bot-paste {
+  width: 100%;
+  min-height: 8rem;
+  resize: vertical;
+}
 .desktop-simple-wait {
   display: grid;
   gap: 4px;
@@ -7664,6 +7728,7 @@ select {
 @media (max-width: 760px) {
   .desktop-simple-paths { grid-template-columns: 1fr; }
   .desktop-simple-help-figures { grid-template-columns: 1fr; }
+  .desktop-bot-list li { flex-direction: column; align-items: flex-start; }
 }
 @media (max-width: 600px) {
   .desktop-simple-desk { width: 100%; }

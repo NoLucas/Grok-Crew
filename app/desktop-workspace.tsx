@@ -16,6 +16,13 @@ import type { Timeline, TrackType } from './timeline/types';
 import { isUnclaimedHold, remoteDeskVisible, remoteNeedsAttention } from './desktop-remote';
 import { SpecDesk } from './desktop-spec-desk';
 import { DesktopLogoMark } from './desktop-logo-mark';
+import { DesktopBotPanel } from './desktop-bot-panel';
+import {
+  connectedRemoteNames,
+  ensureBotLinks,
+  hasConnectedBot,
+  type BotLinkState,
+} from './desktop-bot-links';
 import { SimpleDesk } from './desktop-simple-desk';
 import { HandoffFolderBoard, type HandoffFolder } from './desktop-handoff-folder';
 import { appearanceDataAttrs, useDesktopAppearance } from './desktop-appearance';
@@ -306,6 +313,8 @@ export default function DesktopWorkspace() {
   });
   const [studioState, setStudioState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [drawer, setDrawer] = useState<'none' | 'projects' | 'status'>('none');
+  const [botLinks, setBotLinks] = useState<BotLinkState>({ pairCode: '', bots: [] });
+  const [botPanelOpen, setBotPanelOpen] = useState(false);
   const [deskWait, setDeskWait] = useState<DeskWaitState | null>(null);
   const [firstCut, setFirstCut] = useState(false);
   const [deskPulse, setDeskPulse] = useState<{ lastCheckedAt: string; pull: DeskPullStatus }>({ lastCheckedAt: '', pull: 'idle' });
@@ -322,6 +331,7 @@ export default function DesktopWorkspace() {
     deskWaitRef.current = stored;
     setDeskWait(stored);
     setFirstCut(readFirstCutArrived());
+    setBotLinks(ensureBotLinks());
   }, []);
 
   const api = useCallback(async (path: string, init?: RequestInit): Promise<JsonObject> => {
@@ -447,6 +457,8 @@ export default function DesktopWorkspace() {
   const visibleReceipts = receipts.filter((receipt) => receipt.project_id === selectedProjectId);
 
   const project = workspace.projects.find((item) => item.id === selectedProjectId);
+  const deskReady = hasConnectedBot(workspace.crew_roster, botLinks) || Boolean(project);
+  const showBotRoom = !deskReady || botPanelOpen;
   const projectJobs = workspace.control_jobs.filter((job) => job.project_id === selectedProjectId);
   const latestJob = projectJobs[0];
   const latestEvent = latestJob ? workspace.runner_events.find((item) => item.control_job_id === latestJob.id) : undefined;
@@ -644,6 +656,47 @@ export default function DesktopWorkspace() {
 
   const sampleAvailable = workspace.first_run?.sample_available
     ?? workspace.media.some((item) => item.path === 'inputs/grok-crew-sample.mp4');
+  const createProjectFromPath = async (sourcePath: string) => {
+    const name = sourcePath.split(/[/\\]/).pop() || t('내 파일', 'My file', '我的文件', '自分のファイル');
+    const title = name.replace(/\.[^.]+$/, '');
+    setNewProject((current) => ({ ...current, title: current.title || title, source_path: sourcePath }));
+    setSpecDeskOpen(false);
+    setBotPanelOpen(false);
+    setCreateOpen(false);
+    setDrawer('none');
+    setBusy(true);
+    try {
+      const result = await api('/api/v2/projects', {
+        method: 'POST',
+        body: JSON.stringify({
+          title,
+          source_path: sourcePath,
+          output_path: 'outputs/final-video.mp4',
+          timeline: { clips: [{ in: 0, out: 10, keep: true, caption: '' }], render_settings: { fps: 30, quality: 'balanced', platform: 'reels_tiktok_shorts', captions_enabled: true } },
+          caption: '',
+        }),
+      });
+      const created = result.project as Project;
+      setSelectedProjectId(created.id);
+      setActivePanel('edit');
+      await refreshWorkspace(true);
+      setMessage(t('내 파일을 열었습니다. 타임라인에서 바로 자를 수 있습니다.', 'Opened your file. Cut it on the timeline.', '已打开你的文件。可直接在时间线上剪。', '自分のファイルを開きました。タイムラインですぐ切れます。'));
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : t('파일을 열지 못했습니다.', 'Could not open the file.', '无法打开文件。', 'ファイルを開けませんでした。'));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const openOwnFileFromDesk = async () => {
+    const picker = typeof window !== 'undefined' ? window.grokCrew?.selectMedia : undefined;
+    if (picker) {
+      const picked = await picker();
+      if (picked) await createProjectFromPath(picked);
+      return;
+    }
+    setCreateOpen(true);
+    setDrawer('projects');
+  };
   const openSampleProject = async () => {
     setBusy(true);
     try {
@@ -1092,9 +1145,14 @@ export default function DesktopWorkspace() {
         <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="gear" />
         <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
-          <button type="button" className={activePanel === 'setup' ? 'active' : ''} aria-current={activePanel === 'setup' ? 'page' : undefined} onClick={() => setActivePanel('setup')}>{t('설정', 'Setup', '设置', '設定')}</button>
-          <button type="button" className={activePanel === 'edit' ? 'active' : ''} aria-current={activePanel === 'edit' ? 'page' : undefined} onClick={() => setActivePanel('edit')}>{t('편집', 'Edit', '编辑', '編集')}</button>
-          <button type="button" className={activePanel === 'export' ? 'active' : ''} aria-current={activePanel === 'export' ? 'page' : undefined} onClick={() => setActivePanel('export')}>{t('내보내기', 'Export', '导出', '書き出し')}</button>
+          <button type="button" className={`${showBotRoom ? 'active' : ''}${deskReady ? '' : ' needs-bot'}`} aria-current={showBotRoom ? 'page' : undefined} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>{t('봇', 'Bots', '机器人', 'ボット')}</button>
+          {deskReady ? (
+            <>
+              <button type="button" className={!showBotRoom && activePanel === 'setup' ? 'active' : ''} aria-current={!showBotRoom && activePanel === 'setup' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setActivePanel('setup'); }}>{t('설정', 'Setup', '设置', '設定')}</button>
+              <button type="button" className={!showBotRoom && activePanel === 'edit' ? 'active' : ''} aria-current={!showBotRoom && activePanel === 'edit' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setActivePanel('edit'); }}>{t('편집', 'Edit', '编辑', '編集')}</button>
+              <button type="button" className={!showBotRoom && activePanel === 'export' ? 'active' : ''} aria-current={!showBotRoom && activePanel === 'export' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setActivePanel('export'); }}>{t('내보내기', 'Export', '导出', '書き出し')}</button>
+            </>
+          ) : null}
         </nav>
         <div className="desktop-title-actions">
           {update.releaseUrl && window.grokCrew?.openRelease
@@ -1115,7 +1173,7 @@ export default function DesktopWorkspace() {
         style={columnStyleVars(columns.widths) as CSSProperties}
       >
         <aside className={`desktop-sidebar ${drawer === 'projects' ? 'open' : ''}`}>
-          <div className="desktop-side-head"><b>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</b><div className="desktop-side-head-actions"><button type="button" className={specDeskOpen || !project ? 'active' : ''} onClick={() => { setSpecDeskOpen(true); setAdvancedSpecOpen(false); setDrawer('none'); }}>{t('새 규격', 'New brief', '新规格', '新しい仕様')}</button><button type="button" aria-label={t('새 프로젝트', 'New project', '新建项目', '新規プロジェクト')} onClick={() => setCreateOpen((value) => !value)}>＋</button></div></div>
+          <div className="desktop-side-head"><b>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</b><div className="desktop-side-head-actions"><button type="button" className={specDeskOpen || !project ? 'active' : ''} onClick={() => { setSpecDeskOpen(true); setAdvancedSpecOpen(false); setBotPanelOpen(false); setDrawer('none'); }}>{t('새 규격', 'New brief', '新规格', '新しい仕様')}</button><button type="button" aria-label={t('새 프로젝트', 'New project', '新建项目', '新規プロジェクト')} onClick={() => setCreateOpen((value) => !value)}>＋</button></div></div>
           {createOpen && <section className="desktop-create-card">{sampleAvailable ? <button type="button" className="desktop-primary" disabled={busy} onClick={() => void openSampleProject()}>{t('샘플로 시작', 'Start with the sample', '从示例开始', 'サンプルで始める')}</button> : null}<input value={newProject.title} onChange={(event) => setNewProject({ ...newProject, title: event.target.value })} placeholder={t('프로젝트 이름', 'Project name', '项目名称', 'プロジェクト名')} /><select value={newProject.source_path} onChange={(event) => setNewProject({ ...newProject, source_path: event.target.value })}><option value="">{t('원본 선택', 'Choose source', '选择素材', '素材を選択')}</option>{workspace.media.filter((item) => item.kind === 'video' && item.area === 'inputs').map((item) => <option value={item.path} key={item.path}>{item.name}</option>)}</select><button className="desktop-secondary" disabled={busy} onClick={() => void importMedia()}>{t('내 컴퓨터에서 가져오기', 'Import from computer', '从电脑导入', 'コンピュータから読み込む')}</button><input value={newProject.output_path} onChange={(event) => setNewProject({ ...newProject, output_path: event.target.value })} /><button className="desktop-primary" disabled={busy} onClick={() => void createProject()}>{t('만들기', 'Create', '创建', '作成')}</button></section>}
           <DesktopProjectLibrary
             projects={workspace.projects}
@@ -1226,9 +1284,26 @@ export default function DesktopWorkspace() {
               </div>
             ) : (
               <div className="desktop-simple-wrap">
+              {showBotRoom ? (
+                <DesktopBotPanel
+                  roster={workspace.crew_roster}
+                  links={botLinks}
+                  studioReady={studioState === 'ready'}
+                  allowOwnFile={!project}
+                  onLinksChange={(next) => {
+                    setBotLinks(next);
+                    if (hasConnectedBot(workspace.crew_roster, next)) setBotPanelOpen(false);
+                  }}
+                  onRefresh={() => refreshWorkspace(true)}
+                  onOpenOwnFile={() => void openOwnFileFromDesk()}
+                />
+              ) : null}
+              {!showBotRoom ? (
+                <>
               <SimpleDesk
                 recipes={workspace.style_recipes ?? []}
                 roster={workspace.crew_roster}
+                remoteNames={connectedRemoteNames(botLinks)}
                 busy={busy}
                 studioReady={studioState === 'ready'}
                 sampleAvailable={sampleAvailable}
@@ -1244,32 +1319,8 @@ export default function DesktopWorkspace() {
                   setDeskWait(next);
                   setDeskPulse({ lastCheckedAt: next.copiedAt, pull: 'none' });
                 }}
-                onPickedFile={(sourcePath) => {
-                  const name = sourcePath.split(/[/\\]/).pop() || t('내 파일', 'My file', '我的文件', '自分のファイル');
-                  setNewProject((current) => ({ ...current, title: current.title || name.replace(/\.[^.]+$/, ''), source_path: sourcePath }));
-                  setSpecDeskOpen(false);
-                  setCreateOpen(false);
-                  setDrawer('none');
-                  setBusy(true);
-                  void api('/api/v2/projects', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      title: name.replace(/\.[^.]+$/, ''),
-                      source_path: sourcePath,
-                      output_path: 'outputs/final-video.mp4',
-                      timeline: { clips: [{ in: 0, out: 10, keep: true, caption: '' }], render_settings: { fps: 30, quality: 'balanced', platform: 'reels_tiktok_shorts', captions_enabled: true } },
-                      caption: '',
-                    }),
-                  }).then(async (result) => {
-                    const created = result.project as Project;
-                    setSelectedProjectId(created.id);
-                    setActivePanel('edit');
-                    await refreshWorkspace(true);
-                    setMessage(t('내 파일을 열었습니다. 타임라인에서 바로 자를 수 있습니다.', 'Opened your file. Cut it on the timeline.', '已打开你的文件。可直接在时间线上剪。', '自分のファイルを開きました。タイムラインですぐ切れます。'));
-                  }).catch((caught) => {
-                    setMessage(caught instanceof Error ? caught.message : t('파일을 열지 못했습니다.', 'Could not open the file.', '无法打开文件。', 'ファイルを開けませんでした。'));
-                  }).finally(() => setBusy(false));
-                }}
+                onPickedFile={(sourcePath) => { void createProjectFromPath(sourcePath); }}
+                onOpenBots={() => { setBotPanelOpen(true); setSpecDeskOpen(true); }}
                 onOpenAdvanced={() => setAdvancedSpecOpen(true)}
                 onRefresh={() => refreshWorkspace(true)}
                 request={api}
@@ -1281,6 +1332,8 @@ export default function DesktopWorkspace() {
                   onOpenProject={openHandoffProject}
                   {...folderActions}
                 />
+              ) : null}
+                </>
               ) : null}
               </div>
             )

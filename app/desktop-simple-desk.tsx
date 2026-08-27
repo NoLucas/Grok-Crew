@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, type DragEvent } from 'react';
-import { connectPaste, connectedBot, type CrewRoster } from './desktop-bot-connect';
+import { connectedBot, type CrewRoster } from './desktop-bot-connect';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { useLanguage } from './language';
 import { formatCheckTime, type DeskPullStatus, type DeskWaitState } from './desktop-wait-state';
@@ -20,12 +20,14 @@ type SimpleDeskProps = {
   sampleAvailable: boolean;
   showAdvanced: boolean;
   roster?: CrewRoster;
+  remoteNames?: string[];
   wait: DeskWaitState | null;
   lastCheckedAt: string;
   pullStatus: DeskPullStatus;
   onOpenSample: () => void;
   onOpenOwnFootage: () => void;
   onPickedFile?: (path: string) => void;
+  onOpenBots: () => void;
   onOpenAdvanced: () => void;
   onCopied: (wait: DeskWaitState) => void;
   onRefresh: () => Promise<void>;
@@ -75,12 +77,14 @@ export function SimpleDesk({
   sampleAvailable,
   showAdvanced,
   roster,
+  remoteNames = [],
   wait,
   lastCheckedAt,
   pullStatus,
   onOpenSample,
   onOpenOwnFootage,
   onPickedFile,
+  onOpenBots,
   onOpenAdvanced,
   onCopied,
   onRefresh,
@@ -96,13 +100,12 @@ export function SimpleDesk({
   const [clipboardBlocked, setClipboardBlocked] = useState(false);
   const [error, setError] = useState('');
   const [inviteText, setInviteText] = useState('');
-  const [connectText, setConnectText] = useState('');
-  const [connectCopied, setConnectCopied] = useState(false);
-  const [connectBlocked, setConnectBlocked] = useState(false);
   const [ownOver, setOwnOver] = useState(false);
   const [cutOver, setCutOver] = useState(false);
   const cutInputRef = useRef<HTMLInputElement>(null);
   const bot = connectedBot(roster);
+  const attachedName = bot?.display_name || bot?.bot_id || remoteNames[0] || '';
+  const attached = Boolean(attachedName);
 
   const cards = useMemo(() => {
     const byId = new Map(recipes.map((item) => [item.id, item]));
@@ -114,22 +117,6 @@ export function SimpleDesk({
   const titleEmpty = !title.trim();
   const pasteTarget = wait?.pasteTarget || PASTE_TARGET;
   const checkedClock = formatCheckTime(lastCheckedAt, language);
-
-  const copyConnect = async () => {
-    const text = connectPaste(language);
-    setConnectText(text);
-    setConnectBlocked(false);
-    setError('');
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
-      await navigator.clipboard.writeText(text);
-      setConnectCopied(true);
-      window.setTimeout(() => setConnectCopied(false), 4000);
-    } catch {
-      setConnectBlocked(true);
-    }
-    await onRefresh();
-  };
 
   const copyInvite = async () => {
     const heading = title.trim();
@@ -249,8 +236,8 @@ export function SimpleDesk({
     <div className="desktop-spec-desk desktop-simple-desk">
       <div className="desktop-spec-hero">
         <span>✦</span>
-        <h1>{t('먼저 이 PC의 봇과 연결하세요', 'Connect a bot on this PC first', '请先连接这台电脑上的机器人', '先にこの PC のボットと接続してください')}</h1>
-        <p>{t('이름이 이 창에 보이면 연결된 겁니다. 그다음 맡기거나 내가 엽니다. 다른 PC 봇은 여기 붙을 수 없습니다.', 'When the name shows here, it is connected. Then hand it off or open a file. A bot on another PC cannot attach here.', '窗口里出现名字就是已连接。然后再交给它或自己打开。另一台电脑上的机器人连不上这里。', 'この窓に名前が出れば接続です。それから任せるか自分で開く。別 PC のボットはここには付けません。')}</p>
+        <h1>{t('제목을 적고 붙입니다', 'Write a title and paste it', '写下标题再贴出去', 'タイトルを書いて貼る')}</h1>
+        <p>{t('봇 연결은 위 봇 메뉴에서만 합니다. 이 PC와 다른 PC(Grok·내가 만든 에이전트) 모두 거기에서 붙습니다.', 'Bot connections live only in the Bots menu. Same-PC and other-PC bots (Grok, your agent) attach there.', '机器人连接只在上面的机器人菜单里。这台电脑和另一台电脑（Grok、自己的智能体）都在那里接。', 'ボット接続は上のボットメニューだけです。この PC も別 PC（Grok・自分のエージェント）もそこで付けます。')}</p>
       </div>
 
       {!studioReady ? (
@@ -259,30 +246,19 @@ export function SimpleDesk({
         </p>
       ) : null}
 
-      <section className={`desktop-simple-connect${bot ? ' is-ready' : ''}`} aria-live="polite">
+      <section className={`desktop-simple-connect${attached ? ' is-ready' : ''}`} aria-live="polite">
         <div>
-          <b>{bot
-            ? t(`연결됨 · ${bot.display_name || bot.bot_id}`, `Connected · ${bot.display_name || bot.bot_id}`, `已连接 · ${bot.display_name || bot.bot_id}`, `接続済み · ${bot.display_name || bot.bot_id}`)
-            : t('아직 연결되지 않음', 'Not connected yet', '尚未连接', 'まだ接続されていない')}</b>
-          <p>{bot
+          <b>{attached
+            ? t(`연결됨 · ${attachedName}`, `Connected · ${attachedName}`, `已连接 · ${attachedName}`, `接続済み · ${attachedName}`)
+            : t('연결 상태는 봇 메뉴에서', 'Connection status is in Bots', '连接状态在机器人菜单', '接続状態はボットメニュー')}</b>
+          <p>{attached
             ? t('이제 제목을 적고 일을 맡기거나, 영상을 직접 여세요.', 'Now write a title and hand it off, or open a video yourself.', '现在写标题交给它，或自己打开视频。', 'タイトルを書いて任せるか、映像を自分で開いてください。')
-            : t('같은 PC의 Cursor·Claude·ChatGPT 창에 아래 글을 붙이세요. 체크인되면 이름이 여기 뜹니다.', 'Paste the line below in Cursor, Claude, or ChatGPT on this PC. The name appears here after check-in.', '把下面的文字贴到这台电脑的 Cursor、Claude 或 ChatGPT。签到后名字会出现在这里。', '同じ PC の Cursor・Claude・ChatGPT に下の文を貼る。チェックインすると名前が出ます。')}</p>
+            : t('붙이거나 끊는 것은 봇 메뉴에서만 합니다.', 'Attach or remove a bot only in the Bots menu.', '接上或断开只在机器人菜单里做。', '付ける・切るはボットメニューだけです。')}</p>
         </div>
-        {bot ? null : (
-          <button type="button" className="desktop-primary" disabled={locked} onClick={() => void copyConnect()}>
-            {connectCopied
-              ? t('연결 글을 복사했습니다', 'Connect text copied', '已复制连接文字', '接続文をコピーしました')
-              : t('연결 글 복사', 'Copy the connect text', '复制连接文字', '接続文をコピー')}
-          </button>
-        )}
+        <button type="button" className="desktop-secondary" onClick={onOpenBots}>
+          {t('봇 열기', 'Open Bots', '打开机器人', 'ボットを開く')}
+        </button>
       </section>
-      {connectBlocked ? (
-        <details className="desktop-spec-advanced desktop-simple-invite" open>
-          <summary>{t('연결 글 보기', 'Show the connect text', '查看连接文字', '接続文を見る')}</summary>
-          <p className="desktop-spec-error">{t('아래 글을 직접 복사하세요. 클립보드를 쓰지 못했습니다.', 'Copy the text below. The clipboard was blocked.', '请手动复制下面的文字。无法使用剪贴板。', '下の文を自分でコピーしてください。クリップボードを使えませんでした。')}</p>
-          <textarea value={connectText} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
-        </details>
-      ) : null}
 
       {wait ? (
         <section className={`desktop-simple-wait is-${pullStatus === 'failed' ? 'failed' : pullStatus === 'arrived' ? 'arrived' : 'busy'}`} role="status">
@@ -358,8 +334,8 @@ export function SimpleDesk({
               </div>
             </details>
 
-            {!bot ? (
-              <p className="desktop-spec-meta">{t('이 PC 봇이면 먼저 위에서 연결하세요. 다른 PC 봇이면 일을 복사해 그 창에 붙이고, 완성 파일만 다시 가져옵니다.', 'If the bot is on this PC, connect above first. If it is on another PC, copy the job, paste it there, and bring the finished file back.', '若机器人在这台电脑，请先在上面连接。若在另一台电脑，复制任务贴过去，再把完成文件带回来。', 'この PC のボットなら先に上で接続。別 PC なら仕事をコピーして向こうに貼り、完成ファイルだけ戻す。')}</p>
+            {!attached ? (
+              <p className="desktop-spec-meta">{t('아직 안 붙었으면 봇 메뉴에서 연결하세요. 다른 PC 봇은 일을 복사해 그 창에 붙이고, 완성 파일만 다시 가져옵니다.', 'If nothing is attached yet, connect in the Bots menu. An other-PC bot gets the job as text and brings the finished file back.', '还没接上就到机器人菜单连接。另一台电脑的机器人只收任务文字，再把完成文件带回来。', 'まだ付いていなければボットメニューで接続。別 PC のボットは仕事を貼り、完成ファイルだけ戻します。')}</p>
             ) : null}
             <div className="desktop-simple-copy-row">
               <button type="submit" className="desktop-primary" disabled={locked}>
