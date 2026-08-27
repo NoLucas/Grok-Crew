@@ -4,7 +4,7 @@
 
 ログインなしで開きます。サイトのサブスクではありません。
 
-[Windows を入手](https://github.com/NoLucas/Grok-crew-test/releases) · [한국어](README.ko.md) · [English](README.md) · [中文](README.zh.md)
+[Windows を入手](https://github.com/NoLucas/Grok-Crew/releases) · [한국어](README.ko.md) · [English](README.md) · [中文](README.zh.md)
 
 ---
 
@@ -81,11 +81,11 @@
 
 ## このリポジトリを開く
 
-公開ソース：[NoLucas/Grok-crew-test](https://github.com/NoLucas/Grok-crew-test)
+公開ソース：[NoLucas/Grok-Crew](https://github.com/NoLucas/Grok-Crew)
 
 ```bash
-git clone https://github.com/NoLucas/Grok-crew-test.git
-cd Grok-crew-test
+git clone https://github.com/NoLucas/Grok-Crew.git
+cd Grok-Crew
 npm install
 npm run local
 ```

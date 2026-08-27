@@ -4,7 +4,7 @@
 
 로그인 없이 엽니다. 사이트 구독이 아닙니다.
 
-[Windows 받기](https://github.com/NoLucas/Grok-crew-test/releases) · [English](README.md) · [中文](README.zh.md) · [日本語](README.ja.md)
+[Windows 받기](https://github.com/NoLucas/Grok-Crew/releases) · [English](README.md) · [中文](README.zh.md) · [日本語](README.ja.md)
 
 ---
 
@@ -81,11 +81,11 @@
 
 ## 이 저장소에서 열기
 
-공개 저장소: [NoLucas/Grok-crew-test](https://github.com/NoLucas/Grok-crew-test)
+공개 저장소: [NoLucas/Grok-Crew](https://github.com/NoLucas/Grok-Crew)
 
 ```bash
-git clone https://github.com/NoLucas/Grok-crew-test.git
-cd Grok-crew-test
+git clone https://github.com/NoLucas/Grok-Crew.git
+cd Grok-Crew
 npm install
 npm run local
 ```
