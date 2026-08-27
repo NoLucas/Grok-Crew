@@ -344,10 +344,6 @@ export default function DesktopWorkspace() {
             ? 'none'
             : current.pull,
       }));
-      if (next.projects.some((item) => item.handoff_agent || item.handoff_door === 'editor' || item.handoff_door === 'grok')) {
-        markFirstCutArrived();
-        setFirstCut(true);
-      }
       setStudioState('ready');
       if (!quiet) setMessage(t('확인된 최신 상태를 불러왔습니다.', 'Loaded the latest verified state.', '已加载最新确认状态。', '確認済みの最新状態を読み込みました。'));
     } catch (error) {
