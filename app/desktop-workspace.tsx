@@ -24,6 +24,7 @@ import {
   type BotLinkState,
 } from './desktop-bot-links';
 import { AutoDesk } from './desktop-auto-desk';
+import { autoHeaderDot } from './desktop-auto-state';
 import { HandoffFolderBoard, type HandoffFolder } from './desktop-handoff-folder';
 import { appearanceDataAttrs, useDesktopAppearance } from './desktop-appearance';
 import { DesktopAppearanceControls } from './desktop-appearance-controls';
@@ -559,6 +560,16 @@ export default function DesktopWorkspace() {
   };
   const selected = timeline ? findClip(timeline, selectedClipId) : null;
   const outputReady = project ? workspace.media.some((item) => item.area === 'outputs' && relativeWorkspacePath(project.output_path) === item.path) : false;
+  const autoDot = autoHeaderDot({
+    attached: hasConnectedBot(workspace.crew_roster, botLinks),
+    studioReady: studioState === 'ready',
+    connectWaiting: botLinks.bots.some((item) => item.status === 'waiting'),
+    wait: deskWait,
+    pull: deskPulse.pull,
+    hasProject: Boolean(project),
+    outputReady,
+    saveFailed: autoSaveFailed,
+  });
   const videoAssets = useMemo(
     () => timeline?.assets.filter((asset) => asset.kind === 'video') ?? [],
     [timeline],
@@ -1164,7 +1175,7 @@ export default function DesktopWorkspace() {
         <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
           <button type="button" className={`${showBotRoom ? 'active' : ''}${hasConnectedBot(workspace.crew_roster, botLinks) ? ' is-connected' : ' needs-bot'}`} aria-current={showBotRoom ? 'page' : undefined} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>{t('연결', 'Connect', '连接', '接続')}</button>
-          <button type="button" className={!showBotRoom && showAutoDesk ? 'active' : ''} aria-current={!showBotRoom && showAutoDesk ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(true); setAdvancedSpecOpen(false); setActivePanel('auto'); }}>{t('자동', 'Auto', '自动', '自動')}</button>
+          <button type="button" className={!showBotRoom && showAutoDesk ? 'active' : ''} aria-current={!showBotRoom && showAutoDesk ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(true); setAdvancedSpecOpen(false); setActivePanel('auto'); }}>{t('자동', 'Auto', '自动', '自動')}{autoDot !== 'off' ? <i className={`desktop-auto-nav-dot is-${autoDot}`} aria-hidden="true" /> : null}</button>
           {deskReady ? (
             <>
               <button type="button" className={!showBotRoom && !showAutoDesk && activePanel === 'setup' ? 'active' : ''} aria-current={!showBotRoom && !showAutoDesk && activePanel === 'setup' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(false); setSpecDeskOpen(false); setAdvancedSpecOpen(false); setActivePanel('setup'); }}>{t('설정', 'Setup', '设置', '設定')}</button>
@@ -1354,6 +1365,8 @@ export default function DesktopWorkspace() {
                 pullStatus={deskPulse.pull}
                 previewUrl={project ? mediaUrl(project.source_path) : ''}
                 projectTitle={project?.title ?? ''}
+                savePath={project ? relativeWorkspacePath(project.output_path) : ''}
+                connectedAt={botLinks.bots.find((item) => item.status === 'connected')?.connectedAt ?? ''}
                 outputReady={outputReady}
                 savingFile={busy && Boolean(project) && activePanel === 'auto'}
                 saveFailed={autoSaveFailed}

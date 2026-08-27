@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { connectPaste, connectedBot, type CrewRoster } from './desktop-bot-connect';
+import { botSeenSeconds, formatSince } from './desktop-auto-state';
 import {
   type BotKind,
   type BotLinkState,
@@ -82,7 +83,10 @@ export function DesktopBotPanel({
   const [paste, setPaste] = useState('');
   const [error, setError] = useState('');
   const local = connectedBot(roster);
-  const connected = Boolean(local) || links.bots.some((item) => item.status === 'connected');
+  const liveLink = links.bots.find((item) => item.status === 'connected');
+  const connected = Boolean(local) || Boolean(liveLink);
+  const seenSeconds = botSeenSeconds(roster, liveLink?.connectedAt);
+  const seenLabel = seenSeconds === null ? '' : formatSince(seenSeconds, language);
 
   const connectText = useMemo(
     () => remoteConnectPaste(openKind, links.pairCode, language),
@@ -185,11 +189,11 @@ export function DesktopBotPanel({
         <Lamp
           on={connected}
           label={connected
-            ? t('연결됨', 'Connected', '已连接', '接続済み')
+            ? t(`연결됨${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `Connected${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `已连接${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `接続済み${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`)
             : t('아직 연결되지 않음', 'Not connected yet', '尚未连接', 'まだ接続されていない')}
         />
         <p>{connected
-          ? t('붙은 이름 옆의 초록불이 연결됨입니다. 끊기는 각 줄에서 합니다.', 'The green light next to a name means connected. Remove it on that row.', '名字旁边的绿灯就是已连接。断开在该行操作。', '名前の横の緑が接続済みです。切るはその行で。')
+          ? t('붙은 이름 옆의 초록불과 마지막 확인이 연결됨입니다. 끊기는 각 줄에서 합니다.', 'The green light and last check next to a name mean connected. Remove it on that row.', '名字旁边的绿灯和上次确认就是已连接。断开在该行操作。', '名前の横の緑と最後の確認が接続済みです。切るはその行で。')
           : t('다른 PC의 Grok·Cursor·Claude·내가 만든 에이전트부터 붙이세요.', 'Attach Grok, Cursor, Claude, or your agent on another PC first.', '先接另一台电脑上的 Grok、Cursor、Claude 或自己的智能体。', '先に別 PC の Grok・Cursor・Claude・自分のエージェントを付けてください。')}</p>
       </section>
 

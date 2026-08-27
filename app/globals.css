@@ -7418,6 +7418,43 @@ select {
   align-items: center;
 }
 .desktop-auto-publish-ask p { margin: 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; flex: 1 1 16rem; }
+.desktop-auto-card,
+.desktop-auto-empty {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 12px;
+  background: var(--desktop-panel);
+}
+.desktop-auto-card b,
+.desktop-auto-empty b { font-size: 13px; letter-spacing: -.02em; }
+.desktop-auto-card p,
+.desktop-auto-empty p { margin: 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
+.desktop-auto-save-card { border-color: #cfead8; background: #f3faf5; }
+.desktop-auto-empty { border-style: dashed; }
+.desktop-auto-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.desktop-auto-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 999px;
+  background: var(--desktop-panel);
+  color: inherit;
+  font-size: 12px;
+}
+.desktop-auto-preview-note { margin: 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
+.desktop-auto-nav-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 0 0 1px 6px;
+  border-radius: 50%;
+  background: #c4c0b6;
+  vertical-align: middle;
+}
+.desktop-auto-nav-dot.is-yellow { background: #d4a017; }
+.desktop-auto-nav-dot.is-green { background: var(--desktop-green); }
+.desktop-auto-nav-dot.is-red { background: #b42318; }
 .desktop-shell[data-theme="dark"] .desktop-auto-status,
 .desktop-shell[data-theme="low-dark"] .desktop-auto-status {
   border-color: rgba(255, 200, 120, 0.28);
@@ -7433,9 +7470,18 @@ select {
   background: rgba(120, 170, 255, 0.18);
 }
 .desktop-shell[data-theme="dark"] .desktop-auto-preview,
-.desktop-shell[data-theme="low-dark"] .desktop-auto-preview {
+.desktop-shell[data-theme="low-dark"] .desktop-auto-preview,
+.desktop-shell[data-theme="dark"] .desktop-auto-save-card,
+.desktop-shell[data-theme="low-dark"] .desktop-auto-save-card {
   border-color: rgba(78, 203, 141, 0.35);
   background: rgba(78, 203, 141, 0.08);
+}
+.desktop-shell[data-theme="dark"] .desktop-auto-card,
+.desktop-shell[data-theme="low-dark"] .desktop-auto-card,
+.desktop-shell[data-theme="dark"] .desktop-auto-empty,
+.desktop-shell[data-theme="low-dark"] .desktop-auto-empty {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
 }
 @media (max-width: 720px) {
   .desktop-titlebar nav { flex-wrap: wrap; }

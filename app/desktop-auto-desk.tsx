@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, type DragEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { CrewRoster } from './desktop-bot-connect';
 import {
   DEFAULT_RECIPE_ID,
@@ -9,11 +9,19 @@ import {
   attachedBotName,
   autoMachineState,
   autoPhaseLamps,
+  botSeenSeconds,
   canStartAuto,
   droppedFilePath,
+  formatElapsed,
+  formatSince,
   readAutoPrefs,
+  rememberRecentTitle,
+  rememberSave,
+  shouldAskReplaceCut,
+  shouldPingCut,
   studioDownloadBase,
   suggestRecipeId,
+  waitElapsedSeconds,
   writeAutoPrefs,
   type AutoMode,
   type AutoPhaseId,
@@ -43,6 +51,8 @@ type AutoDeskProps = {
   pullStatus: DeskPullStatus;
   previewUrl?: string;
   projectTitle?: string;
+  savePath?: string;
+  connectedAt?: string;
   outputReady?: boolean;
   savingFile?: boolean;
   saveFailed?: boolean;
@@ -79,6 +89,8 @@ export function AutoDesk({
   pullStatus,
   previewUrl = '',
   projectTitle = '',
+  savePath = '',
+  connectedAt = '',
   outputReady = false,
   savingFile = false,
   saveFailed = false,
@@ -95,7 +107,7 @@ export function AutoDesk({
   request,
 }: AutoDeskProps) {
   const { language, t } = useLanguage();
-  const prefs = useMemo(() => readAutoPrefs(), []);
+  const [prefs, setPrefs] = useState(() => readAutoPrefs());
   const [mode, setMode] = useState<AutoMode>('hand_off');
   const [title, setTitle] = useState(wait?.title ?? '');
   const [goal, setGoal] = useState('');
@@ -112,6 +124,10 @@ export function AutoDesk({
   const [ownOver, setOwnOver] = useState(false);
   const [cutOver, setCutOver] = useState(false);
   const [askPublish, setAskPublish] = useState(false);
+  const [replaceAsk, setReplaceAsk] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const pingedSpecRef = useRef('');
+  const pendingCutRef = useRef<File | null>(null);
   const cutInputRef = useRef<HTMLInputElement>(null);
   const attachedName = attachedBotName(roster, remoteNames);
   const attached = Boolean(attachedName);
@@ -151,6 +167,46 @@ export function AutoDesk({
   const styleLabel = selected
     ? localized(selected.name, language, selected.id)
     : t('인스타 릴', 'Instagram Reel', 'Instagram Reel', 'Instagram リール');
+  const seenSeconds = botSeenSeconds(roster, connectedAt, nowMs);
+  const seenLabel = seenSeconds === null ? '' : formatSince(seenSeconds, language);
+  const elapsedLabel = wait ? formatElapsed(waitElapsedSeconds(wait.copiedAt, nowMs), language) : '';
+  const recentTitles = prefs.recentTitles.filter((item) => item !== title.trim());
+  const waitingHandOff = mode === 'hand_off' && Boolean(wait) && machine === 'waiting';
+  const showCutDrop = mode === 'hand_off' && (Boolean(wait) || machine === 'waiting');
+
+  useEffect(() => {
+    if (!waitingHandOff) return;
+    const timer = window.setInterval(() => setNowMs(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, [waitingHandOff]);
+
+  useEffect(() => {
+    if (!shouldPingCut({
+      pull: pullStatus,
+      hidden: typeof document !== 'undefined' && document.hidden,
+      specId: wait?.specId,
+      lastPingedSpecId: pingedSpecRef.current,
+    })) return;
+    if (typeof Notification === 'undefined') return;
+    const specId = String(wait?.specId || '');
+    const heading = wait?.title || t('컷이 왔습니다', 'The cut is here', '成片到了', 'カットが届きました');
+    const fire = () => {
+      pingedSpecRef.current = specId;
+      try {
+        new Notification(t('Grok Crew', 'Grok Crew', 'Grok Crew', 'Grok Crew'), {
+          body: t(`${heading} · 이 탭에서 저장하세요.`, `${heading} · Save it in this tab.`, `${heading} · 请在这个标签保存。`, `${heading} · このタブで保存してください。`),
+        });
+      } catch {
+        /* permission or OS block */
+      }
+    };
+    if (Notification.permission === 'granted') fire();
+    else if (Notification.permission === 'default') {
+      void Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') fire();
+      });
+    }
+  }, [language, pullStatus, t, wait?.specId, wait?.title]);
 
   const startJob = async () => {
     const check = canStartAuto({ title, attached });
@@ -183,7 +239,8 @@ export function AutoDesk({
       const text = String(invite.text || '');
       if (!text) throw new Error(t('초대문을 만들지 못했습니다.', 'Could not make the invite.', '无法生成邀请。', '招待文を作れませんでした。'));
       setInviteText(text);
-      writeAutoPrefs({ recipeId });
+      setPrefs(writeAutoPrefs({ recipeId }));
+      setPrefs(rememberRecentTitle(heading));
       const nextWait: DeskWaitState = {
         specId: record.id,
         title: heading,
@@ -232,8 +289,15 @@ export function AutoDesk({
     else if (picked) onOpenOwnFootage();
   };
 
-  const acceptFinished = async (file: File | undefined) => {
+  const acceptFinished = async (file: File | undefined, confirmed = false) => {
     if (!file) return;
+    if (shouldAskReplaceCut(hasProject) && !confirmed) {
+      pendingCutRef.current = file;
+      setReplaceAsk(true);
+      return;
+    }
+    pendingCutRef.current = null;
+    setReplaceAsk(false);
     setAccepting(true);
     setError('');
     try {
@@ -274,7 +338,10 @@ export function AutoDesk({
 
   const saveLocal = async () => {
     const ok = await onSaveLocal();
-    if (ok) setAskPublish(true);
+    if (ok) {
+      setPrefs(rememberSave(savePath));
+      setAskPublish(true);
+    }
   };
 
   const phases: { id: AutoPhaseId; label: string; note: string }[] = [
@@ -304,10 +371,12 @@ export function AutoDesk({
       id: 'working',
       label: t('작업 중', 'Working', '工作中', '作業中'),
       note: pullStatus === 'failed'
-        ? t('실패 · 다시 확인', 'Failed · check again', '失败 · 再检查', '失敗 · 再確認')
-        : wait
-          ? t(`마지막 확인 ${checkedClock || t('아직', 'soon', '稍后', 'まもなく')} · ${pullStatus === 'arrived' ? t('도착함', 'arrived', '已到达', '到着') : t('아직 없음', 'not yet', '还没有', 'まだない')}`, `Last check ${checkedClock || 'soon'} · ${pullStatus === 'arrived' ? 'arrived' : 'not yet'}`, `上次检查 ${checkedClock || '稍后'} · ${pullStatus === 'arrived' ? '已到达' : '还没有'}`, `最後の確認 ${checkedClock || 'まもなく'} · ${pullStatus === 'arrived' ? '到着' : 'まだない'}`)
-          : t('일을 보낸 뒤 기다립니다', 'Wait after you send the job', '发送任务后等待', '仕事を送ってから待ちます'),
+        ? t('실패 · 같은 말로 다시', 'Failed · send the same line again', '失败 · 再用同一句话', '失敗 · 同じ言葉でもう一度')
+        : wait && pullStatus === 'arrived'
+          ? t('컷이 이 탭에 있음', 'The cut is in this tab', '成片在这个标签', 'カットはこのタブにあります')
+          : wait
+            ? t(`${elapsedLabel ? `${elapsedLabel}째` : t('방금', 'just now', '刚刚', 'たった今')} · 이 창은 봇이 읽었는지 모름 · 마지막 확인 ${checkedClock || t('아직', 'soon', '稍后', 'まもなく')}`, `${elapsedLabel || 'just now'} · this window does not know if the bot read it · last check ${checkedClock || 'soon'}`, `${elapsedLabel || '刚刚'} · 这个窗口不知道机器人读没读 · 上次检查 ${checkedClock || '稍后'}`, `${elapsedLabel || 'たった今'} · この窓はボットが読んだか知らない · 最後の確認 ${checkedClock || 'まもなく'}`)
+            : t('일을 보낸 뒤 기다립니다', 'Wait after you send the job', '发送任务后等待', '仕事を送ってから待ちます'),
     },
     {
       id: 'cut',
@@ -348,12 +417,12 @@ export function AutoDesk({
           <b className={attached ? 'desktop-connect-lamp is-on' : 'desktop-connect-lamp'}>
             <i aria-hidden="true" />
             {attached
-              ? t(`연결됨 · ${attachedName}`, `Connected · ${attachedName}`, `已连接 · ${attachedName}`, `接続済み · ${attachedName}`)
+              ? t(`연결됨 · ${attachedName}${seenLabel ? ` · ${seenLabel}` : ''}`, `Connected · ${attachedName}${seenLabel ? ` · ${seenLabel}` : ''}`, `已连接 · ${attachedName}${seenLabel ? ` · ${seenLabel}` : ''}`, `接続済み · ${attachedName}${seenLabel ? ` · ${seenLabel}` : ''}`)
               : t('먼저 연결', 'Connect first', '请先连接', '先に接続')}
           </b>
           <p>{attached
-            ? t(`마지막 스타일 · ${styleLabel}`, `Last style · ${styleLabel}`, `上次风格 · ${styleLabel}`, `前回のスタイル · ${styleLabel}`)
-            : t('붙이거나 끊는 것은 연결에서만 합니다. 여기에는 초록불만 둡니다.', 'Attach or remove a bot only in Connect. This screen only shows the light.', '接上或断开只在连接里做。这里只留绿灯。', '付ける・切るは接続だけです。ここには緑のランプだけ置きます。')}</p>
+            ? t(`마지막 스타일 · ${styleLabel}. 붙이거나 끊는 것은 연결에서만 합니다.`, `Last style · ${styleLabel}. Attach or remove a bot only in Connect.`, `上次风格 · ${styleLabel}。接上或断开只在连接里做。`, `前回のスタイル · ${styleLabel}。付ける・切るは接続だけです。`)
+            : t('아직 안 붙음. 자동은 제목보다 연결이 먼저입니다.', 'Nothing is attached. Auto waits for Connect first.', '还没接上。自动要先连接。', 'まだ付いていません。自動は接続が先です。')}</p>
         </div>
         <button type="button" className="desktop-secondary" onClick={onOpenBots}>
           {t('연결 열기', 'Open Connect', '打开连接', '接続を開く')}
@@ -409,6 +478,23 @@ export function AutoDesk({
               disabled={saving}
             />
           </label>
+          {recentTitles.length ? (
+            <div className="desktop-auto-chips" aria-label={t('최근 제목', 'Recent titles', '最近标题', '最近のタイトル')}>
+              {recentTitles.map((item) => (
+                <button key={item} type="button" className="desktop-auto-chip" onClick={() => { setTitle(item); if (error) setError(''); }}>
+                  {item}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {attached && title.trim() ? (
+            <section className="desktop-auto-card" aria-label={t('이번 일', 'This job', '这次任务', '今回の仕事')}>
+              <b>{t('이번 일', 'This job', '这次任务', '今回の仕事')}</b>
+              <p>{t(`${attachedName} · ${styleLabel}`, `${attachedName} · ${styleLabel}`, `${attachedName} · ${styleLabel}`, `${attachedName} · ${styleLabel}`)}</p>
+              <p>{t('하지 않음: 올리지 않음 · 화질 잠금 유지 · 이 PC에만 저장', 'Will not: post · change quality · leave this PC', '不会：发布 · 改画质 · 离开这台电脑', 'しないこと: 上げない · 画質を変えない · この PC だけに保存')}</p>
+              <p>{t('끝: 컷이 이 창에 뜨면 저장을 묻습니다. 이 창은 봇이 읽었는지 모릅니다.', 'Done when the cut appears here and we ask to save. This window does not know if the bot read it.', '结束：成片出现在这里并询问保存。这个窗口不知道机器人读没读。', '終わり: カットがここに出たら保存を聞きます。この窓はボットが読んだか知りません。')}</p>
+            </section>
+          ) : null}
           <details className="desktop-spec-advanced">
             <summary>{t('무엇을 말할까', 'What should it say', '要讲什么', '何を言うか')}</summary>
             <textarea
@@ -456,6 +542,19 @@ export function AutoDesk({
         </form>
       )}
 
+      {mode === 'hand_off' && wait ? (
+        <section className="desktop-auto-card" aria-live="polite">
+          <b>{t('아까 적은 말', 'What you asked', '刚才写的话', 'さっき書いた言葉')}</b>
+          <p>{wait.title || title}</p>
+          <p>{attached
+            ? `${attachedName}${seenLabel ? ` · ${seenLabel}` : ''} · ${pullStatus === 'arrived' || hasProject
+              ? t('컷이 와 있음', 'the cut is here', '成片已到', 'カット到着')
+              : t(`아직 없음 · ${elapsedLabel || t('방금', 'just now', '刚刚', 'たった今')}째`, `not yet · ${elapsedLabel || 'just now'}`, `还没有 · ${elapsedLabel || '刚刚'}`, `まだない · ${elapsedLabel || 'たった今'}`)}`
+            : t('연결이 끊겼습니다. 연결 열기를 누르세요.', 'The bot is gone. Open Connect.', '连接断了。请打开连接。', '接続が切れています。接続を開いてください。')}</p>
+          <p>{t('안 누르면 이 탭에 미리보기만 남습니다. 올리지는 않습니다. 이 창은 봇이 읽었는지 모릅니다.', 'If you do nothing, only the preview stays in this tab. It does not post. This window does not know if the bot read it.', '不点的话只有预览留在这个标签。不会发布。这个窗口不知道机器人读没读。', '押さなければこのタブにプレビューだけ残ります。上げません。この窓はボットが読んだか知りません。')}</p>
+        </section>
+      ) : null}
+
       <ol className="desktop-auto-phases">
         {phases.map((phase) => (
           <li key={phase.id} className={`desktop-auto-phase is-${lamps[phase.id]}`}>
@@ -468,14 +567,14 @@ export function AutoDesk({
         ))}
       </ol>
 
-      {wait && machine === 'waiting' ? (
+      {waitingHandOff ? (
         <section className={`desktop-simple-wait is-${pullStatus === 'failed' ? 'failed' : 'busy'}`} role="status">
           <b>{t('봇이 작업 중 · 창을 끄지 마세요', 'The bot is working · do not close this window', '机器人正在工作 · 不要关掉这个窗口', 'ボットが作業中 · この窓を閉じないでください')}</b>
           <p>{t(`복사했습니다. ${pasteTarget} 창에 붙이세요. 끝나면 이 탭에 미리보기가 생깁니다.`, `Copied. Paste it in the ${pasteTarget} window. A preview appears in this tab when it is done.`, `已复制。请粘贴到 ${pasteTarget} 窗口。完成后预览会出现在这个标签。`, `コピーしました。${pasteTarget} の窓に貼ってください。終わるとこのタブにプレビューが出ます。`)}</p>
         </section>
       ) : null}
 
-      {wait || machine === 'waiting' ? (
+      {showCutDrop ? (
         <section className="desktop-auto-drop">
           <input
             ref={cutInputRef}
@@ -509,9 +608,36 @@ export function AutoDesk({
         </section>
       ) : null}
 
+      {replaceAsk ? (
+        <section className="desktop-auto-card" role="dialog" aria-label={t('덮을까요', 'Replace the cut', '要替换吗', '置き換えますか')}>
+          <b>{t('이미 컷이 있습니다', 'A cut is already here', '已经有成片了', 'すでにカットがあります')}</b>
+          <p>{t('지금 놓은 파일로 바꿀까요? 자동으로 덮지 않습니다.', 'Replace it with the file you just dropped? Auto will not overwrite by itself.', '要用刚放的文件替换吗？自动不会自己覆盖。', '今置いたファイルに換えますか。自動では上書きしません。')}</p>
+          <div className="desktop-auto-preview-actions">
+            <button type="button" className="desktop-primary" onClick={() => void acceptFinished(pendingCutRef.current || undefined, true)}>
+              {t('이 파일로 바꾸기', 'Replace with this file', '换成这个文件', 'このファイルに換える')}
+            </button>
+            <button type="button" className="desktop-secondary" onClick={() => { pendingCutRef.current = null; setReplaceAsk(false); }}>
+              {t('그대로 두기', 'Keep the current cut', '留着现在的', '今のまま')}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {waitingHandOff && !hasProject && pullStatus !== 'arrived' ? (
+        <section className="desktop-auto-empty" aria-live="polite">
+          <b>{t('컷이 오면 여기', 'The cut will land here', '成片会到这里', 'カットが来たらここ')}</b>
+          <p>{t('지금은 비어 있습니다. 기다리는 중입니다. 로딩 실패가 아닙니다.', 'It is empty because we are still waiting. This is not a failed load.', '现在是空的，因为还在等。不是加载失败。', '待っているので空です。読み込み失敗ではありません。')}</p>
+        </section>
+      ) : null}
+
       {hasProject || pullStatus === 'arrived' ? (
         <section className="desktop-auto-preview">
           <b>{projectTitle || wait?.title || t('도착한 컷', 'Arrived cut', '已到达的成片', '届いたカット')}</b>
+          <p className="desktop-auto-preview-note">
+            {outputReady
+              ? t('이 PC에 두었음. 자동은 올리지 않았습니다.', 'Saved on this PC. Auto did not post it.', '已留在这台电脑。自动没有发布。', 'この PC に残しました。自動では上げていません。')
+              : t('첫 컷 · 더 올 수도 있음. 저장은 지금 해도 됩니다.', 'First cut · another may still arrive. You can save now.', '第一份成片 · 可能还会来。现在就可以保存。', '最初のカット · まだ来ることもあります。今保存してよい。')}
+          </p>
           {previewUrl ? (
             <video controls preload="metadata" src={previewUrl} />
           ) : (
@@ -530,12 +656,20 @@ export function AutoDesk({
             </button>
           </div>
           {askPublish || outputReady ? (
-            <div className="desktop-auto-publish-ask">
-              <p>{t('파일은 이 PC에 남습니다. 올리려면 한 번 더 고릅니다. 자동은 올리지 않습니다.', 'The file stays on this PC. Posting asks once more. Auto does not post.', '文件留在这台电脑。要发布需再选一次。自动不会发布。', 'ファイルはこの PC に残ります。上げるならもう一度選びます。自動では上げません。')}</p>
-              <button type="button" className="desktop-secondary" onClick={onOpenExport}>
-                {t('올릴까요?', 'Post it?', '要发布吗？', '上げますか？')}
-              </button>
-            </div>
+            <section className="desktop-auto-card desktop-auto-save-card">
+              <b>{t('이 PC에 두었음', 'Saved on this PC', '已留在这台电脑', 'この PC に残した')}</b>
+              <p>{t(`폴더 · ${savePath || prefs.lastSavePath || t('출력 폴더', 'output folder', '输出文件夹', '出力フォルダ')}`, `Folder · ${savePath || prefs.lastSavePath || 'output folder'}`, `文件夹 · ${savePath || prefs.lastSavePath || '输出文件夹'}`, `フォルダ · ${savePath || prefs.lastSavePath || '出力フォルダ'}`)}</p>
+              {wait && elapsedLabel ? <p>{t(`시작에서 지금까지 · ${elapsedLabel}`, `Since start · ${elapsedLabel}`, `从开始到现在 · ${elapsedLabel}`, `開始から今まで · ${elapsedLabel}`)}</p> : null}
+              <p>{t('올리려면 한 번 더 고릅니다. 자동은 올리지 않습니다.', 'Posting asks once more. Auto does not post.', '要发布需再选一次。自动不会发布。', '上げるならもう一度選びます。自動では上げません。')}</p>
+              <div className="desktop-auto-preview-actions">
+                <button type="button" className="desktop-secondary" onClick={onOpenExport}>
+                  {t('올릴까요?', 'Post it?', '要发布吗？', '上げますか？')}
+                </button>
+                <button type="button" className="desktop-secondary" onClick={() => { setTitle(''); setAskPublish(false); setGoal(''); }}>
+                  {t('다른 제목', 'Another title', '换个标题', '別のタイトル')}
+                </button>
+              </div>
+            </section>
           ) : null}
         </section>
       ) : null}
@@ -567,6 +701,11 @@ export function AutoDesk({
       </div>
 
       {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
+      {sendFailed || pullStatus === 'failed' || saveFailed ? (
+        <button type="button" className="desktop-secondary" disabled={locked || !attached || !title.trim()} onClick={() => void startJob()}>
+          {t('같은 말로 다시', 'Send the same line again', '再用同一句话', '同じ言葉でもう一度')}
+        </button>
+      ) : null}
 
       <DesktopInstallHelp />
     </div>

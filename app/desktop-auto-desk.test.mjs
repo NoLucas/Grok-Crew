@@ -8,11 +8,19 @@ const {
   AUTO_PREFS_KEY,
   DEFAULT_RECIPE_ID,
   attachedBotName,
+  autoHeaderDot,
   autoMachineState,
   autoPhaseLamps,
+  botSeenSeconds,
   canStartAuto,
+  formatElapsed,
+  formatSince,
   readAutoPrefs,
+  rememberRecentTitle,
+  shouldAskReplaceCut,
+  shouldPingCut,
   suggestRecipeId,
+  waitElapsedSeconds,
   writeAutoPrefs,
 } = await import('./desktop-auto-state.ts');
 
@@ -192,12 +200,70 @@ describe('auto desk prefs and names', () => {
     assert.equal(readAutoPrefs().recipeId, DEFAULT_RECIPE_ID);
     writeAutoPrefs({ recipeId: 'tiktok_tight' });
     assert.equal(readAutoPrefs().recipeId, 'tiktok_tight');
-    assert.equal(memory.get(AUTO_PREFS_KEY), '{"recipeId":"tiktok_tight"}');
+    rememberRecentTitle('15초 훅 릴');
+    rememberRecentTitle('틱톡으로 올려');
+    rememberRecentTitle('15초 훅 릴');
+    assert.deepEqual(readAutoPrefs().recentTitles, ['15초 훅 릴', '틱톡으로 올려']);
+    assert.equal(JSON.parse(memory.get(AUTO_PREFS_KEY)).recipeId, 'tiktok_tight');
   });
 
   it('uses the bot name, not a role name', () => {
     assert.equal(attachedBotName({ bots: [{ display_name: 'Grok', presence: 'active' }] }), 'Grok');
     assert.equal(attachedBotName(undefined, ['Claude']), 'Claude');
     assert.equal(attachedBotName(undefined, []), '');
+  });
+});
+
+describe('auto desk wait honesty', () => {
+  it('counts elapsed wait time from the copy stamp', () => {
+    const copiedAt = '2026-08-27T03:00:00.000Z';
+    const now = Date.parse('2026-08-27T03:12:00.000Z');
+    assert.equal(waitElapsedSeconds(copiedAt, now), 12 * 60);
+    assert.equal(formatElapsed(12 * 60, 'ko'), '12분');
+    assert.equal(formatElapsed(9, 'en'), '9s');
+    assert.equal(formatSince(125, 'ko'), '2분 전');
+  });
+
+  it('reads last-seen from check-in seconds or a connect stamp, not from a guessed read', () => {
+    assert.equal(botSeenSeconds({ bots: [{ display_name: 'Grok', presence: 'active', seconds_since_checkin: 95 }] }), 95);
+    const now = Date.parse('2026-08-27T03:10:00.000Z');
+    assert.equal(botSeenSeconds(undefined, '2026-08-27T03:00:00.000Z', now), 10 * 60);
+    assert.equal(botSeenSeconds(undefined), null);
+  });
+
+  it('puts one header dot on wait, cut, or failure — never a fake percent', () => {
+    const waiting = {
+      attached: true,
+      studioReady: true,
+      wait: {
+        specId: 'spec-1',
+        title: '15초 훅 릴',
+        copiedAt: '2026-08-27T03:00:00.000Z',
+        pasteTarget: 'Cursor',
+      },
+      pull: 'none',
+      hasProject: false,
+      outputReady: false,
+    };
+    assert.equal(autoHeaderDot(waiting), 'yellow');
+    assert.equal(autoHeaderDot({ ...waiting, pull: 'arrived', hasProject: true }), 'green');
+    assert.equal(autoHeaderDot({ ...waiting, pull: 'failed' }), 'red');
+    assert.equal(autoHeaderDot({
+      attached: true,
+      studioReady: true,
+      wait: null,
+      pull: 'idle',
+      hasProject: false,
+      outputReady: false,
+    }), 'off');
+  });
+
+  it('pings a cut only when the window is hidden and the spec is new', () => {
+    assert.equal(shouldPingCut({ pull: 'arrived', hidden: true, specId: 'spec-1' }), true);
+    assert.equal(shouldPingCut({ pull: 'arrived', hidden: false, specId: 'spec-1' }), false);
+    assert.equal(shouldPingCut({ pull: 'none', hidden: true, specId: 'spec-1' }), false);
+    assert.equal(shouldPingCut({ pull: 'arrived', hidden: true, specId: 'spec-1', lastPingedSpecId: 'spec-1' }), false);
+    assert.equal(shouldAskReplaceCut(true), true);
+    assert.equal(shouldAskReplaceCut(false), false);
   });
 });

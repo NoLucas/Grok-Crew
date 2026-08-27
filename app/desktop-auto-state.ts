@@ -19,6 +19,10 @@ export type AutoMachine =
 
 export type AutoPrefs = {
   recipeId: string;
+  recentTitles: string[];
+  lastTitle?: string;
+  lastSavePath?: string;
+  lastSaveAt?: string;
 };
 
 export type AutoStartCheck =
@@ -51,7 +55,21 @@ function storage(): Storage | null {
 }
 
 export function emptyAutoPrefs(): AutoPrefs {
-  return { recipeId: DEFAULT_RECIPE_ID };
+  return { recipeId: DEFAULT_RECIPE_ID, recentTitles: [] };
+}
+
+function cleanTitles(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const titles: string[] = [];
+  for (const item of value) {
+    const title = String(item || '').trim();
+    if (!title || seen.has(title)) continue;
+    seen.add(title);
+    titles.push(title);
+    if (titles.length >= 3) break;
+  }
+  return titles;
 }
 
 export function readAutoPrefs(): AutoPrefs {
@@ -60,16 +78,47 @@ export function readAutoPrefs(): AutoPrefs {
   try {
     const parsed = JSON.parse(raw) as Partial<AutoPrefs>;
     const recipeId = String(parsed.recipeId || '').trim();
-    return { recipeId: recipeId || DEFAULT_RECIPE_ID };
+    return {
+      recipeId: recipeId || DEFAULT_RECIPE_ID,
+      recentTitles: cleanTitles(parsed.recentTitles),
+      lastTitle: String(parsed.lastTitle || '').trim() || undefined,
+      lastSavePath: String(parsed.lastSavePath || '').trim() || undefined,
+      lastSaveAt: String(parsed.lastSaveAt || '').trim() || undefined,
+    };
   } catch {
     return emptyAutoPrefs();
   }
 }
 
-export function writeAutoPrefs(prefs: AutoPrefs): AutoPrefs {
-  const next = { recipeId: String(prefs.recipeId || '').trim() || DEFAULT_RECIPE_ID };
+export function writeAutoPrefs(prefs: Partial<AutoPrefs>): AutoPrefs {
+  const current = readAutoPrefs();
+  const next: AutoPrefs = {
+    recipeId: String(prefs.recipeId ?? current.recipeId ?? '').trim() || DEFAULT_RECIPE_ID,
+    recentTitles: prefs.recentTitles ? cleanTitles(prefs.recentTitles) : current.recentTitles,
+    lastTitle: prefs.lastTitle !== undefined ? String(prefs.lastTitle || '').trim() || undefined : current.lastTitle,
+    lastSavePath: prefs.lastSavePath !== undefined ? String(prefs.lastSavePath || '').trim() || undefined : current.lastSavePath,
+    lastSaveAt: prefs.lastSaveAt !== undefined ? String(prefs.lastSaveAt || '').trim() || undefined : current.lastSaveAt,
+  };
   storage()?.setItem(AUTO_PREFS_KEY, JSON.stringify(next));
   return next;
+}
+
+export function rememberRecentTitle(title: string): AutoPrefs {
+  const heading = String(title || '').trim();
+  const current = readAutoPrefs();
+  if (!heading) return current;
+  return writeAutoPrefs({
+    ...current,
+    lastTitle: heading,
+    recentTitles: [heading, ...current.recentTitles.filter((item) => item !== heading)],
+  });
+}
+
+export function rememberSave(path: string): AutoPrefs {
+  return writeAutoPrefs({
+    lastSavePath: String(path || '').trim() || undefined,
+    lastSaveAt: new Date().toISOString(),
+  });
 }
 
 export function attachedBotName(roster?: CrewRoster | null, remoteNames: string[] = []): string {
@@ -133,6 +182,98 @@ export function autoPhaseLamps(input: AutoLampInput): Record<AutoPhaseId, AutoLa
   else if (input.outputReady) save = 'green';
 
   return { connect, sent, working, cut, save };
+}
+
+export function autoHeaderDot(input: AutoLampInput): AutoLamp {
+  const lamps = autoPhaseLamps(input);
+  if (lamps.connect === 'red' || lamps.sent === 'red' || lamps.working === 'red' || lamps.save === 'red') return 'red';
+  if (lamps.cut === 'green' && lamps.save !== 'green') return 'green';
+  if (lamps.working === 'yellow' || lamps.sent === 'yellow' || lamps.connect === 'yellow') return 'yellow';
+  return 'off';
+}
+
+export function waitElapsedSeconds(copiedAt: string, now = Date.now()): number {
+  const start = new Date(copiedAt).getTime();
+  if (Number.isNaN(start)) return 0;
+  return Math.max(0, Math.floor((now - start) / 1000));
+}
+
+export function formatElapsed(seconds: number, language: string): string {
+  const lang = language.slice(0, 2);
+  const safe = Math.max(0, Math.floor(seconds));
+  if (safe < 60) {
+    if (lang === 'en') return `${safe}s`;
+    if (lang === 'zh') return `${safe}秒`;
+    if (lang === 'ja') return `${safe}秒`;
+    return `${safe}초`;
+  }
+  const minutes = Math.floor(safe / 60);
+  if (minutes < 60) {
+    if (lang === 'en') return `${minutes} min`;
+    if (lang === 'zh') return `${minutes}分钟`;
+    if (lang === 'ja') return `${minutes}分`;
+    return `${minutes}분`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (lang === 'en') return `${hours} h`;
+  if (lang === 'zh') return `${hours}小时`;
+  if (lang === 'ja') return `${hours}時間`;
+  return `${hours}시간`;
+}
+
+export function formatSince(seconds: number, language: string): string {
+  const lang = language.slice(0, 2);
+  const safe = Math.max(0, Math.floor(seconds));
+  if (lang === 'en') {
+    if (safe < 60) return `${safe}s ago`;
+    if (safe < 3600) return `${Math.floor(safe / 60)}m ago`;
+    return `${Math.floor(safe / 3600)}h ago`;
+  }
+  if (lang === 'zh') {
+    if (safe < 60) return `${safe}秒前`;
+    if (safe < 3600) return `${Math.floor(safe / 60)}分钟前`;
+    return `${Math.floor(safe / 3600)}小时前`;
+  }
+  if (lang === 'ja') {
+    if (safe < 60) return `${safe}秒前`;
+    if (safe < 3600) return `${Math.floor(safe / 60)}分前`;
+    return `${Math.floor(safe / 3600)}時間前`;
+  }
+  if (safe < 60) return `${safe}초 전`;
+  if (safe < 3600) return `${Math.floor(safe / 60)}분 전`;
+  return `${Math.floor(safe / 3600)}시간 전`;
+}
+
+export function botSeenSeconds(
+  roster?: CrewRoster | null,
+  connectedAt?: string,
+  now = Date.now(),
+): number | null {
+  const bot = connectedBot(roster);
+  if (typeof bot?.seconds_since_checkin === 'number' && Number.isFinite(bot.seconds_since_checkin)) {
+    return Math.max(0, Math.floor(bot.seconds_since_checkin));
+  }
+  const stamp = String(connectedAt || '').trim();
+  if (!stamp) return null;
+  const at = new Date(stamp).getTime();
+  if (Number.isNaN(at)) return null;
+  return Math.max(0, Math.floor((now - at) / 1000));
+}
+
+export function shouldAskReplaceCut(hasProject: boolean): boolean {
+  return Boolean(hasProject);
+}
+
+export function shouldPingCut(input: {
+  pull: DeskPullStatus;
+  hidden: boolean;
+  specId?: string;
+  lastPingedSpecId?: string;
+}): boolean {
+  if (input.pull !== 'arrived' || !input.hidden) return false;
+  const specId = String(input.specId || '').trim();
+  if (!specId) return false;
+  return specId !== String(input.lastPingedSpecId || '').trim();
 }
 
 export function studioDownloadBase(): string {
