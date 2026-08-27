@@ -18,7 +18,7 @@ import {
   type AutoLamp,
   type AutoMode,
   type AutoPhaseId,
-} from './desktop-auto-desk';
+} from './desktop-auto-state';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { useLanguage } from './language';
 import { formatCheckTime, type DeskPullStatus, type DeskWaitState } from './desktop-wait-state';

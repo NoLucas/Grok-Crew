@@ -14,7 +14,7 @@ const {
   readAutoPrefs,
   suggestRecipeId,
   writeAutoPrefs,
-} = await import('./desktop-auto-desk.ts');
+} = await import('./desktop-auto-state.ts');
 
 const memory = new Map();
 

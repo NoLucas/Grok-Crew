@@ -272,6 +272,7 @@ done
 허용 목록 후보다.
 
 - `app/desktop-auto-desk.tsx` (신규, 짧은 책상의 진행형)
+- `app/desktop-auto-state.ts` (단계 램프·스타일 기억, localStorage만)
 - `app/desktop-workspace.tsx` (탭 하나, 착지)
 - `app/desktop-simple-desk.tsx` (맡기기/내가 열기를 자동이 부를 수 있게 쪼개거나, 자동이 그 동작을 가져감)
 - `app/desktop-wait-state.ts` (이미 있음, 단계 램프가 읽음)
