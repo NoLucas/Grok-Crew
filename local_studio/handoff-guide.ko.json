@@ -1,13 +1,80 @@
 {
   "schema": "local-video-workspace.handoff-guide/v1",
-  "purpose": "Local Studio의 loopback API에 직접 접속할 수 없는 원격/클라우드 봇을 위한 계약입니다. 이 PC로의 네트워크 호출 대신, 완성된 미디어와 편집 계획을 전용 git 브랜치로 인계합니다.",
+  "purpose": "Local Studio의 loopback API에 직접 접속할 수 없는 원격/클라우드 봇을 위한 계약입니다. 사용자는 규격만 적습니다. 봇이 소스 영상과 편집을 만들어, 이 PC로 네트워크 호출을 하지 않고 전용 git 브랜치로 넘깁니다.",
+  "roles": {
+    "operator": "규격만 적습니다(제목, 목표, 길이, 자막, 룩). 문은 편집(폴더 editor/) 또는 수집·다른 에이전트(폴더 collector/) 중 하나만 고릅니다. 저장하면 그 문 보낼함에 spec.json 이 올라갑니다. 원본 파일을 붙이지 않습니다.",
+    "grok_door": "편집 문. 폴더 이름은 editor/. 남은 grok/ 폴더는 읽기만 합니다. 지정된 편집 봇만. Runner 페어링도 이 문만. collector/ 는 쓰지 마세요.",
+    "other_agent_door": "수집·다른 에이전트 문. 폴더 이름은 collector/. 남은 agents/ 폴더는 읽기만 합니다. 지정된 수집 봇, 또는 크루가 아닌 다른 에이전트. editor/ 와 Runner는 쓰지 마세요.",
+    "bot": "자기 문 보낼함의 spec.json 을 읽고, 소스를 구해 편집한 뒤, 영상 파일과 edit_spec_id·project.door가 들어 있는 bundle.json 패키지를 같은 문 인박스로 push합니다. 운영자가 정한 화질은 유지합니다. 화면비와 자막은 설정에서 바꿀 수 있습니다. 템포·룩·추가 클립·훅·오디오는 운영자가 화면에서 나중에 바꿀 수 있습니다."
+  },
+  "operator_locks": {
+    "locked": ["quality"],
+    "reason": "화질만 화면에서 정한 값입니다. 컷이나 render_settings에서 화질을 바꾸지 마세요. 화면비와 자막은 설정에서 바꿀 수 있습니다. 나머지 편집 조절은 운영자가 엽니다.",
+    "folder_board": "패키지를 두면 운영자가 화면에서 inputs/handoff/ 또는 handoff-materials/ 를 엽니다. 목록은 왼쪽, 미리보기는 옆입니다. 오른쪽 클릭으로 미리보기·크게 보기·원본 보기·삭제를 고릅니다. 지운 파일은 다시 쓰지 마세요. 원격 봇은 127.0.0.1에 붙지 않습니다."
+  },
+  "style_recipes": {
+    "purpose": "이름 있는 레시피가 길이, 화면비, 훅, 속도, 자막, 룩, 수집 힌트를 채웁니다. 문이 아닙니다.",
+    "ids": ["instagram_reel", "tiktok_tight", "youtube_short", "youtube_long"]
+  },
+  "source_modes": {
+    "collect": "수집 봇이 클립을 모읍니다. 보낼함 둘. 상태는 waiting_for_collector.",
+    "own": "운영자 파일만. 편집 보낼함만. 상태는 waiting_for_editor.",
+    "own_and_collect": "운영자 본편 + 수집 추가 클립. 보낼함 둘. owned 클립은 유지."
+  },
+  "crew": {
+    "purpose": "규격 하나, 봇 둘. 수집 봇이 자료를 모으고 편집 봇이 그 클립만 자릅니다. 이 앱은 사이트를 긁지 않습니다.",
+    "collector": {
+      "door": "collector",
+      "outbox": "local_studio/workspace/handoff-outbox/collector/{edit_spec_id}/",
+      "drop": "local_studio/workspace/handoff-materials/{edit_spec_id}/",
+      "git_drop": "materials/{edit_spec_id}/",
+      "files": ["manifest.json", "소스 클립"],
+      "clip_fields": ["file", "origin (owned|collected|bundled-sample)", "license (operator|stock|public|unknown)", "source_url"],
+      "do_not": "끝난 컷을 인박스에 넣지 마세요. 운영자가 쓸 수 있는 출처만 모으세요. 로그인 막힌 인스타/틱톡은 긁지 마세요. owned 클립은 지우지 마세요."
+    },
+    "editor": {
+      "door": "editor",
+      "outbox": "local_studio/workspace/handoff-outbox/editor/{edit_spec_id}/",
+      "read": "local_studio/workspace/handoff-materials/{edit_spec_id}/manifest.json",
+      "return": "local_studio/workspace/handoff-inbox/editor/",
+      "git_return": "editor/"
+    }
+  },
+  "outbox": {
+    "purpose": "운영자가 규격을 저장하면 이 PC가 그 문 보낼함에 spec.json 과 brief.txt 를 씁니다. 봇은 자기 문만 읽습니다. 127.0.0.1 에는 접속하지 않습니다. 같은 문 인박스가 컷을 받으면 보낼함 폴더는 .processed/ 로 옮겨집니다.",
+    "schema": "grok-crew.outbox-spec/v1",
+    "local_root": "local_studio/workspace/handoff-outbox/",
+    "git_root": "outbox/",
+    "files": ["spec.json", "brief.txt"],
+    "rule": "자기 문만 읽으세요. 끝난 패키지는 같은 문 인박스(editor/ 또는 collector/)로 돌리세요. outbox/ 에는 영상을 넣지 마세요."
+  },
+  "doors": {
+    "editor": {
+      "outbox": "local_studio/workspace/handoff-outbox/editor/{edit_spec_id}/",
+      "git_outbox": "outbox/editor/{edit_spec_id}/",
+      "inbox": "local_studio/workspace/handoff-inbox/editor/",
+      "git_prefix": "editor/",
+      "bundle_project_door": "editor",
+      "created_by": "지정된 편집 봇 이름",
+      "runner": true
+    },
+    "collector": {
+      "outbox": "local_studio/workspace/handoff-outbox/collector/{edit_spec_id}/",
+      "git_outbox": "outbox/collector/{edit_spec_id}/",
+      "inbox": "local_studio/workspace/handoff-inbox/collector/",
+      "git_prefix": "collector/",
+      "bundle_project_door": "collector",
+      "created_by": "지정된 수집 봇 또는 다른 에이전트 이름",
+      "runner": false
+    }
+  },
   "why_this_exists": "Local Studio는 설계상 127.0.0.1에만 바인딩되며 다른 기기나 컨테이너에서 접근할 수 없습니다(README.md, CONTRIBUTING.md 참고). 이 채널은 원격 API가 아니라 오프라인 인계이며, 이 저장소가 원격 봇으로부터 받아들이는 유일한 것은 아래 지정된 브랜치로의 git push입니다.",
   "channel": {
     "medium": "git",
     "repository": "https://github.com/NoLucas/handoff-inbox.git",
     "branch": "main",
     "rule": "오직 이 저장소의 main 브랜치에만 커밋을 push하세요. 로컬 운영자 PC의 IP나 호스트명에 접속을 시도하지 마세요 — 이 저장소만이 허용된 채널입니다.",
-    "folder_naming": "제출 하나당 최상위 폴더 하나, 이름은 '<UTC 타임스탬프>-<짧은 슬러그>' 형식입니다 (예: 2026-08-23T07-19-00Z-payoff-hook). 폴더명은 제출마다 고유해야 하며 중복 감지에 사용됩니다."
+    "folder_naming": "보낼 규격은 outbox/editor/{edit_spec_id}/ 또는 outbox/collector/{edit_spec_id}/ (spec.json + brief.txt). 돌아온 컷은 editor/ 또는 collector/ 아래, 이름은 '<UTC 타임스탬프>-<짧은 슬러그>' (예: editor/2026-08-23T07-19-00Z-payoff-hook). 남은 grok/ 와 agents/ 인박스는 읽기만 합니다. outbox/ 에는 영상을 넣지 마세요. 편집 받기는 collector/ 를 가져오지 않고, 수집 받기는 editor/ 를 가져오지 않습니다."
   },
   "limits": {
     "media_extensions": [".mp4", ".mov", ".mkv", ".avi", ".webm"],
@@ -28,6 +95,9 @@
         "output_path": "렌더 결과의 워크스페이스 상대경로, 예: outputs/handoff/<폴더명>.mp4",
         "timeline": { "clips": [{ "in": 0, "out": 1.4, "keep": true, "caption": "문자열", "word_timings": "선택 사항, bot-guide.json 참고" }], "render_settings": "선택 사항, Production의 Finish Rack과 같은 필드(platform, quality, caption_bg, music_track 등)" },
         "caption": "Instagram 캡션, 최대 2200자",
+        "edit_spec_id": "운영자 규격을 이행할 때 필수 — 받은 글에 있는 id를 그대로 넣습니다",
+        "door": "필수: editor 또는 collector. grok와 agent는 별칭으로 받습니다. 인박스 폴더와 규격과 같아야 합니다",
+        "created_by": "이 화면이 보낸 사람을 구분하는 이름. 체크인한 봇 이름, 또는 운영자가 적은 이름. Grok이나 Claude로 단정하지 마세요.",
         "handoff_auto_upload_requested": "불리언, 선택 사항 — 아래 auto_upload_policy 참고"
       },
       "jobs": [
@@ -36,7 +106,7 @@
       ],
       "artifacts": []
     },
-    "media_file": "source_path가 가리키는 실제 영상 파일을 같은 폴더 최상위에, 경로의 마지막 부분만 딴 파일명으로 둡니다 (예: inputs/handoff/.../source.mp4이 아니라 그냥 source.mp4).",
+    "media_file": "봇이 실제 영상 파일을 넣어야 합니다. 운영자는 원본을 주지 않습니다. 폴더 맨 위에 source.mp4처럼 마지막 이름만 둡니다. 추가 클립은 같은 폴더에 두고 timeline.assets[].path에 적습니다.",
     "rule": "새 작업을 요청하려면 job의 'status' 필드를 아예 생략하세요 — 그러면 새로 만들어져 queued+approved 상태가 됩니다. 과거 이력을 재현하려는 의도가 아니라면 'status'를 succeeded/failed로 설정하지 마세요."
   },
   "auto_upload_policy": {

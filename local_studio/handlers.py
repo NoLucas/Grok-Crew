@@ -3,18 +3,21 @@ studio_server.py for the actual domain logic each route calls into)."""
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 import json
+import mimetypes
 import os
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 import config
+from analysis import analyze_project, get_analysis
 from config import (
-    ALLOWED_ORIGINS,
+    origin_is_allowed,
     BROWSER_PAGE_PATHS,
     CAPTION_LAYOUT_PRESETS,
     PLATFORM_PRESETS,
@@ -38,6 +41,7 @@ from studio_server import (
     get_project,
     import_project_bundle,
     inspect_project_media,
+    launch_status,
     list_artifacts,
     list_bot_activity,
     list_bot_entries,
@@ -46,15 +50,79 @@ from studio_server import (
     list_projects,
     new_project,
     project_operations,
+    enqueue_render,
+    import_exchange,
+    project_exchange,
+    project_preview,
+    project_proxies,
+    project_publish_receipts,
+    project_scopes,
     quality_report,
+    render_queue,
     record_bot_heartbeat,
     request_job_cancel,
+    request_proxy,
+    retry_project_publish,
     save_artifact,
     set_edit_method,
     set_execution_policy,
     start_job,
     terminal_contract,
     update_artifact,
+)
+from advanced_tools import advanced_tools_catalog, assign_advanced_tools
+from first_run import first_run_status, open_sample_project
+from voice_models import select_voice_model
+from bot_pack import bot_pack_bytes
+from edit_spec import create_spec, get_spec, list_specs, spec_brief, spec_invite
+from handoff_folders import delete_handoff_file, reveal_handoff_file, workspace_handoff_folders
+from project_library import (
+    create_project_folder,
+    delete_project_folder,
+    empty_trash,
+    purge_expired_trash,
+    list_trash,
+    move_project,
+    purge_trash_item,
+    rename_project,
+    rename_project_folder,
+    rename_workspace_file,
+    restore_trash_item,
+    trash_project,
+    undelete_project_folder,
+)
+from handoff_inbox import (
+    MAX_MEDIA_BYTES,
+    accept_dropped_cut,
+    accept_uploaded_cut,
+    handoff_status,
+    pull_handoff,
+)
+from handoff_materials import materials_status, pull_materials, write_owned_materials
+from style_recipes import list_recipes
+from handoff_outbox import outbox_status, push_handoff_outbox
+from desktop_domain import (
+    TimelinePatchError,
+    answer_control_job,
+    apply_timeline_history_action,
+    apply_timeline_patch,
+    cancel_unclaimed_control_jobs,
+    control_control_job,
+    create_control_job,
+    ensure_timeline_version,
+    get_timeline,
+    get_timeline_history,
+    list_control_jobs,
+    list_runner_events,
+    list_runners,
+    list_timeline_versions,
+    media_catalog,
+    pair_runner,
+    record_runner_event,
+    resolve_control_conflict,
+    restore_timeline_version,
+    update_control_job,
+    workspace_v2,
 )
 
 class StudioHandler(BaseHTTPRequestHandler):
@@ -64,7 +132,7 @@ class StudioHandler(BaseHTTPRequestHandler):
         raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status); self.send_header("Content-Type", "application/json; charset=utf-8"); self.send_header("Content-Length", str(len(raw)))
         origin = self.headers.get("Origin")
-        if origin in ALLOWED_ORIGINS:
+        if origin and origin_is_allowed(origin):
             self.send_header("Access-Control-Allow-Origin", origin); self.send_header("Vary", "Origin")
         self.end_headers(); self.wfile.write(raw)
 
@@ -75,7 +143,78 @@ class StudioHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK); self.send_header("Content-Type", "text/x-python; charset=utf-8"); self.send_header("Content-Length", str(len(raw)))
         self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
         origin = self.headers.get("Origin")
-        if origin in ALLOWED_ORIGINS:
+        if origin and origin_is_allowed(origin):
+            self.send_header("Access-Control-Allow-Origin", origin); self.send_header("Vary", "Origin")
+        self.end_headers(); self.wfile.write(raw)
+
+    def _media(self, requested: str) -> None:
+        relative = unquote(requested).replace("\\", "/").lstrip("/")
+        root = config.WORKSPACE_DIR.resolve()
+        path = (root / relative).resolve()
+        try:
+            path.relative_to(root)
+        except ValueError as exc:
+            raise ValueError("Media path leaves the local workspace.") from exc
+        if not path.is_file():
+            self._json(404, {"error": "Media file not found"}); return
+        size = path.stat().st_size
+        start, end, status = 0, size - 1, HTTPStatus.OK
+        byte_range = self.headers.get("Range", "")
+        if byte_range.startswith("bytes="):
+            raw_start, _, raw_end = byte_range[6:].partition("-")
+            try:
+                start = int(raw_start or 0)
+                end = min(int(raw_end) if raw_end else size - 1, size - 1)
+            except ValueError:
+                self.send_response(HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                self.send_header("Content-Range", f"bytes */{size}")
+                self.end_headers()
+                return
+            if start < 0 or end < start or start >= size:
+                self.send_response(HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                self.send_header("Content-Range", f"bytes */{size}"); self.end_headers(); return
+            status = HTTPStatus.PARTIAL_CONTENT
+        length = end - start + 1
+        self.send_response(status)
+        self.send_header("Content-Type", mimetypes.guess_type(path.name)[0] or "application/octet-stream")
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(length))
+        if status == HTTPStatus.PARTIAL_CONTENT:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+        origin = self.headers.get("Origin")
+        if origin and origin_is_allowed(origin):
+            self.send_header("Access-Control-Allow-Origin", origin); self.send_header("Vary", "Origin")
+        self.end_headers()
+        with path.open("rb") as media:
+            media.seek(start)
+            remaining = length
+            while remaining:
+                chunk = media.read(min(1024 * 256, remaining))
+                if not chunk: break
+                self.wfile.write(chunk); remaining -= len(chunk)
+
+    def _analysis_media(self, project_id: str, scene_id: str) -> None:
+        analysis = get_analysis(unquote(project_id))
+        if not analysis:
+            self._json(404, {"error": "Analysis not found"}); return
+        scene = next((item for item in analysis.get("thumbnails_json", []) if item.get("id") == unquote(scene_id)), None)
+        if not scene:
+            self._json(404, {"error": "Analysis scene not found"}); return
+        root = (config.DATA_DIR / "analysis" / unquote(project_id) / "thumbnails").resolve()
+        path = Path(str(scene.get("path", ""))).resolve()
+        try:
+            path.relative_to(root)
+        except ValueError as exc:
+            raise ValueError("Analysis thumbnail leaves its project directory.") from exc
+        if not path.is_file():
+            self._json(404, {"error": "Analysis thumbnail not found"}); return
+        raw = path.read_bytes()
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", mimetypes.guess_type(path.name)[0] or "image/jpeg")
+        self.send_header("Content-Length", str(len(raw)))
+        self.send_header("Cache-Control", "private, max-age=300")
+        origin = self.headers.get("Origin")
+        if origin and origin_is_allowed(origin):
             self.send_header("Access-Control-Allow-Origin", origin); self.send_header("Vary", "Origin")
         self.end_headers(); self.wfile.write(raw)
 
@@ -95,24 +234,41 @@ class StudioHandler(BaseHTTPRequestHandler):
         return value
 
     def _origin_allowed(self) -> bool:
-        origin = self.headers.get("Origin")
-        return origin is None or origin in ALLOWED_ORIGINS
+        return origin_is_allowed(self.headers.get("Origin"))
 
     def _token_ok(self) -> bool:
         expected = os.getenv("LOCAL_STUDIO_TOKEN", "").strip()
         if not expected:
             return True
         provided = self.headers.get("Authorization", "")
-        return hmac.compare_digest(provided, f"Bearer {expected}")
+        expected_header = f"Bearer {expected}"
+        provided_digest = hashlib.sha256(provided.encode("utf-8")).digest()
+        expected_digest = hashlib.sha256(expected_header.encode("utf-8")).digest()
+        return hmac.compare_digest(provided_digest, expected_digest)
+
+    @staticmethod
+    def _route_id(path: str, prefix: str, suffix: str) -> str:
+        if not path.startswith(prefix) or not path.endswith(suffix):
+            raise ValueError("path is not allowed.")
+        mid = path[len(prefix): -len(suffix) if suffix else None]
+        if not mid or "/" in mid or "\\" in mid or ".." in mid or "\x00" in mid:
+            raise ValueError("id is not allowed.")
+        return mid
+
+    def _internal_error(self, exc: Exception) -> None:
+        print(f"[{utc_now()}] local studio error: {exc}")
+        self._json(500, {"error": "The local studio could not complete that request."})
 
     def do_OPTIONS(self) -> None:  # noqa: N802
+        if not self._origin_allowed():
+            self._json(403, {"error": "Cross-origin requests are not allowed."}); return
         self.send_response(HTTPStatus.NO_CONTENT)
         origin = self.headers.get("Origin")
-        if origin in ALLOWED_ORIGINS:
+        if origin and origin_is_allowed(origin):
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Vary", "Origin")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Filename")
         self.end_headers()
 
     def do_GET(self) -> None:  # noqa: N802
@@ -120,15 +276,123 @@ class StudioHandler(BaseHTTPRequestHandler):
             self._json(403, {"error": "Cross-origin requests are not allowed."}); return
         try:
             path = urlparse(self.path).path.rstrip("/") or "/"
-            if path not in PUBLIC_GET_PATHS and path not in BROWSER_PAGE_PATHS and not self._token_ok():
+            # /media and /analysis-media stay tokenless so <video>/<img> can load loopback previews.
+            # Paths are still confined to the workspace / analysis thumbnail roots.
+            if path not in PUBLIC_GET_PATHS and path not in BROWSER_PAGE_PATHS and not path.startswith(("/media/", "/analysis-media/")) and not self._token_ok():
                 self._json(401, {"error": "Invalid local studio token."}); return
             if path in BROWSER_PAGE_PATHS:
                 self._redirect_to_browser_page(path)
+            elif path.startswith("/media/"):
+                self._media(path.removeprefix("/media/"))
+            elif path.startswith("/analysis-media/"):
+                parts = path.split("/")
+                if len(parts) != 4 or not parts[2] or not parts[3]:
+                    self._json(404, {"error": "Analysis thumbnail not found"})
+                else:
+                    self._analysis_media(parts[2], parts[3])
             elif path == "/health":
-                instagram_ready = bool(os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USER_ID") and os.getenv("INSTAGRAM_API_VERSION"))
-                self._json(200, {"service": "Local Video Studio", "status": "ready", "bind": "127.0.0.1", "workspace": str(config.WORKSPACE_DIR), "database": str(config.DB_PATH), "moviepy_installed": self._moviepy_ready(), "instagram_publish_enabled": instagram_ready, "credentials_configured": instagram_ready, "bots": list_bots()["summary"]})
+                payload = {"service": "Local Video Studio", "status": "ready", "bind": "127.0.0.1"}
+                if self._token_ok():
+                    instagram_ready = bool(os.getenv("INSTAGRAM_ACCESS_TOKEN") and os.getenv("INSTAGRAM_USER_ID") and os.getenv("INSTAGRAM_API_VERSION"))
+                    payload.update({
+                        "workspace": str(config.WORKSPACE_DIR),
+                        "database": str(config.DB_PATH),
+                        "moviepy_installed": self._moviepy_ready(),
+                        "instagram_publish_enabled": instagram_ready,
+                        "credentials_configured": instagram_ready,
+                        "bots": list_bots()["summary"],
+                    })
+                self._json(200, payload)
             elif path == "/api/projects":
                 self._json(200, {"projects": list_projects()})
+            elif path == "/api/v2/workspace":
+                self._json(200, workspace_v2())
+            elif path == "/api/v2/launch":
+                self._json(200, launch_status())
+            elif path == "/api/v2/first-run":
+                self._json(200, first_run_status())
+            elif path == "/api/v2/edit-specs":
+                self._json(200, {"edit_specs": list_specs()})
+            elif path == "/api/v2/style-recipes":
+                self._json(200, {"recipes": list_recipes()})
+            elif path == "/api/v2/handoff":
+                self._json(200, handoff_status())
+            elif path == "/api/v2/handoff/outbox":
+                self._json(200, outbox_status())
+            elif path == "/api/v2/handoff/materials":
+                self._json(200, materials_status())
+            elif path == "/api/v2/trash":
+                self._json(200, list_trash())
+            elif path == "/api/v2/handoff/folders":
+                query = parse_qs(urlparse(self.path).query)
+                kind = str((query.get("kind") or [""])[0] or "").strip() or None
+                project_id = str((query.get("project_id") or [""])[0] or "").strip() or None
+                if kind and kind not in {"package", "materials"}:
+                    self._json(400, {"error": "kind must be package or materials."})
+                else:
+                    self._json(200, workspace_handoff_folders(project_id=project_id, kind=kind))
+            elif path.startswith("/api/v2/edit-specs/") and path.endswith("/invite"):
+                query = parse_qs(urlparse(self.path).query)
+                language = (query.get("lang") or query.get("language") or ["ko"])[0]
+                self._json(200, spec_invite(path.split("/")[4], language=str(language or "ko")))
+            elif path.startswith("/api/v2/edit-specs/") and path.endswith("/brief"):
+                query = parse_qs(urlparse(self.path).query)
+                role = (query.get("role") or [None])[0]
+                self._json(200, spec_brief(path.split("/")[4], role=role))
+            elif path.startswith("/api/v2/edit-specs/"):
+                record = get_spec(path.split("/")[4])
+                self._json(200, {"edit_spec": record}) if record else self._json(404, {"error": "Edit spec not found"})
+            elif path == "/api/v2/media":
+                self._json(200, {"media": media_catalog()})
+            elif path == "/api/v2/runners":
+                self._json(200, {"runners": list_runners()})
+            elif path == "/api/v2/control-jobs":
+                self._json(200, {"control_jobs": list_control_jobs()})
+            elif path.startswith("/api/v2/control-jobs/") and path.endswith("/events"):
+                self._json(200, {"events": list_runner_events(path.split("/")[4])})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/versions"):
+                self._json(200, {"versions": list_timeline_versions(path.split("/")[4])})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/history"):
+                self._json(200, {"history": get_timeline_history(path.split("/")[4])})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/publish-receipts"):
+                self._json(200, project_publish_receipts(path.split("/")[4]))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/proxies"):
+                self._json(200, {"proxies": project_proxies(path.split("/")[4])})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/analysis"):
+                value = get_analysis(path.split("/")[4]); self._json(200, {"analysis": value})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/preview"):
+                query = urlparse(self.path).query
+                at = 0.0
+                include_image = True
+                quality = "draft"
+                for part in query.split("&"):
+                    if part.startswith("at="):
+                        at = float(part.split("=", 1)[1] or 0)
+                    if part == "image=0":
+                        include_image = False
+                    if part.startswith("quality="):
+                        value = part.split("=", 1)[1]
+                        if value in {"draft", "full"}:
+                            quality = value
+                self._json(200, {"preview": project_preview(path.split("/")[4], at, include_image=include_image, quality=quality)})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/scopes"):
+                query = urlparse(self.path).query
+                at = 0.0
+                for part in query.split("&"):
+                    if part.startswith("at="):
+                        at = float(part.split("=", 1)[1] or 0)
+                self._json(200, project_scopes(path.split("/")[4], at))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/exchange"):
+                query = urlparse(self.path).query
+                fmt = "edl"
+                for part in query.split("&"):
+                    if part.startswith("format="):
+                        fmt = part.split("=", 1)[1] or "edl"
+                self._json(200, project_exchange(path.split("/")[4], fmt))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/render-queue"):
+                self._json(200, {"jobs": render_queue(path.split("/")[4])})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/timeline"):
+                self._json(200, get_timeline(path.split("/")[4]))
             elif path == "/api/jobs":
                 self._json(200, {"jobs": list_jobs()})
             elif path.startswith("/api/jobs/"):
@@ -144,12 +408,28 @@ class StudioHandler(BaseHTTPRequestHandler):
                 query = urlparse(self.path).query
                 language = next((lang for lang in ("ko", "zh", "ja") if f"lang={lang}" in query), "en")
                 self._json(200, bot_guide(language))
+            elif path == "/api/v2/tools":
+                query = parse_qs(urlparse(self.path).query)
+                language = (query.get("lang") or query.get("language") or ["en"])[0]
+                self._json(200, advanced_tools_catalog(str(language or "en")))
             elif path == "/api/bot-entry":
                 self._json(200, bot_entry_manifest())
             elif path == "/api/terminal-contract":
                 self._json(200, terminal_contract())
             elif path == "/downloads/grok-crew.py":
                 self._download(TERMINAL_CLI_PATH, "grok-crew.py")
+            elif path == "/downloads/grok-crew-bot.zip":
+                raw = bot_pack_bytes()
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/zip")
+                self.send_header("Content-Length", str(len(raw)))
+                self.send_header("Content-Disposition", 'attachment; filename="GrokCrew-bot-pack.zip"')
+                origin = self.headers.get("Origin")
+                if origin and origin_is_allowed(origin):
+                    self.send_header("Access-Control-Allow-Origin", origin)
+                    self.send_header("Vary", "Origin")
+                self.end_headers()
+                self.wfile.write(raw)
             elif path == "/api/bot-entries":
                 self._json(200, {"entries": list_bot_entries()})
             elif path == "/api/edit-method":
@@ -170,7 +450,7 @@ class StudioHandler(BaseHTTPRequestHandler):
         except ValueError as exc:
             self._json(400, {"error": str(exc)})
         except Exception as exc:  # noqa: BLE001
-            self._json(500, {"error": str(exc)})
+            self._internal_error(exc)
 
     def do_POST(self) -> None:  # noqa: N802
         if not self._origin_allowed():
@@ -178,9 +458,137 @@ class StudioHandler(BaseHTTPRequestHandler):
         if not self._token_ok():
             self._json(401, {"error": "Invalid local studio token."}); return
         try:
-            path = urlparse(self.path).path.rstrip("/"); body = self._body()
+            parsed = urlparse(self.path)
+            path = parsed.path.rstrip("/")
+            if path == "/api/v2/handoff/accept-file":
+                query = parse_qs(parsed.query)
+                length = int(self.headers.get("Content-Length", "0"))
+                if length > MAX_MEDIA_BYTES:
+                    raise ValueError("파일이 너무 큽니다.")
+                raw = self.rfile.read(length)
+                filename = Path(self.headers.get("X-Filename") or "cut.mp4").name
+                self._json(200, accept_uploaded_cut(
+                    filename,
+                    raw,
+                    door=str((query.get("door") or ["editor"])[0] or "editor"),
+                    edit_spec_id=str((query.get("edit_spec_id") or [""])[0] or "") or None,
+                ))
+                return
+            body = self._body()
             if path == "/api/projects":
                 self._json(201, {"project": new_project(body)})
+            elif path == "/api/v2/projects":
+                project = new_project(body); self._json(201, {"project": project, **get_timeline(project["id"])})
+            elif path == "/api/v2/first-run/sample":
+                opened = open_sample_project()
+                self._json(201, {**opened, **get_timeline(opened["project"]["id"])})
+            elif path == "/api/v2/first-run/voice-model":
+                self._json(200, select_voice_model(body))
+            elif path == "/api/v2/edit-specs":
+                self._json(201, {"edit_spec": create_spec(body)})
+            elif path == "/api/v2/handoff/pull":
+                self._json(200, pull_handoff(body))
+            elif path == "/api/v2/handoff/accept-drop":
+                self._json(200, accept_dropped_cut(
+                    str(body.get("path") or ""),
+                    door=str(body.get("door") or "editor"),
+                    edit_spec_id=str(body.get("edit_spec_id") or "") or None,
+                ))
+            elif path == "/api/v2/handoff/outbox/push":
+                self._json(200, push_handoff_outbox(body))
+            elif path == "/api/v2/handoff/materials/pull":
+                self._json(200, pull_materials(body))
+            elif path == "/api/v2/handoff/materials/own":
+                self._json(200, write_owned_materials(str(body.get("edit_spec_id") or ""), body.get("paths") or body.get("owned_paths") or []))
+            elif path == "/api/v2/handoff/files/delete":
+                self._json(200, delete_handoff_file(str(body.get("path") or "")))
+            elif path == "/api/v2/handoff/files/rename":
+                self._json(200, rename_workspace_file(str(body.get("path") or ""), str(body.get("name") or "")))
+            elif path == "/api/v2/handoff/files/reveal":
+                self._json(200, reveal_handoff_file(str(body.get("path") or "")))
+            elif path == "/api/v2/project-folders":
+                self._json(201, {"folder": create_project_folder(str(body.get("title") or ""))})
+            elif path == "/api/v2/project-folders/undelete":
+                self._json(201, {"folder": undelete_project_folder(
+                    str(body.get("id") or ""),
+                    str(body.get("title") or ""),
+                    body.get("project_ids") if isinstance(body.get("project_ids"), list) else [],
+                    int(body.get("sort_order") or 0),
+                )})
+            elif path.startswith("/api/v2/project-folders/") and path.endswith("/rename"):
+                self._json(200, {"folder": rename_project_folder(self._route_id(path, "/api/v2/project-folders/", "/rename"), str(body.get("title") or ""))})
+            elif path.startswith("/api/v2/project-folders/") and path.endswith("/delete"):
+                self._json(200, delete_project_folder(self._route_id(path, "/api/v2/project-folders/", "/delete")))
+            elif path == "/api/v2/trash/empty":
+                self._json(200, empty_trash())
+            elif path == "/api/v2/trash/purge-expired":
+                self._json(200, purge_expired_trash())
+            elif path.startswith("/api/v2/trash/") and path.endswith("/restore"):
+                self._json(200, restore_trash_item(self._route_id(path, "/api/v2/trash/", "/restore")))
+            elif path.startswith("/api/v2/trash/") and path.endswith("/purge"):
+                self._json(200, purge_trash_item(
+                    self._route_id(path, "/api/v2/trash/", "/purge"),
+                    source_action=str(body.get("source_action") or "keep"),
+                ))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/rename"):
+                self._json(200, {"project": rename_project(self._route_id(path, "/api/v2/projects/", "/rename"), str(body.get("title") or ""))})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/move"):
+                self._json(200, {"project": move_project(self._route_id(path, "/api/v2/projects/", "/move"), body.get("folder_id"))})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/trash"):
+                self._json(200, {"project": trash_project(self._route_id(path, "/api/v2/projects/", "/trash"))})
+            elif path == "/api/v2/runners/pair":
+                self._json(201, {"runner": pair_runner(body)})
+            elif path == "/api/v2/runner-events":
+                self._json(201, {"event": record_runner_event(body)})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/timeline/patch"):
+                self._json(201, apply_timeline_patch(path.split("/")[4], body))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/timeline/history"):
+                self._json(201, apply_timeline_history_action(path.split("/")[4], body))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/proxies"):
+                self._json(201, request_proxy(path.split("/")[4], body))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/exchange"):
+                self._json(201, import_exchange(path.split("/")[4], body))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/render-queue"):
+                self._json(201, enqueue_render(path.split("/")[4], body))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/timeline/restore"):
+                self._json(201, restore_timeline_version(path.split("/")[4], int(body.get("revision", 0)), str(body.get("created_by", "operator"))))
+            elif path.startswith("/api/v2/projects/") and path.endswith("/control-jobs"):
+                self._json(201, {"control_job": create_control_job(path.split("/")[4], body)})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/analysis"):
+                project = get_project(path.split("/")[4])
+                if not project: raise ValueError("Project not found.")
+                self._json(201, {"analysis": analyze_project(project)})
+            elif path.startswith("/api/v2/projects/") and "/publish/" in path:
+                parts = path.split("/"); project_id, platform = parts[4], parts[6]
+                if platform not in {"instagram", "tiktok", "youtube"}:
+                    raise ValueError("Unsupported publishing platform.")
+                if not body.get("approved"):
+                    raise ValueError("Publishing requires a recorded human approval or an approved project auto-publish policy.")
+                payload = {**body, "idempotency_key": str(body.get("idempotency_key", "")).strip()}
+                if not payload["idempotency_key"]:
+                    raise ValueError("idempotency_key is required for publishing.")
+                job = create_job(project_id, f"{platform}_publish", payload, True)
+                if body.get("run_immediately", True):
+                    job = start_job(job["id"], wait=bool(body.get("wait", False)))
+                self._json(201, {"job": job, "platform": platform})
+            elif path.startswith("/api/v2/projects/") and path.endswith("/publish-receipts/retry"):
+                self._json(200, retry_project_publish(path.split("/")[4], body))
+            elif path == "/api/v2/control-jobs/cancel-unclaimed":
+                self._json(200, cancel_unclaimed_control_jobs(str(body.get("project_id") or "").strip() or None))
+            elif path.startswith("/api/v2/control-jobs/") and path.endswith("/control"):
+                self._json(200, {"control_job": control_control_job(path.split("/")[4], str(body.get("command", "")), body.get("reason"))})
+            elif path.startswith("/api/v2/control-jobs/") and path.endswith("/cancel"):
+                self._json(200, {"control_job": control_control_job(path.split("/")[4], "cancel", body.get("reason"))})
+            elif path.startswith("/api/v2/control-jobs/") and path.endswith("/pause"):
+                self._json(200, {"control_job": control_control_job(path.split("/")[4], "pause", body.get("reason"))})
+            elif path.startswith("/api/v2/control-jobs/") and path.endswith("/resume"):
+                self._json(200, {"control_job": control_control_job(path.split("/")[4], "resume", body.get("reason"))})
+            elif path.startswith("/api/v2/control-jobs/") and path.endswith("/retry"):
+                self._json(200, {"control_job": control_control_job(path.split("/")[4], "retry", body.get("reason"))})
+            elif path.startswith("/api/v2/control-jobs/") and path.endswith("/resolve-conflict"):
+                self._json(200, {"control_job": resolve_control_conflict(path.split("/")[4], str(body.get("action", "")))})
+            elif path.startswith("/api/v2/control-jobs/") and path.endswith("/answer"):
+                self._json(200, {"control_job": answer_control_job(path.split("/")[4], body)})
             elif path == "/api/projects/import":
                 self._json(201, import_project_bundle(body))
             elif path == "/api/bots/heartbeat":
@@ -189,6 +597,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(200, {"execution_policy": set_execution_policy(body)})
             elif path == "/api/bot-entry":
                 self._json(201, enter_bot_workspace(body))
+            elif path == "/api/v2/tools":
+                self._json(200, assign_advanced_tools(body))
             elif path == "/api/edit-method":
                 self._json(200, {"edit_method": set_edit_method(body)})
             elif path == "/api/brand-kits":
@@ -239,20 +649,41 @@ class StudioHandler(BaseHTTPRequestHandler):
                 job_id = path.split("/")[3]; self._json(200, {"job": start_job(job_id, wait=bool(body.get("wait", False)))})
             else:
                 self._json(404, {"error": "Not found"})
+        except TimelinePatchError as exc:
+            self._json(exc.status, exc.payload())
         except ValueError as exc:
             self._json(400, {"error": str(exc)})
         except Exception as exc:  # noqa: BLE001
-            self._json(500, {"error": str(exc)})
+            self._internal_error(exc)
+
+    def do_PATCH(self) -> None:  # noqa: N802
+        if not self._origin_allowed():
+            self._json(403, {"error": "Cross-origin requests are not allowed."}); return
+        if not self._token_ok():
+            self._json(401, {"error": "Invalid local studio token."}); return
+        try:
+            path = urlparse(self.path).path.rstrip("/"); body = self._body()
+            if path.startswith("/api/v2/control-jobs/"):
+                self._json(200, {"control_job": update_control_job(
+                    path.split("/")[4], str(body.get("status", "")), error=body.get("error"),
+                    result_revision=body.get("result_revision"), runner_id=body.get("runner_id"),
+                    render_job_id=body.get("render_job_id"), conflict=body.get("conflict"),
+                )})
+            else:
+                self._json(404, {"error": "Not found"})
+        except ValueError as exc:
+            self._json(400, {"error": str(exc)})
+        except Exception as exc:  # noqa: BLE001
+            self._internal_error(exc)
 
     @staticmethod
     def _moviepy_ready() -> bool:
         try:
             import moviepy  # noqa: F401
             return True
-        except ImportError:
+        except ImportError as exc:
+            print(f"MoviePy unavailable: {exc}")
             return False
 
     def log_message(self, fmt: str, *args: Any) -> None:
         print(f"[{utc_now()}] {self.address_string()} {fmt % args}")
-
-

@@ -1,13 +1,80 @@
 {
   "schema": "local-video-workspace.handoff-guide/v1",
-  "purpose": "面向无法直接访问 Local Studio 环回 API 的远程或云端机器人的契约。它不通过任何网络调用连接这台 PC,而是通过一个专用的 git 分支交接完成的素材和剪辑计划。",
+  "purpose": "面向无法直接访问 Local Studio 环回 API 的远程或云端机器人的契约。操作者只写规格。机器人提供原片和剪辑，再通过专用 git 分支交接，而不是连接这台电脑。",
+  "roles": {
+    "operator": "只写规格（标题、目标、时长、字幕、风格）。只选一扇门：剪辑门（文件夹 editor/）或收集/其他代理门（文件夹 collector/）。保存后会把 spec.json 放入那扇门的发件箱。不要附上原片。",
+    "grok_door": "剪辑门。文件夹名是 editor/。仍会读取留下的 grok/。谁被指定为剪辑机器人就写谁。Runner 配对也只用这扇门。不要用 collector/。",
+    "other_agent_door": "收集/其他代理门。文件夹名是 collector/。仍会读取留下的 agents/。谁被指定为收集机器人，或非组员的其他代理。不要用 editor/ 或 Runner。",
+    "bot": "从自己那扇门的发件箱读取 spec.json，准备原片并剪辑，再把含视频和带 edit_spec_id、project.door 的 bundle.json 的包裹推回同一扇门的收件箱。保留操作者设定的画质。画面比例和字幕可在设置里改。节奏、风格、B-roll、开场和音频可由操作者稍后在工作台上改。"
+  },
+  "operator_locks": {
+    "locked": ["quality"],
+    "reason": "只有画质是工作台上锁定的。不要在成片或 render_settings 里改画质。画面比例和字幕可在设置里改。其余剪辑控件仍给操作者。",
+    "folder_board": "放下包裹后，操作者在工作台打开 inputs/handoff/ 或 handoff-materials/。列表在左，预览在旁。右键可选预览、放大、打开原片或删除。已删除的文件不要再用。远程机器人不要连接 127.0.0.1。"
+  },
+  "style_recipes": {
+    "purpose": "命名风格会填好时长、画幅、钩子、节奏、字幕、外观和收集提示。它不是一扇门。",
+    "ids": ["instagram_reel", "tiktok_tight", "youtube_short", "youtube_long"]
+  },
+  "source_modes": {
+    "collect": "收集机器人找片段。两个发件箱。状态 waiting_for_collector。",
+    "own": "只用操作者的文件。只有剪辑发件箱。状态 waiting_for_editor。",
+    "own_and_collect": "操作者主画面加收集 B-roll。两个发件箱。保留 owned 片段。"
+  },
+  "crew": {
+    "purpose": "一份规格，两个机器人。收集者找素材，剪辑者只剪那些片段。这个工作台不抓网站。",
+    "collector": {
+      "door": "collector",
+      "outbox": "local_studio/workspace/handoff-outbox/collector/{edit_spec_id}/",
+      "drop": "local_studio/workspace/handoff-materials/{edit_spec_id}/",
+      "git_drop": "materials/{edit_spec_id}/",
+      "files": ["manifest.json", "source clips"],
+      "clip_fields": ["file", "origin (owned|collected|bundled-sample)", "license (operator|stock|public|unknown)", "source_url"],
+      "do_not": "不要把成品剪辑放进任何收件箱。只收集操作者有权使用的来源。不要抓登录墙后的 Instagram/TikTok。不要替换 owned 片段。"
+    },
+    "editor": {
+      "door": "editor",
+      "outbox": "local_studio/workspace/handoff-outbox/editor/{edit_spec_id}/",
+      "read": "local_studio/workspace/handoff-materials/{edit_spec_id}/manifest.json",
+      "return": "local_studio/workspace/handoff-inbox/editor/",
+      "git_return": "editor/"
+    }
+  },
+  "outbox": {
+    "purpose": "操作者保存规格后，这台电脑把 spec.json 和 brief.txt 写入那扇门的发件箱。机器人只读自己的门，绝不连接 127.0.0.1。对应收件箱收到剪辑后，发件箱文件夹会移到 .processed/。",
+    "schema": "grok-crew.outbox-spec/v1",
+    "local_root": "local_studio/workspace/handoff-outbox/",
+    "git_root": "outbox/",
+    "files": ["spec.json", "brief.txt"],
+    "rule": "只读自己的门。成品包裹交回对应收件箱（editor/ 或 collector/），不要放进 outbox/。"
+  },
+  "doors": {
+    "editor": {
+      "outbox": "local_studio/workspace/handoff-outbox/editor/{edit_spec_id}/",
+      "git_outbox": "outbox/editor/{edit_spec_id}/",
+      "inbox": "local_studio/workspace/handoff-inbox/editor/",
+      "git_prefix": "editor/",
+      "bundle_project_door": "editor",
+      "created_by": "指定的剪辑机器人名称",
+      "runner": true
+    },
+    "collector": {
+      "outbox": "local_studio/workspace/handoff-outbox/collector/{edit_spec_id}/",
+      "git_outbox": "outbox/collector/{edit_spec_id}/",
+      "inbox": "local_studio/workspace/handoff-inbox/collector/",
+      "git_prefix": "collector/",
+      "bundle_project_door": "collector",
+      "created_by": "指定的收集机器人或其他代理名称",
+      "runner": false
+    }
+  },
   "why_this_exists": "Local Studio 按设计只绑定 127.0.0.1,无法从另一台机器或容器访问(参见 README.md 和 CONTRIBUTING.md)。这个通道是离线交接,不是远程 API——本仓库从远程机器人那里接受的唯一内容,就是向下面指定的分支执行一次 git push。",
   "channel": {
     "medium": "git",
     "repository": "https://github.com/NoLucas/handoff-inbox.git",
     "branch": "main",
     "rule": "只能向本仓库的 main 分支 push 提交。绝不要尝试连接本地运营者机器所属的任何 IP 地址或主机名——本仓库是唯一被允许的通道。",
-    "folder_naming": "每次提交一个顶层文件夹,命名为 '<UTC 时间戳>-<短标签>'(例如 2026-08-23T07-19-00Z-payoff-hook)。文件夹名必须在每次提交中唯一,用于检测重复提交。"
+    "folder_naming": "待取规格在 outbox/editor/{edit_spec_id}/ 或 outbox/collector/{edit_spec_id}/（spec.json + brief.txt）。交回的剪辑在 editor/ 或 collector/ 下，命名为 '<UTC 时间戳>-<短标签>'(例如 editor/2026-08-23T07-19-00Z-payoff-hook)。仍会读取留下的 grok/ 和 agents/。不要把视频放进 outbox/。剪辑接收不会导入 collector/，收集接收不会导入 editor/。"
   },
   "limits": {
     "media_extensions": [".mp4", ".mov", ".mkv", ".avi", ".webm"],
@@ -28,6 +95,9 @@
         "output_path": "渲染结果的工作区相对路径,例如 outputs/handoff/<文件夹名>.mp4",
         "timeline": { "clips": [{ "in": 0, "out": 1.4, "keep": true, "caption": "字符串", "word_timings": "可选,参见 bot-guide.json" }], "render_settings": "可选,字段与 Production 的 Finish Rack 相同(platform、quality、caption_bg、music_track 等)" },
         "caption": "Instagram 文案,最多 2200 字符",
+        "edit_spec_id": "履行操作者规格时必填 — 复制对方发来的 id",
+        "door": "必填：editor 或 collector。grok 和 agent 仍可作为别名。必须与收件箱文件夹和规格一致",
+        "created_by": "工作台用这个名字标记送来的人。写签到的机器人名，或操作者填写的名字。不要默认成 Grok 或 Claude。",
         "handoff_auto_upload_requested": "布尔值,可选——参见下方 auto_upload_policy"
       },
       "jobs": [

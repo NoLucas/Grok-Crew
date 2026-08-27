@@ -10,6 +10,12 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 export const metadata: Metadata = {
   title: 'Local Video Workspace',
   description: 'A local-first video editing workspace for people and their bots.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/app-mark.png', type: 'image/png' },
+    ],
+  },
   openGraph: { title: 'Local Video Workspace', description: 'A local-first video editing workspace for people and their bots.' },
   twitter: { card: 'summary', title: 'Local Video Workspace', description: 'A local-first video editing workspace for people and their bots.' },
 };
@@ -18,5 +24,6 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const cookieStore = await cookies();
   const initialLanguage: AppLanguage = cookieStore.get('localVideoWorkspaceLanguage')?.value === 'en' ? 'en' : 'ko';
   const migrateStoredLanguage = `(function(){try{var saved=localStorage.getItem('localVideoWorkspaceLanguage');if((saved==='ko'||saved==='en')&&document.cookie.indexOf('localVideoWorkspaceLanguage=')===-1){document.cookie='localVideoWorkspaceLanguage='+saved+'; path=/; max-age=31536000; samesite=lax';location.replace(location.href);}}catch(e){}})();`;
-  return <html lang={initialLanguage}><head><script dangerouslySetInnerHTML={{ __html: migrateStoredLanguage }} /></head><body className={`${geistSans.variable} ${geistMono.variable}`}><LanguageProvider initialLanguage={initialLanguage}><LanguageBootstrap />{children}</LanguageProvider></body></html>;
+  const toolsDayBoot = `(function(){try{if(location.pathname==='/')return;var theme='low-light';try{var raw=localStorage.getItem('grokCrewDesktopAppearance');if(raw){var parsed=JSON.parse(raw);if(parsed&&(parsed.theme==='light'||parsed.theme==='dark'||parsed.theme==='low-light'||parsed.theme==='low-dark'))theme=parsed.theme;}}catch(e){}document.documentElement.classList.add('tools-shell');document.documentElement.dataset.theme=theme;}catch(e){}})();`;
+  return <html lang={initialLanguage}><head><script dangerouslySetInnerHTML={{ __html: migrateStoredLanguage }} /><script dangerouslySetInnerHTML={{ __html: toolsDayBoot }} /></head><body className={`${geistSans.variable} ${geistMono.variable}`}><LanguageProvider initialLanguage={initialLanguage}><LanguageBootstrap />{children}</LanguageProvider></body></html>;
 }

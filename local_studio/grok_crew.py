@@ -17,7 +17,9 @@ from urllib.request import Request, urlopen
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 BROWSER_PAGES = {
+    "desktop": "http://localhost:3000/",
     "studio": "http://localhost:3000/",
+    "tools": "http://localhost:3000/tools",
     "edit": "http://localhost:3000/edit",
     "cut": "http://localhost:3000/cut",
     "production": "http://localhost:3000/production",
@@ -121,8 +123,12 @@ def build_parser() -> argparse.ArgumentParser:
     for name, help_text in (("health", "Read local service status."), ("contract", "Read terminal capability contract."), ("guide", "Read bot editing guide."), ("presets", "Read quality, caption layout, and platform presets.")):
         commands.add_parser(name, help=help_text)
 
+    tools = commands.add_parser("tools", help="Read the advanced-tools catalog (APIs, not HTML). A person may specify which tools the bot should use.")
+    tools.add_argument("--lang", choices=("en", "ko", "zh", "ja"), default="en")
+    tools.add_argument("--assign", default=None, metavar="IDS", help="Comma-separated tool ids the person specified for the bot. Use none to clear.")
+
     site = commands.add_parser("site", help="Print the correct browser workspace URL; do not use port 7214 for browser pages.")
-    site.add_argument("--page", choices=tuple(BROWSER_PAGES), default="production")
+    site.add_argument("--page", choices=tuple(BROWSER_PAGES), default="desktop")
 
     entry = commands.add_parser("entry", help="Enter Local Studio and record the first bot heartbeat.")
     entry.add_argument("--bot-id", required=True); entry.add_argument("--display-name", required=True)
@@ -184,6 +190,41 @@ def build_parser() -> argparse.ArgumentParser:
     bundle_sub = bundle.add_subparsers(dest="command", required=True)
     bundle_export = bundle_sub.add_parser("export", help="Export a project as a portable JSON bundle."); bundle_export.add_argument("--project", required=True); bundle_export.add_argument("--out", help="Write the bundle to this file instead of stdout.")
     bundle_import = bundle_sub.add_parser("import", help="Import a project bundle JSON file as a new local project."); bundle_import.add_argument("--file", required=True)
+
+    spec = commands.add_parser("spec", help="Write an edit spec. The assigned door supplies the source video and the cut.")
+    spec_sub = spec.add_subparsers(dest="command", required=True)
+    spec_sub.add_parser("list", help="List saved edit specs.")
+    spec_sub.add_parser("recipes", help="List the named style recipes this desk fills in.")
+    spec_create = spec_sub.add_parser("create", help="Save an edit spec from JSON.")
+    spec_create.add_argument("--file", required=True)
+    spec_create.add_argument("--door", choices=("editor", "collector", "grok", "agent"), default="", help="Editor or collector door. grok/agent still accepted. Overrides the JSON file.")
+    spec_create.add_argument("--crew", action="store_true", help="One spec for a collector and an editor.")
+    spec_create.add_argument("--recipe", default="", help="instagram_reel, tiktok_tight, youtube_short, or youtube_long.")
+    spec_create.add_argument("--source-mode", choices=("collect", "own", "own_and_collect"), default="", help="Where the clips come from.")
+    spec_create.add_argument("--collect-query", default="", help="What the collector should find.")
+    spec_create.add_argument("--owned", action="append", default=[], help="Local video path for own or own_and_collect. Repeatable.")
+    spec_brief = spec_sub.add_parser("brief", help="Print the text to give that door's bot on another computer.")
+    spec_brief.add_argument("--id", required=True)
+    spec_brief.add_argument("--role", choices=("collect", "edit"), default="")
+
+    handoff = commands.add_parser("handoff", help="Send specs through the outbox or receive a returned package.")
+    handoff_sub = handoff.add_subparsers(dest="command", required=True)
+    handoff_sub.add_parser("status", help="Show both door inboxes, outboxes, and whether a git remote is set.")
+    handoff_sub.add_parser("outbox", help="List specs waiting in each door's outbox.")
+    handoff_sub.add_parser("materials", help="List clips the collector dropped for the editor.")
+    materials_pull = handoff_sub.add_parser("pull-materials", help="Import collector clips, or write a demo materials pack.")
+    materials_own = handoff_sub.add_parser("own-materials", help="Copy operator files into the materials box for an own spec.")
+    materials_own.add_argument("--spec-id", required=True)
+    materials_own.add_argument("--path", action="append", required=True, help="Local video path. Repeatable.")
+    materials_pull.add_argument("--demo", action="store_true")
+    materials_pull.add_argument("--spec-id", default="")
+    handoff_push = handoff_sub.add_parser("push-outbox", help="Copy pending outbox specs onto the git handoff remote.")
+    handoff_push.add_argument("--door", choices=("editor", "collector", "grok", "agent"), default="")
+    handoff_push.add_argument("--spec-id", default="")
+    handoff_pull = handoff_sub.add_parser("pull", help="Import pending packages from one door only.")
+    handoff_pull.add_argument("--demo", action="store_true", help="Write a sample package as if that door sent source and a cut.")
+    handoff_pull.add_argument("--spec-id", default="")
+    handoff_pull.add_argument("--door", choices=("editor", "collector", "grok", "agent"), default="", help="Pull only this door. Defaults to the spec's door, or editor.")
     return parser
 
 
@@ -198,6 +239,13 @@ def main() -> None:
         print_json(client.request("/api/terminal-contract")); return
     if args.group == "guide":
         print_json(client.request("/api/bot-guide")); return
+    if args.group == "tools":
+        if args.assign is not None:
+            ids = [] if args.assign.strip().lower() in {"", "-", "none"} else [part.strip() for part in args.assign.split(",") if part.strip()]
+            print_json(client.request("/api/v2/tools", {"ids": ids, "lang": args.lang}))
+        else:
+            print_json(client.request(f"/api/v2/tools?lang={args.lang}"))
+        return
     if args.group == "presets":
         print_json(client.request("/api/presets")); return
     if args.group == "site":
@@ -283,6 +331,70 @@ def main() -> None:
                 print(text)
         else:
             print_json(client.request("/api/projects/import", {"bundle": read_json_file(args.file)}))
+        return
+
+    if args.group == "spec":
+        if args.command == "list":
+            print_json(client.request("/api/v2/edit-specs"))
+        elif args.command == "recipes":
+            print_json(client.request("/api/v2/style-recipes"))
+        elif args.command == "create":
+            body = read_json_file(args.file)
+            if args.door:
+                body["door"] = args.door
+            if args.crew:
+                body["crew"] = True
+            if args.recipe:
+                body["recipe_id"] = args.recipe
+            if args.source_mode:
+                body["source_mode"] = args.source_mode
+            if args.collect_query:
+                body["collect_query"] = args.collect_query
+            if args.owned:
+                body["owned_paths"] = args.owned
+            print_json(client.request("/api/v2/edit-specs", body))
+        else:
+            path = f"/api/v2/edit-specs/{args.id}/brief"
+            if args.role:
+                path += f"?role={args.role}"
+            print_json(client.request(path))
+        return
+
+    if args.group == "handoff":
+        if args.command == "status":
+            print_json(client.request("/api/v2/handoff"))
+        elif args.command == "outbox":
+            print_json(client.request("/api/v2/handoff/outbox"))
+        elif args.command == "materials":
+            print_json(client.request("/api/v2/handoff/materials"))
+        elif args.command == "pull-materials":
+            payload = {}
+            if args.demo:
+                payload["demo"] = True
+            if args.spec_id:
+                payload["edit_spec_id"] = args.spec_id
+            print_json(client.request("/api/v2/handoff/materials/pull", payload))
+        elif args.command == "own-materials":
+            print_json(client.request("/api/v2/handoff/materials/own", {
+                "edit_spec_id": args.spec_id,
+                "paths": args.path,
+            }))
+        elif args.command == "push-outbox":
+            payload: dict[str, Any] = {}
+            if args.door:
+                payload["door"] = args.door
+            if args.spec_id:
+                payload["edit_spec_id"] = args.spec_id
+            print_json(client.request("/api/v2/handoff/outbox/push", payload))
+        else:
+            payload = {}
+            if args.demo:
+                payload["demo"] = True
+            if args.spec_id:
+                payload["edit_spec_id"] = args.spec_id
+            if args.door:
+                payload["door"] = args.door
+            print_json(client.request("/api/v2/handoff/pull", payload))
 
 
 if __name__ == "__main__":

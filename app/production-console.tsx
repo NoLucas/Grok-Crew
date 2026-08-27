@@ -22,7 +22,7 @@ type StudioProject = {
   source_path: string;
   output_path: string;
   caption: string;
-  timeline_json: { clips: TimelineClip[] };
+  timeline_json?: { clips?: TimelineClip[] } | null;
   created_at: string;
 };
 type StudioJob = {
@@ -456,27 +456,32 @@ export default function ProductionConsole() {
     <>
       <SiteHeader current="production" />
       <main className="production-main">
+        <p className="tools-crumb">
+          <a href="/tools">{t("고급 도구", "Advanced tools", "高级工具", "高度なツール")}</a>
+          <span>/</span>
+          <b>{t("제작", "Production", "制作", "制作")}</b>
+        </p>
         <section className="production-hero">
           <div>
-            <p className="kicker">{t("로컬 제작 노드", "LOCAL PRODUCTION NODE", "本地制作节点", "ローカル制作ノード")}</p>
+            <p className="kicker">{t("고급 도구 · 실행", "ADVANCED · LIVE", "高级工具 · 运行", "高度なツール · 稼働")}</p>
             <h1>
-              {t("컷 로그부터", "From cut log to", "从剪辑记录开始,", "カットログから")}
+              {t("렌더와", "Render and", "渲染与", "レンダーと")}
               <br />
               <span>
                 {t(
-                  "실제 MP4와 게시 대기열까지.",
-                  "a real MP4 and publish queue.",
-                  "到真正的 MP4 和发布队列。",
-                  "実際の MP4 と公開キューまで。",
+                  "게시 대기열.",
+                  "the publish queue.",
+                  "发布队列。",
+                  "公開キュー。",
                 )}
               </span>
             </h1>
             <p>
               {t(
-                "Grok bot은 편집 계획과 대기열을 만들 수 있습니다. 파일·SQLite·자격증명은 모두 이 PC에 남고, Instagram 업로드는 프로젝트의 자동 업로드 설정을 따릅니다.",
-                "Grok bots can plan edits and prepare queues. Files, SQLite, and credentials stay on this PC; Instagram upload follows the project's auto-upload setting.",
-                "Grok bot 可以规划剪辑并准备队列。文件、SQLite 和凭证都留在这台电脑上,Instagram 上传遵循项目的自动上传设置。",
-                "Grok bot は編集を計画し、キューを準備できます。ファイル・SQLite・認証情報はすべてこの PC に残り、Instagram アップロードはプロジェクトの自動アップロード設定に従います。",
+                "기본 화면의 타임라인은 여기 없습니다. 이 콘솔은 로컬 프로젝트, MoviePy 렌더, Instagram 대기열을 다룹니다. 파일과 자격 증명은 이 PC에 남습니다.",
+                "The main-screen timeline is not here. This console handles local projects, MoviePy renders, and the Instagram queue. Files and credentials stay on this PC.",
+                "主画面的时间线不在这里。此控制台处理本地项目、MoviePy 渲染和 Instagram 队列。文件和凭证留在这台电脑。",
+                "基本画面のタイムラインはここにありません。このコンソールはローカルプロジェクト、MoviePy レンダー、Instagram キューを扱います。ファイルと認証情報はこの PC に残ります。",
               )}
             </p>
           </div>
@@ -743,7 +748,7 @@ export default function ProductionConsole() {
                   >
                     <b>{project.title}</b>
                     <span>
-                      {t(`${project.timeline_json.clips.length}개 컷`, `${project.timeline_json.clips.length} clips`, `${project.timeline_json.clips.length} 个片段`, `${project.timeline_json.clips.length} クリップ`)} ·{" "}
+                      {t(`${project.timeline_json?.clips?.length ?? 0}개 컷`, `${project.timeline_json?.clips?.length ?? 0} clips`, `${project.timeline_json?.clips?.length ?? 0} 个片段`, `${project.timeline_json?.clips?.length ?? 0} クリップ`)} ·{" "}
                       {stamp(project.created_at, language)}
                     </span>
                     <i>{project.id.slice(0, 8)}</i>

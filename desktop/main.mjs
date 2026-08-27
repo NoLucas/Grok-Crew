@@ -1,0 +1,339 @@
+import { app, BrowserWindow, clipboard, dialog, ipcMain, safeStorage, shell } from 'electron';
+import { spawn, spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { basename, dirname, extname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { isRendererNavigationAllowed, studioRequestUrl } from './ipc-guard.mjs';
+import { RelayService } from './relay-service.mjs';
+import { createDesktopTray, installCloseToTray } from './tray-controller.mjs';
+import { fetchLatestRelease, parseReleasePageUrl, resolveUpdateRepo, updatePolicy } from './update-service.mjs';
+
+const desktopDir = dirname(fileURLToPath(import.meta.url));
+const root = resolve(desktopDir, '..');
+const development = !app.isPackaged;
+let studioProcess = null;
+let rendererServer = null;
+let studioPort = 0;
+let studioToken = '';
+let studioWorkspace = '';
+let mainWindow = null;
+let tray = null;
+let quitting = false;
+
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function hideMainWindow() {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
+}
+
+function quitApplication() {
+  quitting = true;
+  app.quit();
+}
+
+function createTray() {
+  if (tray) return tray;
+  tray = createDesktopTray({ show: showMainWindow, hide: hideMainWindow, quit: quitApplication });
+  return tray;
+}
+
+function freePort() {
+  return new Promise((resolvePort, reject) => {
+    const server = createServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      const port = typeof address === 'object' && address ? address.port : 0;
+      server.close(() => resolvePort(port));
+    });
+  });
+}
+
+function developmentPython() {
+  const venv = join(root, 'local_studio', '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+  if (existsSync(venv)) return { command: venv, args: [join(root, 'local_studio', 'studio_server.py')] };
+  const candidates = process.platform === 'win32' ? ['python', 'py'] : ['python3', 'python'];
+  for (const command of candidates) {
+    const probe = spawnSync(command, command === 'py' ? ['-3', '--version'] : ['--version'], { stdio: 'ignore' });
+    if (!probe.error && probe.status === 0) return { command, args: [...(command === 'py' ? ['-3'] : []), join(root, 'local_studio', 'studio_server.py')] };
+  }
+  throw new Error('Python sidecar is unavailable. Run npm run local once or build the packaged sidecar.');
+}
+
+async function waitForStudio(apiBase) {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    try {
+      const response = await fetch(`${apiBase}/health`);
+      if (response.ok) return;
+    } catch { /* sidecar is still starting */ }
+    await new Promise((resolveWait) => setTimeout(resolveWait, 150));
+  }
+  throw new Error('The local video sidecar did not become ready.');
+}
+
+async function startStudio() {
+  studioPort = await freePort();
+  studioToken = randomBytes(32).toString('base64url');
+  const apiBase = `http://127.0.0.1:${studioPort}`;
+  const e2eRoot = development && process.env.GROK_CREW_E2E_ROOT
+    ? resolve(process.env.GROK_CREW_E2E_ROOT)
+    : null;
+  const dataRoot = e2eRoot ? join(e2eRoot, 'studio-data') : join(app.getPath('userData'), 'studio-data');
+  const workspace = e2eRoot ? join(e2eRoot, 'workspace') : join(app.getPath('videos'), 'Grok Crew');
+  studioWorkspace = workspace;
+  const environment = {
+    ...process.env,
+    LOCAL_STUDIO_TOKEN: studioToken,
+    LOCAL_STUDIO_DATA: dataRoot,
+    LOCAL_STUDIO_WORKSPACE: workspace,
+    LOCAL_STUDIO_ALLOWED_ORIGINS: process.env.GROK_CREW_RENDERER_URL ?? 'http://127.0.0.1:3000',
+  };
+  if (development) {
+    const python = developmentPython();
+    studioProcess = spawn(python.command, [...python.args, '--port', String(studioPort)], {
+      cwd: join(root, 'local_studio'), env: environment, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
+    });
+  } else {
+    const executable = join(process.resourcesPath, 'sidecar', process.platform === 'win32' ? 'grok-crew-studio.exe' : 'grok-crew-studio');
+    if (!existsSync(executable)) throw new Error(`Packaged sidecar is missing: ${executable}`);
+    studioProcess = spawn(executable, ['--port', String(studioPort)], { env: environment, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+  }
+  studioProcess.stdout?.on('data', (chunk) => console.log(`[studio] ${String(chunk).trimEnd()}`));
+  studioProcess.stderr?.on('data', (chunk) => console.error(`[studio] ${String(chunk).trimEnd()}`));
+  studioProcess.once('exit', (code) => { if (!app.isQuitting && code) console.error(`Local Studio exited with ${code}.`); });
+  await waitForStudio(apiBase);
+  return apiBase;
+}
+
+async function startRenderer() {
+  if (process.env.GROK_CREW_RENDERER_URL) return process.env.GROK_CREW_RENDERER_URL;
+  const port = await freePort();
+  const { startProdServer } = await import('vinext/server/prod-server');
+  const started = await startProdServer({
+    port, host: '127.0.0.1', outDir: join(development ? root : app.getAppPath(), 'dist'),
+    purpose: 'Grok Crew renderer', silent: true,
+  });
+  rendererServer = started.server;
+  return `http://127.0.0.1:${started.port}`;
+}
+
+function assertTrustedRenderer(event) {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
+    throw new Error('Untrusted IPC sender.');
+  }
+}
+
+function registerIpc(apiBase) {
+  const request = async (path, value = {}) => {
+    const method = String(value?.method ?? 'GET').toUpperCase();
+    const body = value?.body == null ? undefined : String(value.body);
+    if (!['GET', 'POST', 'PATCH'].includes(method)) throw new Error('Blocked Studio IPC request.');
+    const url = studioRequestUrl(apiBase, path);
+    if (body && Buffer.byteLength(body) > 2 * 1024 * 1024) throw new Error('Studio IPC body is too large.');
+    const response = await fetch(url, {
+      method, body, headers: { Authorization: `Bearer ${studioToken}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(String(payload.error ?? `Local Studio ${response.status}`));
+    return payload;
+  };
+  ipcMain.handle('studio:request', async (event, value) => {
+    assertTrustedRenderer(event);
+    return request(String(value?.path ?? ''), value);
+  });
+  ipcMain.handle('timeline:apply-patch', async (event, projectId, timelinePatch) => {
+    assertTrustedRenderer(event);
+    const safeProjectId = String(projectId ?? '').trim();
+    if (!safeProjectId || safeProjectId.length > 120 || !/^[A-Za-z0-9_.-]+$/.test(safeProjectId)) {
+      return {
+        ok: false, status: 0,
+        error: { code: 'invalid_project_id', message: 'A valid project ID is required.', details: {} },
+      };
+    }
+    if (!timelinePatch || typeof timelinePatch !== 'object' || Array.isArray(timelinePatch)) {
+      return {
+        ok: false, status: 0,
+        error: { code: 'invalid_patch', message: 'Timeline patch must be an object.', details: {} },
+      };
+    }
+    try {
+      const patchBody = JSON.stringify(timelinePatch);
+      if (Buffer.byteLength(patchBody) > 2 * 1024 * 1024) {
+        return {
+          ok: false, status: 0,
+          error: { code: 'timeline_patch_too_large', message: 'Timeline patch is too large.', details: { maximum_bytes: 2 * 1024 * 1024 } },
+        };
+      }
+      const response = await fetch(`${apiBase}/api/v2/projects/${safeProjectId}/timeline/patch`, {
+        method: 'POST',
+        body: patchBody,
+        headers: { Authorization: `Bearer ${studioToken}`, 'Content-Type': 'application/json' },
+      });
+      const payload = await response.json();
+      if (response.ok) return { ok: true, status: response.status, value: payload };
+      return {
+        ok: false,
+        status: response.status,
+        error: {
+          code: String(payload.code ?? 'timeline_patch_failed'),
+          message: String(payload.error ?? `Local Studio ${response.status}`),
+          details: payload.details && typeof payload.details === 'object' ? payload.details : {},
+        },
+      };
+    } catch {
+      return {
+        ok: false, status: 0,
+        error: { code: 'timeline_patch_transport_error', message: 'The local editing service is unavailable.', details: {} },
+      };
+    }
+  });
+  ipcMain.handle('desktop:select-media', async (event) => {
+    assertTrustedRenderer(event);
+    const result = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'Media', extensions: ['mp4', 'mov', 'mkv', 'webm', 'mp3', 'wav', 'png', 'jpg', 'jpeg', 'webp'] }] });
+    if (result.canceled) return null;
+    const source = result.filePaths[0];
+    const inputs = resolve(app.getPath('videos'), 'Grok Crew', 'inputs');
+    mkdirSync(inputs, { recursive: true });
+    const extension = extname(source);
+    const stem = basename(source, extension).replace(/[^\p{L}\p{N}._ -]+/gu, '_').slice(0, 120) || 'media';
+    let fileName = `${stem}${extension.toLowerCase()}`;
+    let suffix = 2;
+    while (existsSync(join(inputs, fileName))) { fileName = `${stem}-${suffix}${extension.toLowerCase()}`; suffix += 1; }
+    copyFileSync(source, join(inputs, fileName));
+    return `inputs/${fileName}`;
+  });
+  ipcMain.handle('desktop:show-output', async (event, relativePath) => {
+    assertTrustedRenderer(event);
+    const rel = String(relativePath ?? '').replaceAll('\\', '/');
+    if (!rel || rel.includes('..')) throw new Error('Path is not allowed.');
+    const separator = process.platform === 'win32' ? '\\' : '/';
+    const roots = [
+      resolve(app.getPath('videos'), 'Grok Crew'),
+      studioWorkspace ? resolve(studioWorkspace) : '',
+    ].filter(Boolean);
+    for (const rootPath of [...new Set(roots)]) {
+      const target = resolve(rootPath, rel);
+      if (target !== rootPath && !target.startsWith(`${rootPath}${separator}`)) continue;
+      if (existsSync(target)) return shell.showItemInFolder(target);
+    }
+    throw new Error('File is not in the app workspace.');
+  });
+  ipcMain.handle('desktop:app-info', (event) => {
+    assertTrustedRenderer(event);
+    return { version: app.getVersion(), platform: process.platform, packaged: app.isPackaged };
+  });
+  ipcMain.handle('desktop:update-status', async (event) => {
+    assertTrustedRenderer(event);
+    const currentVersion = app.getVersion();
+    const packaged = app.isPackaged;
+    const repo = resolveUpdateRepo(process.env.GROK_CREW_UPDATE_REPO);
+    let latest = null;
+    if (packaged) {
+      try {
+        latest = await fetchLatestRelease(repo);
+      } catch {
+        latest = null;
+      }
+    }
+    return updatePolicy({
+      packaged,
+      currentVersion,
+      latestVersion: latest?.latestVersion ?? null,
+      releaseUrl: latest?.releaseUrl ?? '',
+      feedConfigured: Boolean(latest),
+      signed: process.env.GROK_CREW_UPDATES_SIGNED === '1',
+    });
+  });
+  ipcMain.handle('desktop:open-release', async (event, url) => {
+    assertTrustedRenderer(event);
+    const allowed = parseReleasePageUrl(url, resolveUpdateRepo(process.env.GROK_CREW_UPDATE_REPO));
+    if (!allowed) {
+      throw new Error('Release URL is not allowed.');
+    }
+    return shell.openExternal(allowed);
+  });
+  const relay = new RelayService({ request, safeStorage, dialog, shell, clipboard, userData: app.getPath('userData'), documents: app.getPath('documents') });
+  ipcMain.handle('relay:pair-runner', (event) => { assertTrustedRenderer(event); return relay.pairRunner(); });
+  ipcMain.handle('relay:export-desktop-pairing', (event) => { assertTrustedRenderer(event); return relay.exportDesktopPairing(); });
+  ipcMain.handle('relay:export-request', (event, controlJobId) => { assertTrustedRenderer(event); return relay.exportRequest(String(controlJobId ?? '')); });
+  ipcMain.handle('relay:import-result', (event) => { assertTrustedRenderer(event); return relay.importResult(); });
+  ipcMain.handle('relay:answer-input', (event, controlJobId, answer) => { assertTrustedRenderer(event); return relay.answerInput(String(controlJobId ?? ''), answer); });
+  ipcMain.handle('relay:connect-git', (event) => { assertTrustedRenderer(event); return relay.connectGitRelay(); });
+  ipcMain.handle('relay:github-status', (event) => { assertTrustedRenderer(event); return relay.githubStatus(); });
+  ipcMain.handle('relay:github-login-device', (event) => { assertTrustedRenderer(event); return relay.loginGitHubDevice(); });
+  ipcMain.handle('relay:github-login-token', (event, token) => { assertTrustedRenderer(event); return relay.loginGitHubToken(String(token ?? '')); });
+  ipcMain.handle('relay:push-git-request', (event, controlJobId) => { assertTrustedRenderer(event); return relay.pushGitRequest(String(controlJobId ?? '')); });
+  ipcMain.handle('relay:pull-git-results', (event) => { assertTrustedRenderer(event); return relay.pullGitResults(); });
+  ipcMain.handle('relay:control-job', (event, controlJobId, command, reason) => { assertTrustedRenderer(event); return relay.controlJob(String(controlJobId ?? ''), String(command ?? ''), String(reason ?? '')); });
+  ipcMain.handle('relay:resolve-conflict', (event, controlJobId, action) => { assertTrustedRenderer(event); return relay.resolveConflict(String(controlJobId ?? ''), String(action ?? '')); });
+}
+
+async function createWindow(apiBase, rendererUrl) {
+  const runtime = Buffer.from(JSON.stringify({ apiBase })).toString('base64url');
+  const iconFile = process.platform === 'win32'
+    ? join(desktopDir, 'icons', 'icon.ico')
+    : join(desktopDir, 'icons', 'icon.png');
+  const window = new BrowserWindow({
+    width: 1500, height: 980, minWidth: 1060, minHeight: 720, backgroundColor: '#f4f4f2',
+    icon: existsSync(iconFile) ? iconFile : undefined,
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    webPreferences: {
+      preload: join(desktopDir, 'preload.cjs'), sandbox: true, contextIsolation: true,
+      nodeIntegration: false, webSecurity: true, additionalArguments: [`--grok-crew-runtime=${runtime}`],
+    },
+  });
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === 'https:' && parsed.hostname === 'github.com' && !parsed.username && !parsed.password) {
+        void shell.openExternal(parsed.href);
+      }
+    } catch { /* ignore unparseable window-open targets */ }
+    return { action: 'deny' };
+  });
+  window.webContents.on('will-navigate', (event, url) => {
+    if (!isRendererNavigationAllowed(url, rendererUrl)) event.preventDefault();
+  });
+  mainWindow = window;
+  window.on('query-session-end', () => { quitting = true; });
+  installCloseToTray(window, () => quitting);
+  window.on('closed', () => {
+    if (mainWindow === window) mainWindow = null;
+  });
+  await window.loadURL(rendererUrl);
+  return window;
+}
+
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', showMainWindow);
+  app.whenReady().then(async () => {
+    try {
+      const rendererUrl = await startRenderer();
+      process.env.GROK_CREW_RENDERER_URL = rendererUrl;
+      const apiBase = await startStudio();
+      registerIpc(apiBase);
+      await createWindow(apiBase, rendererUrl);
+      createTray();
+    } catch (error) {
+      dialog.showErrorBox('Grok Crew could not start', error instanceof Error ? error.message : String(error));
+      quitApplication();
+    }
+  });
+}
+app.on('activate', showMainWindow);
+app.on('before-quit', () => {
+  quitting = true;
+  app.isQuitting = true;
+  if (studioProcess && !studioProcess.killed) studioProcess.kill();
+  if (rendererServer) rendererServer.close();
+});

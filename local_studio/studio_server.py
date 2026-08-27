@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import sys
 import re
 import shutil
 import sqlite3
@@ -20,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 import config
+from advanced_tools import advanced_tools_catalog
 from config import (
     ARTIFACT_TYPES,
     BOT_ENTRY_SCHEMA,
@@ -39,6 +42,22 @@ from config import (
 )
 from db import db, event, init_db, row_dict
 from instagram import instagram_publish
+from launch import launch_status as build_launch_status
+from publishers import list_publish_receipts
+from publishers import publish
+from publishers import reconcile_publish_receipts
+from publishers import retry_publish
+from proxy import (
+    generate_proxy,
+    get_proxy,
+    list_proxies,
+    proxy_is_current,
+    ready_proxy_paths,
+    source_asset,
+    update_proxy,
+)
+from exchange import export_edl, export_otio, import_edl, import_otio
+from preview import preview_at
 from render import render_moviepy
 
 
@@ -51,21 +70,30 @@ def new_project(body: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("timeline.clips must be a list.")
     project_id = str(uuid.uuid4())
     now = utc_now()
+    edit_spec_id = str(body.get("edit_spec_id") or "").strip() or None
+    handoff_door = str(body.get("handoff_door") or "").strip() or None
+    handoff_agent = str(body.get("handoff_agent") or "").strip() or None
     with db() as conn:
-        conn.execute("INSERT INTO projects (id, title, source_path, output_path, timeline_json, caption, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (project_id, title, str(source), str(output), json.dumps(timeline), str(body.get("caption", ""))[:2200], now, now))
+        conn.execute(
+            "INSERT INTO projects (id, title, source_path, output_path, timeline_json, caption, created_at, updated_at, edit_spec_id, handoff_door, handoff_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (project_id, title, str(source), str(output), json.dumps(timeline), str(body.get("caption", ""))[:2200], now, now, edit_spec_id, handoff_door, handoff_agent),
+        )
         row = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
-    event(project_id, None, "project_created", {"title": title, "source": str(source), "output": str(output)})
+    event(project_id, None, "project_created", {"title": title, "source": str(source), "output": str(output), "edit_spec_id": edit_spec_id, "handoff_door": handoff_door, "handoff_agent": handoff_agent})
     return row_dict(row) or {}
 
 
-def get_project(project_id: str) -> dict[str, Any] | None:
+def get_project(project_id: str, *, include_trashed: bool = False) -> dict[str, Any] | None:
     with db() as conn:
-        return row_dict(conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone())
+        value = row_dict(conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone())
+    if value and value.get("trashed_at") and not include_trashed:
+        return None
+    return value
 
 
 def list_projects() -> list[dict[str, Any]]:
     with db() as conn:
-        return [row_dict(row) or {} for row in conn.execute("SELECT * FROM projects ORDER BY updated_at DESC LIMIT 50")]
+        return [row_dict(row) or {} for row in conn.execute("SELECT * FROM projects WHERE trashed_at IS NULL ORDER BY updated_at DESC LIMIT 50")]
 
 
 def list_jobs(project_id: str | None = None) -> list[dict[str, Any]]:
@@ -328,7 +356,7 @@ def inspect_project_media(project_id: str, body: dict[str, Any]) -> dict[str, An
     project = get_project(project_id)
     if not project:
         raise ValueError("Project not found.")
-    report = probe_media(Path(project["source_path"]))
+    report = probe_media(require_path(project["source_path"], "source_path"))
     return save_artifact(project_id, "media_inspection", body.get("title", "Media preflight"), report, body.get("created_by", "local_inspector"))
 
 
@@ -341,7 +369,8 @@ def quality_report(project_id: str, stage: str, body: dict[str, Any]) -> dict[st
     timeline = project.get("timeline_json", {}) if isinstance(project.get("timeline_json"), dict) else {}
     clips = timeline.get("clips", []) if isinstance(timeline.get("clips"), list) else []
     checks: list[dict[str, str]] = []
-    source = Path(project["source_path"]); output = Path(project["output_path"])
+    source = require_path(project["source_path"], "source_path")
+    output = require_path(project["output_path"], "output_path")
     checks.append({"level": "pass" if source.exists() else "error", "rule": "source_file", "detail": "Source file is available." if source.exists() else "Source file is missing from the local workspace."})
     checks.append({"level": "pass" if clips else "error", "rule": "timeline", "detail": f"{len(clips)} EDL clip(s) are ready." if clips else "No EDL clips are available."})
     invalid_clips = [clip for clip in clips if not isinstance(clip, dict) or float(clip.get("out", 0)) <= float(clip.get("in", 0))]
@@ -370,10 +399,7 @@ def project_operations(project_id: str) -> dict[str, Any]:
 
 
 def _relative_workspace_path(value: str) -> str:
-    try:
-        return str(Path(value).resolve().relative_to(config.WORKSPACE_DIR))
-    except ValueError:
-        return value
+    return config.workspace_relative(value)
 
 
 def export_project_bundle(project_id: str) -> dict[str, Any]:
@@ -413,13 +439,31 @@ def import_project_bundle(body: dict[str, Any]) -> dict[str, Any]:
     project_data = bundle.get("project")
     if not isinstance(project_data, dict):
         raise ValueError("bundle.project must be a JSON object.")
+    from edit_spec import attach_spec_project, get_spec, resolve_sender
+
+    spec_id = str(project_data.get("edit_spec_id") or "").strip()
+    spec_payload = None
+    if spec_id:
+        record = get_spec(spec_id)
+        if record:
+            spec_payload = {
+                **(record["spec"] if isinstance(record.get("spec"), dict) else {}),
+                "agent": record.get("agent"),
+                "door": record.get("door"),
+            }
+    handoff_door, handoff_agent = resolve_sender(project_data, spec_payload)
     project = new_project({
         "title": f"{project_data.get('title', 'Untitled video project')} (imported)",
         "source_path": project_data.get("source_path"),
         "output_path": project_data.get("output_path", "outputs/final-video.mp4"),
         "timeline": project_data.get("timeline", {}),
         "caption": project_data.get("caption", ""),
+        "edit_spec_id": project_data.get("edit_spec_id"),
+        "handoff_door": handoff_door,
+        "handoff_agent": handoff_agent,
     })
+    if spec_id:
+        attach_spec_project(spec_id, project["id"])
     imported_jobs = []
     for job_data in bundle.get("jobs") if isinstance(bundle.get("jobs"), list) else []:
         if not isinstance(job_data, dict) or job_data.get("kind") not in {"render", "instagram_publish"}:
@@ -452,7 +496,7 @@ def bot_entry_manifest() -> dict[str, Any]:
             "task": "Prepare a transcript-first local edit plan.",
             "execution_mode": "auto_local | approval_required",
         },
-        "first_requests": ["GET /api/bot-guide", "GET /api/projects", "GET /api/jobs", "GET /api/edit-method", "GET /api/bots/{bot_id}/execution-policy"],
+        "first_requests": ["GET /api/bot-guide", "GET /api/v2/tools", "GET /api/projects", "GET /api/jobs", "GET /api/edit-method", "GET /api/bots/{bot_id}/execution-policy"],
         "keep_alive": "POST /api/bots/heartbeat at each meaningful state change and at least once every five minutes while active.",
         "execution_policy": "On first entry, a bot receives auto_local for local project, inspection, planning, and rendering work. The bot can change its own policy to approval_required. Instagram upload is queued manually or run immediately with auto_upload.",
         "approval_boundary": "auto_local controls local rendering. Instagram upload can be queued manually or run immediately when auto_upload is enabled for that job.",
@@ -473,13 +517,14 @@ def terminal_contract() -> dict[str, Any]:
         "bootstrap": "python grok-crew.py contract",
         "auth": "Set LOCAL_STUDIO_TOKEN in the bot terminal only when Local Studio token protection is enabled.",
         "commands": {
-            "start": ["health", "contract", "guide", "site --page production", "entry", "policy get|set", "heartbeat", "bots list|activity|entries"],
+            "start": ["health", "contract", "guide", "tools", "site --page desktop", "entry", "policy get|set", "heartbeat", "bots list|activity|entries"],
             "editing": ["projects list|get|create", "method get|set", "ops show|inspect|cut-map|quality|artifact|update", "brand list|save"],
             "delivery": ["jobs list|render [auto local or human approved]|instagram|run|cancel", "render, instagram, and run accept --wait to poll until the job finishes; renders execute in the background and report progress via GET /api/jobs/{id}"],
         },
         "execution_policy": {"auto_local": "The connected bot can queue and run its own local render work automatically.", "approval_required": "The bot records a request and requires --human-approved for local render work.", "instagram": "Instagram upload can run immediately when auto_upload is enabled, or remain queued for manual execution."},
         "browser_pages": {
             "studio": f"{SITE_BASE_URL}/",
+            "tools": f"{SITE_BASE_URL}/tools",
             "edit": f"{SITE_BASE_URL}/edit",
             "cut": f"{SITE_BASE_URL}/cut",
             "production": f"{SITE_BASE_URL}/production",
@@ -545,6 +590,7 @@ def bot_guide(language: str = "en") -> dict[str, Any]:
         raise RuntimeError("Local bot guide is unavailable or invalid JSON.") from exc
     if not isinstance(value, dict):
         raise RuntimeError("Local bot guide must be a JSON object.")
+    value["advanced_tools"] = advanced_tools_catalog(language)
     return value
 
 
@@ -552,9 +598,9 @@ def current_edit_method() -> dict[str, Any]:
     with db() as conn:
         row = conn.execute("SELECT * FROM edit_method WHERE id = 'current'").fetchone()
     if not row:
-        return {"method": DEFAULT_EDIT_METHOD.copy(), "updated_by": "local_default", "updated_at": None, "is_default": True}
+        return {"method": DEFAULT_EDIT_METHOD.copy(), "updated_by": "local_default", "updated_at": None, "origin": "default", "is_default": True}
     value = dict(row)
-    return {"method": json.loads(value["method_json"]), "updated_by": value["updated_by"], "updated_at": value["updated_at"], "is_default": False}
+    return {"method": json.loads(value["method_json"]), "updated_by": value["updated_by"], "updated_at": value["updated_at"], "origin": value.get("origin", "bot"), "is_default": False}
 
 
 def validated_edit_method(value: Any) -> dict[str, Any]:
@@ -589,21 +635,27 @@ def validated_edit_method(value: Any) -> dict[str, Any]:
 
 
 def set_edit_method(body: dict[str, Any]) -> dict[str, Any]:
+    origin = str(body.get("origin", "bot")).strip()
+    if origin not in {"human", "bot"}:
+        raise ValueError("origin must be human or bot.")
     bot_id = str(body.get("bot_id", "")).strip()
-    if not bot_id:
+    if origin == "bot" and not bot_id:
         raise ValueError("bot_id is required when a bot configures an edit method.")
     method = validated_edit_method(body.get("method"))
+    updated_by = str(body.get("updated_by", "operator" if origin == "human" else bot_id)).strip()[:80] or ("operator" if origin == "human" else bot_id)
     now = utc_now()
     with db() as conn:
-        conn.execute("""INSERT INTO edit_method (id, method_json, updated_by, updated_at) VALUES ('current', ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET method_json = excluded.method_json, updated_by = excluded.updated_by, updated_at = excluded.updated_at""", (json.dumps(method), bot_id[:80], now))
-    record_bot_heartbeat({"bot_id": bot_id, "display_name": body.get("display_name", bot_id), "action": "edit_method_configured", "detail": {"method": method, "next": "await human application or review"}})
-    event(None, None, "edit_method_configured", {"bot_id": bot_id, "method": method})
+        conn.execute("""INSERT INTO edit_method (id, method_json, updated_by, updated_at, origin) VALUES ('current', ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET method_json = excluded.method_json, updated_by = excluded.updated_by,
+            updated_at = excluded.updated_at, origin = excluded.origin""", (json.dumps(method), updated_by, now, origin))
+    if origin == "bot":
+        record_bot_heartbeat({"bot_id": bot_id, "display_name": body.get("display_name", bot_id), "action": "edit_method_configured", "detail": {"method": method, "next": "await human application or review"}})
+    event(None, None, "edit_method_configured", {"origin": origin, "updated_by": updated_by, "method": method})
     return current_edit_method()
 
 
 def create_job(project_id: str, kind: str, payload: dict[str, Any], approved: bool) -> dict[str, Any]:
-    if kind not in {"render", "instagram_publish"}:
+    if kind not in {"proxy", "render", "instagram_publish", "tiktok_publish", "youtube_publish"}:
         raise ValueError("Unsupported job kind.")
     if not get_project(project_id):
         raise ValueError("Project not found.")
@@ -614,6 +666,108 @@ def create_job(project_id: str, kind: str, payload: dict[str, Any], approved: bo
         row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
     event(project_id, job_id, "job_queued", {"kind": kind, "approved": approved})
     return row_dict(row) or {}
+
+
+def project_proxies(project_id: str) -> list[dict[str, Any]]:
+    if not get_project(project_id):
+        raise ValueError("Project not found.")
+    return list_proxies(project_id)
+
+
+def ensure_project_proxies(
+    project_id: str,
+    *,
+    force: bool = False,
+    run_immediately: bool = True,
+    wait: bool = False,
+) -> dict[str, Any]:
+    """Queue a proxy for every Timeline v2 video asset that is not current."""
+    from desktop_domain import ensure_timeline_version, get_timeline
+
+    ensure_timeline_version(project_id)
+    project = get_project(project_id)
+    if not project:
+        raise ValueError("Project not found.")
+    timeline = get_timeline(project_id)["timeline"]
+    if not isinstance(timeline, dict) or timeline.get("schema") != "grok-crew.timeline/v2":
+        raise ValueError("Proxy editing requires a Timeline v2 project.")
+
+    proxies: list[dict[str, Any]] = []
+    queued = 0
+    reused = 0
+    seen: set[str] = set()
+    for item in timeline.get("assets", []):
+        if not isinstance(item, dict) or item.get("kind") != "video":
+            continue
+        asset_id = str(item.get("id") or "").strip()
+        if not asset_id or asset_id in seen:
+            continue
+        seen.add(asset_id)
+        try:
+            source_asset(project, asset_id)
+        except ValueError:
+            continue
+        result = request_proxy(
+            project_id,
+            {
+                "asset_id": asset_id,
+                "force": force,
+                "run_immediately": run_immediately,
+                "wait": wait,
+            },
+        )
+        if result.get("proxy"):
+            proxies.append(result["proxy"])
+        if result.get("reused"):
+            reused += 1
+        else:
+            queued += 1
+    return {"proxies": proxies, "queued": queued, "reused": reused}
+
+
+def request_proxy(project_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    from desktop_domain import ensure_timeline_version
+
+    if body.get("ensure_all") or str(body.get("asset_id", "")).strip() == "*":
+        return ensure_project_proxies(
+            project_id,
+            force=bool(body.get("force")),
+            run_immediately=bool(body.get("run_immediately", True)),
+            wait=bool(body.get("wait", False)),
+        )
+    ensure_timeline_version(project_id)
+    project = get_project(project_id)
+    if not project:
+        raise ValueError("Project not found.")
+    asset_id = str(body.get("asset_id", "")).strip()
+    _asset, source = source_asset(project, asset_id)
+    existing = get_proxy(project_id, asset_id)
+    if proxy_is_current(existing, source) and not body.get("force"):
+        return {"proxy": existing, "job": None, "reused": True}
+    if existing and existing.get("status") in {"queued", "running"} and existing.get("job_id"):
+        return {
+            "proxy": existing,
+            "job": get_job(str(existing["job_id"])),
+            "reused": True,
+        }
+    job = create_job(
+        project_id,
+        "proxy",
+        {"asset_id": asset_id, "force": bool(body.get("force"))},
+        True,
+    )
+    proxy = update_proxy(
+        project_id,
+        asset_id,
+        source,
+        status="queued",
+        job_id=job["id"],
+        progress=0,
+        error=None,
+    )
+    if body.get("run_immediately", True):
+        job = start_job(job["id"], wait=bool(body.get("wait", False)))
+    return {"proxy": proxy, "job": job, "reused": False}
 
 
 def update_job(job_id: str, *, status: str, result: dict[str, Any] | None = None, error: str | None = None, progress: int | None = None) -> dict[str, Any]:
@@ -648,7 +802,7 @@ def request_job_cancel(job_id: str) -> dict[str, Any]:
 
 
 def _validate_runnable(job: dict[str, Any]) -> dict[str, Any]:
-    if job["kind"] == "render" and not job["approved"]:
+    if job["kind"] in {"render", "instagram_publish", "tiktok_publish", "youtube_publish"} and not job["approved"]:
         raise ValueError("Job has no recorded human approval.")
     if job["status"] not in {"queued", "failed"}:
         raise ValueError("Only queued or failed jobs can run.")
@@ -665,15 +819,53 @@ def execute_job(job_id: str) -> dict[str, Any]:
     project = _validate_runnable(job)
     update_job(job_id, status="running", progress=0)
     event(project["id"], job_id, "job_started", {"kind": job["kind"]})
+    proxy_source: Path | None = None
+    proxy_asset_id = str(job["payload_json"].get("asset_id", ""))
     try:
-        if job["kind"] == "render":
+        if job["kind"] == "proxy":
+            _asset, proxy_source = source_asset(project, proxy_asset_id)
+            update_proxy(
+                project["id"], proxy_asset_id, proxy_source,
+                status="running", job_id=job_id, progress=0, error=None,
+            )
+
+            def proxy_progress(progress: int) -> None:
+                update_job_progress(job_id, progress)
+                if proxy_source is not None:
+                    update_proxy(
+                        project["id"], proxy_asset_id, proxy_source,
+                        status="running", job_id=job_id, progress=progress, error=None,
+                    )
+
+            result = generate_proxy(
+                project,
+                job["payload_json"],
+                progress_cb=proxy_progress,
+                should_cancel=lambda: job_cancel_requested(job_id),
+            )
+            update_proxy(
+                project["id"], proxy_asset_id, proxy_source,
+                status="ready", job_id=job_id, proxy_path=result["proxy_path"],
+                progress=100, width=result.get("width"), height=result.get("height"), error=None,
+            )
+        elif job["kind"] == "render":
+            require_path(project["source_path"], "source_path")
+            require_path(project["output_path"], "output_path")
             result = render_moviepy(project, progress_cb=lambda pct: update_job_progress(job_id, pct), should_cancel=lambda: job_cancel_requested(job_id))
-        else:
+        elif job["kind"] == "instagram_publish" and not job["payload_json"].get("idempotency_key"):
             result = instagram_publish(project, job["payload_json"])
+        else:
+            result = publish(job["kind"].removesuffix("_publish"), project, job["payload_json"])
         final = update_job(job_id, status="succeeded", result=result, progress=100)
         event(project["id"], job_id, "job_succeeded", result)
         return final
     except Exception as exc:  # noqa: BLE001
+        if job["kind"] == "proxy" and proxy_source is not None:
+            update_proxy(
+                project["id"], proxy_asset_id, proxy_source,
+                status="cancelled" if "cancelled" in str(exc).lower() else "failed",
+                job_id=job_id, error=str(exc),
+            )
         final = update_job(job_id, status="failed", error=str(exc))
         event(project["id"], job_id, "job_failed", {"error": str(exc)})
         return final
@@ -690,13 +882,172 @@ def start_job(job_id: str, *, wait: bool) -> dict[str, Any]:
     return get_job(job_id) or job
 
 
+def project_preview(
+    project_id: str,
+    at: float,
+    *,
+    include_image: bool = True,
+    quality: str = "draft",
+) -> dict[str, Any]:
+    from desktop_domain import get_timeline
+
+    payload = get_timeline(project_id)
+    timeline = payload["timeline"]
+    preview_quality = "full" if quality == "full" else "draft"
+    proxies = ready_proxy_paths(project_id, timeline) if preview_quality == "draft" else {}
+    preview = preview_at(
+        timeline,
+        at,
+        include_image=include_image,
+        quality=preview_quality,
+        proxy_paths=proxies,
+        project_id=project_id,
+    )
+    preview.pop("frame", None)
+    preview["project_id"] = project_id
+    return preview
+
+
+def project_scopes(project_id: str, at: float) -> dict[str, Any]:
+    from desktop_domain import get_timeline
+    from render import sample_timeline_frame
+
+    payload = get_timeline(project_id)
+    sampled = sample_timeline_frame(payload["timeline"], at)
+    return {
+        "project_id": project_id,
+        "at": sampled["at"],
+        "revision": payload["timeline"].get("revision"),
+        "scopes": sampled["scopes"],
+        "caption": sampled.get("caption", ""),
+    }
+
+
+def project_exchange(project_id: str, fmt: str) -> dict[str, Any]:
+    from desktop_domain import get_timeline
+
+    payload = get_timeline(project_id)
+    timeline = payload["timeline"]
+    project = get_project(project_id) or {}
+    title = str(project.get("title") or "Grok Crew")
+    if fmt == "edl":
+        return {"format": "edl", "text": export_edl(timeline, title)}
+    if fmt == "otio":
+        return {"format": "otio", "otio": export_otio(timeline, title)}
+    raise ValueError("Exchange format must be edl or otio.")
+
+
+def import_exchange(project_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    from desktop_domain import apply_timeline_patch, get_timeline
+
+    current = get_timeline(project_id)
+    timeline = current["timeline"]
+    fps = int(timeline["settings"].get("fps", 30))
+    if body.get("edl"):
+        imported = import_edl(str(body["edl"]), fps)
+    elif body.get("otio"):
+        if not isinstance(body.get("otio"), dict):
+            raise ValueError("otio must be an object.")
+        imported = import_otio(body["otio"])
+    else:
+        raise ValueError("Provide edl text or an otio object.")
+    existing_ids = {str(asset.get("id")) for asset in timeline.get("assets", [])}
+    operations: list[dict[str, Any]] = []
+    for asset in imported.get("assets", []):
+        if asset.get("id") not in existing_ids:
+            operations.append({"op": "add_asset", "asset": asset})
+    target = next((track for track in timeline["tracks"] if track.get("type") == "video"), None)
+    if target is None:
+        raise ValueError("A video track is required before importing an edit list.")
+    for clip in list(target.get("clips", [])):
+        operations.append({"op": "remove_clip", "clip_id": clip["id"]})
+    incoming = next((track for track in imported.get("tracks", []) if track.get("type") == "video"), {"clips": []})
+    for clip in incoming.get("clips", []):
+        if clip.get("asset_id") not in existing_ids and clip.get("asset_id") != "source":
+            clip["asset_id"] = next(iter(existing_ids), clip.get("asset_id"))
+        elif "source" in existing_ids:
+            clip["asset_id"] = "source"
+        operations.append({"op": "add_clip", "track_id": target["id"], "clip": clip})
+    if not operations:
+        raise ValueError("The exchange file did not contain any clips.")
+    return apply_timeline_patch(project_id, {
+        "schema": "grok-crew.timeline-patch/v1",
+        "base_revision": timeline["revision"],
+        "origin": "human",
+        "operations": operations,
+    })
+
+
+def render_queue(project_id: str) -> list[dict[str, Any]]:
+    return [job for job in list_jobs(project_id) if job.get("kind") == "render"]
+
+
+def enqueue_render(project_id: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = body or {}
+    auto_local, _policy = bot_auto_executes(payload)
+    human_approved = bool(payload.get("approved"))
+    if not human_approved and not auto_local:
+        raise ValueError(
+            "This bot requires human approval before a local render. "
+            "Set its execution policy to auto_local or send approved: true."
+        )
+    job = create_job(
+        project_id,
+        "render",
+        {
+            "requested_by": payload.get("requested_by", "local_user"),
+            "bot_id": payload.get("bot_id"),
+            "execution_authorization": "bot_auto_local" if auto_local and not human_approved else "human_approved",
+        },
+        True,
+    )
+    if payload.get("run_immediately", True):
+        job = start_job(job["id"], wait=bool(payload.get("wait", False)))
+    return {"job": job, "queue": render_queue(project_id)}
+
+
+def project_publish_receipts(project_id: str) -> dict[str, Any]:
+    if not get_project(project_id):
+        raise ValueError("Project not found.")
+    return {"receipts": list_publish_receipts(project_id)}
+
+
+def retry_project_publish(project_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    project = get_project(project_id)
+    if not project:
+        raise ValueError("Project not found.")
+    body = payload or {}
+    if not body.get("approved"):
+        raise ValueError("Publishing requires a recorded human approval or an approved project auto-publish policy.")
+    receipt_id = str(body.get("receipt_id") or "").strip()
+    if not receipt_id:
+        raise ValueError("receipt_id is required.")
+    try:
+        result = retry_publish(project, receipt_id, body)
+    except RuntimeError as exc:
+        raise ValueError(str(exc)) from exc
+    return {"result": result, "receipts": list_publish_receipts(project_id)}
+
+
+def launch_status() -> dict[str, Any]:
+    return build_launch_status()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Local Video Studio on loopback only.")
     parser.add_argument("--port", type=int, default=7214)
     args = parser.parse_args(); load_dotenv(); init_db()
+    from first_run import provision_sample_media
+    if provision_sample_media():
+        print("Bundled sample clip is in workspace/inputs/grok-crew-sample.mp4")
     from handlers import StudioHandler  # deferred: handlers.py imports this module, so avoid a top-level cycle
     with db() as conn:
         conn.execute("UPDATE jobs SET status = 'failed', error_text = ?, updated_at = ? WHERE status = 'running'", ("Interrupted by an unclean Local Studio shutdown.", utc_now()))
+    recovered_receipts = reconcile_publish_receipts()
+    if recovered_receipts:
+        print(f"recovered {recovered_receipts} interrupted publish receipts", file=sys.stderr)
+    if not os.getenv("LOCAL_STUDIO_TOKEN", "").strip():
+        print("Warning: LOCAL_STUDIO_TOKEN is unset; loopback clients can call the API without a bearer token.")
     server = ThreadingHTTPServer(("127.0.0.1", args.port), StudioHandler)
     print(f"Local Video Studio listening at http://127.0.0.1:{args.port}")
     print(f"Workspace: {config.WORKSPACE_DIR}")

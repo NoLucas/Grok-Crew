@@ -1,7 +1,12 @@
 """HTTP-level tests against a real StudioHandler on an ephemeral loopback port."""
+import http.client
 import json
 from urllib.error import HTTPError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
+
+import config
+from db import db
 
 
 def post(base_url, path, body):
@@ -30,6 +35,30 @@ def get_status(base_url, path):
             return response.status, json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
         return exc.code, json.loads(exc.read().decode("utf-8"))
+
+
+def test_analysis_thumbnail_is_available_to_the_desktop_preview(live_server):
+    project = create_project(live_server)
+    thumbnail = config.DATA_DIR / "analysis" / project["id"] / "thumbnails" / "scene-01.jpg"
+    thumbnail.parent.mkdir(parents=True, exist_ok=True)
+    thumbnail.write_bytes(b"preview-jpeg")
+    now = "2026-08-25T00:00:00+00:00"
+    with db() as connection:
+        connection.execute(
+            """INSERT INTO project_analysis
+            (project_id, status, media_json, transcript_json, thumbnails_json, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (
+                project["id"], "ready", json.dumps({"status": "ready", "duration": 4}),
+                json.dumps({"status": "unavailable", "words": []}),
+                json.dumps([{"id": "scene-01", "at": 2, "path": str(thumbnail), "size_bytes": 12}]),
+                now, now,
+            ),
+        )
+    with urlopen(Request(f"{live_server}/analysis-media/{project['id']}/scene-01"), timeout=10) as response:
+        assert response.status == 200
+        assert response.headers["Content-Type"] == "image/jpeg"
+        assert response.read() == b"preview-jpeg"
 
 
 # -- regression coverage for plan item 0.3: Instagram auto_upload gate -------
@@ -112,11 +141,63 @@ def test_token_check_rejects_wrong_bearer_token(live_server, monkeypatch):
         assert exc.code == 401
 
 
+def test_token_check_rejects_different_length_token_without_leaking(live_server, monkeypatch):
+    monkeypatch.setenv("LOCAL_STUDIO_TOKEN", "correct-token")
+    request = Request(f"{live_server}/api/projects", headers={"Authorization": "Bearer x"})
+    try:
+        urlopen(request, timeout=10)
+        assert False, "expected a 401 for a short token"
+    except HTTPError as exc:
+        assert exc.code == 401
+        body = json.loads(exc.read().decode("utf-8"))
+        assert body["error"] == "Invalid local studio token."
+        assert "length" not in body["error"].lower()
+
+
 def test_token_check_accepts_correct_bearer_token(live_server, monkeypatch):
     monkeypatch.setenv("LOCAL_STUDIO_TOKEN", "correct-token")
     request = Request(f"{live_server}/api/projects", headers={"Authorization": "Bearer correct-token"})
     with urlopen(request, timeout=10) as response:
         assert response.status == 200
+
+
+def test_health_hides_paths_without_token(live_server, monkeypatch):
+    monkeypatch.setenv("LOCAL_STUDIO_TOKEN", "correct-token")
+    status, body = get_status(live_server, "/health")
+    assert status == 200
+    assert body["status"] == "ready"
+    assert "workspace" not in body
+    assert "database" not in body
+    request = Request(f"{live_server}/health", headers={"Authorization": "Bearer correct-token"})
+    with urlopen(request, timeout=10) as response:
+        full = json.loads(response.read().decode("utf-8"))
+    assert "workspace" in full
+
+
+def test_malformed_media_range_returns_416(live_server, studio):
+    media = config.WORKSPACE_DIR / "inputs" / "range-source.mp4"
+    media.parent.mkdir(parents=True, exist_ok=True)
+    media.write_bytes(b"0123456789")
+    request = Request(f"{live_server}/media/inputs/range-source.mp4", headers={"Range": "bytes=not-a-range"})
+    try:
+        urlopen(request, timeout=10)
+        assert False, "expected 416 for a malformed Range header"
+    except HTTPError as exc:
+        assert exc.code == 416
+
+
+def test_render_queue_requires_approval_or_auto_local(live_server):
+    project = create_project(live_server)
+    try:
+        post(live_server, f"/api/v2/projects/{project['id']}/render-queue", {"run_immediately": False})
+        assert False, "expected render-queue without approval to be rejected"
+    except HTTPError as exc:
+        assert exc.code == 400
+    queued = post(live_server, f"/api/v2/projects/{project['id']}/render-queue", {
+        "approved": True,
+        "run_immediately": False,
+    })
+    assert queued["job"]["status"] == "queued"
 
 
 # -- CORS / cross-origin guard ------------------------------------------------
@@ -129,3 +210,66 @@ def test_disallowed_origin_is_rejected(live_server):
     except HTTPError as exc:
         assert exc.code == 403
         assert "error" in json.loads(exc.read().decode("utf-8"))
+
+
+def test_empty_origin_header_is_rejected(live_server):
+    parsed = urlparse(live_server)
+    conn = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=10)
+    conn.putrequest("GET", "/health")
+    conn.putheader("Origin", "")
+    conn.endheaders()
+    response = conn.getresponse()
+    body = json.loads(response.read().decode("utf-8"))
+    conn.close()
+    assert response.status == 403
+    assert "error" in body
+
+
+def test_loopback_preview_origin_can_read_workspace(live_server):
+    request = Request(f"{live_server}/api/v2/workspace", headers={"Origin": "http://127.0.0.1:43123"})
+    with urlopen(request, timeout=10) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    assert "projects" in payload
+
+
+def test_v2_publish_requires_approval_and_idempotency_key(live_server):
+    project = create_project(live_server)
+    try:
+        post(live_server, f"/api/v2/projects/{project['id']}/publish/youtube", {"approved": False})
+        assert False, "expected publishing without approval to be rejected"
+    except HTTPError as exc:
+        assert exc.code == 400
+    try:
+        post(live_server, f"/api/v2/projects/{project['id']}/publish/youtube", {"approved": True})
+        assert False, "expected a missing idempotency key to be rejected"
+    except HTTPError as exc:
+        assert exc.code == 400
+
+
+def test_v2_launch_and_publish_receipts_are_readable(live_server):
+    status, payload = get_status(live_server, "/api/v2/launch")
+    assert status == 200
+    assert payload["schema"] == "grok-crew.launch-status/v1"
+    project = create_project(live_server)
+    status, receipts = get_status(live_server, f"/api/v2/projects/{project['id']}/publish-receipts")
+    assert status == 200
+    assert receipts["receipts"] == []
+
+
+def test_v2_control_job_pause_and_resume_are_durable(live_server):
+    project = create_project(live_server)
+    created = post(live_server, f"/api/v2/projects/{project['id']}/control-jobs", {
+        "execution_policy": "review_before_render",
+        "publish_policy": {
+            "schema": "grok-crew.publish-policy/v1",
+            "instagram": "ask", "tiktok": "ask", "youtube": "ask",
+        },
+    })["control_job"]
+    paused = post(live_server, f"/api/v2/control-jobs/{created['id']}/control", {"command": "pause"})["control_job"]
+    assert paused["status"] == "pause_requested"
+    assert paused["attempt"] == 1
+    assert paused["control_sequence"] == 1
+    resumed = post(live_server, f"/api/v2/control-jobs/{created['id']}/control", {"command": "resume"})["control_job"]
+    assert resumed["status"] == "queued"
+    assert resumed["attempt"] == 2
+    assert resumed["control_sequence"] == 2
