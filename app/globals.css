@@ -7158,6 +7158,14 @@ select {
 .desktop-simple-copy-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .desktop-simple-no-bot { min-width: 0; }
 .desktop-simple-no-bot > p { margin: 8px 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
+.desktop-simple-connect {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px;
+  padding: 12px 14px; border: 1px solid #d7d2c8; border-radius: 12px; background: #fff8ef;
+}
+.desktop-simple-connect b { display: block; font-size: 14px; letter-spacing: -.02em; }
+.desktop-simple-connect p { margin: 4px 0 0; color: #6a5840; font-size: 13px; line-height: 1.45; max-width: 46rem; }
+.desktop-simple-connect.is-ready { border-color: #cfead8; background: #f3faf5; }
+.desktop-simple-connect.is-ready p { color: var(--desktop-green); }
 .desktop-simple-wait {
   display: grid;
   gap: 4px;

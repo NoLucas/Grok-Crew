@@ -4,19 +4,20 @@
 
 **[Open on Windows](https://github.com/NoLucas/Grok-crew-test/releases/latest)** — get [`GrokCrew-Windows.exe`](https://github.com/NoLucas/Grok-crew-test/releases/latest) and double-click.
 
-Four steps. Receive → open → write → paste.
+Five steps. Receive → open → connect → write → paste.
 
 1. **Receive** — one file, `GrokCrew-Windows.exe`.
 2. **Open** — double-click. If the blue shield appears, More info → Run anyway.
-3. **Write** — a title.
-4. **Paste** — the copied line into the bot window. This window opens when the cut arrives.
+3. **Connect** — copy the connect text into a bot window on this PC. The name on this screen means it is connected.
+4. **Write** — a title.
+5. **Paste** — the job into that bot window. This window opens when the cut arrives.
 
 To cut your own file, drop it in the second card. There is no login.
 
 It is not a website that holds your footage. The bot never opens this PC. It only pushes a package.
 
 ```
-receive the exe  →  open it  →  write a title  →  paste in the bot window  →  this window opens when the cut arrives
+receive the exe  →  open it  →  connect  →  write a title  →  paste the job  →  this window opens when the cut arrives
 ```
 
 ## Who it is for

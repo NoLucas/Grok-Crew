@@ -1228,6 +1228,7 @@ export default function DesktopWorkspace() {
               <div className="desktop-simple-wrap">
               <SimpleDesk
                 recipes={workspace.style_recipes ?? []}
+                roster={workspace.crew_roster}
                 busy={busy}
                 studioReady={studioState === 'ready'}
                 sampleAvailable={sampleAvailable}

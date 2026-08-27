@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- The first desk asks to connect a same-PC bot before handing off work. The window shows the bot name after check-in. A bot on another PC still cannot attach to this address; that path stays copy-then-bring-the-file-back.
 - The Windows exe, installer, tray, and desk header use the shutter-play mark: interlocking warm blades around a play triangle, on a light tile.
 - The first desk keeps four human steps and hides the rest. Invite text stays on the clipboard; the screen says paste it in the bot window. After copy, a wait strip shows last check and not-yet / arrived / failed. Sample no longer opens by itself. Install failure stays on the same page with three SmartScreen pictures; the bot zip stays under Other method. No-bot help sits next to copy, with a finished-file drop and no path typing. Hand-it-off and open-it-myself stay on two cards. More detail and Advanced tools grow only after the first cut arrives.
 - Projects can be renamed, grouped into folders (drag or right-click), and moved to a trash that restores, empties, or auto-deletes after 30 days. Handoff files can be renamed or sent to the same trash.
