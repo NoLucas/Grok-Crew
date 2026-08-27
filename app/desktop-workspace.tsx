@@ -338,6 +338,8 @@ export default function DesktopWorkspace() {
   const [voiceDraft, setVoiceDraft] = useState<VoiceModelId>(() => readVoiceSetup().modelId);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [botPanelOpen, setBotPanelOpen] = useState(false);
+  const [setupPane, setSetupPane] = useState<'' | 'shape' | 'length' | 'sound' | 'pace'>('');
+  const [exportPane, setExportPane] = useState<'' | 'post' | 'exchange' | 'receipts'>('');
   const [deskWait, setDeskWait] = useState<DeskWaitState | null>(null);
   const [firstCut, setFirstCut] = useState(false);
   const [deskPulse, setDeskPulse] = useState<{ lastCheckedAt: string; pull: DeskPullStatus }>({ lastCheckedAt: '', pull: 'idle' });
@@ -508,6 +510,18 @@ export default function DesktopWorkspace() {
   }, [refreshProject, refreshWorkspace, selectedProjectId]);
   useEffect(() => { const initial = window.setTimeout(() => void refreshProject(selectedProjectId), 0); return () => window.clearTimeout(initial); }, [refreshProject, selectedProjectId]);
   const visibleReceipts = receipts.filter((receipt) => receipt.project_id === selectedProjectId);
+  const setupShapeLabel = method.aspect_ratio === '9:16'
+    ? t('세로 9:16', 'Vertical 9:16', '竖屏 9:16', '縦 9:16')
+    : method.aspect_ratio;
+  const setupLengthLabel = `${method.target_length}s`;
+  const setupSoundLabel = method.caption_mode === 'off'
+    ? t('자막 끔', 'Captions off', '字幕关', '字幕オフ')
+    : t('자막 넣음', 'Captions on', '有字幕', '字幕あり');
+  const setupPaceLabel = method.pacing === 'tight'
+    ? t('빠르고 타이트', 'Tight', '紧凑', 'タイト')
+    : method.pacing === 'deliberate'
+      ? t('차분하게', 'Deliberate', '沉稳', '丁寧')
+      : t('균형', 'Balanced', '平衡', 'バランス');
 
   const project = workspace.projects.find((item) => item.id === selectedProjectId);
   const deskReady = hasConnectedBot(workspace.crew_roster, botLinks) || Boolean(project);
@@ -1278,7 +1292,8 @@ export default function DesktopWorkspace() {
             onRefresh={() => refreshWorkspace(true)}
             onMessage={setMessage}
           />
-          <div className="desktop-side-head desktop-version-head"><b>{t('버전 기록', 'Versions', '版本', 'バージョン')}</b><span>{versions.length}</span></div>
+          <details className="desktop-auto-help desktop-version-fold">
+            <summary><b>{t('버전 기록', 'Versions', '版本', 'バージョン')}</b><span>{versions.length}</span></summary>
           <div className="desktop-version-list">{!versions.length ? <p className="desktop-side-empty">{project ? t('이 프로젝트의 버전은 아직 없습니다.', 'No versions for this project yet.', '此项目还没有版本。', 'このプロジェクトのバージョンはまだありません。') : t('프로젝트를 열면 버전 기록이 여기에 쌓입니다.', 'Open a project to collect version history here.', '打开项目后版本会显示在这里。', 'プロジェクトを開くと履歴がここに残ります。')}</p> : null}{versions.slice(0, 8).map((version, index) => (
             <button
               key={version.id}
@@ -1307,6 +1322,7 @@ export default function DesktopWorkspace() {
               {index > 0 && <small>{t('복원', 'Restore', '恢复', '復元')}</small>}
             </button>
           ))}</div>
+          </details>
           {firstCut ? <a className="desktop-legacy" href="/tools" target="_blank" rel="noopener noreferrer">{t('고급 도구', 'Advanced tools', '高级工具', '高度なツール')} ↗</a> : null}
         </aside>
         <div
@@ -1333,12 +1349,15 @@ export default function DesktopWorkspace() {
             advancedSpecOpen ? (
               <div className="desktop-simple-wrap">
                 <button type="button" className="desktop-secondary" onClick={() => { setAdvancedSpecOpen(false); setActivePanel('auto'); setPeekAuto(true); }}>{t('자동으로', 'Back to Auto', '回到自动', '自動へ')}</button>
+                <details className="desktop-auto-help">
+                  <summary>{t('봇이 가져온 파일', 'Files the bot brought', '机器人带来的文件', 'ボットが持ってきたファイル')}</summary>
                 <HandoffFolderBoard
                   folders={handoffFolders}
                   studioState={studioState}
                   onOpenProject={openHandoffProject}
                   {...folderActions}
                 />
+                </details>
                 <SpecDesk
                   specs={workspace.edit_specs ?? []}
                   recipes={workspace.style_recipes ?? []}
@@ -1446,73 +1465,67 @@ export default function DesktopWorkspace() {
           : !timeline ? <div className="desktop-empty" aria-busy="true"><span className="desktop-spinner" /><h1>{t('타임라인을 불러오는 중', 'Loading the timeline', '正在加载时间线', 'タイムラインを読み込み中')}</h1><p>{t('프로젝트가 열려 있습니다. 규격 화면으로 돌아가지 않습니다.', 'A project is open. The spec screen stays hidden.', '项目已打开。不会回到规格页。', 'プロジェクトは開いています。仕様画面には戻りません。')}</p><button type="button" className="desktop-secondary" onClick={() => void refreshProject(project.id)}>{t('다시 읽기', 'Reload', '重新读取', '再読み込み')}</button></div>
           : <>
             <div className="desktop-project-bar"><div><small>{t('현재 프로젝트', 'CURRENT PROJECT', '当前项目', '現在のプロジェクト')}</small><h1>{project.title}</h1></div><div className="desktop-project-chips">{project.handoff_agent ? <span className={project.handoff_door === 'editor' || project.handoff_door === 'grok' ? 'is-editor' : 'is-collector'}>{project.handoff_door === 'editor' || project.handoff_door === 'grok' ? t('편집 문', 'Editor door', '剪辑门', '編集ドア') : t('수집 문', 'Collector door', '收集门', '収集ドア')} · {handoffSenderLabel(project, t)}</span> : null}<span>v{timeline.revision}</span><span>{timeline.settings.width}×{timeline.settings.height}</span><span>{timeline.settings.fps}fps</span></div></div>
-            {activePanel === 'setup' && <div className="desktop-setup-grid">
-              <section className="desktop-card desktop-voice-setup-card">
-                <p className="desktop-voice-note">
-                  {voiceSetup.done
-                    ? t('자동에서 TTS가 꺼져 있으면 이 모델은 쓰지 않습니다.', 'If TTS is off in Auto, this model is not used.', '自动里 TTS 关着就不会用这个模型。', '自動で TTS がオフならこのモデルは使いません。')
-                    : t('자동에서 TTS를 켠 뒤에만 이 목소리를 씁니다. 고르지 않아도 책상은 열립니다.', 'This voice is used only after TTS is on in Auto. You can skip this and still use the desk.', '只有自动里打开 TTS 才用这个声音。现在不选，桌子也开得了。', '自動で TTS をオンにしたあとだけこの声を使います。選ばなくても机は開きます。')}
-                </p>
-                <DesktopVoiceSetup
-                  variant="panel"
-                  selected={voiceDraft}
-                  studioReady={studioState === 'ready'}
-                  busy={voiceBusy}
-                  download={workspace.first_run?.voice_model?.download}
-                  onSelect={setVoiceDraft}
-                  onConfirm={() => { void confirmVoiceModel(voiceDraft); }}
-                />
-              </section>
-              <HandoffFolderBoard
-                folders={projectFolders}
-                studioState={studioState}
-                expectEmpty={projectLooksImported}
-                {...folderActions}
-              />
-              <section className="desktop-card desktop-source-card">
-                <div className="desktop-card-title"><span>01</span><div><b>{t('원본과 결과', 'Source & output', '素材与输出', '素材と出力')}</b><small>{relativeWorkspacePath(project.source_path)}</small></div></div>
-                <video controls preload="metadata" src={mediaUrl(project.source_path)} />
-                <div className="desktop-source-meta"><span>{t('원본은 이 PC에 유지됩니다', 'Original stays on this PC', '原片保留在此电脑', '原本はこのPCに保持')}</span><span>{relativeWorkspacePath(project.output_path)}</span></div>
-                <button className="desktop-secondary" disabled={busy || analyzing} onClick={() => void analyzeLocal()}>{analyzing ? t('분석 중…', 'Analyzing…', '分析中…', '解析中…') : t('로컬 대본·장면 분석', 'Analyze transcript & scenes locally', '本地分析字幕和场景', 'ローカルで字幕・シーン解析')}</button>
-                {analysis && <div className="desktop-analysis" aria-live="polite">
-                  <div className="desktop-analysis-head"><div><b>{t('로컬 분석 결과', 'Local analysis results', '本地分析结果', 'ローカル解析結果')}</b><small>{new Date(analysis.updated_at).toLocaleString()}</small></div><span>✓ {analysis.thumbnails_json.length} {t('개 장면', 'scenes', '个场景', 'シーン')}</span></div>
-                  <div className="desktop-analysis-facts">
-                    <span><b>{t('길이', 'Duration', '时长', '長さ')}</b>{formatTime(Number(analysis.media_json.duration ?? 0))}</span>
-                    <span><b>{t('화면', 'Frame', '画面', '画面')}</b>{analysisVideo?.width && analysisVideo?.height ? `${analysisVideo.width}×${analysisVideo.height}` : '—'}</span>
-                    <span><b>{t('대본', 'Transcript', '字幕稿', '文字起こし')}</b>{analysis.transcript_json.status === 'ready' ? `${analysisWords.length} ${t('개 구간', 'segments', '个片段', '区間')}` : analysis.transcript_json.status === 'skipped' ? t('자막 끔', 'Captions off', '字幕关', '字幕オフ') : t('미설정', 'Not configured', '未配置', '未設定')}</span>
-                  </div>
-                  {!!analysis.thumbnails_json.length && <div className="desktop-scene-grid">{analysis.thumbnails_json.map((scene, index) => <figure key={scene.id}>
-                    {/* Generated analysis thumbnails are served only by the loopback sidecar. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={analysisSceneUrl(project.id, scene.id, analysis.updated_at)} alt={t(`장면 ${index + 1}`, `Scene ${index + 1}`, `场景 ${index + 1}`, `シーン ${index + 1}`)} />
-                    <figcaption><span>{String(index + 1).padStart(2, '0')}</span><time>{formatTime(scene.at)}</time></figcaption>
-                  </figure>)}</div>}
-                  <div className={`desktop-transcript-state ${analysis.transcript_json.status === 'ready' ? 'ready' : ''}`}><span>{analysis.transcript_json.status === 'ready' ? '✓' : 'i'}</span><div><b>{analysis.transcript_json.status === 'ready' ? t('대본 준비됨', 'Transcript ready', '字幕稿已就绪', '文字起こし準備完了') : analysis.transcript_json.status === 'skipped' ? t('자막이 꺼져 대본을 만들지 않음', 'Captions off, no transcript', '字幕关闭，未做字幕稿', '字幕オフのため文字起こしなし') : t('장면 분석만 완료됨', 'Scene analysis complete', '场景分析已完成', 'シーン解析のみ完了')}</b><p>{analysis.transcript_json.status === 'ready' ? (analysis.transcript_json.text || analysisWords.map((word) => word.text).join(' ')) : analysis.transcript_json.status === 'skipped' ? t('자동에서 자막을 켜야 말 구간을 자막으로 붙입니다.', 'Turn on captions in Auto to burn speech windows as captions.', '要在自动里打开字幕，才会把说话段落做成字幕。', '自動で字幕をオンにすると、話している区間を字幕にします。') : t('whisper.cpp를 설정하면 음성을 대본으로 변환합니다.', 'Configure whisper.cpp to transcribe speech.', '配置 whisper.cpp 后可将语音转成文字。', 'whisper.cpp を設定すると音声を文字起こしできます。')}</p></div></div>
-                </div>}
-              </section>
-              <section className="desktop-card desktop-settings-card"><div className="desktop-card-title"><span>02</span><div><b>{t('편집 Agent 설정', 'Editor Agent controls', '剪辑 Agent 设置', '編集 Agent 設定')}</b><small>{t('채팅 없이 명확한 선택으로 전달합니다.', 'Clear controls, no prompt writing.', '无需编写提示词。', 'プロンプト入力は不要です。')}</small></div></div>
+            {activePanel === 'setup' && <div className="desktop-setup-grid is-composer">
+              <header className="desktop-auto-lead">
+                <h1>{t('이 컷을 어떻게 자를까요', 'How should this cut be made', '这场剪辑怎么切', 'このカットをどう切るか')}</h1>
+                <p>{t('스타일을 고르고 저장하면 됩니다. 나머지는 필요할 때만 엽니다.', 'Pick a style and save. Open the rest only when you need it.', '选风格并保存即可。其余需要时再开。', 'スタイルを選んで保存。ほかは必要なときだけ開く。')}</p>
+              </header>
+              <section className="desktop-auto-composer-card desktop-settings-card">
               <DesktopEditPresetControls
                 method={method}
                 lockQuality={specLocked}
                 onApply={(next) => setMethod(next)}
               />
-              <div className="desktop-form-grid">
-                <label>{t('콘텐츠 유형', 'Content type', '内容类型', 'コンテンツ種別')}<select value={method.content_type} onChange={(e) => setMethod({ ...method, content_type: e.target.value })}><option value="talking_head">{t('토킹헤드', 'Talking head', '口播', 'トーキングヘッド')}</option><option value="vlog">Vlog</option><option value="product">{t('제품·서비스', 'Product / service', '产品服务', '製品・サービス')}</option><option value="tutorial">{t('튜토리얼', 'Tutorial', '教程', 'チュートリアル')}</option></select></label>
-                <label>{t('목표 길이', 'Target length', '目标时长', '目標尺')}<select value={method.target_length} onChange={(e) => setMethod({ ...method, target_length: Number(e.target.value) })}><option value="15">15s</option><option value="30">30s</option><option value="45">45s</option><option value="60">60s</option><option value="90">90s</option></select></label>
-                <label>{t('화면비', 'Aspect ratio', '画面比例', 'アスペクト比')}<select value={method.aspect_ratio} onChange={(e) => setMethod({ ...method, aspect_ratio: e.target.value })}><option value="9:16">9:16</option><option value="1:1">1:1</option><option value="16:9">16:9</option></select></label>
-                <label>{t('추가 클립', 'Extra clips', '附加片段', '追加クリップ')}<select value={method.broll_policy} onChange={(e) => setMethod({ ...method, broll_policy: e.target.value })}><option value="auto">{t('필요할 때 제안', 'Suggest when useful', '按需建议', '必要時に提案')}</option><option value="required">{t('적극 사용', 'Use actively', '积极使用', '積極的に使用')}</option><option value="off">{t('사용 안 함', 'Off', '关闭', 'オフ')}</option></select></label>
-                <label>{t('훅', 'Hook', '开场', 'フック')}<select value={method.hook_strategy} onChange={(e) => setMethod({ ...method, hook_strategy: e.target.value })}><option value="payoff_first">{t('결과 먼저', 'Payoff first', '结果优先', '結果を先に')}</option><option value="question_first">{t('질문 먼저', 'Question first', '问题优先', '質問を先に')}</option><option value="chronological">{t('순서대로', 'Chronological', '按时间顺序', '時系列')}</option></select></label>
-                <label>{t('속도감', 'Pacing', '节奏', 'テンポ')}<select value={method.pacing} onChange={(e) => setMethod({ ...method, pacing: e.target.value })}><option value="tight">{t('빠르고 타이트', 'Tight', '紧凑', 'タイト')}</option><option value="balanced">{t('균형', 'Balanced', '平衡', 'バランス')}</option><option value="deliberate">{t('차분하게', 'Deliberate', '沉稳', '丁寧')}</option></select></label>
-                <label>{t('군더더기', 'Filler', '冗余', 'フィラー')}<select value={method.filler_policy} onChange={(e) => setMethod({ ...method, filler_policy: e.target.value })}><option value="remove">{t('자동 제거', 'Remove', '删除', '削除')}</option><option value="review">{t('검토 표시', 'Flag for review', '标记审核', '要確認')}</option><option value="keep">{t('유지', 'Keep', '保留', '維持')}</option></select></label>
-                <label>{t('자막', 'Captions', '字幕', '字幕')}<select value={method.caption_mode} onChange={(e) => setMethod({ ...method, caption_mode: e.target.value })}><option value="burn_in">{t('영상에 포함', 'Burn in', '嵌入视频', '焼き込み')}</option><option value="off">{t('끄기', 'Off', '关闭', 'オフ')}</option></select></label>
-                <label>{t('화면 중심', 'Reframe', '重构图', 'リフレーム')}<select value={method.reframe_anchor} onChange={(e) => setMethod({ ...method, reframe_anchor: e.target.value })}><option value="left">{t('왼쪽', 'Left', '左', '左')}</option><option value="center">{t('가운데', 'Center', '中', '中央')}</option><option value="right">{t('오른쪽', 'Right', '右', '右')}</option></select></label>
-                <label>{t('룩', 'Look', '画面风格', 'ルック')}<select value={method.look} onChange={(e) => setMethod({ ...method, look: e.target.value })}><option value="natural">Natural</option><option value="punchy">Punchy</option><option value="mono">Mono</option><option value="night">Night</option></select></label>
-                <label>{t('오디오', 'Audio', '音频', 'オーディオ')}<select value={method.audio_policy} onChange={(e) => setMethod({ ...method, audio_policy: e.target.value })}><option value="preserve">{t('원본 유지', 'Preserve', '保留原音', '原音')}</option><option value="normalize">{t('음량 정리', 'Normalize', '标准化', '正規化')}</option><option value="mute">{t('음소거', 'Mute', '静音', 'ミュート')}</option></select></label>
-                <label>FPS<select value={method.fps} onChange={(e) => setMethod({ ...method, fps: Number(e.target.value) })}><option>24</option><option>30</option><option>60</option></select></label>
-                <label className={specLocked ? 'is-locked' : undefined}>{t('품질', 'Quality', '质量', '品質')}<select disabled={specLocked} value={method.quality} onChange={(e) => setMethod({ ...method, quality: e.target.value })}><option value="compact">Compact</option><option value="balanced">Balanced</option><option value="high">High</option></select>{specLocked ? <em>{t('규격 잠금', 'Locked by spec', '规格锁定', '仕様ロック')}</em> : null}</label>
-                <label className="desktop-wide">{t('전체 속도', 'Overall speed', '整体速度', '全体速度')}<div className="desktop-range"><input type="range" min="0.5" max="2" step="0.05" value={method.speed} onChange={(e) => setMethod({ ...method, speed: Number(e.target.value) })} /><output>{Number(method.speed).toFixed(2)}×</output></div></label>
+              <div className="desktop-auto-options" role="tablist" aria-label={t('자를 방식', 'How to cut', '怎么切', '切り方')}>
+                <button type="button" role="tab" aria-selected={setupPane === 'shape'} className={`desktop-auto-option${setupPane === 'shape' ? ' is-open' : ''} is-set`} onClick={() => setSetupPane((value) => value === 'shape' ? '' : 'shape')}>
+                  <span>{t('형태', 'Shape', '形态', '形')}</span>
+                  <b>{setupShapeLabel}</b>
+                </button>
+                <button type="button" role="tab" aria-selected={setupPane === 'length'} className={`desktop-auto-option${setupPane === 'length' ? ' is-open' : ''} is-set`} onClick={() => setSetupPane((value) => value === 'length' ? '' : 'length')}>
+                  <span>{t('길이', 'Length', '时长', '長さ')}</span>
+                  <b>{setupLengthLabel}</b>
+                </button>
+                <button type="button" role="tab" aria-selected={setupPane === 'sound'} className={`desktop-auto-option${setupPane === 'sound' ? ' is-open' : ''} is-set`} onClick={() => setSetupPane((value) => value === 'sound' ? '' : 'sound')}>
+                  <span>{t('소리', 'Sound', '声音', '音')}</span>
+                  <b>{setupSoundLabel}</b>
+                </button>
+                <button type="button" role="tab" aria-selected={setupPane === 'pace'} className={`desktop-auto-option${setupPane === 'pace' ? ' is-open' : ''} is-set`} onClick={() => setSetupPane((value) => value === 'pace' ? '' : 'pace')}>
+                  <span>{t('템포', 'Pace', '节奏', 'テンポ')}</span>
+                  <b>{setupPaceLabel}</b>
+                </button>
               </div>
-              <button className="desktop-secondary" disabled={busy} onClick={() => void saveSettings()}>{t('설정만 저장', 'Save controls', '保存设置', '設定を保存')}</button>
+              {setupPane === 'shape' ? (
+                <div className="desktop-form-grid desktop-auto-option-pane">
+                  <label>{t('콘텐츠 유형', 'Content type', '内容类型', 'コンテンツ種別')}<select value={method.content_type} onChange={(e) => setMethod({ ...method, content_type: e.target.value })}><option value="talking_head">{t('토킹헤드', 'Talking head', '口播', 'トーキングヘッド')}</option><option value="vlog">Vlog</option><option value="product">{t('제품·서비스', 'Product / service', '产品服务', '製品・サービス')}</option><option value="tutorial">{t('튜토리얼', 'Tutorial', '教程', 'チュートリアル')}</option></select></label>
+                  <label>{t('화면비', 'Aspect ratio', '画面比例', 'アスペクト比')}<select value={method.aspect_ratio} onChange={(e) => setMethod({ ...method, aspect_ratio: e.target.value })}><option value="9:16">9:16</option><option value="1:1">1:1</option><option value="16:9">16:9</option></select></label>
+                  <label>{t('화면 중심', 'Reframe', '重构图', 'リフレーム')}<select value={method.reframe_anchor} onChange={(e) => setMethod({ ...method, reframe_anchor: e.target.value })}><option value="left">{t('왼쪽', 'Left', '左', '左')}</option><option value="center">{t('가운데', 'Center', '中', '中央')}</option><option value="right">{t('오른쪽', 'Right', '右', '右')}</option></select></label>
+                </div>
+              ) : null}
+              {setupPane === 'length' ? (
+                <div className="desktop-form-grid desktop-auto-option-pane">
+                  <label>{t('목표 길이', 'Target length', '目标时长', '目標尺')}<select value={method.target_length} onChange={(e) => setMethod({ ...method, target_length: Number(e.target.value) })}><option value="15">15s</option><option value="30">30s</option><option value="45">45s</option><option value="60">60s</option><option value="90">90s</option></select></label>
+                  <label className="desktop-wide">{t('전체 속도', 'Overall speed', '整体速度', '全体速度')}<div className="desktop-range"><input type="range" min="0.5" max="2" step="0.05" value={method.speed} onChange={(e) => setMethod({ ...method, speed: Number(e.target.value) })} /><output>{Number(method.speed).toFixed(2)}×</output></div></label>
+                </div>
+              ) : null}
+              {setupPane === 'sound' ? (
+                <div className="desktop-form-grid desktop-auto-option-pane">
+                  <label>{t('자막', 'Captions', '字幕', '字幕')}<select value={method.caption_mode} onChange={(e) => setMethod({ ...method, caption_mode: e.target.value })}><option value="burn_in">{t('영상에 포함', 'Burn in', '嵌入视频', '焼き込み')}</option><option value="off">{t('끄기', 'Off', '关闭', 'オフ')}</option></select></label>
+                  <label>{t('오디오', 'Audio', '音频', 'オーディオ')}<select value={method.audio_policy} onChange={(e) => setMethod({ ...method, audio_policy: e.target.value })}><option value="preserve">{t('원본 유지', 'Preserve', '保留原音', '原音')}</option><option value="normalize">{t('음량 정리', 'Normalize', '标准化', '正規化')}</option><option value="mute">{t('음소거', 'Mute', '静音', 'ミュート')}</option></select></label>
+                </div>
+              ) : null}
+              {setupPane === 'pace' ? (
+                <div className="desktop-form-grid desktop-auto-option-pane">
+                  <label>{t('훅', 'Hook', '开场', 'フック')}<select value={method.hook_strategy} onChange={(e) => setMethod({ ...method, hook_strategy: e.target.value })}><option value="payoff_first">{t('결과 먼저', 'Payoff first', '结果优先', '結果を先に')}</option><option value="question_first">{t('질문 먼저', 'Question first', '问题优先', '質問を先に')}</option><option value="chronological">{t('순서대로', 'Chronological', '按时间顺序', '時系列')}</option></select></label>
+                  <label>{t('속도감', 'Pacing', '节奏', 'テンポ')}<select value={method.pacing} onChange={(e) => setMethod({ ...method, pacing: e.target.value })}><option value="tight">{t('빠르고 타이트', 'Tight', '紧凑', 'タイト')}</option><option value="balanced">{t('균형', 'Balanced', '平衡', 'バランス')}</option><option value="deliberate">{t('차분하게', 'Deliberate', '沉稳', '丁寧')}</option></select></label>
+                  <label>{t('군더더기', 'Filler', '冗余', 'フィラー')}<select value={method.filler_policy} onChange={(e) => setMethod({ ...method, filler_policy: e.target.value })}><option value="remove">{t('자동 제거', 'Remove', '删除', '削除')}</option><option value="review">{t('검토 표시', 'Flag for review', '标记审核', '要確認')}</option><option value="keep">{t('유지', 'Keep', '保留', '維持')}</option></select></label>
+                  <label>{t('추가 클립', 'Extra clips', '附加片段', '追加クリップ')}<select value={method.broll_policy} onChange={(e) => setMethod({ ...method, broll_policy: e.target.value })}><option value="auto">{t('필요할 때 제안', 'Suggest when useful', '按需建议', '必要時に提案')}</option><option value="required">{t('적극 사용', 'Use actively', '积极使用', '積極的に使用')}</option><option value="off">{t('사용 안 함', 'Off', '关闭', 'オフ')}</option></select></label>
+                  <label>{t('룩', 'Look', '画面风格', 'ルック')}<select value={method.look} onChange={(e) => setMethod({ ...method, look: e.target.value })}><option value="natural">Natural</option><option value="punchy">Punchy</option><option value="mono">Mono</option><option value="night">Night</option></select></label>
+                  <label>FPS<select value={method.fps} onChange={(e) => setMethod({ ...method, fps: Number(e.target.value) })}><option>24</option><option>30</option><option>60</option></select></label>
+                  <label className={specLocked ? 'is-locked' : undefined}>{t('품질', 'Quality', '质量', '品質')}<select disabled={specLocked} value={method.quality} onChange={(e) => setMethod({ ...method, quality: e.target.value })}><option value="compact">Compact</option><option value="balanced">Balanced</option><option value="high">High</option></select>{specLocked ? <em>{t('규격 잠금', 'Locked by spec', '规格锁定', '仕様ロック')}</em> : null}</label>
+                </div>
+              ) : null}
+              <p className="desktop-auto-recap">{`${setupShapeLabel} · ${setupLengthLabel} · ${setupSoundLabel} · ${setupPaceLabel}`}</p>
+              <button className="desktop-primary desktop-auto-make" disabled={busy} onClick={() => void saveSettings()}>{t('설정만 저장', 'Save controls', '保存设置', '設定を保存')}</button>
               {specLocked && !folds.lockHidden ? (
                 <details
                   className="desktop-lock-note"
@@ -1543,10 +1556,62 @@ export default function DesktopWorkspace() {
                 </details>
               ) : null}
               </section>
-              <section className="desktop-card desktop-policy-card"><div className="desktop-card-title"><span>03</span><div><b>{t('자동화 범위', 'Automation', '自动化范围', '自動化範囲')}</b><small>{t('렌더와 게시 권한을 각각 정합니다.', 'Choose render and publishing authority.', '分别设置渲染和发布权限。', 'レンダーと公開を個別に設定。')}</small></div></div><label className="desktop-radio"><input type="radio" checked={executionPolicy === 'auto_edit_render'} onChange={() => setExecutionPolicy('auto_edit_render')} /><span><b>{t('자동 편집 + 렌더', 'Auto edit + render', '自动编辑和渲染', '自動編集＋レンダー')}</b><small>{t('새 버전을 만들고 바로 렌더합니다.', 'Create a new version and render it.', '创建新版本并渲染。', '新しいバージョンを作成してレンダー。')}</small></span></label><label className="desktop-radio"><input type="radio" checked={executionPolicy === 'review_before_render'} onChange={() => setExecutionPolicy('review_before_render')} /><span><b>{t('편집안 먼저 검토', 'Review before render', '渲染前审核', 'レンダー前に確認')}</b><small>{t('타임라인 변경을 확인할 때 멈춥니다.', 'Pause when the proposal is ready.', '编辑方案完成后暂停。', '提案の準備後に一時停止。')}</small></span></label></section>
+              <details className="desktop-auto-help">
+                <summary>{t('자동화 범위', 'Automation', '自动化范围', '自動化範囲')}</summary>
+                <label className="desktop-radio"><input type="radio" checked={executionPolicy === 'auto_edit_render'} onChange={() => setExecutionPolicy('auto_edit_render')} /><span><b>{t('자동 편집 + 렌더', 'Auto edit + render', '自动编辑和渲染', '自動編集＋レンダー')}</b><small>{t('새 버전을 만들고 바로 렌더합니다.', 'Create a new version and render it.', '创建新版本并渲染。', '新しいバージョンを作成してレンダー。')}</small></span></label>
+                <label className="desktop-radio"><input type="radio" checked={executionPolicy === 'review_before_render'} onChange={() => setExecutionPolicy('review_before_render')} /><span><b>{t('편집안 먼저 검토', 'Review before render', '渲染前审核', 'レンダー前に確認')}</b><small>{t('타임라인 변경을 확인할 때 멈춥니다.', 'Pause when the proposal is ready.', '编辑方案完成后暂停。', '提案の準備後に一時停止。')}</small></span></label>
+              </details>
+              <details className="desktop-auto-help">
+                <summary>{t('원본과 결과', 'Source & output', '素材与输出', '素材と出力')}</summary>
+                <video controls preload="metadata" src={mediaUrl(project.source_path)} />
+                <div className="desktop-source-meta"><span>{t('원본은 이 PC에 유지됩니다', 'Original stays on this PC', '原片保留在此电脑', '原本はこのPCに保持')}</span><span>{relativeWorkspacePath(project.output_path)}</span></div>
+                <button className="desktop-secondary" disabled={busy || analyzing} onClick={() => void analyzeLocal()}>{analyzing ? t('분석 중…', 'Analyzing…', '分析中…', '解析中…') : t('로컬 대본·장면 분석', 'Analyze transcript & scenes locally', '本地分析字幕和场景', 'ローカルで字幕・シーン解析')}</button>
+                {analysis && <div className="desktop-analysis" aria-live="polite">
+                  <div className="desktop-analysis-head"><div><b>{t('로컬 분석 결과', 'Local analysis results', '本地分析结果', 'ローカル解析結果')}</b><small>{new Date(analysis.updated_at).toLocaleString()}</small></div><span>✓ {analysis.thumbnails_json.length} {t('개 장면', 'scenes', '个场景', 'シーン')}</span></div>
+                  <div className="desktop-analysis-facts">
+                    <span><b>{t('길이', 'Duration', '时长', '長さ')}</b>{formatTime(Number(analysis.media_json.duration ?? 0))}</span>
+                    <span><b>{t('화면', 'Frame', '画面', '画面')}</b>{analysisVideo?.width && analysisVideo?.height ? `${analysisVideo.width}×${analysisVideo.height}` : '—'}</span>
+                    <span><b>{t('대본', 'Transcript', '字幕稿', '文字起こし')}</b>{analysis.transcript_json.status === 'ready' ? `${analysisWords.length} ${t('개 구간', 'segments', '个片段', '区間')}` : analysis.transcript_json.status === 'skipped' ? t('자막 끔', 'Captions off', '字幕关', '字幕オフ') : t('미설정', 'Not configured', '未配置', '未設定')}</span>
+                  </div>
+                  {!!analysis.thumbnails_json.length && <div className="desktop-scene-grid">{analysis.thumbnails_json.map((scene, index) => <figure key={scene.id}>
+                    {/* Generated analysis thumbnails are served only by the loopback sidecar. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={analysisSceneUrl(project.id, scene.id, analysis.updated_at)} alt={t(`장면 ${index + 1}`, `Scene ${index + 1}`, `场景 ${index + 1}`, `シーン ${index + 1}`)} />
+                    <figcaption><span>{String(index + 1).padStart(2, '0')}</span><time>{formatTime(scene.at)}</time></figcaption>
+                  </figure>)}</div>}
+                  <div className={`desktop-transcript-state ${analysis.transcript_json.status === 'ready' ? 'ready' : ''}`}><span>{analysis.transcript_json.status === 'ready' ? '✓' : 'i'}</span><div><b>{analysis.transcript_json.status === 'ready' ? t('대본 준비됨', 'Transcript ready', '字幕稿已就绪', '文字起こし準備完了') : analysis.transcript_json.status === 'skipped' ? t('자막이 꺼져 대본을 만들지 않음', 'Captions off, no transcript', '字幕关闭，未做字幕稿', '字幕オフのため文字起こしなし') : t('장면 분석만 완료됨', 'Scene analysis complete', '场景分析已完成', 'シーン解析のみ完了')}</b><p>{analysis.transcript_json.status === 'ready' ? (analysis.transcript_json.text || analysisWords.map((word) => word.text).join(' ')) : analysis.transcript_json.status === 'skipped' ? t('자동에서 자막을 켜야 말 구간을 자막으로 붙입니다.', 'Turn on captions in Auto to burn speech windows as captions.', '要在自动里打开字幕，才会把说话段落做成字幕。', '自動で字幕をオンにすると、話している区間を字幕にします。') : t('whisper.cpp를 설정하면 음성을 대본으로 변환합니다.', 'Configure whisper.cpp to transcribe speech.', '配置 whisper.cpp 后可将语音转成文字。', 'whisper.cpp を設定すると音声を文字起こしできます。')}</p></div></div>
+                </div>}
+              </details>
+              <details className="desktop-auto-help">
+                <summary>{t('목소리 엔진', 'Voice engine', '声音引擎', '声のエンジン')}</summary>
+                <p className="desktop-voice-note">
+                  {voiceSetup.done
+                    ? t('자동에서 TTS가 꺼져 있으면 이 모델은 쓰지 않습니다.', 'If TTS is off in Auto, this model is not used.', '自动里 TTS 关着就不会用这个模型。', '自動で TTS がオフならこのモデルは使いません。')
+                    : t('자동에서 TTS를 켠 뒤에만 이 목소리를 씁니다. 고르지 않아도 책상은 열립니다.', 'This voice is used only after TTS is on in Auto. You can skip this and still use the desk.', '只有自动里打开 TTS 才用这个声音。现在不选，桌子也开得了。', '自動で TTS をオンにしたあとだけこの声を使います。選ばなくても机は開きます。')}
+                </p>
+                <DesktopVoiceSetup
+                  variant="panel"
+                  selected={voiceDraft}
+                  studioReady={studioState === 'ready'}
+                  busy={voiceBusy}
+                  download={workspace.first_run?.voice_model?.download}
+                  onSelect={setVoiceDraft}
+                  onConfirm={() => { void confirmVoiceModel(voiceDraft); }}
+                />
+              </details>
+              <details className="desktop-auto-help">
+                <summary>{t('봇이 가져온 파일', 'Files the bot brought', '机器人带来的文件', 'ボットが持ってきたファイル')}</summary>
+                <HandoffFolderBoard
+                  folders={projectFolders}
+                  studioState={studioState}
+                  expectEmpty={projectLooksImported}
+                  {...folderActions}
+                />
+              </details>
             </div>}
-
             {activePanel === 'edit' && <div className="desktop-editor">
+              <details className="desktop-auto-help">
+                <summary>{t('봇이 가져온 파일', 'Files the bot brought', '机器人带来的文件', 'ボットが持ってきたファイル')}</summary>
               <HandoffFolderBoard
                 folders={projectFolders}
                 studioState={studioState}
@@ -1554,6 +1619,7 @@ export default function DesktopWorkspace() {
                 expectEmpty={projectLooksImported}
                 {...folderActions}
               />
+              </details>
               <ProgramMonitor
                 projectId={project.id}
                 playhead={playhead}
@@ -1596,6 +1662,8 @@ export default function DesktopWorkspace() {
                 )}
               />
               {videoAssets.length ? (
+                <details className="desktop-auto-help">
+                  <summary>{t('미리보기 프록시', 'Preview proxies', '预览代理', 'プレビュープロキシ')} · {readyProxyCount}/{videoAssets.length}</summary>
                 <section className="desktop-proxy-strip" aria-label={t('미리보기 프록시', 'Preview proxies', '预览代理', 'プレビュープロキシ')}>
                   <div className="desktop-proxy-strip-head">
                     <b>{t('미리보기 프록시', 'Preview proxies', '预览代理', 'プレビュープロキシ')}</b>
@@ -1627,10 +1695,104 @@ export default function DesktopWorkspace() {
                     {proxyBusy ? <button type="button" onClick={() => void cancelProxy()}>{t('생성 취소', 'Cancel build', '取消生成', '生成をキャンセル')}</button> : null}
                   </div>
                 </section>
+                </details>
               ) : null}
             </div>}
 
-            {activePanel === 'export' && <div className="desktop-export-grid"><section className="desktop-card"><div className="desktop-card-title"><span>01</span><div><b>{t('플랫폼 게시 정책', 'Publishing policy', '发布策略', '公開ポリシー')}</b><small>{t('기본은 확인 후 게시입니다.', 'Default: ask before publishing.', '默认发布前确认。', '初期値は公開前に確認。')}</small></div></div>{(['instagram', 'tiktok', 'youtube'] as const).map((platform) => <div className="desktop-publish-row" key={platform}><b>{platform === 'youtube' ? 'YouTube Shorts' : platform[0].toUpperCase() + platform.slice(1)}</b><select aria-label={`${platform} publish policy`} value={publishPolicy[platform]} onChange={(e) => setPublishPolicy({ ...publishPolicy, [platform]: e.target.value as PublishMode })}><option value="export_only">{t('파일만 내보내기', 'Export only', '仅导出', '書き出しのみ')}</option><option value="ask">{t('게시 전 확인', 'Ask before posting', '发布前确认', '公開前に確認')}</option><option value="auto">{t('자동 게시', 'Auto publish', '自动发布', '自動公開')}</option></select><button disabled={busy || !outputReady || publishPolicy[platform] === 'export_only'} onClick={() => void publishNow(platform)}>{t('게시', 'Publish', '发布', '公開')}</button></div>)}</section><section className="desktop-card desktop-render-card"><div className="desktop-card-title"><span>02</span><div><b>{t('최종 파일', 'Final render', '最终文件', '最終ファイル')}</b><small>{relativeWorkspacePath(project.output_path)}</small></div></div><div className={`desktop-render-state ${outputReady ? 'ready' : ''}`}><span>{outputReady ? '✓' : '○'}</span><div><b>{outputReady ? t('렌더 파일 준비됨', 'Render ready', '渲染文件已就绪', 'レンダー準備完了') : t('아직 렌더되지 않음', 'Not rendered yet', '尚未渲染', '未レンダー')}</b><small>{timeline.settings.quality} · {timeline.settings.fps}fps</small></div></div><button className="desktop-primary" disabled={busy} onClick={() => void runLocalRender()}>{t('지금 로컬 렌더', 'Render locally now', '立即本地渲染', '今すぐローカルレンダー')}</button><button className="desktop-secondary" disabled={busy} onClick={() => void enqueueQueuedRender()}>{t('대기열에 넣기', 'Add to queue', '加入队列', 'キューに追加')}</button>{queueJobs.length ? <small>{queueJobs.length} {t('개 대기', 'queued', '个排队', '件待機')}</small> : null}</section><section className="desktop-card"><div className="desktop-card-title"><span>03</span><div><b>{t('교환 파일', 'Exchange', '交换文件', '交換')}</b><small>EDL · OTIO</small></div></div><div className="desktop-relay-actions"><button onClick={() => void exportExchange('edl')}>EDL</button><button onClick={() => void exportExchange('otio')}>OTIO</button></div>{exchangeText ? <textarea className="desktop-exchange" readOnly value={exchangeText} /> : null}</section><section className="desktop-card desktop-receipts-card"><div className="desktop-card-title"><span>04</span><div><b>{t('게시 영수증', 'Publish receipts', '发布回执', '公開レシート')}</b><small>{t('실패와 중단된 게시는 재시도할 수 있습니다. 중단 후 재시도는 플랫폼에 한 번 더 올라갈 수 있습니다.', 'Failed or interrupted publishes can be retried. Retrying an interrupted upload may create a second copy.', '失败或中断的发布可以重试。中断后重试可能在平台上再上传一份。', '失敗と中断した公開は再試行できます。中断後の再試行はもう1本増えることがあります。')}</small></div></div>{confirmReceipt && confirmReceipt.project_id === selectedProjectId ? <div className="desktop-receipt-confirm" role="alertdialog" aria-labelledby="receipt-confirm-title"><b id="receipt-confirm-title">{t('중단된 게시', 'Interrupted publish', '已中断的发布', '中断された公開')}</b><p>{t('플랫폼이 이미 첫 업로드를 받았다면 영상이 하나 더 올라갈 수 있습니다. 그래도 다시 올리겠습니까?', 'If the platform already accepted the first upload, a second copy may appear. Retry anyway?', '如果平台已接受第一次上传，可能会再出现一份。仍要重试吗？', '最初のアップロードが受理済みなら、もう1本増えることがあります。それでも再試行しますか？')}</p><div><button type="button" disabled={busy} onClick={() => void retryReceipt(confirmReceipt, true)}>{t('그래도 재시도', 'Retry anyway', '仍要重试', 'それでも再試行')}</button><button type="button" className="desktop-secondary" disabled={busy} onClick={() => setConfirmReceipt(null)}>{t('취소', 'Cancel', '取消', 'キャンセル')}</button></div></div> : null}{visibleReceipts.length ? visibleReceipts.map((receipt) => <div className={`desktop-receipt ${receipt.status}`} key={receipt.id}><div><b>{receipt.platform} · {receipt.status}</b><small>{receipt.error_text || receipt.idempotency_key}</small></div><button disabled={busy || (receipt.status !== 'failed' && receipt.status !== 'interrupted')} onClick={() => void retryReceipt(receipt)}>{receipt.status === 'interrupted' ? t('중복 확인', 'Confirm retry', '确认重试', '重複を確認') : t('재시도', 'Retry', '重试', '再試行')}</button></div>) : <div className="desktop-receipt-empty"><b>{t('아직 게시 영수증이 없습니다', 'No publish receipts yet', '暂无发布回执', '公開レシートはまだありません')}</b><p>{outputReady ? t('위에서 플랫폼을 고른 뒤 게시하면 성공·실패가 여기에 남습니다.', 'Publish a platform above to keep success and failure here.', '在上方选择平台并发布后，成功和失败会记录在这里。', '上でプラットフォームを選んで公開すると、成功と失敗がここに残ります。') : t('먼저 로컬 렌더를 만든 다음 Instagram, TikTok, YouTube에 게시하세요.', 'Render locally first, then publish to Instagram, TikTok, or YouTube.', '请先完成本地渲染，再发布到 Instagram、TikTok 或 YouTube。', '先にローカルレンダーを作り、Instagram・TikTok・YouTube に公開してください。')}</p></div>}</section></div>}
+            {activePanel === 'export' && <div className="desktop-export-grid is-composer">
+              <section className="desktop-auto-lead">
+                <p className="desktop-auto-kicker">{t('파일로 받기', 'Get the file', '拿到文件', 'ファイルで受け取る')}</p>
+                <h2>{outputReady ? t('컷이 준비됐습니다', 'The cut is ready', '成片已就绪', 'カットの準備ができました') : t('이 PC에서 파일을 만듭니다', 'This PC makes the file', '这台电脑生成文件', 'このPCでファイルを作ります')}</h2>
+              </section>
+              <section className="desktop-auto-composer-card desktop-render-card">
+                <div className={`desktop-render-state ${outputReady ? 'ready' : ''}`}>
+                  <span>{outputReady ? '✓' : '○'}</span>
+                  <div>
+                    <b>{outputReady ? t('렌더 파일 준비됨', 'Render ready', '渲染文件已就绪', 'レンダー準備完了') : t('아직 렌더되지 않음', 'Not rendered yet', '尚未渲染', '未レンダー')}</b>
+                    <small>{relativeWorkspacePath(project.output_path)} · {timeline.settings.quality} · {timeline.settings.fps}fps</small>
+                  </div>
+                </div>
+                <div className="desktop-auto-make">
+                  <button type="button" className="desktop-primary" disabled={busy} onClick={() => void runLocalRender()}>
+                    {t('지금 로컬 렌더', 'Render locally now', '立即本地渲染', '今すぐローカルレンダー')}
+                  </button>
+                  <button type="button" className="desktop-auto-secondary" disabled={busy} onClick={() => void enqueueQueuedRender()}>
+                    {t('대기열에 넣기', 'Add to queue', '加入队列', 'キューに追加')}
+                  </button>
+                </div>
+                {queueJobs.length ? <p className="desktop-auto-recap">{queueJobs.length} {t('개 대기', 'queued', '个排队', '件待機')}</p> : null}
+                <div className="desktop-auto-options" role="tablist" aria-label={t('파일 이후', 'After the file', '文件之后', 'ファイルのあと')}>
+                  <button type="button" role="tab" className={`desktop-auto-option${exportPane === 'post' ? ' is-open' : ''}`} aria-expanded={exportPane === 'post'} onClick={() => setExportPane((current) => current === 'post' ? '' : 'post')}>
+                    <span>{t('올리기', 'Post', '发布', '投稿')}</span>
+                    <b>{t('확인 후', 'Ask first', '先确认', '確認してから')}</b>
+                  </button>
+                  <button type="button" role="tab" className={`desktop-auto-option${exportPane === 'exchange' ? ' is-open' : ''}`} aria-expanded={exportPane === 'exchange'} onClick={() => setExportPane((current) => current === 'exchange' ? '' : 'exchange')}>
+                    <span>{t('교환', 'Exchange', '交换', '交換')}</span>
+                    <b>EDL · OTIO</b>
+                  </button>
+                  <button type="button" role="tab" className={`desktop-auto-option${exportPane === 'receipts' ? ' is-open' : ''}`} aria-expanded={exportPane === 'receipts'} onClick={() => setExportPane((current) => current === 'receipts' ? '' : 'receipts')}>
+                    <span>{t('기록', 'Receipts', '回执', '記録')}</span>
+                    <b>{visibleReceipts.length ? `${visibleReceipts.length}` : t('아직 없음', 'None yet', '暂无', 'まだなし')}</b>
+                  </button>
+                </div>
+                {exportPane === 'post' ? (
+                  <div className="desktop-auto-option-pane" role="tabpanel">
+                    <p>{t('기본은 확인 후 게시입니다. 이 프로그램은 자동으로 올리지 않습니다.', 'Default is ask before posting. This program does not auto-post.', '默认发布前确认。本程序不会自动发布。', '初期値は公開前に確認。このプログラムは自動投稿しません。')}</p>
+                    {(['instagram', 'tiktok', 'youtube'] as const).map((platform) => (
+                      <div className="desktop-publish-row" key={platform}>
+                        <b>{platform === 'youtube' ? 'YouTube Shorts' : platform[0].toUpperCase() + platform.slice(1)}</b>
+                        <select aria-label={`${platform} publish policy`} value={publishPolicy[platform]} onChange={(e) => setPublishPolicy({ ...publishPolicy, [platform]: e.target.value as PublishMode })}>
+                          <option value="export_only">{t('파일만 내보내기', 'Export only', '仅导出', '書き出しのみ')}</option>
+                          <option value="ask">{t('게시 전 확인', 'Ask before posting', '发布前确认', '公開前に確認')}</option>
+                          <option value="auto">{t('자동 게시', 'Auto publish', '自动发布', '自動公開')}</option>
+                        </select>
+                        <button disabled={busy || !outputReady || publishPolicy[platform] === 'export_only'} onClick={() => void publishNow(platform)}>{t('게시', 'Publish', '发布', '公開')}</button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                {exportPane === 'exchange' ? (
+                  <div className="desktop-auto-option-pane" role="tabpanel">
+                    <div className="desktop-relay-actions">
+                      <button type="button" onClick={() => void exportExchange('edl')}>EDL</button>
+                      <button type="button" onClick={() => void exportExchange('otio')}>OTIO</button>
+                    </div>
+                    {exchangeText ? <textarea className="desktop-exchange" readOnly value={exchangeText} /> : null}
+                  </div>
+                ) : null}
+                {exportPane === 'receipts' ? (
+                  <div className="desktop-auto-option-pane" role="tabpanel">
+                    <p>{t('실패와 중단된 게시는 재시도할 수 있습니다. 중단 후 재시도는 플랫폼에 한 번 더 올라갈 수 있습니다.', 'Failed or interrupted publishes can be retried. Retrying an interrupted upload may create a second copy.', '失败或中断的发布可以重试。中断后重试可能在平台上再上传一份。', '失敗と中断した公開は再試行できます。中断後の再試行はもう1本増えることがあります。')}</p>
+                    {confirmReceipt && confirmReceipt.project_id === selectedProjectId ? (
+                      <div className="desktop-receipt-confirm" role="alertdialog" aria-labelledby="receipt-confirm-title">
+                        <b id="receipt-confirm-title">{t('중단된 게시', 'Interrupted publish', '已中断的发布', '中断された公開')}</b>
+                        <p>{t('플랫폼이 이미 첫 업로드를 받았다면 영상이 하나 더 올라갈 수 있습니다. 그래도 다시 올리겠습니까?', 'If the platform already accepted the first upload, a second copy may appear. Retry anyway?', '如果平台已接受第一次上传，可能会再出现一份。仍要重试吗？', '最初のアップロードが受理済みなら、もう1本増えることがあります。それでも再試行しますか？')}</p>
+                        <div>
+                          <button type="button" disabled={busy} onClick={() => void retryReceipt(confirmReceipt, true)}>{t('그래도 재시도', 'Retry anyway', '仍要重试', 'それでも再試行')}</button>
+                          <button type="button" className="desktop-secondary" disabled={busy} onClick={() => setConfirmReceipt(null)}>{t('취소', 'Cancel', '取消', 'キャンセル')}</button>
+                        </div>
+                      </div>
+                    ) : null}
+                    {visibleReceipts.length ? visibleReceipts.map((receipt) => (
+                      <div className={`desktop-receipt ${receipt.status}`} key={receipt.id}>
+                        <div>
+                          <b>{receipt.platform} · {receipt.status}</b>
+                          <small>{receipt.error_text || receipt.idempotency_key}</small>
+                        </div>
+                        <button disabled={busy || (receipt.status !== 'failed' && receipt.status !== 'interrupted')} onClick={() => void retryReceipt(receipt)}>
+                          {receipt.status === 'interrupted' ? t('중복 확인', 'Confirm retry', '确认重试', '重複を確認') : t('재시도', 'Retry', '重试', '再試行')}
+                        </button>
+                      </div>
+                    )) : (
+                      <div className="desktop-receipt-empty">
+                        <b>{t('아직 게시 영수증이 없습니다', 'No publish receipts yet', '暂无发布回执', '公開レシートはまだありません')}</b>
+                        <p>{outputReady ? t('올리기를 연 뒤 플랫폼을 고르면 성공·실패가 여기에 남습니다.', 'Open Post and pick a platform to keep success and failure here.', '打开发布并选择平台后，成功和失败会记录在这里。', '投稿を開いてプラットフォームを選ぶと、成功と失敗がここに残ります。') : t('먼저 로컬 렌더를 만든 다음 Instagram, TikTok, YouTube에 게시하세요.', 'Render locally first, then publish to Instagram, TikTok, or YouTube.', '请先完成本地渲染，再发布到 Instagram、TikTok 或 YouTube。', '先にローカルレンダーを作り、Instagram・TikTok・YouTube に公開してください。')}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </section>
+            </div>}
           </>}
         </section>
         {hideInspectorColumn ? null : (
@@ -1660,8 +1822,11 @@ export default function DesktopWorkspace() {
             {latestEvent ? <div className="desktop-verified"><b>{latestEvent.status}</b><span>{t('마지막 확인', 'Last verified', '最后确认', '最終確認')} {new Date(latestEvent.verified_at).toLocaleString()}</span></div> : <p className="desktop-muted">{t('확인된 원격 활동이 아직 없습니다. 상태를 추측하지 않습니다.', 'No verified remote activity yet. Presence is never guessed.', '暂无已确认的远程活动。', '確認済みのリモート活動はまだありません。')}</p>}
             {inputRequest && <div className="desktop-input-request"><b>{inputRequest.question}</b>{inputRequest.options.map((option) => <button key={option.value} disabled={busy} onClick={() => void answerRunnerInput(option.value)}><span>{option.label}</span>{option.description && <small>{option.description}</small>}</button>)}</div>}
             {latestJob?.status === 'conflict' && latestJob.conflict_json && <div className="desktop-conflict-card"><b>{t('타임라인 충돌 검토', 'Timeline conflict review', '时间线冲突审核', 'タイムライン競合レビュー')}</b><p>{t(`편집 Agent 기준 v${latestJob.conflict_json.expected_revision}, 현재 v${latestJob.conflict_json.current_revision}`, `Editor Agent used v${latestJob.conflict_json.expected_revision}; current timeline is v${latestJob.conflict_json.current_revision}.`, `剪辑 Agent 基于 v${latestJob.conflict_json.expected_revision}，当前为 v${latestJob.conflict_json.current_revision}`, `編集 Agent は v${latestJob.conflict_json.expected_revision}、現在は v${latestJob.conflict_json.current_revision} です。`)}</p><small>{latestJob.conflict_json.reason}</small><div><button disabled={busy} onClick={() => void resolveConflict('retry_current')}>{t('현재 버전으로 다시 요청', 'Retry current revision', '基于当前版本重试', '現在版で再試行')}</button><button disabled={busy} onClick={() => void resolveConflict('discard')}>{t('편집안 폐기', 'Discard proposal', '放弃方案', '提案を破棄')}</button></div></div>}
+            <details className="desktop-auto-help">
+              <summary>{t('GitHub · 제작기', 'GitHub · builder', 'GitHub · 制作器', 'GitHub · 制作機')}</summary>
             <div className="desktop-github-card"><div><b>GitHub</b><span className={github.authenticated ? 'ok' : ''}>{github.authenticated ? `✓ ${github.login}` : t('로그인 필요', 'Login required', '需要登录', 'ログインが必要')}</span></div><small>{github.relay_connected ? github.remote : t('비공개 relay 저장소가 연결되지 않았습니다.', 'No private relay repository connected.', '尚未连接私有 relay 仓库。', '非公開 relay リポジトリ未接続。')}</small>{!github.authenticated && <><button disabled={busy || !github.oauth_available} onClick={() => void loginGitHub('device')}>{t('브라우저로 GitHub 로그인', 'GitHub browser login', '通过浏览器登录 GitHub', 'ブラウザで GitHub ログイン')}</button><div className="desktop-token-login"><input type="password" autoComplete="off" value={githubToken} onChange={(event) => setGithubToken(event.target.value)} placeholder={t('또는 GitHub 토큰', 'Or GitHub token', '或 GitHub 令牌', 'または GitHub トークン')} /><button disabled={busy || githubToken.length < 20} onClick={() => void loginGitHub('token')}>{t('토큰 연결', 'Connect token', '连接令牌', 'トークン接続')}</button></div></>}</div>
             <div className="desktop-relay-actions"><button onClick={() => void relayAction('pair')}>{t('제작기 연결', 'Pair the builder', '连接制作器', '制作機を接続')}</button><button onClick={() => void relayAction('desktop')}>{t('데스크톱 키 내보내기', 'Export desktop key', '导出桌面密钥', 'デスクトップ鍵を書き出す')}</button><button onClick={() => void relayAction('git-connect')}>{github.relay_connected ? t('relay 저장소 변경', 'Change relay repo', '更改 relay 仓库', 'relay を変更') : t('GitHub relay 연결', 'Connect GitHub relay', '连接 GitHub relay', 'GitHub relay 接続')}</button>{latestJob && <button onClick={() => void relayAction('git-push')}>{t('작업 다시 전송', 'Resend job', '重新发送任务', 'ジョブ再送信')}</button>}<button onClick={() => void relayAction('git-pull')}>{t('지금 동기화', 'Sync now', '立即同步', '今すぐ同期')}</button><button onClick={() => void relayAction('request')}>{t('오프라인 요청 내보내기', 'Export offline request', '导出离线请求', 'オフライン要求を書き出す')}</button><button onClick={() => void relayAction('result')}>{t('오프라인 결과 가져오기', 'Import offline result', '导入离线结果', 'オフライン結果を読み込む')}</button></div>
+            </details>
             {latestJob && !['completed', 'cancelled', 'failed', 'conflict', 'paused', 'pause_requested'].includes(latestJob.status) && <div className="desktop-control-actions"><button disabled={busy} onClick={() => void controlRunnerJob('pause')}>{t('일시정지', 'Pause', '暂停', '一時停止')}</button><button className="desktop-danger" disabled={busy} onClick={() => void controlRunnerJob('cancel')}>{t('작업 취소', 'Cancel job', '取消任务', 'ジョブをキャンセル')}</button></div>}
             {latestJob && ['paused', 'pause_requested'].includes(latestJob.status) && <div className="desktop-control-actions"><button disabled={busy} onClick={() => void controlRunnerJob('resume')}>{t('같은 세션 재개', 'Resume session', '恢复会话', 'セッション再開')}</button><button className="desktop-danger" disabled={busy} onClick={() => void controlRunnerJob('cancel')}>{t('작업 취소', 'Cancel job', '取消任务', 'ジョブをキャンセル')}</button></div>}
             {latestJob && ['failed', 'cancelled'].includes(latestJob.status) && <button className="desktop-secondary" disabled={busy} onClick={() => void controlRunnerJob('retry')}>{t('안전하게 재시도', 'Safe retry', '安全重试', '安全に再試行')}</button>}

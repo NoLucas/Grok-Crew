@@ -243,6 +243,7 @@ export function SpecDesk({
   const [copied, setCopied] = useState('');
   const [error, setError] = useState('');
   const [outboxNotice, setOutboxNotice] = useState('');
+  const [specPane, setSpecPane] = useState<'' | 'style' | 'source' | 'collect' | 'files'>('');
 
   useEffect(() => {
     if (recipesProp?.length) {
@@ -443,16 +444,28 @@ export function SpecDesk({
   const saveLabel = draft.source_mode === 'own'
     ? t(`규격 저장하고 ${editorName} 보낼함에 올리기`, `Save to the ${editorName} outbox`, `保存规格并放入 ${editorName} 发件箱`, `仕様を保存して ${editorName} 送信箱へ`)
     : t('규격 저장하고 두 보낼함에 올리기', 'Save to both outboxes', '保存规格并放入两个发件箱', '仕様を保存して両方の送信箱へ');
+  const draftRecipe = recipes.find((item) => item.id === draft.recipe_id);
+  const styleLabel = draftRecipe ? localized(draftRecipe.name, language, draftRecipe.id) : draft.recipe_id;
+  const sourceLabel = draft.source_mode === 'own'
+    ? t('내 파일', 'My files', '我的文件', '自分のファイル')
+    : draft.source_mode === 'own_and_collect'
+      ? t('둘 다', 'Both', '两者', '両方')
+      : t('수집', 'Collect', '收集', '収集');
+  const collectLabel = draft.collect_query.trim() || t('레시피 그대로', 'Recipe default', '按风格默认', 'レシピどおり');
+  const ownedCount = ownedPaths(draft.owned_text).length;
+  const filesLabel = ownedCount
+    ? t(`${ownedCount}개`, `${ownedCount} files`, `${ownedCount} 个`, `${ownedCount}件`)
+    : t('아직 없음', 'None yet', '暂无', 'まだなし');
+  const doorsReady = Boolean(outboxNotice || editBrief || collectBrief);
 
   return (
-    <div className="desktop-spec-desk">
-      <div className="desktop-spec-hero">
-        <span>✦</span>
+    <div className="desktop-spec-desk is-composer">
+      <header className="desktop-auto-lead">
         <h1>{t('스타일을 고르면 규격이 채워집니다', 'Pick a style. The spec fills in.', '选风格，规格会填好。', 'スタイルを選ぶと仕様が埋まる。')}</h1>
-        <p>{t('인스타·틱톡·유튜브 레시피를 고르고, 화면은 내 파일인지 수집인지 정하세요. 역할 이름은 수집 Agent / 편집 Agent입니다. 이 앱은 사이트를 긁지 않습니다.', 'Choose Instagram, TikTok, or YouTube, then say whether the pictures are yours or collected. Role names are Collector Agent and Editor Agent. This app does not scrape sites.', '先选 Instagram、TikTok 或 YouTube，再决定画面从哪来。角色名是收集 Agent / 剪辑 Agent。这个应用不抓网站。', 'Instagram・TikTok・YouTube のレシピを選び、画面の出どころを決める。役割名は収集 Agent / 編集 Agent。このアプリはサイトを掻かない。')}</p>
-      </div>
+        <p>{t('제목과 할 말만 적으면 됩니다. 스타일·화면은 칩에서 엽니다. 이 앱은 사이트를 긁지 않습니다.', 'Write the title and what it should say. Open style and pictures only when you need them. This app does not scrape sites.', '写下标题和要讲的话即可。风格和画面在芯片里开。这个应用不抓网站。', 'タイトルと一言だけ書けばいい。スタイルと画面はチップで開く。このアプリは掻かない。')}</p>
+      </header>
 
-      <form className="desktop-spec-form" onSubmit={(event) => { event.preventDefault(); void saveSpec(); }}>
+      <form className="desktop-spec-form desktop-auto-composer-card" onSubmit={(event) => { event.preventDefault(); void saveSpec(); }}>
         <label className="desktop-spec-field">
           <span>{t('제목', 'Title', '标题', 'タイトル')}</span>
           <input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder={t('15초 훅 릴', '15s hook Reel', '15秒钩子 Reel', '15秒フックのリール')} required />
@@ -462,62 +475,84 @@ export function SpecDesk({
           <textarea value={draft.goal} onChange={(event) => setDraft({ ...draft, goal: event.target.value })} placeholder={t('가장 센 대사만 남긴 세로 숏폼. 첫 2초에 훅.', 'A vertical short that keeps only the strongest lines. Hook in the first two seconds.', '只留最有力的几句，竖屏短视频。前两秒要有钩子。', '一番強いセリフだけ残した縦型ショート。最初の2秒でフック。')} rows={3} required />
         </label>
 
-        <fieldset className="desktop-spec-recipes">
-          <legend>{t('스타일', 'Style', '风格', 'スタイル')}</legend>
-          <div className="desktop-spec-recipe-grid">
-            {recipeCards.map((recipe) => {
-              const selected = draft.recipe_id === recipe.id;
-              const seconds = recipe.duration_seconds || {};
-              const long = (seconds.max || 0) > 180;
-              const length = long
-                ? t(`${Math.round((seconds.min || 480) / 60)}–${Math.round((seconds.max || 720) / 60)}분`, `${Math.round((seconds.min || 480) / 60)}–${Math.round((seconds.max || 720) / 60)} min`, `${Math.round((seconds.min || 480) / 60)}–${Math.round((seconds.max || 720) / 60)} 分钟`, `${Math.round((seconds.min || 480) / 60)}–${Math.round((seconds.max || 720) / 60)}分`)
-                : t(`${seconds.min}–${seconds.max}초`, `${seconds.min}–${seconds.max}s`, `${seconds.min}–${seconds.max} 秒`, `${seconds.min}–${seconds.max}秒`);
-              return (
+        <div className="desktop-auto-options" role="tablist" aria-label={t('규격 옵션', 'Spec options', '规格选项', '仕様オプション')}>
+          <button type="button" role="tab" aria-selected={specPane === 'style'} className={`desktop-auto-option${specPane === 'style' ? ' is-open' : ''} is-set`} onClick={() => setSpecPane((value) => value === 'style' ? '' : 'style')}>
+            <span>{t('스타일', 'Style', '风格', 'スタイル')}</span>
+            <b>{styleLabel}</b>
+          </button>
+          <button type="button" role="tab" aria-selected={specPane === 'source'} className={`desktop-auto-option${specPane === 'source' ? ' is-open' : ''} is-set`} onClick={() => setSpecPane((value) => value === 'source' ? '' : 'source')}>
+            <span>{t('화면', 'Pictures', '画面', '画面')}</span>
+            <b>{sourceLabel}</b>
+          </button>
+          {needsCollector ? (
+            <button type="button" role="tab" aria-selected={specPane === 'collect'} className={`desktop-auto-option${specPane === 'collect' ? ' is-open' : ''} is-set`} onClick={() => setSpecPane((value) => value === 'collect' ? '' : 'collect')}>
+              <span>{t('수집', 'Collect', '收集', '収集')}</span>
+              <b>{collectLabel}</b>
+            </button>
+          ) : null}
+          {needsOwned ? (
+            <button type="button" role="tab" aria-selected={specPane === 'files'} className={`desktop-auto-option${specPane === 'files' ? ' is-open' : ''} is-set`} onClick={() => setSpecPane((value) => value === 'files' ? '' : 'files')}>
+              <span>{t('내 파일', 'My files', '我的文件', '自分のファイル')}</span>
+              <b>{filesLabel}</b>
+            </button>
+          ) : null}
+        </div>
+
+        {specPane === 'style' ? (
+          <fieldset className="desktop-spec-recipes desktop-auto-option-pane">
+            <legend>{t('스타일', 'Style', '风格', 'スタイル')}</legend>
+            <div className="desktop-spec-recipe-grid">
+              {recipeCards.map((recipe) => {
+                const selected = draft.recipe_id === recipe.id;
+                const seconds = recipe.duration_seconds || {};
+                const long = (seconds.max || 0) > 180;
+                const length = long
+                  ? t(`${Math.round((seconds.min || 480) / 60)}–${Math.round((seconds.max || 720) / 60)}분`, `${Math.round((seconds.min || 480) / 60)}–${Math.round((seconds.max || 720) / 60)} min`, `${Math.round((seconds.min || 480) / 60)}–${Math.round((seconds.max || 720) / 60)} 分钟`, `${Math.round((seconds.min || 480) / 60)}–${Math.round((seconds.max || 720) / 60)}分`)
+                  : t(`${seconds.min}–${seconds.max}초`, `${seconds.min}–${seconds.max}s`, `${seconds.min}–${seconds.max} 秒`, `${seconds.min}–${seconds.max}秒`);
+                return (
+                  <button
+                    key={recipe.id}
+                    type="button"
+                    className={selected ? 'desktop-spec-recipe is-selected' : 'desktop-spec-recipe'}
+                    aria-pressed={selected}
+                    onClick={() => setDraft((value) => applyRecipe(value, recipe))}
+                  >
+                    <b>{localized(recipe.name, language, recipe.id)}</b>
+                    <small>{length} · {recipe.aspect}</small>
+                    <span>{localized(recipe.summary, language, '')}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        ) : null}
+
+        {specPane === 'source' ? (
+          <fieldset className="desktop-spec-sources desktop-auto-option-pane">
+            <legend>{t('화면은 어디서', 'Where do the pictures come from', '画面从哪来', '画面はどこから')}</legend>
+            <div className="desktop-spec-source-grid">
+              {([
+                ['own', t('내 파일', 'My files', '我的文件', '自分のファイル'), t(`이 컴퓨터의 영상만 ${editorName}이 자릅니다. Collector Agent는 부르지 않습니다.`, `${editorName} cuts files already on this computer. No Collector Agent.`, `${editorName} 只剪这台电脑上的文件。不叫 Collector Agent。`, `このPCの映像だけ ${editorName} が切る。Collector Agent は呼ばない。`)],
+                ['collect', t('수집', 'Collect', '收集', '収集'), t('Collector Agent가 쓸 수 있는 출처에서 클립을 모읍니다. 이 PC는 사이트를 긁지 않습니다.', 'Collector Agent gathers allowed clips. This PC does not scrape.', 'Collector Agent 从你能用的来源找片段。这台电脑不抓站。', 'Collector Agent が使える出典から集める。このPCは掻かない。')],
+                ['own_and_collect', t('둘 다', 'Both', '两者', '両方'), t('내 파일이 본편입니다. Collector Agent는 추가 클립과 커버만 보탭니다.', 'Your files are the main cut. Collector Agent adds extra clips and covers only.', '你的文件是主画面。Collector Agent 只补附加片段和封面。', '自分のファイルが本編。Collector Agent は追加クリップとカバーだけ足す。')],
+              ] as const).map(([id, label, hint]) => (
                 <button
-                  key={recipe.id}
+                  key={id}
                   type="button"
-                  className={selected ? 'desktop-spec-recipe is-selected' : 'desktop-spec-recipe'}
-                  aria-pressed={selected}
-                  onClick={() => setDraft((value) => applyRecipe(value, recipe))}
+                  className={draft.source_mode === id ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
+                  aria-pressed={draft.source_mode === id}
+                  onClick={() => setDraft({ ...draft, source_mode: id })}
                 >
-                  <b>{localized(recipe.name, language, recipe.id)}</b>
-                  <small>{length} · {recipe.aspect}</small>
-                  <span>{localized(recipe.summary, language, '')}</span>
+                  <b>{label}</b>
+                  <span>{hint}</span>
                 </button>
-              );
-            })}
-          </div>
-        </fieldset>
+              ))}
+            </div>
+          </fieldset>
+        ) : null}
 
-        <fieldset className="desktop-spec-sources">
-          <legend>{t('화면은 어디서', 'Where do the pictures come from', '画面从哪来', '画面はどこから')}</legend>
-          <div className="desktop-spec-source-grid">
-            {([
-              ['own', t('내 파일', 'My files', '我的文件', '自分のファイル'), t(`이 컴퓨터의 영상만 ${editorName}이 자릅니다. Collector Agent는 부르지 않습니다.`, `${editorName} cuts files already on this computer. No Collector Agent.`, `${editorName} 只剪这台电脑上的文件。不叫 Collector Agent。`, `このPCの映像だけ ${editorName} が切る。Collector Agent は呼ばない。`)],
-              ['collect', t('수집', 'Collect', '收集', '収集'), t('Collector Agent가 쓸 수 있는 출처에서 클립을 모읍니다. 이 PC는 사이트를 긁지 않습니다.', 'Collector Agent gathers allowed clips. This PC does not scrape.', 'Collector Agent 从你能用的来源找片段。这台电脑不抓站。', 'Collector Agent が使える出典から集める。このPCは掻かない。')],
-              ['own_and_collect', t('둘 다', 'Both', '两者', '両方'), t('내 파일이 본편입니다. Collector Agent는 추가 클립과 커버만 보탭니다.', 'Your files are the main cut. Collector Agent adds extra clips and covers only.', '你的文件是主画面。Collector Agent 只补附加片段和封面。', '自分のファイルが本編。Collector Agent は追加クリップとカバーだけ足す。')],
-            ] as const).map(([id, label, hint]) => (
-              <button
-                key={id}
-                type="button"
-                className={draft.source_mode === id ? 'desktop-spec-source is-selected' : 'desktop-spec-source'}
-                aria-pressed={draft.source_mode === id}
-                onClick={() => setDraft({ ...draft, source_mode: id })}
-              >
-                <b>{label}</b>
-                <span>{hint}</span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <p className="desktop-spec-meta">
-          {connectedBots.filter((bot) => bot.presence === 'active').length
-            ? t(`지금 연결된 봇 ${connectedBots.filter((bot) => bot.presence === 'active').length}명`, `${connectedBots.filter((bot) => bot.presence === 'active').length} bot(s) checked in`, `当前已连接 ${connectedBots.filter((bot) => bot.presence === 'active').length} 个机器人`, `接続中のボット ${connectedBots.filter((bot) => bot.presence === 'active').length} 人`)
-            : t('아직 체크인한 봇이 없습니다. 역할 이름은 수집 Agent / 편집 Agent입니다.', 'No bot has checked in yet. Role names stay Collector Agent / Editor Agent.', '还没有机器人签到。角色名是收集 Agent / 剪辑 Agent。', 'まだチェックインしたボットはいない。役割名は収集 Agent / 編集 Agent。')}
-        </p>
-        {needsCollector ? (
-          <>
+        {specPane === 'collect' && needsCollector ? (
+          <div className="desktop-auto-option-pane" role="tabpanel">
             <label className="desktop-spec-field">
               <span>{t('수집 Agent', 'Collector Agent', '收集 Agent', '収集 Agent')}</span>
               <input value={collectorName} readOnly />
@@ -536,27 +571,42 @@ export function SpecDesk({
                 <input type="number" min={1} max={40} value={draft.collect_max} onChange={(event) => setDraft({ ...draft, collect_max: event.target.value })} />
               </label>
             </div>
-          </>
+            <label className="desktop-spec-field">
+              <span>{t('편집 Agent', 'Editor Agent', '剪辑 Agent', '編集 Agent')}</span>
+              <input value={editorName} readOnly />
+            </label>
+          </div>
         ) : null}
-        <label className="desktop-spec-field">
-          <span>{t('편집 Agent', 'Editor Agent', '剪辑 Agent', '編集 Agent')}</span>
-          <input value={editorName} readOnly />
-        </label>
 
-        {needsOwned ? (
-          <label className="desktop-spec-field desktop-spec-wide">
-            <span>{t('내 파일 경로', 'My file paths', '我的文件路径', '自分のファイルパス')}</span>
-            <textarea
-              value={draft.owned_text}
-              onChange={(event) => setDraft({ ...draft, owned_text: event.target.value })}
-              placeholder={t('한 줄에 경로 하나. 이 PC에 있는 영상만.', 'One local path per line. Files on this computer only.', '每行一个本机路径。只限这台电脑上的视频。', '1行にパス一つ。このPCにある映像だけ。')}
-              rows={3}
-            />
-            <button type="button" className="desktop-secondary" onClick={() => void pickOwned()}>
-              {t('이 컴퓨터에서 고르기', 'Pick on this computer', '在这台电脑上选择', 'このパソコンから選ぶ')}
-            </button>
-          </label>
+        {specPane === 'files' && needsOwned ? (
+          <div className="desktop-auto-option-pane" role="tabpanel">
+            <label className="desktop-spec-field desktop-spec-wide">
+              <span>{t('내 파일 경로', 'My file paths', '我的文件路径', '自分のファイルパス')}</span>
+              <textarea
+                value={draft.owned_text}
+                onChange={(event) => setDraft({ ...draft, owned_text: event.target.value })}
+                placeholder={t('한 줄에 경로 하나. 이 PC에 있는 영상만.', 'One local path per line. Files on this computer only.', '每行一个本机路径。只限这台电脑上的视频。', '1行にパス一つ。このPCにある映像だけ。')}
+                rows={3}
+              />
+              <button type="button" className="desktop-secondary" onClick={() => void pickOwned()}>
+                {t('이 컴퓨터에서 고르기', 'Pick on this computer', '在这台电脑上选择', 'このパソコンから選ぶ')}
+              </button>
+            </label>
+            {!needsCollector ? (
+              <label className="desktop-spec-field">
+                <span>{t('편집 Agent', 'Editor Agent', '剪辑 Agent', '編集 Agent')}</span>
+                <input value={editorName} readOnly />
+              </label>
+            ) : null}
+          </div>
         ) : null}
+
+        <p className="desktop-auto-recap">{`${styleLabel} · ${sourceLabel}${needsCollector ? ` · ${collectLabel}` : ''}${needsOwned ? ` · ${filesLabel}` : ''}`}</p>
+        <p className="desktop-spec-meta">
+          {connectedBots.filter((bot) => bot.presence === 'active').length
+            ? t(`지금 연결된 봇 ${connectedBots.filter((bot) => bot.presence === 'active').length}명`, `${connectedBots.filter((bot) => bot.presence === 'active').length} bot(s) checked in`, `当前已连接 ${connectedBots.filter((bot) => bot.presence === 'active').length} 个机器人`, `接続中のボット ${connectedBots.filter((bot) => bot.presence === 'active').length} 人`)
+            : t('아직 체크인한 봇이 없습니다. 역할 이름은 수집 Agent / 편집 Agent입니다.', 'No bot has checked in yet. Role names stay Collector Agent / Editor Agent.', '还没有机器人签到。角色名是收集 Agent / 剪辑 Agent。', 'まだチェックインしたボットはいない。役割名は収集 Agent / 編集 Agent。')}
+        </p>
 
         <details className="desktop-spec-advanced">
           <summary>{t('길이·자막·분위기를 직접 고치기', 'Override length, captions, look', '直接改时长、字幕、风格', '長さ・字幕・雰囲気を自分で直す')}</summary>
@@ -597,7 +647,7 @@ export function SpecDesk({
         </details>
 
         <div className="desktop-spec-actions">
-          <button type="submit" className="desktop-primary" disabled={locked}>
+          <button type="submit" className="desktop-primary desktop-auto-make" disabled={locked}>
             {saving ? t('저장 중…', 'Saving…', '保存中…', '保存中…') : saveLabel}
           </button>
         </div>
@@ -606,6 +656,8 @@ export function SpecDesk({
       {outboxNotice ? <p className="desktop-spec-outbox" role="status">{outboxNotice}</p> : null}
       {unknownLicense > 0 ? <p className="desktop-spec-license" role="status">{t(`출처 불명 클립 ${unknownLicense}장. 올리기 전에 라이선스를 확인하세요.`, `${unknownLicense} clip(s) have an unknown license. Check before you publish.`, `有 ${unknownLicense} 个片段来源不明。发布前请核对许可。`, `出典不明のクリップが ${unknownLicense}。投稿前にライセンスを確認。`)}</p> : null}
 
+      <details className="desktop-auto-help" open={doorsReady}>
+        <summary>{t('보낼함과 받기', 'Outboxes and receive', '发件箱与接收', '送信箱と受け取り')}</summary>
       <div className="desktop-spec-doors">
         {needsCollector ? (
           <section className="desktop-spec-door is-collector">
@@ -673,11 +725,12 @@ export function SpecDesk({
           </p>
         </section>
       </div>
-
-      {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
       <p className="desktop-spec-meta">
         {t('수집 보낼함: handoff-outbox/collector · 자료함: handoff-materials · 편집 보낼함: handoff-outbox/editor · 컷 인박스: handoff-inbox/editor', 'Collector outbox: handoff-outbox/collector · Materials: handoff-materials · Editor outbox: handoff-outbox/editor · Cut inbox: handoff-inbox/editor', '收集发件箱：handoff-outbox/collector · 资料箱：handoff-materials · 剪辑发件箱：handoff-outbox/editor · 成片收件箱：handoff-inbox/editor', '収集送信箱: handoff-outbox/collector · 素材箱: handoff-materials · 編集送信箱: handoff-outbox/editor · カット受信箱: handoff-inbox/editor')}
       </p>
+      </details>
+
+      {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
 
       <details className="desktop-spec-advanced">
         <summary>{t('타임라인에서 이 컴퓨터 영상을 직접 열기', 'Open a file on the timeline yourself', '在时间线上直接打开本机视频', 'タイムラインでこのパソコンの映像を開く')}</summary>

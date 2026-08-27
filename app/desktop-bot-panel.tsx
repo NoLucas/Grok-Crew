@@ -77,6 +77,7 @@ export function DesktopBotPanel({
 }: BotPanelProps) {
   const { language, t } = useLanguage();
   const [openSeat, setOpenSeat] = useState<OtherSeat>({ kind: 'grok', role: 'planner' });
+  const [familyId, setFamilyId] = useState<(typeof OTHER_FAMILIES)[number]['id']>('grok');
   const [copied, setCopied] = useState('');
   const [blockedKind, setBlockedKind] = useState('');
   const [error, setError] = useState('');
@@ -113,6 +114,7 @@ export function DesktopBotPanel({
     setError('');
     setBlockedKind('');
     setOpenSeat(seat);
+    setFamilyId(seat.kind);
     if (!links.pairCode) {
       setError(t('연결 코드가 아직 없습니다. 잠시 후 다시 눌러 주세요.', 'The connect code is not ready yet. Try again in a moment.', '连接代码还没好。请稍后再按。', '接続コードがまだありません。少ししてから押してください。'));
       return;
@@ -152,30 +154,43 @@ export function DesktopBotPanel({
   };
 
   return (
-    <div className="desktop-spec-desk desktop-bot-room">
-      <div className="desktop-spec-hero">
-        <span>✦</span>
+    <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
+      <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('다른 PC는 Grok Bot과 Agent를 기획자·스크래핑·편집자로 붙입니다. 붙으면 그 역할 스킬과 보조 스킬을 읽습니다. 설정·편집·내보내기는 봇이 붙은 뒤에 켜집니다.', 'Other-PC seats are Grok Bot and Agent as planner, scraper, and editor. A connected bot reads that role skill plus one extra. Setup, Edit, and Export turn on after a bot is attached.', '另一台电脑把 Grok Bot 和 Agent 接成策划、抓取、剪辑。接上后阅读该角色技能和一项辅助技能。设置、编辑、导出要等机器人接上后才打开。', '別 PC は Grok Bot と Agent を企画・収集・編集で付けます。付くとその役割スキルと補助スキルを読みます。設定・編集・書き出しはボットが付いてから開きます。')}</p>
-      </div>
+        <p>{t('연결 글을 복사해 봇 창에 붙이세요. 그 봇은 이 주소를 열 수 없습니다. 붙으면 설정·편집·내보내기가 켜집니다.', 'Copy the connect text and paste it in the bot window. That bot cannot open this address. Setup, Edit, and Export turn on after it attaches.', '复制连接文字并贴到机器人窗口。那个机器人打不开这个地址。接上后设置、编辑、导出才会打开。', '接続文をコピーしてボットの窓に貼る。そのボットはこの住所を開けない。付くと設定・編集・書き出しが開く。')}</p>
+      </header>
 
-      <section className={`desktop-simple-card desktop-connect-summary${connected ? ' is-ready' : ''}`} aria-live="polite">
+      <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">
         <Lamp
           on={connected}
           label={connected
             ? t(`연결됨${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `Connected${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `已连接${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `接続済み${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`)
             : t('아직 연결되지 않음', 'Not connected yet', '尚未连接', 'まだ接続されていない')}
         />
-        <p>{connected
-          ? t('붙은 이름 옆의 초록불과 마지막 확인이 연결됨입니다. 끊기는 각 줄에서 합니다.', 'The green light and last check next to a name mean connected. Remove it on that row.', '名字旁边的绿灯和上次确认就是已连接。断开在该行操作。', '名前の横の緑と最後の確認が接続済みです。切るはその行で。')
-          : t('다른 PC의 Grok Bot 또는 Agent를 기획자·스크래핑·편집자로 붙이세요.', 'Attach a Grok Bot or Agent as planner, scraper, or editor on another PC first.', '先接另一台电脑上的 Grok Bot 或 Agent，角色是策划、抓取或剪辑。', '先に別 PC の Grok Bot か Agent を企画・収集・編集で付けてください。')}</p>
       </section>
 
-      <section className="desktop-simple-card">
-        <h2>{t('다른 PC', 'Other PC', '另一台电脑', '別の PC')}</h2>
-        <p>{t('연결 글 복사만 하면 붙습니다. 그 글을 봇 창에 붙이세요. 그 봇은 이 주소를 열 수 없습니다.', 'Copy the connect text and it is attached. Paste that text in the bot window. That bot cannot open this address.', '复制连接文字就算接上。把那篇贴到机器人窗口。那个机器人打不开这个地址。', '接続文をコピーすれば付きます。その文をボットの窓に貼ってください。そのボットはこの住所を開けません。')}</p>
+      <section className="desktop-auto-composer-card">
+        <h2>{t('봇 붙이기', 'Attach a bot', '接上机器人', 'ボットを付ける')}</h2>
+        <p>{t('쓸 봇만 고르면 됩니다. Agent는 옆 칩에서 엽니다.', 'Pick the bot you will use. Agent is on the other chip.', '只选要用的机器人。Agent 在旁边的芯片里。', '使うボットだけ選ぶ。Agent は横のチップで開く。')}</p>
+        <div className="desktop-auto-options" role="tablist" aria-label={t('봇 종류', 'Bot kind', '机器人种类', 'ボットの種類')}>
+          {OTHER_FAMILIES.map((family) => (
+            <button
+              key={family.id}
+              type="button"
+              role="tab"
+              aria-selected={familyId === family.id}
+              className={`desktop-auto-option${familyId === family.id ? ' is-open' : ''}${links.bots.some((item) => item.kind === family.id && item.status === 'connected') ? ' is-set' : ''}`}
+              onClick={() => setFamilyId(family.id)}
+            >
+              <span>{t(family.ko, family.en, family.zh, family.ja)}</span>
+              <b>{links.bots.some((item) => item.kind === family.id && item.status === 'connected')
+                ? t('붙음', 'Attached', '已接上', '付いた')
+                : t('아직', 'Not yet', '还没有', 'まだ')}</b>
+            </button>
+          ))}
+        </div>
         {links.pairCode ? <p className="desktop-spec-meta">{t(`연결 코드 ${links.pairCode}`, `Code ${links.pairCode}`, `连接代码 ${links.pairCode}`, `接続コード ${links.pairCode}`)}</p> : null}
-        {OTHER_FAMILIES.map((family) => (
+        {OTHER_FAMILIES.filter((family) => family.id === familyId).map((family) => (
           <div key={family.id} className="desktop-bot-family">
             <h3>{t(family.ko, family.en, family.zh, family.ja)}</h3>
             <ul className="desktop-bot-list">
@@ -224,8 +239,8 @@ export function DesktopBotPanel({
         {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
       </section>
 
-      <section className="desktop-simple-card">
-        <h2>{t('이 PC', 'This PC', '这台电脑', 'この PC')}</h2>
+      <details className="desktop-auto-help">
+        <summary>{t('이 PC에서 봇 쓰기', 'Use a bot on this PC', '在这台电脑用机器人', 'この PC でボットを使う')}</summary>
         <p>{t('같은 PC 봇은 체크인 글을 그 창에 붙이면 이름이 여기 뜹니다. 창을 끄지 마세요.', 'A bot on this PC pastes the check-in line and its name appears here. Do not close this window.', '这台电脑上的机器人贴签到文字后，名字会出现在这里。不要关掉窗口。', '同じ PC のボットはチェックイン文を貼ると名前が出ます。窓を閉じないでください。')}</p>
         <div className={`desktop-connect-row${local ? ' is-connected' : ''}`}>
           <div>
@@ -246,11 +261,11 @@ export function DesktopBotPanel({
         {blockedKind === 'same_pc' ? (
           <textarea className="desktop-bot-paste" value={localText} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
         ) : null}
-      </section>
+      </details>
 
       {services ? (
-        <section className="desktop-simple-card">
-          <h2>{t('이 창의 다른 연결', 'Other links on this window', '这个窗口的其他连接', 'この窓のほかの接続')}</h2>
+        <details className="desktop-auto-help">
+          <summary>{t('이 창의 다른 연결', 'Other links on this window', '这个窗口的其他连接', 'この窓のほかの接続')}</summary>
           <ul className="desktop-bot-list">
             <li className={services.studioReady ? 'is-connected' : ''}>
               <div className="desktop-connect-row">
@@ -337,17 +352,17 @@ export function DesktopBotPanel({
               </div>
             </li>
           </ul>
-        </section>
+        </details>
       ) : null}
 
       {allowOwnFile && onOpenOwnFile ? (
-        <section className="desktop-simple-card">
-          <h2>{t('내가 열기', 'Open it myself', '自己打开', '自分で開く')}</h2>
-          <p>{t('봇 없이 이 PC 영상을 바로 엽니다. 그러면 설정·편집·내보내기가 켜집니다.', 'Open a video on this PC with no bot. Setup, Edit, and Export then turn on.', '不用机器人，直接打开这台电脑上的视频。设置、编辑、导出就会打开。', 'ボットなしでこの PC の映像を開きます。設定・編集・書き出しが付きます。')}</p>
+        <details className="desktop-auto-help">
+          <summary>{t('봇 없이 영상 열기', 'Open a video with no bot', '不用机器人打开视频', 'ボットなしで映像を開く')}</summary>
+          <p>{t('이 PC 영상을 바로 엽니다. 그러면 설정·편집·내보내기가 켜집니다.', 'Open a video on this PC. Setup, Edit, and Export then turn on.', '直接打开这台电脑上的视频。设置、编辑、导出就会打开。', 'この PC の映像を開く。設定・編集・書き出しが付く。')}</p>
           <button type="button" className="desktop-secondary" onClick={onOpenOwnFile}>
             {t('영상 고르기', 'Pick a video', '选择视频', '映像を選ぶ')}
           </button>
-        </section>
+        </details>
       ) : null}
     </div>
   );
