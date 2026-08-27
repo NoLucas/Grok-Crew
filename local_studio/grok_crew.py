@@ -19,6 +19,7 @@ LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 BROWSER_PAGES = {
     "desktop": "http://localhost:3000/",
     "studio": "http://localhost:3000/",
+    "tools": "http://localhost:3000/tools",
     "edit": "http://localhost:3000/edit",
     "cut": "http://localhost:3000/cut",
     "production": "http://localhost:3000/production",

@@ -523,6 +523,7 @@ def terminal_contract() -> dict[str, Any]:
         "execution_policy": {"auto_local": "The connected bot can queue and run its own local render work automatically.", "approval_required": "The bot records a request and requires --human-approved for local render work.", "instagram": "Instagram upload can run immediately when auto_upload is enabled, or remain queued for manual execution."},
         "browser_pages": {
             "studio": f"{SITE_BASE_URL}/",
+            "tools": f"{SITE_BASE_URL}/tools",
             "edit": f"{SITE_BASE_URL}/edit",
             "cut": f"{SITE_BASE_URL}/cut",
             "production": f"{SITE_BASE_URL}/production",

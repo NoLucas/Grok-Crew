@@ -1118,7 +1118,7 @@ export default function DesktopWorkspace() {
               {index > 0 && <small>{t('복원', 'Restore', '恢复', '復元')}</small>}
             </button>
           ))}</div>
-          <a className="desktop-legacy" href="/production">{t('고급·레거시 도구', 'Advanced & legacy tools', '高级与旧版工具', '高度・レガシーツール')} ↗</a>
+          <a className="desktop-legacy" href="/tools">{t('고급 도구', 'Advanced tools', '高级工具', '高度なツール')} ↗</a>
         </aside>
         <div
           className={`desktop-column-handle${columns.dragging === 'sidebar' ? ' is-dragging' : ''}`}
