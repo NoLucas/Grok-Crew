@@ -101,6 +101,18 @@ export default function LegacyTools() {
     const tool = [...liveTools, ...previewTools, ...extraTools].find((item) => item.id === id);
     return Boolean(tool?.apiLive);
   });
+  const assignTitle = assignedLive.length
+    ? t(`봇이 쓸 도구 ${assignedLive.length}개`, `${assignedLive.length} tools for the bot`, `机器人要用 ${assignedLive.length} 个工具`, `ボットが使うツール ${assignedLive.length}`)
+    : t('지정된 도구 없음', 'Nothing assigned', '没有指定的工具', '指定なし');
+  const moreLabel = moreOpen
+    ? t('더보기 접기', 'Hide more', '收起更多', 'もっと見るを閉じる')
+    : t(`더보기 · 편집실·에이전트·패킷 등 ${extraTools.length}개`, `More · ${extraTools.length} drafts`, `更多 · ${extraTools.length} 个草稿`, `もっと見る · 草案 ${extraTools.length}`);
+  const moreHint = t(
+    `허브에는 ${featuredCount}개만 둡니다. 편집실·터미널·에이전트·패킷은 여기 아래입니다.`,
+    `The hub shows ${featuredCount} cards. Edit lab, terminal, agent, and packet sit here.`,
+    `枢纽只放 ${featuredCount} 张。编辑室、终端、智能体、数据包在这里。`,
+    `ハブには ${featuredCount} 枚だけ置きます。編集ラボ・ターミナル・エージェント・パケットはここにあります。`,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -225,11 +237,7 @@ export default function LegacyTools() {
 
         <section className="tools-assign-bar" aria-live="polite">
           <div>
-            <b>
-              {assignedLive.length
-                ? t(`봇이 쓸 도구 ${assignedLive.length}개`, `${assignedLive.length} tools for the bot`, `机器人要用 ${assignedLive.length} 个工具`, `ボットが使うツール ${assignedLive.length}`)}
-                : t('지정된 도구 없음', 'Nothing assigned', '没有指定的工具', '指定なし')}
-            </b>
+            <b>{assignTitle}</b>
             <p>
               {assignState === 'saving'
                 ? t('지정을 저장하는 중입니다.', 'Saving the assignment.', '正在保存指定。', '指定を保存しています。')
@@ -273,9 +281,7 @@ export default function LegacyTools() {
 
         <section className="tools-more" id="tools-more">
           <button type="button" className="tools-more-toggle" onClick={() => setMoreOpen((value) => !value)}>
-            {moreOpen
-              ? t('더보기 접기', 'Hide more', '收起更多', 'もっと見るを閉じる')
-              : t(`더보기 · 편집실·에이전트·패킷 등 ${extraTools.length}개`, `More · ${extraTools.length} drafts`, `更多 · ${extraTools.length} 个草稿`, `もっと見る · 草案 ${extraTools.length}`)}
+            {moreLabel}
           </button>
           {moreOpen ? (
             <div className="tools-grid">
@@ -284,14 +290,7 @@ export default function LegacyTools() {
               ))}
             </div>
           ) : (
-            <p className="tools-more-hint">
-              {t(
-                `허브에는 ${featuredCount}개만 둡니다. 편집실·터미널·에이전트·패킷은 여기 아래입니다.`,
-                `The hub shows ${featuredCount} cards. Edit lab, terminal, agent, and packet sit here.`,
-                `枢纽只放 ${featuredCount} 张。编辑室、终端、智能体、数据包在这里。`,
-                `ハブには ${featuredCount} 枚だけ置きます。編集ラボ・ターミナル・エージェント・パケットはここにあります。`,
-              )}
-            </p>
+            <p className="tools-more-hint">{moreHint}</p>
           )}
         </section>
 
