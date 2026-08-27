@@ -3,7 +3,7 @@ import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 export const DEFAULT_DOWNLOAD_URL =
-  'https://github.com/NoLucas/Grok-crew-test/releases/latest/download/GrokCrew-Windows.exe';
+  'https://github.com/NoLucas/Grok-Crew/releases/latest/download/GrokCrew-Windows.exe';
 
 export type GetLeadInput = {
   email?: string;
@@ -54,9 +54,10 @@ export function leadRecord(email: string, createdAt = new Date().toISOString()):
   };
 }
 
-/** Live chatgpt.site is disconnected. Do not allow it to call this app. */
-export const DISCONNECTED_HOME_ORIGIN = 'https://grok-crew-local.jinegcc.chatgpt.site';
-export const EXISTING_HOME_ORIGIN = DISCONNECTED_HOME_ORIGIN;
+/** Public homepage origin. /home in this app, or the live page that loads /connect-install.js. */
+export const HOME_ORIGIN = 'https://grok-crew-local.jinegcc.chatgpt.site';
+export const EXISTING_HOME_ORIGIN = HOME_ORIGIN;
+export const DISCONNECTED_HOME_ORIGIN = HOME_ORIGIN;
 
 export function localLeadsPath(): string {
   const override = String(process.env.GROK_CREW_LEADS_PATH || '').trim();
@@ -69,7 +70,7 @@ export function allowedGetOrigins(): string[] {
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
-  return extra;
+  return [HOME_ORIGIN, ...extra];
 }
 
 export function isAllowedGetOrigin(origin: string, requestUrl?: string): boolean {

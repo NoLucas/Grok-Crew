@@ -4,6 +4,8 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- The public homepage is back at `/home`. It shows v1.0.0, with Grok Bot, built-in skills, and a free Windows download that does not wait on email. `POST /api/get` accepts the live homepage origin for optional news. `/` stays the desk. The lock is `docs/HOMEPAGE.ko.md`.
+
 ## 1.0.0 - 2026-08-27
 
 Local 1.0. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.0` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.md`.
