@@ -1438,14 +1438,6 @@ export default function DesktopWorkspace() {
                 onRefresh={() => refreshWorkspace(true)}
                 request={api}
               />
-              {firstCut ? (
-                <HandoffFolderBoard
-                  folders={handoffFolders}
-                  studioState={studioState}
-                  onOpenProject={openHandoffProject}
-                  {...folderActions}
-                />
-              ) : null}
                 </>
               ) : null}
               </div>

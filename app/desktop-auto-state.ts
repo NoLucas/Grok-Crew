@@ -24,6 +24,8 @@ export type AutoMode = 'hand_off' | 'own_file';
 export type AutoSourceMode = 'own' | 'collect' | 'own_and_collect';
 export type AutoPhaseId = 'connect' | 'sent' | 'working' | 'cut' | 'save';
 export type AutoLamp = 'off' | 'yellow' | 'green' | 'red';
+export type AutoDeskStage = 'compose' | 'waiting' | 'arrived';
+export type AutoOptionPane = '' | 'pictures' | 'where' | 'sound';
 export type AutoMachine =
   | 'idle'
   | 'sending'
@@ -300,6 +302,18 @@ export function autoMachineState(input: AutoLampInput): AutoMachine {
   if (input.sending) return 'sending';
   if (input.wait) return 'waiting';
   return 'idle';
+}
+
+export function autoDeskStage(input: {
+  wait?: DeskWaitState | null;
+  pull?: DeskPullStatus;
+  hasProject?: boolean;
+  stayOnCompose?: boolean;
+}): AutoDeskStage {
+  if (input.stayOnCompose) return 'compose';
+  if (input.hasProject || input.pull === 'arrived') return 'arrived';
+  if (input.wait) return 'waiting';
+  return 'compose';
 }
 
 export function autoPhaseLamps(input: AutoLampInput): Record<AutoPhaseId, AutoLamp> {

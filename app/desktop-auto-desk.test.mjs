@@ -11,6 +11,7 @@ const {
   autoHeaderDot,
   autoJobPayload,
   autoSourceMode,
+  autoDeskStage,
   autoMachineState,
   autoPhaseLamps,
   botSeenSeconds,
@@ -214,6 +215,27 @@ describe('auto desk style guess', () => {
     assert.equal(suggestRecipeId('유튜브 쇼츠'), 'youtube_short');
     assert.equal(suggestRecipeId('그냥 오늘 말', 'tiktok_tight'), 'tiktok_tight');
     assert.equal(suggestRecipeId(''), DEFAULT_RECIPE_ID);
+  });
+});
+
+describe('auto desk stages', () => {
+  it('keeps the first screen on write, then wait, then the arrived cut', () => {
+    assert.equal(autoDeskStage({}), 'compose');
+    assert.equal(autoDeskStage({
+      wait: { specId: 'spec-1', title: '카페', copiedAt: '2026-08-27T03:00:00.000Z', pasteTarget: 'Grok' },
+      pull: 'none',
+    }), 'waiting');
+    assert.equal(autoDeskStage({
+      wait: { specId: 'spec-1', title: '카페', copiedAt: '2026-08-27T03:00:00.000Z', pasteTarget: 'Grok' },
+      pull: 'arrived',
+      hasProject: true,
+    }), 'arrived');
+    assert.equal(autoDeskStage({
+      wait: { specId: 'spec-1', title: '카페', copiedAt: '2026-08-27T03:00:00.000Z', pasteTarget: 'Grok' },
+      pull: 'arrived',
+      hasProject: true,
+      stayOnCompose: true,
+    }), 'compose');
   });
 });
 
