@@ -66,7 +66,7 @@ const formCss = `
     .get-note, .get-ready p, .get-steps { margin:0; color:var(--soft); font-size:13px; line-height:1.55; }
     .get-error { margin:0; color:var(--red); font-size:13px; font-weight:700; }
     .get-ready { display:grid; gap:14px; }
-    .get-ready[hidden], .get-error[hidden] { display:none; }
+    .get-form[hidden], .get-ready[hidden], .get-error[hidden] { display:none; }
     .get-ready b { font-size:18px; letter-spacing:-.03em; }
     .get-steps { padding-left:18px; }
     .get-steps li + li { margin-top:6px; }
