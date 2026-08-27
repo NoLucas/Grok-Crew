@@ -244,6 +244,7 @@ export function SpecDesk({
   const [error, setError] = useState('');
   const [outboxNotice, setOutboxNotice] = useState('');
   const [specPane, setSpecPane] = useState<'' | 'style' | 'source' | 'collect' | 'files'>('');
+  const [doorsOpen, setDoorsOpen] = useState(false);
 
   useEffect(() => {
     if (recipesProp?.length) {
@@ -458,6 +459,10 @@ export function SpecDesk({
     : t('아직 없음', 'None yet', '暂无', 'まだなし');
   const doorsReady = Boolean(outboxNotice || editBrief || collectBrief);
 
+  useEffect(() => {
+    if (doorsReady) setDoorsOpen(true);
+  }, [doorsReady]);
+
   return (
     <div className="desktop-spec-desk is-composer">
       <header className="desktop-auto-lead">
@@ -656,7 +661,7 @@ export function SpecDesk({
       {outboxNotice ? <p className="desktop-spec-outbox" role="status">{outboxNotice}</p> : null}
       {unknownLicense > 0 ? <p className="desktop-spec-license" role="status">{t(`출처 불명 클립 ${unknownLicense}장. 올리기 전에 라이선스를 확인하세요.`, `${unknownLicense} clip(s) have an unknown license. Check before you publish.`, `有 ${unknownLicense} 个片段来源不明。发布前请核对许可。`, `出典不明のクリップが ${unknownLicense}。投稿前にライセンスを確認。`)}</p> : null}
 
-      <details className="desktop-auto-help" open={doorsReady}>
+      <details className="desktop-auto-help" open={doorsOpen} onToggle={(event) => setDoorsOpen(event.currentTarget.open)}>
         <summary>{t('보낼함과 받기', 'Outboxes and receive', '发件箱与接收', '送信箱と受け取り')}</summary>
       <div className="desktop-spec-doors">
         {needsCollector ? (

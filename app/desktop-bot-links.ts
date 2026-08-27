@@ -32,11 +32,21 @@ function storage(): Storage | null {
   }
 }
 
+const PAIR_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const BOT_KINDS = new Set<BotKind>(['grok', 'cursor', 'claude', 'custom', 'same_pc']);
+const BOT_PLACES = new Set<BotPlace>(['this_pc', 'other_pc']);
+const BOT_STATUSES = new Set<LinkedBot['status']>(['waiting', 'connected']);
+
 export function makePairCode(): string {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = new Uint8Array(6);
+  const cryptoObj = globalThis.crypto;
+  if (!cryptoObj?.getRandomValues) {
+    throw new Error('secure random unavailable');
+  }
+  cryptoObj.getRandomValues(bytes);
   let code = '';
-  for (let index = 0; index < 6; index += 1) {
-    code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  for (const byte of bytes) {
+    code += PAIR_ALPHABET[byte % PAIR_ALPHABET.length];
   }
   return code;
 }
@@ -51,6 +61,7 @@ function normalizeBots(value: unknown): LinkedBot[] {
     if (!item || typeof item !== 'object') return false;
     const bot = item as LinkedBot;
     if (!bot.id || !bot.pairCode || !bot.name) return false;
+    if (!BOT_KINDS.has(bot.kind) || !BOT_PLACES.has(bot.place) || !BOT_STATUSES.has(bot.status)) return false;
     if (bot.role && !isBotRole(bot.role)) return false;
     return true;
   });

@@ -357,6 +357,7 @@ export default function DesktopWorkspace() {
     setDeskWait(stored);
     setFirstCut(readFirstCutArrived());
     setBotLinks(ensureBotLinks());
+    return () => { setGithubToken(''); };
   }, []);
 
   const api = useCallback(async (path: string, init?: RequestInit): Promise<JsonObject> => {
@@ -522,6 +523,12 @@ export default function DesktopWorkspace() {
     : method.pacing === 'deliberate'
       ? t('차분하게', 'Deliberate', '沉稳', '丁寧')
       : t('균형', 'Balanced', '平衡', 'バランス');
+  const exportPolicies = [publishPolicy.instagram, publishPolicy.tiktok, publishPolicy.youtube];
+  const exportPostLabel = exportPolicies.every((value) => value === 'export_only')
+    ? t('파일만', 'File only', '仅文件', 'ファイルのみ')
+    : exportPolicies.some((value) => value === 'auto')
+      ? t('자동 있음', 'Some auto', '含自动', '自動あり')
+      : t('확인 후', 'Ask first', '先确认', '確認してから');
 
   const project = workspace.projects.find((item) => item.id === selectedProjectId);
   const deskReady = hasConnectedBot(workspace.crew_roster, botLinks) || Boolean(project);
@@ -1131,10 +1138,13 @@ export default function DesktopWorkspace() {
         ? await window.grokCrew.loginGitHubDevice()
         : await window.grokCrew.loginGitHubToken(githubToken);
       if (next) setGithub({ ...github, ...next });
-      setGithubToken('');
       setMessage(t('GitHub 자격 증명을 OS 보안 저장소에 저장했습니다.', 'GitHub credentials saved in the OS secure store.', 'GitHub 凭据已保存到系统安全存储。', 'GitHub 認証情報を OS の安全な保管領域に保存しました。'));
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'GitHub login failed.'); }
-    finally { setBusy(false); }
+    } catch {
+      setMessage(t('GitHub에 연결하지 못했습니다. 토큰은 화면에 남기지 않습니다.', 'Could not connect to GitHub. The token is not shown.', '无法连接 GitHub。令牌不会留在屏幕上。', 'GitHub に接続できませんでした。トークンは画面に残しません。'));
+    } finally {
+      setGithubToken('');
+      setBusy(false);
+    }
   };
   const controlRunnerJob = async (command: 'cancel' | 'pause' | 'resume' | 'retry', job = latestJob) => {
     if (!job) return;
@@ -1724,7 +1734,7 @@ export default function DesktopWorkspace() {
                 <div className="desktop-auto-options" role="tablist" aria-label={t('파일 이후', 'After the file', '文件之后', 'ファイルのあと')}>
                   <button type="button" role="tab" className={`desktop-auto-option${exportPane === 'post' ? ' is-open' : ''}`} aria-expanded={exportPane === 'post'} onClick={() => setExportPane((current) => current === 'post' ? '' : 'post')}>
                     <span>{t('올리기', 'Post', '发布', '投稿')}</span>
-                    <b>{t('확인 후', 'Ask first', '先确认', '確認してから')}</b>
+                    <b>{exportPostLabel}</b>
                   </button>
                   <button type="button" role="tab" className={`desktop-auto-option${exportPane === 'exchange' ? ' is-open' : ''}`} aria-expanded={exportPane === 'exchange'} onClick={() => setExportPane((current) => current === 'exchange' ? '' : 'exchange')}>
                     <span>{t('교환', 'Exchange', '交换', '交換')}</span>
