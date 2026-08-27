@@ -174,7 +174,7 @@ Linux 개발 기계에서는 최종 exe를 사용자에게 주지 못한다. 설
 `docs/DOWNLOAD_SPLIT.ko.md` 2~6판. 기본 경로가 A–F로 통과한 뒤에만.
 
 - [x] 봇 zip: `GET /downloads/grok-crew-bot.zip`, `npm run dist:bot-pack`. 설치 파일이 아니다.
-- [x] 창 **안 열리면**에 세 줄 + 봇 파일 링크. 필수 PDF 다운로드는 없다 (`docs/install-guide/열기.ko.md`).
+- [x] 창 **안 열리면**에 세 줄 + 봇 파일 링크. 필수 PDF 다운로드는 없다.
 - 모든 계정 exe·압축 실행 zip은 문서의 예비다. 기본 버튼이 아니다. 이 Linux 기계에서 그 exe를 만들지 않는다.
 
 ## 파일 지도
@@ -187,7 +187,7 @@ Linux 개발 기계에서는 최종 exe를 사용자에게 주지 못한다. 설
 | D | | `app/desktop-workspace.tsx` |
 | E | | `README.md`, `README.ko.md`, `README.zh.md`, `README.ja.md` |
 | F | | `package.json` `build.nsis` |
-| G | `scripts/pack-bot-bundle.*`, `docs/bot-pack/` | 릴리스 자산 |
+| G | `local_studio/bot_pack.py` | 릴리스 자산 |
 
 기존 `desktop-spec-desk.tsx`는 G/자세히용으로 남긴다. A에서 지우지 않는다.
 

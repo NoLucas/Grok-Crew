@@ -22,10 +22,9 @@ Use this before the first public GitHub release.
 
 ## Announcement
 
-Ready-to-post copy is in `docs/ANNOUNCEMENT.md`. This repository does not post it for you.
+This repository does not post social copy for you. Guest facts live in `README.md` and `docs/RELEASE_NOTES.v1.0.md`.
 
-- [x] Draft the problem, first win, local-first boundary, and one feedback ask (`docs/ANNOUNCEMENT.md`).
-- [ ] Publish that draft on the channel you actually use (social, Discord, HN, or a GitHub Release note).
+- [ ] Publish a short note on the channel you actually use (social, Discord, HN, or a GitHub Release note).
 
 ## Community follow-through
 
