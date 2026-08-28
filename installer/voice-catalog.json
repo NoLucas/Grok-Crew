@@ -3,7 +3,7 @@
   "default": "kokoro-82m",
   "workspaceFolder": "Grok Crew",
   "hfResolve": "https://huggingface.co/{repo}/resolve/main/{name}",
-  "userAgent": "GrokCrew-Desktop/1.0",
+  "userAgent": "GrokCrew-Desktop/1.0.9",
   "models": {
     "kokoro-82m": {
       "id": "kokoro-82m",
@@ -11,8 +11,8 @@
       "repo": "hexgrad/Kokoro-82M",
       "license": "Apache-2.0",
       "files": ["config.json"],
-      "weight_files": ["kokoro-v1.0.pth"],
-      "fallbacks": []
+      "weight_files": ["kokoro-v1_0.pth"],
+      "fallbacks": ["kokoro-v1.0.pth"]
     },
     "step-audio-editx": {
       "id": "step-audio-editx",

@@ -16,6 +16,7 @@ Var GrokCrewVoiceStep
 Var GrokCrewVoiceZonos
 Var GrokCrewVoiceModel
 Var GrokCrewVoiceCode
+Var GrokCrewVoiceError
 
 !macro customInit
   StrCpy $GrokCrewVoiceModel "kokoro-82m"
@@ -29,8 +30,10 @@ FunctionEnd
 
 Function grokCrewDownloadVoice
   Call grokCrewExtractVoiceTools
+  Delete "$PLUGINSDIR\voice-error.txt"
   DetailPrint "Keeping voice $GrokCrewVoiceModel on this PC (Videos\Grok Crew\voice-models)."
-  nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\download-voice.ps1" -ModelId "$GrokCrewVoiceModel" -Catalog "$PLUGINSDIR\voice-catalog.json"'
+  ; Custom page has no install log yet. ExecToLog can fail before PowerShell runs.
+  nsExec::Exec '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\download-voice.ps1" -ModelId "$GrokCrewVoiceModel" -Catalog "$PLUGINSDIR\voice-catalog.json"'
   Pop $GrokCrewVoiceCode
 FunctionEnd
 
@@ -60,7 +63,7 @@ Function grokCrewVoicePage
     StrCpy $GrokCrewVoiceModel "kokoro-82m"
   ${EndIf}
 
-  ${NSD_CreateLabel} 0 74u 100% 28u "이미 Videos\Grok Crew\voice-models 에 같은 모델이 있으면 다시 받지 않습니다. 받기 실패면 설치를 끝내지 않습니다. Same files already on disk are skipped. A failed download stops the install."
+  ${NSD_CreateLabel} 0 74u 100% 36u "다음을 누르면 그 모델만 받습니다. Kokoro는 약 330MB라 몇 분 걸릴 수 있습니다. 이미 Videos\Grok Crew\voice-models 에 같은 모델이 있으면 다시 받지 않습니다. 받기 실패면 설치를 끝내지 않습니다."
   Pop $0
 
   nsDialogs::Show
@@ -85,7 +88,13 @@ Function grokCrewVoicePageLeave
     ${If} $GrokCrewVoiceCode == 0
       Return
     ${EndIf}
-    MessageBox MB_ABORTRETRYIGNORE|MB_ICONEXCLAMATION "그 목소리를 이 PC에 두지 못했습니다. 다시 받기 / 다른 모델 / 설치 취소. Could not keep that voice. Retry, pick another (Ignore), or cancel (Abort)." IDABORT grokCrewVoiceStop IDRETRY grokCrewVoiceTry
+    StrCpy $GrokCrewVoiceError ""
+    IfFileExists "$PLUGINSDIR\voice-error.txt" 0 grokCrewVoiceNoErr
+      FileOpen $0 "$PLUGINSDIR\voice-error.txt" r
+      FileRead $0 $GrokCrewVoiceError
+      FileClose $0
+    grokCrewVoiceNoErr:
+    MessageBox MB_ABORTRETRYIGNORE|MB_ICONEXCLAMATION "그 목소리를 이 PC에 두지 못했습니다. $GrokCrewVoiceError 다시 받기 / 다른 모델 / 설치 취소. Could not keep that voice. Retry, pick another (Ignore), or cancel (Abort)." IDABORT grokCrewVoiceStop IDRETRY grokCrewVoiceTry
     Abort
   grokCrewVoiceStop:
     Quit

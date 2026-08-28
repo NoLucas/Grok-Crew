@@ -24,8 +24,8 @@ CATALOG: dict[str, dict[str, Any]] = {
         "repo": "hexgrad/Kokoro-82M",
         "license": "Apache-2.0",
         "files": ("config.json",),
-        "weight_files": ("kokoro-v1.0.pth",),
-        "fallbacks": (),
+        "weight_files": ("kokoro-v1_0.pth",),
+        "fallbacks": ("kokoro-v1.0.pth",),
     },
     "step-audio-editx": {
         "label": "Step Audio EditX",

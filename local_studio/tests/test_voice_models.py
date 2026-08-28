@@ -14,6 +14,12 @@ def fake_fetch(_url: str) -> bytes:
     return b"voice-weight"
 
 
+def test_kokoro_catalog_uses_huggingface_weight_name():
+    item = voice_models.CATALOG["kokoro-82m"]
+    assert item["weight_files"] == ("kokoro-v1_0.pth",)
+    assert "kokoro-v1.0.pth" in item["fallbacks"]
+
+
 def test_next_defaults_to_kokoro_and_keeps_one_model(studio, monkeypatch):
     reset_voice_models()
     monkeypatch.setenv("GROK_CREW_VOICE_WEIGHTS", "0")

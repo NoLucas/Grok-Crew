@@ -4,6 +4,15 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.9 - 2026-08-28
+
+Local 1.0.9. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.9` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.9) only. Guest notes: `docs/RELEASE_NOTES.v1.0.9.md`. Guest download stays the same Google Drive file. Already-installed 1.0.8 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- The installer now fetches Hugging Face's real Kokoro weight `kokoro-v1_0.pth`. 1.0.8 asked for `kokoro-v1.0.pth`, which is a 404, so Next showed "Could not keep that voice."
+- Voice download on the options page uses `nsExec::Exec`, because `ExecToLog` can fail before the install log exists.
+
 ## 1.0.8 - 2026-08-28
 
 Local 1.0.8. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.8` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.8) only. Guest notes: `docs/RELEASE_NOTES.v1.0.8.md`. Guest download stays the same Google Drive file. Already-installed 1.0.7 desks check Grok-crew-test for this tag.

@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.8** · with Grok Bot · 现在免费
+**v1.0.9** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,11 +50,17 @@
 
 ---
 
+## v1.0.9 改了什么
+
+- 安装程序又能收下 Kokoro-82M。现在下载 Hugging Face 上真实的权重文件。1.0.8 用了不存在的文件名，所以失败。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.9 发布说明](docs/RELEASE_NOTES.v1.0.9.md)。
+
 ## v1.0.8 改了什么
 
 - **隐藏和退出不一样。** **和昨天一样**一次复制三个座位的接上文字。**连接**也有组员看板。7214 和蓝屏保护说明更清楚。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.8 发布说明](docs/RELEASE_NOTES.v1.0.8.md)。
+1.0.8 列表见 [1.0.8 发布说明](docs/RELEASE_NOTES.v1.0.8.md)。
 
 ## v1.0.7 改了什么
 

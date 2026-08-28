@@ -25,10 +25,12 @@ describe('installer voice pick', () => {
     assert.match(nsh, /customPageAfterChangeDir/);
     assert.match(nsh, /Page custom grokCrewVoicePage grokCrewVoicePageLeave/);
     assert.match(nsh, /Opening the exe did not start a download/);
-    assert.match(nsh, /A failed download stops the install/);
+    assert.match(nsh, /A failed download stops the install|받기 실패면 설치를 끝내지 않습니다/);
     assert.match(nsh, /customInstall/);
     assert.match(nsh, /IfSilent/);
     assert.match(nsh, /ifndef BUILD_UNINSTALLER/);
+    assert.match(nsh, /nsExec::Exec /);
+    assert.doesNotMatch(nsh, /nsExec::ExecToLog/);
     assert.equal(catalog.default, DEFAULT_VOICE_MODEL_ID);
     assert.equal(catalog.workspaceFolder, 'Grok Crew');
     assert.deepEqual(Object.keys(catalog.models).sort(), [...VOICE_MODEL_IDS].sort());
@@ -37,7 +39,9 @@ describe('installer voice pick', () => {
     assert.match(ps1, /Skip when that model is already there|already on this PC/);
     assert.match(ps1, /chosen\.json/);
     assert.match(ps1, /active\.json/);
+    assert.match(ps1, /voice-error\.txt/);
     assert.equal(catalog.models['kokoro-82m'].repo, 'hexgrad/Kokoro-82M');
-    assert.deepEqual(catalog.models['kokoro-82m'].weight_files, ['kokoro-v1.0.pth']);
+    assert.deepEqual(catalog.models['kokoro-82m'].weight_files, ['kokoro-v1_0.pth']);
+    assert.deepEqual(catalog.models['kokoro-82m'].fallbacks, ['kokoro-v1.0.pth']);
   });
 });
