@@ -1,4 +1,4 @@
-import { isBotRole, roleLabel, seatName, skillText, type BotRole } from './bot-skills';
+import { BOT_ROLES, isBotRole, roleLabel, seatName, skillText, type BotRole } from './bot-skills';
 import { marketLabel, resolveCrewMarket } from './crew-market';
 import { connectedBot, type CrewBot, type CrewRoster } from './desktop-bot-connect';
 
@@ -555,4 +555,79 @@ export function remoteConnectPaste(
     '',
     skills,
   ].join('\n');
+}
+
+export const LAST_CONNECT_BUNDLE_KEY = 'grok-crew-last-connect-bundle';
+
+export type LastConnectBundle = {
+  market: string;
+  recipeId: string;
+  language: string;
+  copiedAt: string;
+};
+
+function asLastConnectBundle(value: unknown): LastConnectBundle | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  const market = String(record.market || '').trim();
+  const recipeId = String(record.recipeId || '').trim();
+  const language = String(record.language || '').trim() || 'ko';
+  const copiedAt = String(record.copiedAt || '').trim();
+  if (!market || !recipeId) return null;
+  return { market, recipeId, language, copiedAt };
+}
+
+export function readLastConnectBundle(): LastConnectBundle | null {
+  const raw = storage()?.getItem(LAST_CONNECT_BUNDLE_KEY);
+  if (!raw) return null;
+  try {
+    return asLastConnectBundle(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+export function writeLastConnectBundle(next: {
+  market?: string;
+  recipeId?: string;
+  language?: string;
+}): LastConnectBundle | null {
+  const current = readLastConnectBundle();
+  const saved = asLastConnectBundle({
+    market: next.market || current?.market,
+    recipeId: next.recipeId || current?.recipeId,
+    language: next.language || current?.language || 'ko',
+    copiedAt: new Date().toISOString(),
+  });
+  if (!saved) return null;
+  storage()?.setItem(LAST_CONNECT_BUNDLE_KEY, JSON.stringify(saved));
+  return saved;
+}
+
+export function seatConnectDivider(role: BotRole, language = 'ko'): string {
+  const who = seatName('grok', role, language);
+  return `===== ${who} =====`;
+}
+
+export function threeSeatConnectPaste(
+  pairCode: string,
+  language: string,
+  studioPort = DEFAULT_STUDIO_PORT,
+  market?: string,
+): string {
+  const code = String(pairCode || '').trim();
+  if (!code) return '';
+  const lang = language.slice(0, 2);
+  const footer = lang === 'en'
+    ? 'Paste only that seat’s block into that bot window. There is no token in this text.'
+    : lang === 'zh'
+      ? '每个位子只把那一块贴到那个机器人窗口。这段文字里没有令牌。'
+      : lang === 'ja'
+        ? '席ごとにその塊だけをそのボットの窓に貼ってください。この文にトークンはありません。'
+        : '자리마다 해당 덩어리만 그 창에 붙이세요. 이 글에 토큰은 없습니다.';
+  const blocks = BOT_ROLES.map((role) => [
+    seatConnectDivider(role, language),
+    remoteConnectPaste('grok', code, language, role, studioPort, market),
+  ].join('\n'));
+  return [...blocks, footer].join('\n\n');
 }

@@ -134,6 +134,10 @@ describe('built-in bot skills', () => {
     assert.match(skillText('planner'), /TTS 끔/);
     assert.match(skillText('editor'), /TTS 끔/);
     assert.match(destinationInviteLine('ko', 'jp'), /일본/);
+    const withSpec = withCrewInvite('제목: 카페 오픈', 'ko', {}, 'kr', 'spec-today');
+    assert.match(withSpec, /edit_spec_id/);
+    assert.match(withSpec, /spec-today/);
+    assert.doesNotMatch(withCrewInvite('제목: 카페 오픈', 'ko'), /edit_spec_id/);
   });
 
   it('keeps the public skill files in lockstep', () => {

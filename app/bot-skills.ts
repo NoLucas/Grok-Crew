@@ -1310,7 +1310,18 @@ export function destinationInviteLine(language = 'ko', market?: string): string 
   }, language);
 }
 
-export function withCrewInvite(invite: string, language = 'ko', voice: VoiceInvite = {}, market?: string): string {
+export function specHeartbeatLine(language = 'ko', specId?: string): string {
+  const id = String(specId || '').trim();
+  if (!id) return '';
+  return pick({
+    ko: `이 일의 규격 id는 ${id}입니다. heartbeat의 detail.edit_spec_id에 이 값을 넣으세요. 어제 일과 섞지 마세요.`,
+    en: `This job’s spec id is ${id}. Put that value in heartbeat detail.edit_spec_id. Do not mix it with yesterday’s job.`,
+    zh: `这件事的规格 id 是 ${id}。请写进 heartbeat 的 detail.edit_spec_id。不要和昨天的事混在一起。`,
+    ja: `この仕事の仕様 id は ${id} です。heartbeat の detail.edit_spec_id に入れてください。昨日の仕事と混ぜないでください。`,
+  }, language);
+}
+
+export function withCrewInvite(invite: string, language = 'ko', voice: VoiceInvite = {}, market?: string, specId?: string): string {
   const text = String(invite || '').trim();
   const dest = resolveCrewMarket(market, language);
   const lang = langOf(language);
@@ -1321,7 +1332,17 @@ export function withCrewInvite(invite: string, language = 'ko', voice: VoiceInvi
       : lang === 'en'
         ? `Keep using the skill you received at connect. Role core plus one extra: ${SKILL_INDEX}.`
         : `연결할 때 받은 스킬을 그대로 쓰세요. 역할 코어와 보조 스킬은 ${SKILL_INDEX}.`;
-  return [text, '', destinationInviteLine(language, dest), crewOrderBlock(language), voiceInviteBlock(language, voice), skillNote, '', skillText('planner', language, dest)].filter(Boolean).join('\n');
+  return [
+    text,
+    '',
+    specHeartbeatLine(language, specId),
+    destinationInviteLine(language, dest),
+    crewOrderBlock(language),
+    voiceInviteBlock(language, voice),
+    skillNote,
+    '',
+    skillText('planner', language, dest),
+  ].filter(Boolean).join('\n');
 }
 
 export { marketFromLanguage, resolveCrewMarket };

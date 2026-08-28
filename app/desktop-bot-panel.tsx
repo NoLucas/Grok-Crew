@@ -1,21 +1,28 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { connectPaste, connectedBot, type CrewRoster } from './desktop-bot-connect';
 import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
 import { marketLabel, resolveCrewMarket } from './crew-market';
-import { readAutoPrefs } from './desktop-auto-state';
+import { autoSeatRows, readAutoPrefs, recipeFallbackLabel, writeAutoPrefs, type BotActivityItem } from './desktop-auto-state';
+import { DesktopCrewBoard } from './desktop-crew-board';
+import type { CrewLoadState } from './desktop-crew-log';
+import { DesktopInstallHelp } from './desktop-install-help';
+import { readDeskWait } from './desktop-wait-state';
 import {
   type BotLinkState,
   confirmRemoteReplies,
   familyIsConnected,
   linkedBySeat,
   markRemoteCopied,
+  readLastConnectBundle,
   remoteConnectPaste,
   removeLinkedBot,
   seatIsConnected,
   studioPortFromApiBase,
+  threeSeatConnectPaste,
   writeBotLinks,
+  writeLastConnectBundle,
 } from './desktop-bot-links';
 import { useLanguage } from './language';
 
@@ -50,6 +57,7 @@ type BotPanelProps = {
   onLinksChange: (next: BotLinkState) => void;
   onRefresh: () => Promise<void>;
   onOpenOwnFile?: () => void;
+  request?: (path: string, init?: RequestInit) => Promise<Record<string, unknown>>;
 };
 
 const OTHER_FAMILIES: Array<{ id: 'grok' | 'custom'; ko: string; en: string; zh: string; ja: string }> = [
@@ -86,6 +94,7 @@ export function DesktopBotPanel({
   onLinksChange,
   onRefresh,
   onOpenOwnFile,
+  request,
 }: BotPanelProps) {
   const { language, t } = useLanguage();
   const [openSeat, setOpenSeat] = useState<OtherSeat>({ kind: 'grok', role: 'planner' });
@@ -95,20 +104,68 @@ export function DesktopBotPanel({
   const [error, setError] = useState('');
   const [replyText, setReplyText] = useState('');
   const [replyError, setReplyError] = useState('');
+  const [activity, setActivity] = useState<BotActivityItem[]>([]);
+  const [activityState, setActivityState] = useState<CrewLoadState>('loading');
+  const [lastBundle, setLastBundle] = useState(() => readLastConnectBundle());
+  const [bundleText, setBundleText] = useState('');
   const local = connectedBot(roster);
   const liveLink = links.bots.find((item) => item.status === 'connected');
   const connected = Boolean(local) || Boolean(liveLink);
   const studioPort = studioPortFromApiBase(
     typeof window !== 'undefined' ? window.grokCrew?.apiBase : undefined,
   );
-  const market = resolveCrewMarket(readAutoPrefs().market, language);
+  const prefs = readAutoPrefs();
+  const market = resolveCrewMarket(prefs.market, language);
   const destName = marketLabel(market, language);
+  const recipeId = lastBundle?.recipeId || prefs.recipeId || 'instagram_reel';
+  const recipeName = recipeFallbackLabel(recipeId, language);
+  const lastMarketName = marketLabel(resolveCrewMarket(lastBundle?.market || market, language), language);
+  const wait = readDeskWait();
+  const seatRows = autoSeatRows({ roster, links, language });
 
   const connectText = useMemo(
     () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role, studioPort, market),
     [language, links.pairCode, market, openSeat.kind, openSeat.role, studioPort],
   );
   const localText = useMemo(() => connectPaste(language, studioPort), [language, studioPort]);
+  const yesterdayText = useMemo(
+    () => threeSeatConnectPaste(links.pairCode, language, studioPort, lastBundle?.market || market),
+    [language, lastBundle?.market, links.pairCode, market, studioPort],
+  );
+
+  useEffect(() => {
+    if (!request) {
+      setActivityState('ready');
+      return undefined;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await request('/api/bot-activity') as { activity?: BotActivityItem[] };
+        if (cancelled) return;
+        setActivity(Array.isArray(data.activity) ? data.activity : []);
+        setActivityState('ready');
+      } catch {
+        if (cancelled) return;
+        setActivityState('error');
+      }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 8000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [request]);
+
+  const rememberBundle = (nextMarket = market, nextRecipe = recipeId) => {
+    const saved = writeLastConnectBundle({
+      market: nextMarket,
+      recipeId: nextRecipe,
+      language,
+    });
+    if (saved) setLastBundle(saved);
+  };
 
   const markCopied = (seat: OtherSeat) => {
     const next = markRemoteCopied(links, { kind: seat.kind, role: seat.role, language });
@@ -135,6 +192,35 @@ export function DesktopBotPanel({
       setBlockedKind(`${seat.kind}-${seat.role}`);
     }
     markCopied(seat);
+    if (seat.kind === 'grok') rememberBundle();
+    await onRefresh();
+  };
+
+  const copyYesterday = async () => {
+    setError('');
+    setBlockedKind('');
+    if (!links.pairCode) {
+      setError(t('연결 코드가 아직 없습니다. 잠시 후 다시 눌러 주세요.', 'The connect code is not ready yet. Try again in a moment.', '连接代码还没好。请稍后再按。', '接続コードがまだありません。少ししてから押してください。'));
+      return;
+    }
+    const dest = resolveCrewMarket(lastBundle?.market || market, language);
+    const text = threeSeatConnectPaste(links.pairCode, language, studioPort, dest);
+    writeAutoPrefs({
+      market: dest,
+      marketTouched: true,
+      recipeId,
+    });
+    rememberBundle(dest, recipeId);
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+      await navigator.clipboard.writeText(text);
+      setCopied('yesterday');
+      setBundleText('');
+      window.setTimeout(() => setCopied(''), 4000);
+    } catch {
+      setBlockedKind('yesterday');
+      setBundleText(text);
+    }
     await onRefresh();
   };
 
@@ -189,6 +275,39 @@ export function DesktopBotPanel({
         <Lamp on={connected} label={lampText(connected, t)} />
       </section>
 
+      {studioPort === 7214 ? (
+        <p className="desktop-spec-meta">{t('이 창의 체크인 주소는 127.0.0.1:7214입니다.', 'This window check-in address is 127.0.0.1:7214.', '这个窗口的签到地址是 127.0.0.1:7214。', 'この窓のチェックイン住所は 127.0.0.1:7214 です。')}</p>
+      ) : (
+        <p className="desktop-port-banner" role="status">
+          {t(`이 창은 7214가 아니라 127.0.0.1:${studioPort}를 엽니다. 연결 글은 그 주소를 씁니다.`, `This window opened 127.0.0.1:${studioPort}, not 7214. The connect text uses that address.`, `这个窗口开的是 127.0.0.1:${studioPort}，不是 7214。连接文字用这个地址。`, `この窓は 7214 ではなく 127.0.0.1:${studioPort} を開いています。接続文はその住所を使います。`)}
+        </p>
+      )}
+
+      <section className="desktop-recopy-card">
+        <div>
+          <b>{t('어제랑 같게', 'Same as yesterday', '和昨天一样', '昨日と同じ')}</b>
+          <p>{t(
+            `${lastMarketName} · ${recipeName} · Grok 자리 세 개. 자리 이름대로 나눠 붙이세요. 토큰은 없습니다.`,
+            `${lastMarketName} · ${recipeName} · the three Grok seats. Paste each block into that window. There is no token.`,
+            `${lastMarketName} · ${recipeName} · 三个 Grok 位子。按位子名分开贴。没有令牌。`,
+            `${lastMarketName} · ${recipeName} · Grok の三席。席の名前どおり分けて貼る。トークンはありません。`,
+          )}</p>
+        </div>
+        <button
+          type="button"
+          className="desktop-primary desktop-recopy-btn"
+          disabled={!studioReady || !links.pairCode}
+          onClick={() => { void copyYesterday(); }}
+        >
+          {copied === 'yesterday'
+            ? t('복사했습니다. 나눠 붙이세요.', 'Copied. Split it into the three windows.', '已复制。请分开贴。', 'コピーしました。分けて貼ってください。')
+            : t('세 자리 다시 복사', 'Copy the three seats again', '再复制三个位子', '三席をもう一度コピー')}
+        </button>
+        {blockedKind === 'yesterday' ? (
+          <textarea className="desktop-bot-paste" value={bundleText || yesterdayText} readOnly rows={10} onFocus={(event) => event.currentTarget.select()} />
+        ) : null}
+      </section>
+
       <section className="desktop-auto-composer-card">
         <h2>{t('봇 붙이기', 'Attach a bot', '接上机器人', 'ボットを付ける')}</h2>
         <p>{t('쓸 봇만 고르면 됩니다. Agent는 옆 칩에서 엽니다.', 'Pick the bot you will use. Agent is on the other chip.', '只选要用的机器人。Agent 在旁边的芯片里。', '使うボットだけ選ぶ。Agent は横のチップで開く。')}</p>
@@ -211,11 +330,6 @@ export function DesktopBotPanel({
         <p className="desktop-spec-meta">
           {t(`이 글은 ${destName}용입니다. 보낼 나라는 자동에서 바꿉니다. 바꿨으면 다시 복사하세요.`, `This text is for ${destName}. Change the destination country in Auto. Copy again after a change.`, `这段文字是给 ${destName} 的。要发往的国家在自动里改。改了请再复制。`, `この文は ${destName} 用です。送る国は自動で変えます。変えたらコピーし直してください。`)}
         </p>
-        <p className="desktop-spec-meta">{
-          studioPort === 7214
-            ? t('이 창의 체크인 주소는 127.0.0.1:7214입니다.', 'This window check-in address is 127.0.0.1:7214.', '这个窗口的签到地址是 127.0.0.1:7214。', 'この窓のチェックイン住所は 127.0.0.1:7214 です。')
-            : t(`이 창은 7214가 아니라 127.0.0.1:${studioPort}를 엽니다. 연결 글은 그 주소를 씁니다.`, `This window opened 127.0.0.1:${studioPort}, not 7214. The connect text uses that address.`, `这个窗口开的是 127.0.0.1:${studioPort}，不是 7214。连接文字用这个地址。`, `この窓は 7214 ではなく 127.0.0.1:${studioPort} を開いています。接続文はその住所を使います。`)
-        }</p>
         {OTHER_FAMILIES.filter((family) => family.id === familyId).map((family) => (
           <div key={family.id} className="desktop-bot-family">
             <h3>{t(family.ko, family.en, family.zh, family.ja)}</h3>
@@ -376,6 +490,24 @@ export function DesktopBotPanel({
           </ul>
         </details>
       ) : null}
+
+      <DesktopCrewBoard
+        rows={seatRows}
+        activity={activity}
+        loadState={activityState}
+        specId={wait?.specId}
+        jobTitle={wait?.title}
+        onRetry={request ? () => {
+          setActivityState('loading');
+          void request('/api/bot-activity').then((data) => {
+            const payload = data as { activity?: BotActivityItem[] };
+            setActivity(Array.isArray(payload.activity) ? payload.activity : []);
+            setActivityState('ready');
+          }).catch(() => setActivityState('error'));
+        } : undefined}
+      />
+
+      <DesktopInstallHelp variant={connected ? 'fold' : 'open'} />
 
       {allowOwnFile && onOpenOwnFile ? (
         <details className="desktop-auto-help">

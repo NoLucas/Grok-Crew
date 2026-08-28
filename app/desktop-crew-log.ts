@@ -21,6 +21,8 @@ export type CrewPipelineSeat = {
   actionLabel: string;
   note: string;
   when: string;
+  nextOfflineNote: string;
+  staleMinutes: number | null;
 };
 
 export type CrewTalkEntry = {
@@ -67,6 +69,96 @@ export function activityHandoffNote(detail: unknown): string {
   if (obj.truncated) return '';
   const note = String(obj.note ?? '').replace(/\s+/g, ' ').trim();
   return note.slice(0, 400);
+}
+
+/** Prefer the field the desk already uses. Do not invent a second id name. */
+export function activitySpecId(detail: unknown): string {
+  const obj = parseActivityDetail(detail);
+  return String(obj.edit_spec_id ?? '').trim();
+}
+
+export function latestActivitySpecId(activity: BotActivityItem[] | undefined): string {
+  for (const item of activity ?? []) {
+    const id = activitySpecId(item.detail_json);
+    if (id) return id;
+  }
+  return '';
+}
+
+/** One job only. Presence ticks stay. Work lines without this id do not mix in. */
+export function activityForSpec(
+  activity: BotActivityItem[] | undefined,
+  specId?: string,
+): BotActivityItem[] {
+  const items = activity ?? [];
+  const want = String(specId || '').trim() || latestActivitySpecId(items);
+  if (!want) {
+    return items.filter((item) => {
+      const kind = heartbeatActionKind(item.action);
+      return kind === 'idle' || !activitySpecId(item.detail_json);
+    });
+  }
+  return items.filter((item) => {
+    const kind = heartbeatActionKind(item.action);
+    if (kind === 'idle') return true;
+    return activitySpecId(item.detail_json) === want;
+  });
+}
+
+export function presenceStaleMinutes(seconds: number | null | undefined): number | null {
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 60) return null;
+  return Math.max(1, Math.floor(seconds / 60));
+}
+
+export function presenceStaleCopy(minutes: number, language = 'ko'): string {
+  const n = Math.max(1, Math.floor(minutes));
+  return boardCopy(
+    language,
+    `자리 확인이 ${n}분 끊김`,
+    `Seat check stopped ${n} min ago`,
+    `位子确认已停 ${n} 分钟`,
+    `席の確認が ${n} 分途切れている`,
+  );
+}
+
+export function nextSeatOfflineNote(
+  rows: AutoSeatRow[],
+  role: BotRole | '',
+  language = 'ko',
+): string {
+  const next = nextHandoffRole(role);
+  if (next !== 'planner' && next !== 'scraper' && next !== 'editor') return '';
+  const seat = rows.find((row) => row.role === next);
+  if (seat?.connected) return '';
+  return boardCopy(
+    language,
+    '다음 자리 · 연결되지않음',
+    'Next seat · not connected',
+    '下一位子 · 未连接',
+    '次の席 · 接続されていない',
+  );
+}
+
+export function crewTalkMemo(
+  thread: CrewTalkEntry[],
+  language = 'ko',
+  jobTitle = '',
+): string {
+  const lines: string[] = [];
+  const heading = String(jobTitle || '').trim();
+  if (heading) lines.push(heading, '');
+  for (const entry of thread) {
+    const when = entry.when ? ` · ${entry.when}` : '';
+    if (entry.kind === 'presence') {
+      lines.push(`${crewTalkLine(entry, language)}${when}`);
+      continue;
+    }
+    lines.push(`${crewTalkLine(entry, language)}${when}`);
+    if (entry.actionLabel) lines.push(entry.actionLabel);
+    if (entry.note) lines.push(entry.note);
+    lines.push('');
+  }
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 export function roleFromBotId(botId: string): BotRole | '' {
@@ -127,7 +219,8 @@ export function crewPipeline(
   const latest = latestWorkByRole(activity);
   return rows.map((row) => {
     const item = latest[row.role];
-    const note = item ? activityHandoffNote(item.detail_json) : '';
+    const nextOfflineNote = nextSeatOfflineNote(rows, row.role, language);
+    const note = nextOfflineNote ? '' : (item ? activityHandoffNote(item.detail_json) : '');
     const when = item ? activityWhen(item, language) : '';
     const kind = heartbeatActionKind(row.lastAction);
     const actionLabel = kind === 'unknown'
@@ -143,6 +236,8 @@ export function crewPipeline(
       actionLabel,
       note,
       when,
+      nextOfflineNote,
+      staleMinutes: row.connected ? presenceStaleMinutes(row.secondsSinceCheckin) : null,
     };
   });
 }

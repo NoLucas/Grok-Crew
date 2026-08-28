@@ -1380,6 +1380,7 @@ export default function DesktopWorkspace() {
           <button
             type="button"
             className="desktop-chrome-btn desktop-quit"
+            title={t('작업 관리자에 남는 것은 종료로만 끊깁니다.', 'Only Quit stops what stays in Task Manager.', '任务管理器里剩下的只能用退出断开。', 'タスク マネージャーに残るものは終了だけで切れます。')}
             onClick={() => {
               if (window.grokCrew?.quit) {
                 void window.grokCrew.quit();
@@ -1395,12 +1396,21 @@ export default function DesktopWorkspace() {
       {quitAsk ? (
         <div className="desktop-quit-ask" role="alertdialog" aria-modal="true" aria-labelledby="desktop-quit-title">
           <div className="desktop-quit-ask-card">
-            <b id="desktop-quit-title">{t('지금 종료하면 Grok Bot과 Agent 연결이 끊어집니다.', 'Quitting now disconnects Grok Bot and Agent.', '现在退出会断开 Grok Bot 和 Agent。', '今終了すると Grok Bot と Agent の接続が切れます。')}</b>
-            <p>{t('다시 쓰려면 연결 글을 봇 창에 다시 붙이세요. 창을 닫아 숨기기만 하면 연결은 그대로입니다.', 'Paste the connect text again to use them. Hiding the window keeps the links.', '要再用，请把连接文字重新贴到机器人窗口。只关窗口隐藏时，连接还在。', 'もう一度使うには接続文をボットの窓に貼ってください。窓を閉じて隠すだけなら接続はそのままです。')}</p>
+            <b id="desktop-quit-title">{t('숨기기와 종료는 다릅니다', 'Hide and Quit are different', '隐藏和退出不一样', '隠すと終了は違います')}</b>
+            <div className="desktop-quit-paths">
+              <div className="desktop-quit-path is-hide">
+                <b>{t('창 닫기 · 숨기기', 'Close the window · Hide', '关窗口 · 隐藏', '窓を閉じる · 隠す')}</b>
+                <p>{t('X 또는 트레이 숨기기. 연결은 남습니다. grok-crew-studio.exe는 작업 관리자에 남을 수 있습니다.', 'X or Hide in the tray. Links stay. grok-crew-studio.exe may stay in Task Manager.', 'X 或托盘里的隐藏。连接还在。grok-crew-studio.exe 可能留在任务管理器。', 'X またはトレイの隠す。接続は残ります。grok-crew-studio.exe はタスク マネージャーに残ることがあります。')}</p>
+              </div>
+              <div className="desktop-quit-path is-quit">
+                <b>{t('종료', 'Quit', '退出', '終了')}</b>
+                <p>{t('지금 종료하면 Grok Bot과 Agent 연결이 끊어집니다. 작업 관리자에 남는 것도 여기서만 끊깁니다. 다시 쓰려면 연결 글을 다시 붙이세요.', 'Quitting now disconnects Grok Bot and Agent. Only this stops what stays in Task Manager. Paste the connect text again to use them.', '现在退出会断开 Grok Bot 和 Agent。任务管理器里剩下的也只有这里能断开。要再用请再贴连接文字。', '今終了すると Grok Bot と Agent の接続が切れます。タスク マネージャーに残るものもここでだけ切れます。もう一度使うには接続文を貼り直してください。')}</p>
+              </div>
+            </div>
             <div className="desktop-quit-ask-actions">
               <button
                 type="button"
-                className="desktop-primary"
+                className="desktop-primary desktop-quit-confirm"
                 onClick={() => {
                   forgetBotLinksOnQuit(botLinks);
                   setBotLinks(ensureBotLinks());
@@ -1629,6 +1639,7 @@ export default function DesktopWorkspace() {
                   }}
                   onRefresh={() => refreshWorkspace(true)}
                   onOpenOwnFile={() => void openOwnFileFromDesk()}
+                  request={api}
                 />
               ) : null}
               {!showBotRoom ? (

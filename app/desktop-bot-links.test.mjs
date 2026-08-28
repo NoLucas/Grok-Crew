@@ -14,6 +14,10 @@ const {
   makePairCode,
   markRemoteCopied,
   studioPortFromApiBase,
+  threeSeatConnectPaste,
+  writeLastConnectBundle,
+  readLastConnectBundle,
+  LAST_CONNECT_BUNDLE_KEY,
   parseConnectReply,
   readBotLinks,
   remoteConnectPaste,
@@ -327,5 +331,20 @@ describe('remote bot links', () => {
     const next = readBotLinks();
     assert.equal(next.pairCode, '7K2M9Q');
     assert.deepEqual(next.bots.map((item) => item.id), ['ok']);
+  });
+
+  it('builds one clipboard with three Grok seats and no token', () => {
+    const text = threeSeatConnectPaste('7K2M9Q', 'ko', 7214, 'kr');
+    assert.match(text, /===== Grok Bot 기획자 =====/);
+    assert.match(text, /===== Grok Bot 스크래핑 =====/);
+    assert.match(text, /===== Grok Bot 편집자 =====/);
+    assert.match(text, /자리마다 해당 덩어리만/);
+    assert.match(text, /127\.0\.0\.1:7214/);
+    assert.doesNotMatch(text, /LOCAL_STUDIO_TOKEN|Bearer |token=/i);
+    const saved = writeLastConnectBundle({ market: 'kr', recipeId: 'instagram_reel', language: 'ko' });
+    assert.equal(saved?.market, 'kr');
+    assert.equal(readLastConnectBundle()?.recipeId, 'instagram_reel');
+    assert.ok(memory.get(LAST_CONNECT_BUNDLE_KEY));
+    assert.doesNotMatch(String(memory.get(LAST_CONNECT_BUNDLE_KEY)), /Invoke-RestMethod|LOCAL_STUDIO/);
   });
 });

@@ -37,7 +37,8 @@ async function run() {
   const quitDialog = { showMessageBox: async () => ({ response: 0 }) };
   assert.equal(await confirmQuit(stayDialog), false);
   assert.equal(await confirmQuit(quitDialog), true);
-  assert.match(QUIT_WARNING.message, /Grok Bot과 Agent 연결이 끊어집니다/);
+  assert.match(QUIT_WARNING.message, /숨기기와 종료는 다릅니다/);
+  assert.match(QUIT_WARNING.detail, /작업 관리자에 남는 것은 종료로만 끊깁니다/);
   assert.equal(QUIT_WARNING.quit, '종료');
 
   let quitCallsFromGuard = 0;

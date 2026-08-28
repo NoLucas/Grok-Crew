@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { CrewRoster } from './desktop-bot-connect';
-import { hasConnectedBot, type BotLinkState } from './desktop-bot-links';
+import { hasConnectedBot, writeLastConnectBundle, type BotLinkState } from './desktop-bot-links';
 import {
   DEFAULT_RECIPE_ID,
   PASTE_TARGET,
@@ -387,7 +387,7 @@ export function AutoDesk({
         voiceGender,
         voiceFeel,
         voiceAccent,
-      }, market);
+      }, market, record.id);
       if (!text.trim()) throw new Error(t('초대문을 만들지 못했습니다.', 'Could not make the invite.', '无法生成邀请。', '招待文を作れませんでした。'));
       setInviteText(text);
       setStayOnCompose(false);
@@ -411,6 +411,7 @@ export function AutoDesk({
       }));
       if (wantTts) setVoiceSaved(true);
       setMarketNeedsRecopy(false);
+      writeLastConnectBundle({ market, recipeId, language });
       setPrefs(rememberRecentTitle(heading));
       const nextWait: DeskWaitState = {
         specId: record.id,
@@ -434,6 +435,23 @@ export function AutoDesk({
       setError(caught instanceof Error ? caught.message : t('복사하지 못했습니다.', 'Could not copy.', '无法复制。', 'コピーできませんでした。'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const recopyInvite = async () => {
+    const text = inviteText.trim();
+    if (!text) {
+      setClipboardBlocked(true);
+      return;
+    }
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setClipboardBlocked(false);
+      window.setTimeout(() => setCopied(false), 4000);
+    } catch {
+      setClipboardBlocked(true);
     }
   };
 
@@ -1081,6 +1099,14 @@ export function AutoDesk({
           <header className="desktop-auto-lead">
             <h1>{t('봇 창에 붙이세요', 'Paste it in the bot window', '请贴到机器人窗口', 'ボットの窓に貼ってください')}</h1>
             <p>{t(`복사했습니다. ${pasteTarget} 창에 붙이면, 끝난 컷이 이 탭에 옵니다.`, `Copied. Paste it in the ${pasteTarget} window. The finished cut lands in this tab.`, `已复制。贴到 ${pasteTarget} 窗口后，完成片会出现在这个标签。`, `コピーしました。${pasteTarget} の窓に貼ると、終わったカットがこのタブに来ます。`)}</p>
+            <div className="desktop-wait-recopy">
+              <button type="button" className="desktop-primary desktop-recopy-btn" disabled={!inviteText.trim()} onClick={() => { void recopyInvite(); }}>
+                {copied
+                  ? t('복사했습니다. 봇 창에 붙이세요.', 'Copied. Paste it in the bot window.', '已复制。请贴到机器人窗口。', 'コピーしました。ボットの窓に貼ってください。')
+                  : t('다시 복사', 'Copy again', '再复制', 'もう一度コピー')}
+              </button>
+              <p>{t('사람이 봇 창에 붙이는 손은 그대로입니다.', 'You still paste it into the bot window yourself.', '还是要由人贴到机器人窗口。', '人がボットの窓に貼る手はそのままです。')}</p>
+            </div>
           </header>
           <section className="desktop-auto-card">
             <b>{t('아까 적은 말', 'What you asked', '刚才写的话', 'さっき書いた言葉')}</b>
@@ -1117,6 +1143,8 @@ export function AutoDesk({
             rows={seatRows}
             activity={activity}
             loadState={activityState}
+            specId={wait?.specId}
+            jobTitle={wait?.title}
             onRetry={() => {
               setActivityState('loading');
               void request('/api/bot-activity').then((data) => {
@@ -1211,6 +1239,8 @@ export function AutoDesk({
             rows={seatRows}
             activity={activity}
             loadState={activityState}
+            specId={wait?.specId}
+            jobTitle={wait?.title}
             onRetry={() => {
               setActivityState('loading');
               void request('/api/bot-activity').then((data) => {

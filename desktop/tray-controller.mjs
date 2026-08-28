@@ -47,8 +47,8 @@ export function createDesktopTray({ show, hide, quit }) {
 
 export const QUIT_WARNING = {
   title: 'Grok Crew',
-  message: '지금 종료하면 Grok Bot과 Agent 연결이 끊어집니다.',
-  detail: '다시 쓰려면 연결 글을 봇 창에 다시 붙이세요. 창을 닫아 숨기기만 하면 연결은 그대로입니다.',
+  message: '숨기기와 종료는 다릅니다. 지금 종료하면 연결이 끊어집니다.',
+  detail: '창을 닫거나 숨기면 트레이에 남고 연결은 유지됩니다. grok-crew-studio.exe가 작업 관리자에 남는 것은 종료로만 끊깁니다. 다시 쓰려면 연결 글을 봇 창에 다시 붙이세요.',
   quit: '종료',
   stay: '돌아가기',
 };
