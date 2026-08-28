@@ -418,9 +418,23 @@ function pickCurrentSeat(rows: Array<Omit<AutoSeatRow, 'current' | 'mark' | 'det
   if (started) return started.key;
   const ready = rows.find((row) => row.connected && heartbeatActionKind(row.lastAction) === 'ready');
   if (ready) return ready.key;
-  const known = rows.find((row) => row.connected && row.lastAction);
-  if (known) return known.key;
-  return rows.find((row) => row.connected)?.key || '';
+  return '';
+}
+
+/** Newest started/ready heartbeat for that Grok seat. Seat-check ticks do not count. */
+export function latestWorkActionForSeat(
+  activity: BotActivityItem[] | undefined,
+  kind: 'grok' | 'custom',
+  role: BotRole,
+): string {
+  if (kind !== 'grok') return '';
+  const want = GROK_SEAT_BOT_IDS[role];
+  for (const item of activity ?? []) {
+    if (String(item.bot_id || '').trim().toLowerCase() !== want) continue;
+    const kindOf = heartbeatActionKind(item.action);
+    if (kindOf === 'started' || kindOf === 'ready') return String(item.action || '').trim();
+  }
+  return '';
 }
 
 export function autoSeatRows(input: {
@@ -428,6 +442,7 @@ export function autoSeatRows(input: {
   links?: BotLinkState | null;
   language?: string;
   lastCheckedLabel?: string;
+  activity?: BotActivityItem[];
 }): AutoSeatRow[] {
   const language = input.language || 'ko';
   const lastChecked = String(input.lastCheckedLabel || '').trim();
@@ -442,7 +457,9 @@ export function autoSeatRows(input: {
       if (!shouldShowSeat(kind, role, input.roster, input.links)) continue;
       const connected = seatIsConnected(kind, role, input.links, input.roster);
       const rosterBot = kind === 'grok' ? rosterSeat(input.roster, role) : undefined;
-      const lastAction = String(rosterBot?.last_action || '').trim();
+      const rosterAction = String(rosterBot?.last_action || '').trim();
+      const workAction = latestWorkActionForSeat(input.activity, kind, role);
+      const lastAction = workAction || rosterAction;
       const seconds = typeof rosterBot?.seconds_since_checkin === 'number' && Number.isFinite(rosterBot.seconds_since_checkin)
         ? Math.max(0, Math.floor(rosterBot.seconds_since_checkin))
         : null;
@@ -463,21 +480,14 @@ export function autoSeatRows(input: {
     if (!row.connected) {
       return { ...row, current: false, mark: 'off', detail: offline };
     }
+    const kind = heartbeatActionKind(row.lastAction);
     if (current) {
-      const kind = heartbeatActionKind(row.lastAction);
       const since = row.secondsSinceCheckin === null ? '' : formatSince(row.secondsSinceCheckin, language);
-      if (kind === 'unknown') {
-        return { ...row, current, mark: 'current', detail: since ? `${unknownDetail}` : unknownDetail };
-      }
       const label = heartbeatActionLabel(row.lastAction, language);
       return { ...row, current, mark: 'current', detail: since ? `${label} · ${since}` : label };
     }
-    if (currentKey) {
-      return { ...row, current: false, mark: 'idle', detail: waiting };
-    }
-    const kind = heartbeatActionKind(row.lastAction);
     if (kind === 'unknown') return { ...row, current: false, mark: 'idle', detail: unknownDetail };
-    return { ...row, current: false, mark: 'idle', detail: heartbeatActionLabel(row.lastAction, language) };
+    return { ...row, current: false, mark: 'idle', detail: waiting };
   });
 }
 
@@ -489,7 +499,7 @@ export function autoWaitHeadline(rows: AutoSeatRow[], language = 'ko'): {
   const current = rows.find((row) => row.current && row.connected);
   if (!current) {
     return {
-      title: autoCopy(language, '봇이 작업 중 · 창을 끄지 마세요', 'The bot is working · do not close this window', '机器人正在工作 · 不要关掉这个窗口', 'ボットが作業中 · この窓を閉じないでください'),
+      title: autoCopy(language, '할 일을 남긴 자리가 아직 없습니다 · 창을 끄지 마세요', 'No seat has left a job yet · do not close this window', '还没有位子留下要做的事 · 不要关掉这个窗口', '仕事を残した席はまだありません · この窓を閉じないでください'),
       showUnknownRead: true,
     };
   }
@@ -572,6 +582,7 @@ export function recentActivityLines(
   for (const item of activity ?? []) {
     const name = activitySeatName(String(item.bot_id || ''), language);
     if (!name) continue;
+    if (heartbeatActionKind(item.action) === 'idle') continue;
     const created = String(item.created_at || '').trim();
     const at = created ? new Date(created).getTime() : Number.NaN;
     const when = Number.isNaN(at) ? '' : formatSince(Math.max(0, Math.floor((Date.now() - at) / 1000)), language);
@@ -631,8 +642,14 @@ export function autoDeskStage(input: {
   pull?: DeskPullStatus;
   hasProject?: boolean;
   stayOnCompose?: boolean;
+  watchSpecId?: string;
 }): AutoDeskStage {
   if (input.stayOnCompose) return 'compose';
+  const waitId = String(input.wait?.specId || '').trim();
+  const watching = String(input.watchSpecId || '').trim();
+  if (watching && waitId === watching && input.pull !== 'arrived') {
+    return 'waiting';
+  }
   if (input.hasProject || input.pull === 'arrived') return 'arrived';
   if (input.wait) return 'waiting';
   return 'compose';
@@ -784,11 +801,26 @@ export function droppedFilePath(file: File): string {
 }
 
 /*
-Contract request
-- consumer: app/desktop-auto-desk
-- missing operation: a checked-in auto_local bot (planner / scraper / editor) reads the waiting invite itself after the operator connects once
-- input validation: same PC, token, matching seat, waiting_for_bot only
-- expected success: invite text or an already-read mark; next seat can start without a second paste
-- stale/locked: a spec another bot already took must not be reused
-Do not draw “the bot is reading it” until this contract exists.
+Contract request · D판 · 같은 PC 봇이 초대문을 읽기
+- consumer: app/desktop-auto-desk, app/desktop-crew-board
+- missing operation:
+  GET (or POST) a waiting invite for one checked-in auto_local seat
+  seats: planner | scraper | editor
+  after the operator has connected once, that seat pulls the next invite itself
+- input validation:
+  same PC loopback only
+  token required
+  bot_id matches the seat
+  spec status waiting_for_bot
+  door matches the seat (planner/collector/editor — do not invent a fourth door)
+- expected success:
+  invite text + edit_spec_id
+  or already-read mark for that bot_id + spec
+  next seat can start without a second human paste
+- expected error:
+  404 none waiting · 409 another bot already took it · 403 not this seat
+- stale/locked:
+  a spec another bot already took must not be reused
+  a leftover yesterday spec must not be returned when a newer wait exists
+Do not draw “the bot is reading it” or skip “paste it in the bot window” until this contract exists.
 */

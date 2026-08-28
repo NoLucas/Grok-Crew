@@ -8,7 +8,7 @@ import { autoSeatRows, readAutoPrefs, recipeFallbackLabel, writeAutoPrefs, type 
 import { DesktopCrewBoard } from './desktop-crew-board';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { readDeskWait, type DeskWaitState } from './desktop-wait-state';
-import { crewBoardScope, type CrewLoadState } from './desktop-crew-log';
+import { activityForSpec, crewBoardScope, type CrewLoadState } from './desktop-crew-log';
 import {
   type BotLinkState,
   confirmRemoteReplies,
@@ -129,8 +129,13 @@ export function DesktopBotPanel({
   const recipeName = recipeFallbackLabel(recipeId, language);
   const lastMarketName = marketLabel(resolveCrewMarket(lastBundle?.market || market, language), language);
   const liveWait = wait !== undefined ? wait : readDeskWait();
-  const seatRows = autoSeatRows({ roster, links, language });
   const boardScope = crewBoardScope(liveWait, activity);
+  const seatRows = autoSeatRows({
+    roster,
+    links,
+    language,
+    activity: activityForSpec(activity, boardScope.specId),
+  });
 
   const connectText = useMemo(
     () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role, studioPort, market),

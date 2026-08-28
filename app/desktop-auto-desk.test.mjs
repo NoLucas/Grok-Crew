@@ -248,6 +248,27 @@ describe('auto desk stages', () => {
       stayOnCompose: true,
     }), 'compose');
   });
+
+  it('returns to waiting when 다시 말하기 copied a new spec over an old cut', () => {
+    const wait = { specId: 'spec-2', title: '다시 말하기', copiedAt: '2026-08-27T04:00:00.000Z', pasteTarget: 'Grok' };
+    assert.equal(autoDeskStage({
+      wait,
+      pull: 'none',
+      hasProject: true,
+      watchSpecId: 'spec-2',
+    }), 'waiting');
+    assert.equal(autoDeskStage({
+      wait,
+      pull: 'arrived',
+      hasProject: true,
+      watchSpecId: 'spec-2',
+    }), 'arrived');
+    assert.equal(autoDeskStage({
+      wait,
+      pull: 'none',
+      hasProject: true,
+    }), 'arrived');
+  });
 });
 
 describe('auto desk lamps', () => {
@@ -452,11 +473,38 @@ describe('auto desk who and what', () => {
     });
     assert.equal(rows.length, 1);
     assert.equal(rows[0].name, 'Grok Bot 기획자');
-    assert.equal(rows[0].mark, 'current');
-    assert.match(rows[0].detail, /할 일은 아직 안 적음/);
+    assert.equal(rows[0].mark, 'idle');
+    assert.match(rows[0].detail, /대기 · 연결됨/);
+    assert.doesNotMatch(rows[0].detail, /할 일은 아직 안 적음/);
     assert.doesNotMatch(rows[0].name, /\?\?\?/);
     assert.equal(heartbeatActionLabel('still_here', 'ko'), '이 자리에 있음 · 할 일은 아직 안 적음');
+    assert.equal(autoWaitHeadline(rows, 'ko').showUnknownRead, true);
+    assert.match(autoWaitHeadline(rows, 'ko').title, /할 일을 남긴 자리가 아직 없습니다/);
+  });
+
+  it('uses a work heartbeat over still_here for the current seat', () => {
+    const rows = autoSeatRows({
+      roster: {
+        bots: [{
+          bot_id: 'grok-planner',
+          display_name: 'Grok Bot 기획자',
+          presence: 'active',
+          last_action: 'still_here',
+          seconds_since_checkin: 20,
+        }],
+      },
+      language: 'ko',
+      activity: [{
+        id: 'work-1',
+        bot_id: 'grok-planner',
+        action: 'plan_started',
+        created_at: '2026-08-27T03:01:30.000Z',
+      }],
+    });
+    assert.equal(rows[0].mark, 'current');
+    assert.match(rows[0].detail, /컷 계획 쓰는 중/);
     assert.equal(autoWaitHeadline(rows, 'ko').showUnknownRead, false);
+    assert.match(autoWaitHeadline(rows, 'ko').title, /컷 계획을 쓰는 중/);
   });
 
   it('shows three rows for three seats and keeps still_here honest', () => {
@@ -472,9 +520,11 @@ describe('auto desk who and what', () => {
     });
     assert.equal(rows.length, 3);
     assert.deepEqual(rows.map((row) => row.name), ['Grok Bot 기획자', 'Grok Bot 스크래핑', 'Grok Bot 편집자']);
-    assert.match(rows[0].detail, /할 일은 아직 안 적음/);
+    assert.deepEqual(rows.map((row) => row.mark), ['idle', 'idle', 'idle']);
+    assert.equal(rows[0].detail, '대기 · 연결됨');
     assert.equal(rows[1].detail, '대기 · 연결됨');
     assert.equal(rows[2].detail, '대기 · 연결됨');
+    assert.equal(autoWaitHeadline(rows, 'ko').showUnknownRead, true);
   });
 
   it('makes the planner current on plan_started and leaves others waiting', () => {
@@ -537,11 +587,12 @@ describe('auto desk who and what', () => {
       { id: '3', bot_id: 'grok-scraper', action: 'still_here', created_at: new Date().toISOString() },
       { id: '4', bot_id: 'grok-editor', action: 'cut_ready', created_at: new Date().toISOString() },
     ], 'ko', 3);
-    assert.equal(lines.length, 3);
+    assert.equal(lines.length, 2);
     assert.equal(lines[0].name, 'Grok Bot 기획자');
     assert.equal(lines[0].text, '컷 계획 쓰는 중');
-    assert.equal(lines[1].name, 'Grok Bot 스크래핑');
-    assert.doesNotMatch(JSON.stringify(lines), /plan_started|still_here|cut_ready|hacked|\?\?\?/);
+    assert.equal(lines[1].name, 'Grok Bot 편집자');
+    assert.equal(lines[1].text, '컷을 이 창에 두는 중');
+    assert.doesNotMatch(JSON.stringify(lines), /plan_started|still_here|cut_ready|hacked|\?\?\?|이 자리에 있음/);
   });
 });
 

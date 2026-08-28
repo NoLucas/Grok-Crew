@@ -36,7 +36,7 @@ import {
   type AutoPhaseId,
 } from './desktop-auto-state';
 import { DesktopCrewBoard } from './desktop-crew-board';
-import type { CrewLoadState } from './desktop-crew-log';
+import { activityForSpec, type CrewLoadState } from './desktop-crew-log';
 import { withCrewInvite } from './bot-skills';
 import { CREW_MARKETS, marketFromLanguage, marketLabel, resolveCrewMarket, type CrewMarket } from './crew-market';
 import { DesktopInstallHelp } from './desktop-install-help';
@@ -185,6 +185,7 @@ export function AutoDesk({
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [activity, setActivity] = useState<BotActivityItem[]>([]);
   const [activityState, setActivityState] = useState<CrewLoadState>('loading');
+  const [watchSpecId, setWatchSpecId] = useState('');
   const pingedSpecRef = useRef('');
   const pendingCutRef = useRef<File | null>(null);
   const cutInputRef = useRef<HTMLInputElement>(null);
@@ -245,11 +246,13 @@ export function AutoDesk({
     collectQuery,
   }).ok;
   const elapsedLabel = wait ? formatElapsed(waitElapsedSeconds(wait.copiedAt, nowMs), language) : '';
+  const scopedActivity = activityForSpec(activity, wait?.specId);
   const seatRows = autoSeatRows({
     roster,
     links,
     language,
     lastCheckedLabel: formatCheckTime(lastCheckedAt, language),
+    activity: scopedActivity,
   });
   const waitHeadline = autoWaitHeadline(seatRows, language);
   const recentTitles = prefs.recentTitles.filter((item) => item !== title.trim());
@@ -260,6 +263,7 @@ export function AutoDesk({
     pull: pullStatus,
     hasProject,
     stayOnCompose: stayOnCompose || mode === 'own_file',
+    watchSpecId,
   });
   const showComposer = jobStage === 'compose';
   const showWaiting = jobStage === 'waiting';
@@ -384,6 +388,7 @@ export function AutoDesk({
       });
       const record = created.edit_spec as { id?: string };
       if (!record?.id) throw new Error(t('규격을 저장하지 못했습니다.', 'Could not save the spec.', '无法保存规格。', '仕様を保存できませんでした。'));
+      setWatchSpecId(record.id);
       const invite = await request(`/api/v2/edit-specs/${record.id}/invite?lang=${encodeURIComponent(language)}`);
       const text = withCrewInvite(String(invite.text || ''), language, {
         captions: wantCaptions,
@@ -677,7 +682,7 @@ export function AutoDesk({
         <>
           <header className="desktop-auto-lead">
             <h1>{t('오늘 만들 영상을 적으세요', 'Write the video you want today', '写下今天要做的视频', '今日作る映像を書いてください')}</h1>
-            <p>{t('한 칸이면 됩니다. 보낼 나라는 여기, 올릴 곳(릴·틱톡·쇼츠)은 다른 칸입니다.', 'One box is enough. Destination country is here. Where to post (Reel, TikTok, Shorts) is a different control.', '一栏就够。要发往的国家在这里。发布处（Reel、TikTok、Shorts）是另一栏。', '一欄でよい。送る国はここ。上げ先（リール・TikTok・Shorts）は別の欄です。')}</p>
+            <p>{t('연결한 뒤 여기 한 칸만 적으면 됩니다. 화면·올릴 곳·소리는 아래 칸입니다. 시작하면 초대문을 복사하니, 봇 창에 한 번 붙이세요.', 'After you connect, write in this one box. Pictures, where to post, and sound are below. Start copies the invite, so paste it once in the bot window.', '连好后只在这一栏写。画面、发布处、声音在下面。一开始会复制邀请文，请在机器人窗口贴一次。', '接続したあと、ここ一欄だけ書いてください。画面・上げ先・音は下の欄です。始めると招待文をコピーするので、ボット窓に一度貼ってください。')}</p>
           </header>
 
           {mode === 'own_file' ? (
