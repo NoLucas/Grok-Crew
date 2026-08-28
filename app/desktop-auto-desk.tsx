@@ -527,10 +527,8 @@ export function AutoDesk({
       note: !studioReady
         ? t('Local Studio가 끊겼습니다', 'Local Studio is down', 'Local Studio 已断开', 'Local Studio が切れています')
         : attached
-          ? t(`됨 · ${attachedName}`, `On · ${attachedName}`, `已连接 · ${attachedName}`, `済み · ${attachedName}`)
-          : connectWaiting
-            ? t('답 기다림', 'Waiting for a reply', '等待回复', '返事待ち')
-            : t('아직 아님', 'Not yet', '还没有', 'まだ'),
+          ? t('연결됨', 'Connected', '已连接', '接続済み')
+          : t('연결되지않음', 'Not connected', '未连接', '未接続'),
     },
     {
       id: 'sent',
@@ -583,13 +581,11 @@ export function AutoDesk({
       ) : null}
 
       <section className={`desktop-auto-connect${attached ? ' is-ready' : ''}`} aria-live="polite">
-        <b className={attached ? 'desktop-connect-lamp is-on' : connectWaiting ? 'desktop-connect-lamp is-wait' : 'desktop-connect-lamp'}>
+        <b className={attached ? 'desktop-connect-lamp is-on' : 'desktop-connect-lamp'}>
           <i aria-hidden="true" />
           {attached
-            ? t(`연결됨 · ${attachedName}${seenLabel ? ` · ${seenLabel}` : ''}`, `Connected · ${attachedName}${seenLabel ? ` · ${seenLabel}` : ''}`, `已连接 · ${attachedName}${seenLabel ? ` · ${seenLabel}` : ''}`, `接続済み · ${attachedName}${seenLabel ? ` · ${seenLabel}` : ''}`)
-            : connectWaiting
-              ? t('복사함 · 봇 창에 붙이세요. 아직 연결되지 않음', 'Copied · paste in the bot window. Not connected yet', '已复制 · 请贴到机器人窗口。尚未连接', 'コピー済み · ボットの窓に貼る。まだ接続されていない')
-              : t('먼저 연결', 'Connect first', '请先连接', '先に接続')}
+            ? t('연결됨', 'Connected', '已连接', '接続済み')
+            : t('연결되지않음', 'Not connected', '未连接', '未接続')}
         </b>
         <button type="button" className="desktop-secondary" onClick={onOpenBots}>
           {t('연결 열기', 'Open Connect', '打开连接', '接続を開く')}

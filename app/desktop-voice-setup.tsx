@@ -37,13 +37,13 @@ export function DesktopVoiceSetup({
     <section className={`desktop-voice-setup is-${variant}`} aria-labelledby="desktop-voice-title">
       <div className="desktop-voice-intro">
         <small>{t('이 PC · 음성 모델 하나', 'This PC · one voice model', '这台电脑 · 一个语音模型', 'この PC · 音声モデルは一つ')}</small>
-        <h1 id="desktop-voice-title">{t('어떤 목소리를 받을까요', 'Which voice should this PC keep?', '要收下哪一个声音？', 'どの声を受け取りますか')}</h1>
+        <h1 id="desktop-voice-title">{t('어떤 TTS로 설치할까요', 'Which TTS should this PC install?', '要用哪个 TTS 安装？', 'どの TTS で入れますか')}</h1>
         <p>
           {t(
-            'TTS를 켤 때 쓸 목소리입니다. 한 번에 하나만 받습니다. 자동에서 TTS가 꺼져 있으면 쓰지 않습니다. 다음만 누르면 Kokoro-82M입니다.',
-            'This is the TTS voice. Only one model is kept. If TTS is off in Auto, it is unused. Next downloads Kokoro-82M.',
-            '这是打开 TTS 时用的声音。一次只收一个。自动里 TTS 关着就不用。只按下一步就是 Kokoro-82M。',
-            'TTS をオンにしたときの声です。一度に一つだけ受け取ります。自動で TTS がオフなら使いません。次へだけ押せば Kokoro-82M です。',
+            '설치 파일은 바로 열립니다. 어떤 TTS를 이 PC에 받을지는 지금 고릅니다. 한 번에 하나만 받습니다. 자동에서 TTS가 꺼져 있으면 쓰지 않습니다. 다음만 누르면 Kokoro-82M입니다.',
+            'The installer opens the desk. Pick which TTS this PC keeps now. Only one model is kept. If TTS is off in Auto, it is unused. Next downloads Kokoro-82M.',
+            '安装文件会直接打开工作台。现在选这台电脑收下哪个 TTS。一次只收一个。自动里 TTS 关着就不用。只按下一步就是 Kokoro-82M。',
+            'インストーラはそのまま机を開きます。どの TTS をこの PC に受けるかは今選びます。一度に一つだけ。自動で TTS がオフなら使いません。次へだけ押せば Kokoro-82M です。',
           )}
         </p>
         <p className="desktop-voice-note">
@@ -109,7 +109,7 @@ export function DesktopVoiceSetup({
       <div className="desktop-voice-actions">
         <button type="button" className="desktop-primary" disabled={busy || downloading} onClick={onConfirm}>
           {variant === 'wizard'
-            ? t('다음 · Kokoro-82M이 기본', 'Next · Kokoro-82M is the default', '下一步 · 默认 Kokoro-82M', '次へ · 初期値は Kokoro-82M')
+            ? t('이 TTS로 받기 · 고르지 않으면 Kokoro-82M', 'Install this TTS · Kokoro-82M if you skip a pick', '收下这个 TTS · 不选就是 Kokoro-82M', 'この TTS を受け取る · 選ばなければ Kokoro-82M')
             : t('이 모델만 받기', 'Keep only this model', '只收下这个模型', 'このモデルだけ受け取る')}
         </button>
         <p>

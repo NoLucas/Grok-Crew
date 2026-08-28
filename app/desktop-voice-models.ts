@@ -134,6 +134,10 @@ export function emptyVoiceSetup(): VoiceSetup {
   return { done: false, modelId: DEFAULT_VOICE_MODEL_ID };
 }
 
+export function needsFirstVoiceSetup(setup?: VoiceSetup | null): boolean {
+  return !setup?.done;
+}
+
 export function readVoiceSetup(): VoiceSetup {
   const raw = storage()?.getItem(VOICE_SETUP_KEY);
   if (!raw) return emptyVoiceSetup();

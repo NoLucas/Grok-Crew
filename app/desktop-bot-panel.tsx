@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { connectPaste, connectedBot, type CrewRoster } from './desktop-bot-connect';
-import { botSeenSeconds, formatSince } from './desktop-auto-state';
-import { BOT_ROLES, roleLabel, seatName, type BotRole } from './bot-skills';
+import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
 import {
   type BotLinkState,
   linkedBySeat,
@@ -54,13 +53,22 @@ const OTHER_FAMILIES: Array<{ id: 'grok' | 'custom'; ko: string; en: string; zh:
 
 type OtherSeat = { kind: 'grok' | 'custom'; role: BotRole };
 
-function Lamp({ on, wait, label }: { on: boolean; wait?: boolean; label: string }) {
+function Lamp({ on, label }: { on: boolean; label: string }) {
   return (
-    <span className={`desktop-connect-lamp${on ? ' is-on' : wait ? ' is-wait' : ''}`}>
+    <span className={`desktop-connect-lamp${on ? ' is-on' : ''}`}>
       <i aria-hidden="true" />
       {label}
     </span>
   );
+}
+
+function lampText(
+  on: boolean,
+  t: (ko: string, en: string, zh: string, ja: string) => string,
+) {
+  return on
+    ? t('연결됨', 'Connected', '已连接', '接続済み')
+    : t('연결되지않음', 'Not connected', '未连接', '未接続');
 }
 
 export function DesktopBotPanel({
@@ -81,10 +89,7 @@ export function DesktopBotPanel({
   const [error, setError] = useState('');
   const local = connectedBot(roster);
   const liveLink = links.bots.find((item) => item.status === 'connected');
-  const waiting = links.bots.some((item) => item.status === 'waiting');
   const connected = Boolean(local) || Boolean(liveLink);
-  const seenSeconds = botSeenSeconds(roster, liveLink?.connectedAt);
-  const seenLabel = seenSeconds === null ? '' : formatSince(seenSeconds, language);
 
   const connectText = useMemo(
     () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role),
@@ -148,15 +153,7 @@ export function DesktopBotPanel({
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">
-        <Lamp
-          on={connected}
-          wait={!connected && waiting}
-          label={connected
-            ? t(`연결됨${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `Connected${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `已连接${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `接続済み${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`)
-            : waiting
-              ? t('복사함 · 봇 창에 붙이세요. 아직 연결되지 않음', 'Copied · paste in the bot window. Not connected yet', '已复制 · 请贴到机器人窗口。尚未连接', 'コピー済み · ボットの窓に貼る。まだ接続されていない')
-              : t('아직 연결되지 않음', 'Not connected yet', '尚未连接', 'まだ接続されていない')}
-        />
+        <Lamp on={connected} label={lampText(connected, t)} />
       </section>
 
       <section className="desktop-auto-composer-card">
@@ -173,11 +170,7 @@ export function DesktopBotPanel({
               onClick={() => setFamilyId(family.id)}
             >
               <span>{t(family.ko, family.en, family.zh, family.ja)}</span>
-              <b>{links.bots.some((item) => item.kind === family.id && item.status === 'connected')
-                ? t('붙음', 'Attached', '已接上', '付いた')
-                : links.bots.some((item) => item.kind === family.id && item.status === 'waiting')
-                  ? t('복사함', 'Copied', '已复制', 'コピー済み')
-                  : t('아직', 'Not yet', '还没有', 'まだ')}</b>
+              <b>{lampText(links.bots.some((item) => item.kind === family.id && item.status === 'connected'), t)}</b>
             </button>
           ))}
         </div>
@@ -190,7 +183,6 @@ export function DesktopBotPanel({
                 const seat: OtherSeat = { kind: family.id, role };
                 const row = linkedBySeat(links.bots, seat.kind, seat.role);
                 const on = row?.status === 'connected';
-                const copiedSeat = row?.status === 'waiting';
                 const key = `${seat.kind}-${seat.role}`;
                 const label = seatName(seat.kind, seat.role, language);
                 return (
@@ -198,15 +190,7 @@ export function DesktopBotPanel({
                     <div className="desktop-connect-row">
                     <div>
                       <b>{label}</b>
-                      <Lamp
-                        on={on}
-                        wait={copiedSeat}
-                        label={on
-                          ? t(`연결됨 · ${row?.name || label}`, `Connected · ${row?.name || label}`, `已连接 · ${row?.name || label}`, `接続済み · ${row?.name || label}`)
-                          : copiedSeat
-                            ? t('복사함 · 아직 연결되지 않음', 'Copied · not connected yet', '已复制 · 尚未连接', 'コピー済み · まだ接続されていない')
-                            : t(`${roleLabel(seat.role, language)} · 아직 아님`, `${roleLabel(seat.role, 'en')} · not yet`, `${roleLabel(seat.role, 'zh')} · 还没有`, `${roleLabel(seat.role, 'ja')} · まだ`)}
-                      />
+                      <Lamp on={on} label={lampText(on, t)} />
                     </div>
                     <div className="desktop-simple-copy-row">
                       {on ? (
@@ -241,12 +225,7 @@ export function DesktopBotPanel({
         <div className={`desktop-connect-row${local ? ' is-connected' : ''}`}>
           <div>
             <b>{local ? (local.display_name || local.bot_id) : t('이 PC 봇', 'This PC bot', '这台电脑的机器人', 'この PC のボット')}</b>
-            <Lamp
-              on={Boolean(local)}
-              label={local
-                ? t('연결됨', 'Connected', '已连接', '接続済み')
-                : t('아직 아님', 'Not yet', '还没有', 'まだ')}
-            />
+            <Lamp on={Boolean(local)} label={lampText(Boolean(local), t)} />
           </div>
           {local ? null : (
             <button type="button" className="desktop-primary" disabled={!studioReady} onClick={() => void copyLocal()}>
@@ -267,12 +246,7 @@ export function DesktopBotPanel({
               <div className="desktop-connect-row">
               <div>
                 <b>Local Studio</b>
-                <Lamp
-                  on={services.studioReady}
-                  label={services.studioReady
-                    ? t('연결됨', 'Connected', '已连接', '接続済み')
-                    : t('아직 아님', 'Not yet', '还没有', 'まだ')}
-                />
+                <Lamp on={services.studioReady} label={lampText(services.studioReady, t)} />
               </div>
               {services.studioReady ? null : (
                 <button type="button" className="desktop-secondary" onClick={services.onRefreshStudio}>{t('다시 연결', 'Reconnect', '重新连接', '再接続')}</button>
@@ -283,12 +257,7 @@ export function DesktopBotPanel({
               <div className="desktop-connect-row">
               <div>
                 <b>GitHub</b>
-                <Lamp
-                  on={services.github.authenticated}
-                  label={services.github.authenticated
-                    ? t(`연결됨 · ${services.github.login || 'GitHub'}`, `Connected · ${services.github.login || 'GitHub'}`, `已连接 · ${services.github.login || 'GitHub'}`, `接続済み · ${services.github.login || 'GitHub'}`)
-                    : t('아직 아님', 'Not yet', '还没有', 'まだ')}
-                />
+                <Lamp on={services.github.authenticated} label={lampText(services.github.authenticated, t)} />
                 <span>{services.github.relay_connected
                   ? services.github.remote
                   : t('relay 저장소는 아직입니다.', 'No relay repository yet.', '还没有 relay 仓库。', 'relay リポジトリはまだです。')}</span>
@@ -329,12 +298,7 @@ export function DesktopBotPanel({
               <div className="desktop-connect-row">
               <div>
                 <b>{t('Grok 제작기', 'Grok builder', 'Grok 制作器', 'Grok 制作機')}</b>
-                <Lamp
-                  on={services.runnerPaired}
-                  label={services.runnerPaired
-                    ? t(`연결됨 · ${services.runnerName || 'Grok 제작기'}`, `Connected · ${services.runnerName || 'Grok builder'}`, `已连接 · ${services.runnerName || 'Grok 制作器'}`, `接続済み · ${services.runnerName || 'Grok 制作機'}`)
-                    : t('아직 아님', 'Not yet', '还没有', 'まだ')}
-                />
+                <Lamp on={services.runnerPaired} label={lampText(services.runnerPaired, t)} />
                 <span>{t('이 창의 타임라인을 Grok Build가 고칩니다. AWS·GitHub Actions가 아닙니다. 글을 붙이는 Grok Bot과도 다릅니다.', 'Grok Build edits this window’s timeline. Not AWS or GitHub Actions. Different from Grok Bot, the chat you paste into.', '让 Grok Build 改这个窗口的时间线。不是 AWS 或 GitHub Actions。也不是你粘贴文字的 Grok Bot。', 'この窓のタイムラインを Grok Build が直します。AWS・GitHub Actions ではありません。文章を貼る Grok Bot とも違います。')}</span>
               </div>
               {services.desktopApp ? (

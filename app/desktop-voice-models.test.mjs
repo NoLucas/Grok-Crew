@@ -14,6 +14,7 @@ const {
   voiceMustKeep,
   downloadPercent,
   emptyVoiceSetup,
+  needsFirstVoiceSetup,
   readVoiceSetup,
   resolveVoiceModelId,
   voiceModelLabel,
@@ -49,6 +50,8 @@ describe('voice model picker', () => {
   it('persists one chosen model after Next', () => {
     memory.clear();
     assert.deepEqual(readVoiceSetup(), emptyVoiceSetup());
+    assert.equal(needsFirstVoiceSetup(emptyVoiceSetup()), true);
+    assert.equal(needsFirstVoiceSetup({ done: true, modelId: 'kokoro-82m' }), false);
     const next = writeVoiceSetup({ done: true, modelId: confirmVoiceChoice() });
     assert.equal(next.done, true);
     assert.equal(next.modelId, 'kokoro-82m');
