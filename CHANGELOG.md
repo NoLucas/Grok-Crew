@@ -4,6 +4,14 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.2 - 2026-08-28
+
+Local 1.0.2. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.2` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.2.md`. Guest download stays the same Google Drive file. Already-installed 1.0.1 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- First open still asks which TTS this PC should install. The picker now fills the window instead of sitting in the crushed 245px sidebar column. The Windows installer stays one-click; Next with no pick keeps Kokoro-82M. TTS stays unused until Auto turns it on.
+
 ## 1.0.1 - 2026-08-28
 
 Local 1.0.1. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.1` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.1.md`. Guest download: [NoLucas/Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.1). Already-installed 1.0.0 desks still check Grok-crew-test for the same tag.

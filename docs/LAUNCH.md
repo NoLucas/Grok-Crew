@@ -12,6 +12,7 @@ Use this before the first public GitHub release.
 - [x] Create a `v0.2.0` release using the changelog notes. (2026-08-24: the render/QA/security fixes and file-split work in this pass.)
 - [x] Write `v1.0.0` notes in `docs/RELEASE_NOTES.v1.0.md` and `CHANGELOG.md`. Tag `v1.0.0` and the Windows installer are published from `.github/workflows/release.yml` onto [NoLucas/Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases).
 - [x] Write `v1.0.1` notes in `docs/RELEASE_NOTES.v1.0.1.md` and `CHANGELOG.md`. Guest download is [NoLucas/Grok-Crew v1.0.1](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.1). The same tag is also published on Grok-crew-test so already-installed 1.0.0 desks can see the update feed.
+- [x] Write `v1.0.2` notes in `docs/RELEASE_NOTES.v1.0.2.md` and `CHANGELOG.md`. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. The update feed tag is [NoLucas/Grok-crew-test v1.0.2](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.2).
 - [x] Review `npm audit` before release. Do not use a forced dependency upgrade without rebuilding and testing the workspace. (2026-08-26: `npm audit` and `npm audit --omit=dev` report 0 vulnerabilities. `vinext` is installed and locked at `1.0.0-beta.8`, which is the latest published `1.0.0-beta.*`. The 2026-08-24 note about 13 findings and a deferred beta.3→beta.8 jump is stale. Do not run `npm audit fix --force`. Do not bump wrangler/miniflare or a future vinext 1.0.0 stable in this pass.)
 
 ## First experience
@@ -23,7 +24,7 @@ Use this before the first public GitHub release.
 
 ## Announcement
 
-This repository does not post social copy for you. Guest facts live in `README.md` and `docs/RELEASE_NOTES.v1.0.1.md`.
+This repository does not post social copy for you. Guest facts live in `README.md` and `docs/RELEASE_NOTES.v1.0.2.md`.
 
 - [ ] Publish a short note on the channel you actually use (social, Discord, HN, or a GitHub Release note).
 

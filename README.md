@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.1** · with Grok Bot · free now
+**v1.0.2** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,13 +50,19 @@ If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
 ---
 
+## What changed in v1.0.2
+
+- First open still asks which TTS this PC should keep. That window now fills the desk instead of sitting in a crushed sidebar. Next with no pick is Kokoro-82M. The installer stays one-click.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.2 notes](docs/RELEASE_NOTES.v1.0.2.md).
+
 ## What changed in v1.0.1
 
 - First open asks which TTS this PC should keep. Next with no pick is Kokoro-82M. The installer stays one-click.
 - Connect lamps are only **Connected** (green) and **Not connected** (gray). Copying the connect text does not turn the lamp green.
 - Quit warns first. Confirming disconnects Grok Bot and Agent. Closing the window only hides to the tray.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.1 notes](docs/RELEASE_NOTES.v1.0.1.md).
+The 1.0.1 list is in [the 1.0.1 notes](docs/RELEASE_NOTES.v1.0.1.md).
 
 ## What changed in v1.0.0
 

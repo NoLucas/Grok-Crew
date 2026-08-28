@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.1** · with Grok Bot · 现在免费
+**v1.0.2** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,13 +50,19 @@
 
 ---
 
+## v1.0.2 改了什么
+
+- 第一次打开仍会问这台电脑要装哪个 TTS。那个窗口现在铺满书桌，不再挤在侧栏里。不选就用 Kokoro-82M。安装仍是一键。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.2 发布说明](docs/RELEASE_NOTES.v1.0.2.md)。
+
 ## v1.0.1 改了什么
 
 - 第一次打开会问这台电脑要装哪个 TTS。不选就用 Kokoro-82M。安装仍是一键。
 - 连接灯只有 **已连接**（绿）和 **未连接**（灰）。只复制接上用的文字不会变绿。
 - 退出先警告。确认后断开 Grok Bot 和 Agent。只关窗口会藏到托盘，连接还在。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.1 发布说明](docs/RELEASE_NOTES.v1.0.1.md)。
+1.0.1 列表见 [1.0.1 发布说明](docs/RELEASE_NOTES.v1.0.1.md)。
 
 ## v1.0.0 改了什么
 

@@ -229,7 +229,7 @@ A 없이 F만 하면 받은 사람이 다시 긴 화면을 본다. F 없이 A–
 
 ## 다음에 손댈 것
 
-A–G는 이 저장소에 들어 있다. Cursor 에이전트 연결은 `docs/CURSOR_AGENT.ko.md`에서 확인했다. 지금 노트는 `docs/RELEASE_NOTES.v1.0.1.md`다. 1.0.0은 `docs/RELEASE_NOTES.v1.0.md`에 남긴다.
+A–G는 이 저장소에 들어 있다. Cursor 에이전트 연결은 `docs/CURSOR_AGENT.ko.md`에서 확인했다. 지금 노트는 `docs/RELEASE_NOTES.v1.0.2.md`다. 1.0.1은 `docs/RELEASE_NOTES.v1.0.1.md`에, 1.0.0은 `docs/RELEASE_NOTES.v1.0.md`에 남긴다.
 
 사람 화면 보완(초대 숨김, 복사 다음 대기, 샘플 자동 열기 없음, SmartScreen 그림 세 장, 봇 없음 드롭칸, 두 길 분리, 고급 접기, README를 네 번에 맞춤)은 이 저장소에 들어 있다.
 
