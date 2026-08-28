@@ -1494,7 +1494,7 @@ export default function DesktopWorkspace() {
               <AutoDesk
                 recipes={workspace.style_recipes ?? []}
                 roster={workspace.crew_roster}
-                remoteNames={connectedRemoteNames(botLinks)}
+                remoteNames={connectedRemoteNames(botLinks, workspace.crew_roster)}
                 connectWaiting={botLinks.bots.some((item) => item.status === 'waiting')}
                 busy={busy}
                 studioReady={studioState === 'ready'}

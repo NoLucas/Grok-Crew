@@ -20,6 +20,12 @@ const {
   suggestedConnectReply,
   confirmRemoteReplies,
   upsertLinkedBot,
+  activeRosterSeat,
+  familyIsConnected,
+  grokSeatBotId,
+  seatIsConnected,
+  seatPurpose,
+  connectedRemoteNames,
 } = await import('./desktop-bot-links.ts');
 
 const memory = new Map();
@@ -48,24 +54,57 @@ describe('remote bot links', () => {
     assert.equal(suggestedConnectReply('grok', '7K2M9Q', 'editor'), 'GROK_CREW_OK 7K2M9Q Grok Bot 편집자');
   });
 
-  it('remote paste includes the role skill and never points at a clone or this PC API', () => {
+  it('Grok paste asks for a Windows check-in and keeps the OK line as fallback', () => {
     for (const language of ['ko', 'en', 'zh', 'ja']) {
       const text = remoteConnectPaste('grok', '7K2M9Q', language, 'planner');
       assert.match(text, /Grok Bot/);
       assert.match(text, /7K2M9Q/);
       assert.match(text, /GROK_CREW_OK 7K2M9Q Grok Bot/);
-      assert.match(text, /127\.0\.0\.1/);
+      assert.match(text, /127\.0\.0\.1:7214\/api\/bot-entry/);
+      assert.match(text, /Invoke-RestMethod/);
+      assert.match(text, /grok-planner/);
+      assert.match(text, /plan_edit/);
+      assert.match(text, /heartbeat/);
       assert.match(text, /grok-crew-planner/);
       assert.match(text, /grok-crew-edit-plan/);
       assert.doesNotMatch(text, /Claude/);
       assert.doesNotMatch(text, /Cursor/);
       assert.doesNotMatch(text, /git clone/);
-      assert.doesNotMatch(text, /bot-entry/);
+      assert.doesNotMatch(text, /DESKTOP-LJFJI0U/);
     }
-    assert.match(remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper'), /Agent 스크래핑/);
-    assert.match(remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper'), /grok-crew-scraper/);
-    assert.match(remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper'), /grok-crew-public-pick/);
+    const agent = remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper');
+    assert.match(agent, /Agent 스크래핑/);
+    assert.match(agent, /grok-crew-scraper/);
+    assert.match(agent, /grok-crew-public-pick/);
+    assert.doesNotMatch(agent, /bot-entry/);
+    assert.doesNotMatch(agent, /Invoke-RestMethod/);
     assert.match(remoteConnectPaste('grok', '7K2M9Q', 'ko', 'editor'), /grok-crew-cut-to-plan/);
+    assert.match(remoteConnectPaste('grok', '7K2M9Q', 'ko', 'editor'), /grok-editor/);
+    assert.equal(grokSeatBotId('editor'), 'grok-editor');
+    assert.equal(seatPurpose('scraper'), 'collect');
+  });
+
+  it('turns a Grok seat green from an active same-PC check-in', () => {
+    const empty = emptyBotLinks();
+    const roster = {
+      bots: [
+        { bot_id: 'grok-editor', display_name: 'Grok Bot 편집자', presence: 'active' },
+        { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'idle' },
+      ],
+    };
+    assert.equal(activeRosterSeat(roster, 'editor')?.bot_id, 'grok-editor');
+    assert.equal(activeRosterSeat(roster, 'planner'), null);
+    assert.equal(seatIsConnected('grok', 'editor', empty, roster), true);
+    assert.equal(seatIsConnected('grok', 'planner', empty, roster), false);
+    assert.equal(seatIsConnected('grok', 'scraper', empty, roster), false);
+    assert.equal(seatIsConnected('custom', 'editor', empty, roster), false);
+    assert.equal(familyIsConnected('grok', empty, roster), true);
+    assert.equal(familyIsConnected('custom', empty, roster), false);
+    assert.deepEqual(connectedRemoteNames(empty, roster), ['Grok Bot 편집자']);
+    assert.equal(hasConnectedBot(roster, empty), true);
+    const byName = { bots: [{ display_name: 'Grok Bot Planner', presence: 'active' }] };
+    assert.equal(seatIsConnected('grok', 'planner', empty, byName), true);
+    assert.equal(seatIsConnected('grok', 'editor', empty, byName), false);
   });
 
   it('marks a copied remote seat as waiting, not connected', () => {

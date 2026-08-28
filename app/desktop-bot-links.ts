@@ -1,5 +1,21 @@
 import { isBotRole, roleLabel, seatName, skillText, type BotRole } from './bot-skills';
-import { connectedBot, type CrewRoster } from './desktop-bot-connect';
+import { connectedBot, type CrewBot, type CrewRoster } from './desktop-bot-connect';
+
+export const GROK_SEAT_BOT_IDS = {
+  planner: 'grok-planner',
+  scraper: 'grok-scraper',
+  editor: 'grok-editor',
+} as const;
+
+export function seatPurpose(role: BotRole): string {
+  if (role === 'planner') return 'plan_edit';
+  if (role === 'scraper') return 'collect';
+  return 'edit_video';
+}
+
+export function grokSeatBotId(role: BotRole): string {
+  return GROK_SEAT_BOT_IDS[role];
+}
 
 export const BOT_LINKS_KEY = 'grok-crew-bot-links';
 
@@ -226,13 +242,49 @@ export function confirmRemoteReplies(
   return { next, confirmed };
 }
 
+export function rosterMatchesSeat(bot: Pick<CrewBot, 'bot_id' | 'display_name'>, role: BotRole): boolean {
+  const id = String(bot.bot_id || '').trim().toLowerCase();
+  if (id === GROK_SEAT_BOT_IDS[role]) return true;
+  return replyMatchesSeat(String(bot.display_name || ''), 'grok', role);
+}
+
+export function activeRosterSeat(roster?: CrewRoster | null, role?: BotRole): CrewBot | null {
+  if (!role) return null;
+  return (roster?.bots ?? []).find((bot) => bot.presence === 'active' && rosterMatchesSeat(bot, role)) ?? null;
+}
+
+export function seatIsConnected(
+  kind: 'grok' | 'custom',
+  role: BotRole,
+  links?: BotLinkState | null,
+  roster?: CrewRoster | null,
+): boolean {
+  if (linkedBySeat(links?.bots, kind, role)?.status === 'connected') return true;
+  return kind === 'grok' && Boolean(activeRosterSeat(roster, role));
+}
+
+export function familyIsConnected(
+  kind: 'grok' | 'custom',
+  links?: BotLinkState | null,
+  roster?: CrewRoster | null,
+): boolean {
+  if (links?.bots.some((item) => item.kind === kind && item.status === 'connected')) return true;
+  if (kind !== 'grok') return false;
+  return (['planner', 'scraper', 'editor'] as const).some((role) => Boolean(activeRosterSeat(roster, role)));
+}
+
 export function hasConnectedBot(roster?: CrewRoster | null, links?: BotLinkState | null): boolean {
   if (connectedBot(roster)) return true;
   return Boolean(links?.bots.some((item) => item.status === 'connected'));
 }
 
-export function connectedRemoteNames(links?: BotLinkState | null): string[] {
-  return links?.bots.filter((item) => item.status === 'connected').map((item) => item.name) ?? [];
+export function connectedRemoteNames(links?: BotLinkState | null, roster?: CrewRoster | null): string[] {
+  const names = links?.bots.filter((item) => item.status === 'connected').map((item) => item.name) ?? [];
+  for (const role of ['planner', 'scraper', 'editor'] as const) {
+    const name = String(activeRosterSeat(roster, role)?.display_name || '').trim();
+    if (name && !names.includes(name)) names.push(name);
+  }
+  return names;
 }
 
 export function linkedByKind(bots: LinkedBot[] | undefined, kind: BotKind): LinkedBot | undefined {
@@ -255,17 +307,81 @@ export function seatId(kind: BotKind, role: BotRole, pairCode: string): string {
   return `${kind}-${role}-${pairCode}`;
 }
 
+function grokWindowsCheckIn(who: string, role: BotRole, language: string): string[] {
+  const lang = language.slice(0, 2);
+  const id = grokSeatBotId(role);
+  const purpose = seatPurpose(role);
+  const ps = `Invoke-RestMethod -Uri http://127.0.0.1:7214/api/bot-entry -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","purpose":"${purpose}"}'`;
+  const py = `python grok-crew.py entry --bot-id ${id} --display-name "${who}" --purpose ${purpose}`;
+  const beat = `Invoke-RestMethod -Uri http://127.0.0.1:7214/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","action":"still_here"}'`;
+  if (lang === 'ko') {
+    return [
+      '명령을 실행할 컴퓨터는 운영자가 등록한 Windows Computer만입니다. 이름을 지어내지 마세요.',
+      '봇 쪽 Linux·공유 컴퓨터에서 127.0.0.1을 열지 마세요. 그 주소는 이 책상이 아닙니다.',
+      '승인이 뜨면 받으세요. 거부되면 멈추고 한 줄로만 알리세요.',
+      '그 Windows에서 Grok Crew 창이 꺼져 있으면 멈추고 "창이 없다"고 하세요.',
+      '그 Windows에서만 아래를 실행하세요. Python이 있으면 둘 중 하나면 됩니다.',
+      ps,
+      py,
+      '(스크립트는 그 Windows에서 http://127.0.0.1:7214/downloads/grok-crew.py)',
+      '5분마다 같은 Windows에서 heartbeat를 남기세요.',
+      beat,
+    ];
+  }
+  if (lang === 'zh') {
+    return [
+      '只在操作员已登记的 Windows Computer 上执行命令。不要编造主机名。',
+      '不要在机器人那边的 Linux 或共享电脑上打开 127.0.0.1。那个地址不是这张书桌。',
+      '若弹出批准，请接受。若拒绝，停下来只回一行。',
+      '若那台 Windows 上 Grok Crew 窗口是关的，停下来并写“没有窗口”。',
+      '只在那台 Windows 上执行下面的命令。有 Python 时两选一即可。',
+      ps,
+      py,
+      '(脚本在那台 Windows 上：http://127.0.0.1:7214/downloads/grok-crew.py)',
+      '每 5 分钟在同一台 Windows 上留下 heartbeat。',
+      beat,
+    ];
+  }
+  if (lang === 'ja') {
+    return [
+      'コマンドを実行するコンピュータは、運営者が登録した Windows Computer だけです。名前を作らないでください。',
+      'ボット側の Linux や共有コンピュータで 127.0.0.1 を開かないでください。その住所はこのデスクではありません。',
+      '承認が出たら受けてください。拒まれたら止まって一行だけ知らせてください。',
+      'その Windows で Grok Crew の窓が消えていたら止まって「窓がない」と書いてください。',
+      'その Windows だけで下を実行してください。Python があればどちらかでよいです。',
+      ps,
+      py,
+      '(スクリプトはその Windows で http://127.0.0.1:7214/downloads/grok-crew.py)',
+      '5 分ごとに同じ Windows で heartbeat を残してください。',
+      beat,
+    ];
+  }
+  return [
+    'Run commands only on the operator registered Windows Computer. Do not invent a host name.',
+    'Do not open 127.0.0.1 from the bot Linux or shared computer. That address is not this desk.',
+    'If approval appears, accept it. If it is denied, stop and say so in one line.',
+    'If Grok Crew is not open on that Windows, stop and say the window is missing.',
+    'Run the next command on that Windows only. If Python is there, either line is enough.',
+    ps,
+    py,
+    '(script on that Windows: http://127.0.0.1:7214/downloads/grok-crew.py)',
+    'Leave a heartbeat on the same Windows every five minutes.',
+    beat,
+  ];
+}
+
 export function remoteConnectPaste(kind: BotKind, pairCode: string, language: string, role: BotRole = 'editor'): string {
   const lang = language.slice(0, 2);
   const family = kind === 'grok' ? 'grok' : 'custom';
   const who = seatName(family, role, lang === 'zh' || lang === 'ja' || lang === 'en' ? lang : 'ko');
   const line = `GROK_CREW_OK ${pairCode} ${who}`;
   const job = roleLabel(role, lang === 'zh' || lang === 'ja' || lang === 'en' ? lang : 'ko');
+  const windows = family === 'grok' ? grokWindowsCheckIn(who, role, lang) : [];
   if (lang === 'ko') {
     return [
       `당신은 Grok Crew와 연결합니다. 이름은 ${who}입니다.`,
       `역할은 ${job}입니다. 연결할 때 아래 역할 스킬과 보조 스킬을 읽고 그 일만 합니다.`,
-      '다른 컴퓨터에서는 127.0.0.1에 붙지 마세요. 이 창을 열 수 없습니다.',
+      ...(windows.length ? windows : ['다른 컴퓨터에서는 127.0.0.1에 붙지 마세요. 이 창을 열 수 없습니다.']),
       `연결 코드: ${pairCode}`,
       '',
       '첫 답은 아래 한 줄만 보내세요.',
@@ -280,7 +396,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
     return [
       `你正在连接 Grok Crew。名字是 ${who}。`,
       `角色是 ${job}。连接后阅读下面的角色技能和一项辅助技能，只做那件事。`,
-      '另一台电脑不要连接 127.0.0.1。打不开这个窗口。',
+      ...(windows.length ? windows : ['另一台电脑不要连接 127.0.0.1。打不开这个窗口。']),
       `连接代码：${pairCode}`,
       '',
       '第一句回复只发下面这一行。',
@@ -295,7 +411,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
     return [
       `あなたは Grok Crew と接続します。名前は ${who} です。`,
       `役割は ${job} です。下の役割スキルと補助スキルを読んで、その仕事だけします。`,
-      '別のコンピュータから 127.0.0.1 に接続しないでください。この窓は開けません。',
+      ...(windows.length ? windows : ['別のコンピュータから 127.0.0.1 に接続しないでください。この窓は開けません。']),
       `接続コード: ${pairCode}`,
       '',
       '最初の返事はこの一行だけです。',
@@ -309,7 +425,7 @@ export function remoteConnectPaste(kind: BotKind, pairCode: string, language: st
   return [
     `You are connecting to Grok Crew as ${who}.`,
     `Your role is ${job}. Read the role skill and one extra below and only do that job.`,
-    'Do not connect to 127.0.0.1 from another computer.',
+    ...(windows.length ? windows : ['Do not connect to 127.0.0.1 from another computer.']),
     `Connection code: ${pairCode}`,
     '',
     'Reply with this one line only:',

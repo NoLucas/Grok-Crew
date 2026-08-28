@@ -6,10 +6,12 @@ import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
 import {
   type BotLinkState,
   confirmRemoteReplies,
+  familyIsConnected,
   linkedBySeat,
   markRemoteCopied,
   remoteConnectPaste,
   removeLinkedBot,
+  seatIsConnected,
   writeBotLinks,
 } from './desktop-bot-links';
 import { useLanguage } from './language';
@@ -166,13 +168,13 @@ export function DesktopBotPanel({
   };
 
   const openFamily = OTHER_FAMILIES.find((family) => family.id === familyId) ?? OTHER_FAMILIES[0];
-  const familyHasOpenSeat = BOT_ROLES.some((role) => linkedBySeat(links.bots, openFamily.id, role)?.status !== 'connected');
+  const familyHasOpenSeat = BOT_ROLES.some((role) => !seatIsConnected(openFamily.id, role, links, roster));
 
   return (
     <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
       <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('연결 글을 복사해 봇 창에 붙이세요. 봇이 GROK_CREW_OK 한 줄을 보내면 그 줄을 여기 붙입니다. 복사만으로는 연결되지 않습니다. 그 봇은 이 주소를 열 수 없습니다.', 'Copy the connect text and paste it in the bot window. When the bot replies with the GROK_CREW_OK line, paste that line here. Copying is not a connection. That bot cannot open this address.', '复制连接文字并贴到机器人窗口。机器人回 GROK_CREW_OK 那一行后，把那一行贴到这里。只复制不算已连接。那个机器人打不开这个地址。', '接続文をコピーしてボットの窓に貼る。ボットが GROK_CREW_OK の一行を返したら、その行をここに貼る。コピーしただけでは接続されない。そのボットはこの住所を開けない。')}</p>
+        <p>{t('연결 글을 복사해 봇 창에 붙이세요. Grok Bot은 등록된 Windows에서 승인 후 체크인하면 램프가 켜집니다. 안 되면 봇이 보낸 GROK_CREW_OK 한 줄을 여기 붙입니다. 복사만으로는 연결되지 않습니다.', 'Copy the connect text into the bot window. Grok Bot turns the lamp on after an approved check-in on the registered Windows. If that fails, paste the bot GROK_CREW_OK line here. Copying is not a connection.', '把连接文字贴到机器人窗口。Grok Bot 在已登记的 Windows 上批准签到后灯会亮。不行就把机器人回的 GROK_CREW_OK 贴到这里。只复制不算已连接。', '接続文をボット窓に貼る。Grok Bot は登録した Windows で承認してチェックインするとランプが付く。だめならボットの GROK_CREW_OK をここに貼る。コピーしただけでは接続されない。')}</p>
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">
@@ -189,11 +191,11 @@ export function DesktopBotPanel({
               type="button"
               role="tab"
               aria-selected={familyId === family.id}
-              className={`desktop-auto-option${familyId === family.id ? ' is-open' : ''}${links.bots.some((item) => item.kind === family.id && item.status === 'connected') ? ' is-set' : ''}`}
+              className={`desktop-auto-option${familyId === family.id ? ' is-open' : ''}${familyIsConnected(family.id, links, roster) ? ' is-set' : ''}`}
               onClick={() => setFamilyId(family.id)}
             >
               <span>{t(family.ko, family.en, family.zh, family.ja)}</span>
-              <b>{lampText(links.bots.some((item) => item.kind === family.id && item.status === 'connected'), t)}</b>
+              <b>{lampText(familyIsConnected(family.id, links, roster), t)}</b>
             </button>
           ))}
         </div>
@@ -205,7 +207,7 @@ export function DesktopBotPanel({
               {BOT_ROLES.map((role) => {
                 const seat: OtherSeat = { kind: family.id, role };
                 const row = linkedBySeat(links.bots, seat.kind, seat.role);
-                const on = row?.status === 'connected';
+                const on = seatIsConnected(seat.kind, seat.role, links, roster);
                 const key = `${seat.kind}-${seat.role}`;
                 const label = seatName(seat.kind, seat.role, language);
                 return (
@@ -216,9 +218,9 @@ export function DesktopBotPanel({
                       <Lamp on={on} label={lampText(on, t)} />
                     </div>
                     <div className="desktop-simple-copy-row">
-                      {on ? (
+                      {on && row?.status === 'connected' ? (
                         <button type="button" className="desktop-secondary" onClick={() => forget(row.id)}>{t('끊기', 'Remove', '断开', '切る')}</button>
-                      ) : (
+                      ) : on ? null : (
                         <button
                           type="button"
                           className="desktop-primary"
@@ -237,7 +239,7 @@ export function DesktopBotPanel({
             {familyHasOpenSeat && family.id === familyId ? (
               <div className="desktop-bot-confirm">
                 <b>{t('봇이 보낸 한 줄로 붙이기', 'Attach with the bot line', '用机器人回的那一行接上', 'ボットが返した一行で付ける')}</b>
-                <p>{t(`봇 창의 GROK_CREW_OK ${links.pairCode} … 줄을 붙이세요. 세 자리를 한꺼번에 붙여도 됩니다.`, `Paste the GROK_CREW_OK ${links.pairCode} … line from the bot window. You can paste all three seats at once.`, `把机器人窗口里的 GROK_CREW_OK ${links.pairCode} … 贴过来。三个座位可以一次贴。`, `ボット窓の GROK_CREW_OK ${links.pairCode} … を貼ってください。三席まとめて貼ってもよいです。`)}</p>
+                <p>{t(`Windows 체크인이 안 되면 봇 창의 GROK_CREW_OK ${links.pairCode} … 줄을 붙이세요. 세 자리를 한꺼번에 붙여도 됩니다.`, `If the Windows check-in does not land, paste the GROK_CREW_OK ${links.pairCode} … line from the bot window. You can paste all three seats at once.`, `Windows 签到没到的话，把机器人窗口里的 GROK_CREW_OK ${links.pairCode} … 贴过来。三个座位可以一次贴。`, `Windows のチェックインが来なければ、ボット窓の GROK_CREW_OK ${links.pairCode} … を貼ってください。三席まとめて貼ってもよいです。`)}</p>
                 <textarea
                   className="desktop-bot-paste"
                   value={replyText}

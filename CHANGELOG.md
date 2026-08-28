@@ -5,6 +5,7 @@ All notable changes to Grok Crew are documented here.
 ## Unreleased
 
 - Other-PC Grok Bot / Agent seats turn **Connected** when the operator pastes the bot `GROK_CREW_OK` line. Copying the invite still does not turn the lamp green.
+- Grok Bot invite text now tells the bot to check in from the operator registered Windows only (`POST /api/bot-entry` on that PC). An active same-PC check-in with that seat name or `grok-planner` / `grok-scraper` / `grok-editor` turns that seat green. Agent seats and the OK-line fallback stay.
 
 ## 1.0.2 - 2026-08-28
 
