@@ -252,8 +252,8 @@ export function SimpleDesk({
           <b className={attached ? 'desktop-connect-lamp is-on' : 'desktop-connect-lamp'}>
             <i aria-hidden="true" />
             {attached
-            ? t(`연결됨 · ${attachedName}`, `Connected · ${attachedName}`, `已连接 · ${attachedName}`, `接続済み · ${attachedName}`)
-            : t('연결 상태는 연결 메뉴에서', 'Connection status is in Connect', '连接状态在连接菜单', '接続状態は接続メニュー')}
+            ? t('연결됨', 'Connected', '已连接', '接続済み')
+            : t('연결되지않음', 'Not connected', '未连接', '未接続')}
           </b>
           <p>{attached
             ? t('이제 제목을 적고 일을 맡기거나, 영상을 직접 여세요.', 'Now write a title and hand it off, or open a video yourself.', '现在写标题交给它，或自己打开视频。', 'タイトルを書いて任せるか、映像を自分で開いてください。')

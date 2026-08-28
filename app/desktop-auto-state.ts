@@ -321,9 +321,7 @@ export function autoPhaseLamps(input: AutoLampInput): Record<AutoPhaseId, AutoLa
     ? 'red'
     : input.attached
       ? 'green'
-      : input.connectWaiting
-        ? 'yellow'
-        : 'off';
+      : 'off';
 
   let sent: AutoLamp = 'off';
   if (input.sendFailed) sent = 'red';

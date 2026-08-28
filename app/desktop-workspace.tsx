@@ -28,6 +28,7 @@ import { autoHeaderDot, writeAutoPrefs } from './desktop-auto-state';
 import { DesktopVoiceSetup } from './desktop-voice-setup';
 import {
   confirmVoiceChoice,
+  needsFirstVoiceSetup,
   readVoiceSetup,
   writeVoiceSetup,
   type VoiceModelId,
@@ -531,6 +532,7 @@ export default function DesktopWorkspace() {
       : t('확인 후', 'Ask first', '先确认', '確認してから');
 
   const project = workspace.projects.find((item) => item.id === selectedProjectId);
+  const showVoiceWizard = needsFirstVoiceSetup(voiceSetup);
   const deskReady = hasConnectedBot(workspace.crew_roster, botLinks) || Boolean(project);
   const showBotRoom = botPanelOpen || (!deskReady && !peekAuto);
   const showAutoDesk = !showBotRoom && !advancedSpecOpen && (activePanel === 'auto' || !project);
@@ -1246,6 +1248,7 @@ export default function DesktopWorkspace() {
       <header className="desktop-titlebar">
         <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="gear" />
         <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
+        {showVoiceWizard ? null : (
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
           <button type="button" className={`${showBotRoom ? 'active' : ''}${hasConnectedBot(workspace.crew_roster, botLinks) ? ' is-connected' : ' needs-bot'}`} aria-current={showBotRoom ? 'page' : undefined} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>{t('연결', 'Connect', '连接', '接続')}</button>
           <button type="button" className={!showBotRoom && showAutoDesk ? 'active' : ''} aria-current={!showBotRoom && showAutoDesk ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(true); setAdvancedSpecOpen(false); setActivePanel('auto'); }}>{t('자동', 'Auto', '自动', '自動')}{autoDot !== 'off' ? <i className={`desktop-auto-nav-dot is-${autoDot}`} aria-hidden="true" /> : null}</button>
@@ -1257,21 +1260,39 @@ export default function DesktopWorkspace() {
             </>
           ) : null}
         </nav>
+        )}
         <div className="desktop-title-actions">
+          {showVoiceWizard ? null : (
+            <>
           {update.releaseUrl && window.grokCrew?.openRelease
             ? <button type="button" className={`desktop-chip ${update.status === 'up_to_date' || update.status === 'dev_fallback' ? 'ready' : 'wait'}`} title={update.message} onClick={() => void window.grokCrew?.openRelease?.(update.releaseUrl)}>{update.status === 'available_external' || update.status === 'available' ? t(`업데이트 ${update.latestVersion}`, `Update ${update.latestVersion}`, `更新 ${update.latestVersion}`, `更新 ${update.latestVersion}`) : t(`개발 ${update.currentVersion}`, `Dev ${update.currentVersion}`, `开发 ${update.currentVersion}`, `開発 ${update.currentVersion}`)}</button>
             : <span className={`desktop-chip ${update.status === 'up_to_date' || update.status === 'dev_fallback' ? 'ready' : 'wait'}`} title={update.message}>{t(`로컬 ${update.currentVersion}`, `Local ${update.currentVersion}`, `本地 ${update.currentVersion}`, `ローカル ${update.currentVersion}`)}</span>}
           {showRemoteDesk && launch ? <span className={`desktop-chip ${Object.values(launch.local_gates).every(Boolean) ? 'ready' : 'wait'}`} title={Object.values(launch.external_gates).map((gate) => gate.detail).join(' ')}>{t('로컬 1.0 게이트', 'Local 1.0 gates', '本地 1.0 关卡', 'ローカル 1.0 ゲート')}</span> : null}
           <button type="button" className={`desktop-connection ${hasConnectedBot(workspace.crew_roster, botLinks) ? 'connected' : ''}`} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>
-            ● {hasConnectedBot(workspace.crew_roster, botLinks) ? t('연결됨', 'Connected', '已连接', '接続済み') : t('연결 안 됨', 'Not connected', '未连接', '未接続')}
+            ● {hasConnectedBot(workspace.crew_roster, botLinks) ? t('연결됨', 'Connected', '已连接', '接続済み') : t('연결되지않음', 'Not connected', '未连接', '未接続')}
           </button>
           <button type="button" className="desktop-chrome-btn desktop-projects-toggle" aria-expanded={drawer === 'projects'} onClick={() => setDrawer((value) => value === 'projects' ? 'none' : 'projects')}>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</button>
           <button type="button" className="desktop-chrome-btn desktop-status-toggle" aria-expanded={drawer === 'status'} onClick={() => { setRemoteOpen(true); setDrawer((value) => value === 'status' ? 'none' : 'status'); }}>{t('상태', 'Status', '状态', '状態')}</button>
+            </>
+          )}
           <LanguageSwitcher />
         </div>
       </header>
       {drawer !== 'none' ? <button type="button" className="desktop-drawer-backdrop" aria-label={t('패널 닫기', 'Close panel', '关闭面板', 'パネルを閉じる')} onClick={() => setDrawer('none')} /> : null}
 
+      {showVoiceWizard ? (
+      <div className="desktop-body local-first desktop-voice-first">
+        <DesktopVoiceSetup
+          variant="wizard"
+          selected={voiceDraft}
+          studioReady={studioState === 'ready'}
+          busy={voiceBusy}
+          download={workspace.first_run?.voice_model?.download}
+          onSelect={setVoiceDraft}
+          onConfirm={() => { void confirmVoiceModel(voiceDraft); }}
+        />
+      </div>
+      ) : (
       <div
         ref={columns.bodyRef}
         className={`desktop-body${hideInspectorColumn ? ' local-first' : ''}${columns.dragging ? ' is-resizing' : ''}`}
@@ -1945,8 +1966,9 @@ export default function DesktopWorkspace() {
           </> : null}
         </aside>
       </div>
+      )}
 
-      {editToolsOpen && timeline ? (
+      {!showVoiceWizard && editToolsOpen && timeline ? (
         <TimelineEditor
           timeline={timeline}
           selectedClipIds={selectedClipIds}
@@ -1960,6 +1982,7 @@ export default function DesktopWorkspace() {
         />
       ) : null}
 
+      {showVoiceWizard ? null : (
       <footer className="desktop-command-bar">
         <div className={`desktop-message ${studioState === 'error' ? 'error' : studioState === 'loading' ? 'loading' : ''}${statusOpen ? '' : ' is-folded'}`}>
           <button
@@ -1985,6 +2008,7 @@ export default function DesktopWorkspace() {
         </div>
         <div className="desktop-command-summary"><span>{executionPolicy === 'auto_edit_render' ? t('자동 편집·렌더', 'Auto edit & render', '自动编辑和渲染', '自動編集・レンダー') : t('검토 우선', 'Review first', '审核优先', '確認優先')}</span><span>{Object.values(publishPolicy).filter((value) => value === 'auto').length} {t('개 자동 게시', 'auto publish', '个自动发布', '件の自動公開')}</span><button className="desktop-start" disabled={busy || !project || studioState !== 'ready'} onClick={() => void startGrok()}>{busy ? t('처리 중…', 'Working…', '处理中…', '処理中…') : t('편집 Agent로 제작 시작', 'Start with Editor Agent', '使用剪辑 Agent 开始制作', '編集 Agent で制作開始')} <b>→</b></button></div>
       </footer>
+      )}
     </main>
   );
 }

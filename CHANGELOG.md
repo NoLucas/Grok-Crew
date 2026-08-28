@@ -4,7 +4,9 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
-- Copying the connect text no longer marks a seat connected. The lamp stays waiting until a real check-in. Leftover other-PC “connected” rows from a copy are treated as waiting.
+- First open of the desk now asks which TTS this PC should install (Kokoro-82M / Step Audio EditX / Zonos-v0.1). The Windows installer stays one-click; Next with no pick keeps Kokoro-82M. TTS stays unused until Auto turns it on.
+- Connect lamps are only **연결됨** / **연결되지않음** (Connected / Not connected). Gray is not connected. Green is connected. Role plus “아직 아님”, and copy-waiting lamp copy, are gone. Copying still does not turn the lamp green.
+- Copying the connect text no longer marks a seat connected. Leftover other-PC “connected” rows from a copy are treated as waiting.
 - `/home` now opens on an English language gate (English / 한국어 / 中文 / 日本語). The browser language is not guessed, and a leftover localStorage choice does not skip the gate. Only `?lang=` skips it. The first screen is the mark plus native names — no explainer copy. The choice can be changed in the header.
 - Removed a personal chatgpt.site host from the homepage allowlist. Extra origins come only from `GROK_CREW_PUBLIC_ORIGIN`.
 - `POST /api/get` now rejects foreign `Origin` headers, rate-limits repeats, and only returns a GitHub https download URL. `/home` and the preview server send frame and content-type headers.

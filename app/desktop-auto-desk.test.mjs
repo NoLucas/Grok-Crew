@@ -338,6 +338,15 @@ describe('auto desk lamps', () => {
   it('uses red for a dead studio, a failed send, a failed pull, or a failed save', () => {
     assert.equal(autoPhaseLamps({
       attached: false,
+      studioReady: true,
+      connectWaiting: true,
+      wait: null,
+      pull: 'idle',
+      hasProject: false,
+      outputReady: false,
+    }).connect, 'off');
+    assert.equal(autoPhaseLamps({
+      attached: false,
       studioReady: false,
       wait: null,
       pull: 'idle',

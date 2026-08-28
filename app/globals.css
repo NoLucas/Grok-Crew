@@ -7666,6 +7666,12 @@ select {
 }
 .desktop-voice-saved p { margin: 0; font-size: 13px; }
 .desktop-voice-saved.is-saved p { color: var(--desktop-green); }
+.desktop-voice-first {
+  place-items: center;
+  align-content: center;
+  padding: 36px 24px 48px;
+  overflow: auto;
+}
 .desktop-voice-setup {
   width: min(880px, 100%);
   justify-self: center;
