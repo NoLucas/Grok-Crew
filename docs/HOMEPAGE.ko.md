@@ -11,7 +11,7 @@
 - Windows 파일은 GitHub Release에서 이메일 없이 받는다
 - 소식 이메일은 선택. `POST /api/get`
 - 라이브 페이지에 `public/connect-install.js`를 꽂으면 문구와 받기 칸이 맞춰진다
-- 그 페이지가 `POST /api/get`을 부를 수 있게 그 출처만 연다
+- 그 페이지가 `POST /api/get`을 부르려면 `GROK_CREW_PUBLIC_ORIGIN`에 그 출처만 넣는다. 개인 호스트를 코드에 넣지 않는다
 
 ## 하지 않는 것
 
