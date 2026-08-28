@@ -346,7 +346,7 @@ export function AutoDesk({
       if (check.reason === 'materials') setOptionPane('pictures');
       setStayOnCompose(true);
       setError(check.reason === 'title'
-        ? t('만들고 싶은 영상을 적어 주세요. 주소여도 됩니다.', 'Write the video you want. A URL is fine.', '请写下想做的视频。地址也可以。', '作りたい映像を書いてください。住所でもよいです。')
+        ? t('만들고 싶은 영상을 적어 주세요. 주소여도 됩니다.', 'Write the video you want. A URL is fine.', '请写下想做的视频。网址也可以。', '作りたい映像を書いてください。URL でもよいです。')
         : check.reason === 'materials'
           ? !useOwn && !useScrape
             ? t('내 영상·사진을 넣을지, 공개 장면을 찾아올지 고르세요.', 'Choose your files, public scenes, or both.', '请选择放自己的影像，或找公开镜头，或两者。', '自分の映像を入れるか、公開の場面を探すか、両方を選んでください。')
@@ -598,7 +598,7 @@ export function AutoDesk({
     },
     {
       id: 'sent',
-      label: t('보냄', 'Sent', '已发送', '送った'),
+      label: t('보냄', 'Sent', '已发送', '送信済み'),
       note: sendFailed
         ? t('일을 저장하지 못했습니다', 'Could not save the job', '无法保存任务', '仕事を保存できませんでした')
         : wait
@@ -627,14 +627,14 @@ export function AutoDesk({
     },
     {
       id: 'cut',
-      label: t('영상 도착', 'Video arrived', '视频到了', '映像到着'),
+      label: t('영상 도착', 'Video arrived', '视频到达', '映像到着'),
       note: hasProject || pullStatus === 'arrived'
         ? t('미리보기', 'Preview', '预览', 'プレビュー')
         : t('아직', 'Not yet', '还没有', 'まだ'),
     },
     {
       id: 'save',
-      label: t('이 PC에', 'On this PC', '在这台电脑', 'この PC に'),
+      label: t('이 PC 저장', 'Save here', '本机保存', 'この PC に保存'),
       note: saveFailed
         ? t('저장 실패', 'Save failed', '保存失败', '保存に失敗')
         : savingFile
@@ -718,7 +718,7 @@ export function AutoDesk({
                     setGoal(event.target.value);
                     if (error) setError('');
                   }}
-                  placeholder={t('예: 카페 오픈 15초, 손과 간판이 먼저. 주소여도 됩니다.', 'Example: a 15s cafe open, hands and the sign first. A URL is fine.', '例如：咖啡馆开业 15 秒，手先出、再出招牌。地址也可以。', '例: カフェ開店15秒、手と看板が先。住所でもよい。')}
+                  placeholder={t('예: 카페 오픈 15초, 손과 간판이 먼저. 주소여도 됩니다.', 'Example: a 15s cafe open, hands and the sign first. A URL is fine.', '例如：咖啡馆开业 15 秒，手先出、再出招牌。网址也可以。', '例: カフェ開店15秒、手と看板が先。URL でもよい。')}
                   rows={5}
                   aria-invalid={Boolean(error) && !titleFromPrompt(title, goal)}
                   disabled={saving}
@@ -810,7 +810,7 @@ export function AutoDesk({
                   className={`desktop-auto-option${optionPane === 'where' ? ' is-open' : ''} is-set`}
                   onClick={() => togglePane('where')}
                 >
-                  <span>{t('올릴 곳', 'Where', '去处', '上げ先')}</span>
+                  <span>{t('올릴 곳', 'Where to post', '发布处', '上げ先')}</span>
                   <b>{styleLabel}</b>
                 </button>
                 <button
@@ -928,7 +928,7 @@ export function AutoDesk({
               {optionPane === 'where' ? (
                 <fieldset className="desktop-auto-option-pane desktop-auto-shapes">
                   <legend>{t('어디에 올릴까요', 'Where will you post it?', '要发到哪里？', 'どこに上げますか')}</legend>
-                  <div className="desktop-auto-chips desktop-auto-shape-chips" role="radiogroup" aria-label={t('올릴 곳', 'Where to post', '发布到', '上げる先')}>
+                  <div className="desktop-auto-chips desktop-auto-shape-chips" role="radiogroup" aria-label={t('올릴 곳', 'Where to post', '发布处', '上げ先')}>
                     {cards.length ? cards.map((recipe) => (
                       <button
                         key={recipe.id}

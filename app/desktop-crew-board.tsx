@@ -66,7 +66,7 @@ export function DesktopCrewBoard({
 
   const saveMemo = () => {
     if (!memo) return;
-    downloadMemo(memo, jobTitle || t('주고받은 말', 'What they left each other', '他们留下的话', '残し合った言葉'));
+    downloadMemo(memo, jobTitle || t('주고받은 말', 'Lines they left', '他们留下的话', '残し合った言葉'));
     setMemoState('saved');
     window.setTimeout(() => setMemoState('idle'), 4000);
   };
@@ -75,7 +75,7 @@ export function DesktopCrewBoard({
     <section className="desktop-crew-board" aria-live="polite">
       <header className="desktop-crew-board-lead">
         <div className="desktop-crew-board-title">
-          <b>{t('크루 보드', 'Crew board', '组员板', 'クルーボード')}</b>
+          <b>{t('크루 보드', 'Crew board', '组员看板', 'クルーボード')}</b>
           {jobTitle ? <em>{jobTitle}</em> : null}
         </div>
         <p>{t(
@@ -120,7 +120,7 @@ export function DesktopCrewBoard({
 
       <section className="desktop-crew-talk">
         <div className="desktop-crew-talk-head">
-          <b>{t('주고받은 말', 'What they left each other', '他们留下的话', '残し合った言葉')}</b>
+          <b>{t('주고받은 말', 'Lines they left', '他们留下的话', '残し合った言葉')}</b>
           {memo ? (
             <div className="desktop-crew-board-actions">
               <button type="button" className="desktop-secondary" onClick={() => { void copyMemo(); }}>

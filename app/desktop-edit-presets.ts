@@ -160,7 +160,7 @@ export const BUILTIN_EDIT_PRESETS: EditPresetOption[] = [
   {
     id: 'youtube_long',
     kind: 'builtin',
-    name: named('유튜브 본편', 'YouTube long', 'YouTube 长视频', 'YouTube本編'),
+    name: named('유튜브 본편', 'YouTube long video', 'YouTube 长视频', 'YouTube 本編'),
     hint: named('가로 90초 상한, 여유 컷, 시간순', '16:9 · 90s cap · deliberate', '横屏90秒上限，从容按时间', '横90秒上限・ゆったり時系列'),
     method: {
       ...DEFAULT_EDIT_METHOD,

@@ -279,10 +279,10 @@ export function DesktopBotPanel({
       </section>
 
       {studioPort === 7214 ? (
-        <p className="desktop-spec-meta">{t('이 창의 체크인 주소는 127.0.0.1:7214입니다.', 'This window check-in address is 127.0.0.1:7214.', '这个窗口的签到地址是 127.0.0.1:7214。', 'この窓のチェックイン住所は 127.0.0.1:7214 です。')}</p>
+        <p className="desktop-spec-meta">{t('이 창의 체크인 주소는 127.0.0.1:7214입니다.', 'This window check-in address is 127.0.0.1:7214.', '这个窗口的签到地址是 127.0.0.1:7214。', 'この窓のチェックインアドレスは 127.0.0.1:7214 です。')}</p>
       ) : (
         <p className="desktop-port-banner" role="status">
-          {t(`이 창은 7214가 아니라 127.0.0.1:${studioPort}를 엽니다. 연결 글은 그 주소를 씁니다.`, `This window opened 127.0.0.1:${studioPort}, not 7214. The connect text uses that address.`, `这个窗口开的是 127.0.0.1:${studioPort}，不是 7214。连接文字用这个地址。`, `この窓は 7214 ではなく 127.0.0.1:${studioPort} を開いています。接続文はその住所を使います。`)}
+          {t(`이 창은 7214가 아니라 127.0.0.1:${studioPort}를 엽니다. 연결 글은 그 주소를 씁니다.`, `This window opened 127.0.0.1:${studioPort}, not 7214. The connect text uses that address.`, `这个窗口开的是 127.0.0.1:${studioPort}，不是 7214。连接文字用这个地址。`, `この窓は 7214 ではなく 127.0.0.1:${studioPort} を開いています。接続文はそのアドレスを使います。`)}
         </p>
       )}
 
@@ -314,7 +314,7 @@ export function DesktopBotPanel({
       <section className="desktop-auto-composer-card">
         <h2>{t('봇 붙이기', 'Attach a bot', '接上机器人', 'ボットを付ける')}</h2>
         <p>{t('쓸 봇만 고르면 됩니다. Agent는 옆 칩에서 엽니다.', 'Pick the bot you will use. Agent is on the other chip.', '只选要用的机器人。Agent 在旁边的芯片里。', '使うボットだけ選ぶ。Agent は横のチップで開く。')}</p>
-        <div className="desktop-auto-options" role="tablist" aria-label={t('봇 종류', 'Bot kind', '机器人种类', 'ボットの種類')}>
+        <div className="desktop-auto-options" role="tablist" aria-label={t('봇 종류', 'Bot type', '机器人种类', 'ボットの種類')}>
           {OTHER_FAMILIES.map((family) => (
             <button
               key={family.id}
@@ -352,7 +352,7 @@ export function DesktopBotPanel({
                     </div>
                     <div className="desktop-simple-copy-row">
                       {on && row?.status === 'connected' ? (
-                        <button type="button" className="desktop-secondary" onClick={() => forget(row.id)}>{t('끊기', 'Remove', '断开', '切る')}</button>
+                        <button type="button" className="desktop-secondary" onClick={() => forget(row.id)}>{t('끊기', 'Remove', '断开', '外す')}</button>
                       ) : on ? null : (
                         <button
                           type="button"
@@ -415,7 +415,7 @@ export function DesktopBotPanel({
       />
 
       <details className="desktop-auto-help">
-        <summary>{t('이 PC에서 봇 쓰기', 'Use a bot on this PC', '在这台电脑用机器人', 'この PC でボットを使う')}</summary>
+        <summary>{t('이 PC에서 봇 쓰기', 'Use a bot on this PC', '在这台电脑上用机器人', 'この PC でボットを使う')}</summary>
         <p>{t('같은 PC 봇은 체크인 글을 그 창에 붙이면 이름이 여기 뜹니다. 창을 끄지 마세요.', 'A bot on this PC pastes the check-in line and its name appears here. Do not close this window.', '这台电脑上的机器人贴签到文字后，名字会出现在这里。不要关掉窗口。', '同じ PC のボットはチェックイン文を貼ると名前が出ます。窓を閉じないでください。')}</p>
         <div className={`desktop-connect-row${local ? ' is-connected' : ''}`}>
           <div>
@@ -499,7 +499,7 @@ export function DesktopBotPanel({
               {services.desktopApp ? (
                 <div className="desktop-simple-copy-row">
                   <button type="button" className="desktop-secondary" disabled={services.busy} onClick={services.onPairRunner}>{t('제작기 연결', 'Pair the builder', '连接制作器', '制作機を接続')}</button>
-                  <button type="button" className="desktop-secondary" disabled={services.busy} onClick={services.onExportDesktopKey}>{t('데스크톱 키', 'Desktop key', '桌面密钥', 'デスクトップ鍵')}</button>
+                  <button type="button" className="desktop-secondary" disabled={services.busy} onClick={services.onExportDesktopKey}>{t('데스크톱 키', 'Desktop key', '桌面密钥', 'デスクトップキー')}</button>
                 </div>
               ) : (
                 <span>{t('데스크톱 앱에서만 됩니다.', 'Only in the desktop app.', '仅桌面应用可用。', 'デスクトップアプリだけです。')}</span>

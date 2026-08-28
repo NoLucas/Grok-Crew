@@ -32,7 +32,7 @@ export function recipeFallbackLabel(id: string, language = 'ko'): string {
   const raw = String(id || '').trim() || DEFAULT_RECIPE_ID;
   if (raw === 'tiktok_tight') return autoCopy(language, '틱톡', 'TikTok', 'TikTok', 'TikTok');
   if (raw === 'youtube_short') return autoCopy(language, '유튜브 쇼츠', 'YouTube Shorts', 'YouTube Shorts', 'YouTube Shorts');
-  if (raw === 'youtube_long') return autoCopy(language, '유튜브 긴 영상', 'YouTube long', 'YouTube 长视频', 'YouTube 長尺');
+  if (raw === 'youtube_long') return autoCopy(language, '유튜브 긴 영상', 'YouTube long video', 'YouTube 长视频', 'YouTube 長尺');
   return autoCopy(language, '인스타 릴', 'Instagram Reel', 'Instagram Reel', 'Instagram リール');
 }
 

@@ -71,7 +71,7 @@ export function DesktopInstallHelp({ variant = 'fold' }: { variant?: 'fold' | 'o
   const { t } = useLanguage();
   const dontRun = t('실행하지 않음', 'Don’t run', '不运行', '実行しない');
   const unknownPublisher = t('게시자를 확인할 수 없음', 'Publisher could not be verified', '无法验证发布者', '発行元を確認できません');
-  const afterMore = t('추가 정보를 연 다음', 'After more info', '打开更多信息之后', '詳細情報のあと');
+  const afterMore = t('추가 정보를 연 다음', 'After more info', '打开更多信息之后', '詳細情報の後');
   const figures = (
     <>
       <ol className="desktop-simple-help">

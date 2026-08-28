@@ -114,8 +114,8 @@ export function voiceGenderLabel(gender: VoiceGender, language = 'ko'): string {
 export function voiceFeelLabel(feel: VoiceFeel, language = 'ko'): string {
   const lang = language.slice(0, 2);
   if (feel === 'clear') {
-    if (lang === 'zh') return '清楚';
-    if (lang === 'ja') return 'はっきり';
+    if (lang === 'zh') return '清晰';
+    if (lang === 'ja') return 'はっきりした';
     return lang === 'en' ? 'Clear' : '또렷한';
   }
   if (feel === 'bright') {
