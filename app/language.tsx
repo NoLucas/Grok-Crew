@@ -1,12 +1,26 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import {
+  APP_LANGUAGES,
+  LANGUAGE_CHOSEN_KEY,
+  LANGUAGE_STORAGE_KEY,
+  isAppLanguage,
+  type AppLanguage,
+} from './language-choice';
 
-export type AppLanguage = 'ko' | 'en' | 'zh' | 'ja';
+export type { AppLanguage } from './language-choice';
+export {
+  LANGUAGE_CHOSEN_KEY,
+  LANGUAGE_STORAGE_KEY,
+  hasChosenLanguage,
+  isAppLanguage,
+  needsLanguageGate,
+} from './language-choice';
 
-const storageKey = 'localVideoWorkspaceLanguage';
+const storageKey = LANGUAGE_STORAGE_KEY;
 const changeEvent = 'local-video-workspace-language-change';
-const knownLanguages: AppLanguage[] = ['ko', 'en', 'zh', 'ja'];
+const knownLanguages = APP_LANGUAGES;
 
 type LanguageValue = { language: AppLanguage; chooseLanguage: (language: AppLanguage) => void; t: (ko: string, en: string, zh: string, ja: string) => string };
 const LanguageContext = createContext<LanguageValue | null>(null);
@@ -14,7 +28,7 @@ const LanguageContext = createContext<LanguageValue | null>(null);
 function readLanguage(): AppLanguage {
   try {
     const stored = window.localStorage.getItem(storageKey);
-    return (knownLanguages as string[]).includes(stored ?? '') ? (stored as AppLanguage) : 'ko';
+    return isAppLanguage(stored) ? stored : 'ko';
   } catch { return 'ko'; }
 }
 
@@ -35,6 +49,7 @@ export function LanguageProvider({ initialLanguage, children }: { initialLanguag
   const chooseLanguage = useCallback((next: AppLanguage) => {
     try {
       window.localStorage.setItem(storageKey, next);
+      window.localStorage.setItem(LANGUAGE_CHOSEN_KEY, '1');
       document.cookie = `${storageKey}=${next}; path=/; max-age=31536000; samesite=lax`;
     } catch { /* The current tab still changes language. */ }
     applyLanguage(next); setLanguage(next); window.dispatchEvent(new Event(changeEvent));

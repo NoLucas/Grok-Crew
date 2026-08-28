@@ -10,6 +10,7 @@ const {
   BOT_SKILL_PATHS,
   ROLE_EXTRA_SKILLS,
   crewOrderBlock,
+  destinationInviteLine,
   extraSkillText,
   isBotRole,
   roleLabel,
@@ -33,7 +34,7 @@ describe('built-in bot skills', () => {
     assert.equal(roleLabel('planner', 'ko'), '기획자');
   });
 
-  it('keeps each skill in its lane and forbids loopback plus login walls', () => {
+  it('keeps Korean Korea skills in their lane and forbids loopback plus login walls', () => {
     const planner = skillText('planner');
     const scraper = skillText('scraper');
     const editor = skillText('editor');
@@ -41,28 +42,31 @@ describe('built-in bot skills', () => {
     assert.match(planner, /다시 말하면/);
     assert.match(planner, /grok-crew-edit-plan/);
     assert.match(planner, /컷 계획서/);
-    assert.match(planner, /나라 버릇/);
-    assert.match(planner, /中文\(zh\)/);
-    assert.match(planner, /日本語\(ja\)/);
+    assert.match(planner, /한국만 다룹니다/);
     assert.match(planner, /원본과 보낼 곳이 다르면/);
     assert.match(planner, /중국 영상 → 한국 컷/);
     assert.match(planner, /자동 스위치/);
+    assert.match(planner, /봇이 돌아가는 리눅스/);
+    assert.doesNotMatch(planner, /미국 버릇|중국 버릇|일본 버릇/);
+    assert.doesNotMatch(planner, /中文\(zh\)/);
+    assert.doesNotMatch(planner, /日本語\(ja\)/);
     assert.doesNotMatch(planner, /git clone/);
     assert.match(scraper, /공개/);
     assert.match(scraper, /로그인 막힌/);
     assert.match(scraper, /grok-crew-public-pick/);
     assert.match(scraper, /비슷한 것/);
-    assert.match(scraper, /한국 사이트만 보지 않습니다/);
-    assert.match(scraper, /哔哩哔哩/);
-    assert.match(scraper, /ニコニコ/);
+    assert.match(scraper, /네이버 TV 공개/);
+    assert.match(scraper, /빌리빌리·니코니코를 기본으로 넣지 않습니다/);
+    assert.doesNotMatch(scraper, /Vimeo 공개, 공개 뉴스/);
     assert.match(editor, /기획자가 정한 방법/);
     assert.match(editor, /grok-crew-cut-to-plan/);
     assert.match(editor, /첫 1–2초/);
-    assert.match(editor, /컷을 더 자주/);
-    assert.match(editor, /효과는 과하지 않게/);
+    assert.match(editor, /자막 크게/);
     assert.match(editor, /중국 영상 → 한국 컷/);
     assert.match(editor, /한글 자막/);
     assert.match(editor, /자막 끔/);
+    assert.doesNotMatch(editor, /컷을 더 자주/);
+    assert.doesNotMatch(editor, /효과는 과하지 않게/);
     assert.deepEqual(ROLE_EXTRA_SKILLS.planner, ['edit-plan']);
     assert.deepEqual(ROLE_EXTRA_SKILLS.scraper, ['public-pick']);
     assert.deepEqual(ROLE_EXTRA_SKILLS.editor, ['cut-to-plan']);
@@ -72,6 +76,32 @@ describe('built-in bot skills', () => {
     }
   });
 
+  it('writes English United States skills without a Korean body', () => {
+    const planner = skillText('planner', 'en');
+    const scraper = skillText('scraper', 'en');
+    const editor = skillText('editor', 'en');
+    assert.match(planner, /You are the planner/);
+    assert.match(planner, /United States only/);
+    assert.match(planner, /A spoken hook/);
+    assert.doesNotMatch(planner, /당신은 기획자/);
+    assert.doesNotMatch(planner, /한국만 다룹니다/);
+    assert.doesNotMatch(planner, /中文\(zh\)|日本語\(ja\)/);
+    assert.match(scraper, /Vimeo public pages/);
+    assert.match(scraper, /Do not default to Naver or Bilibili/);
+    assert.doesNotMatch(scraper, /네이버 TV/);
+    assert.doesNotMatch(scraper, /哔哩哔哩/);
+    assert.match(editor, /You are the editor/);
+    assert.match(editor, /Keep the spoken hook/);
+    assert.match(editor, /TTS off/);
+    assert.match(skillText('scraper', 'en', 'cn'), /Bilibili public pages/);
+    assert.doesNotMatch(skillText('scraper', 'en', 'cn'), /Vimeo public pages/);
+    assert.match(skillText('planner', 'ko', 'cn'), /중국만 다룹니다/);
+    assert.match(skillText('planner', 'ko', 'cn'), /첫 화면이 크고 빠릅니다/);
+    assert.doesNotMatch(skillText('planner', 'ko', 'cn'), /한국만 다룹니다/);
+    assert.match(skillText('editor', 'ja', 'jp'), /カットは控えめに/);
+    assert.match(skillText('scraper', 'zh', 'jp'), /Niconico/);
+  });
+
   it('appends the crew order to an invite without inventing a new API', () => {
     const text = withCrewInvite('제목: 카페 오픈', 'ko');
     assert.match(text, /제목: 카페 오픈/);
@@ -79,6 +109,7 @@ describe('built-in bot skills', () => {
     assert.match(text, /스크래핑/);
     assert.match(text, /편집자/);
     assert.match(text, /이 앱은 긁지 않는다/);
+    assert.match(text, /보낼 나라: 한국/);
     assert.match(text, /\/bot-skills\/planner\.md/);
     assert.match(text, /\/bot-skills\/edit-plan\.md/);
     assert.match(text, /\/bot-skills\/public-pick\.md/);
@@ -94,10 +125,15 @@ describe('built-in bot skills', () => {
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true }), /따뜻한 여자 · 한국어/);
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true, voiceGender: 'male', voiceFeel: 'clear', voiceAccent: 'zh' }), /또렷한 남자 · 중국어/);
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true, voiceModelId: 'step-audio-editx' }), /Step Audio EditX 하나만/);
+    const english = withCrewInvite('Title: cafe', 'en', {}, 'cn');
+    assert.match(english, /Destination country: China/);
+    assert.match(english, /This skill covers China only/);
+    assert.doesNotMatch(english, /당신은 기획자/);
     assert.match(voiceInviteBlock('en'), /Captions: off/);
     assert.match(voiceInviteBlock('en'), /TTS: off/);
     assert.match(skillText('planner'), /TTS 끔/);
     assert.match(skillText('editor'), /TTS 끔/);
+    assert.match(destinationInviteLine('ko', 'jp'), /일본/);
   });
 
   it('keeps the public skill files in lockstep', () => {

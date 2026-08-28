@@ -404,6 +404,9 @@ describe('auto desk prefs and names', () => {
     rememberRecentTitle('15초 훅 릴');
     assert.deepEqual(readAutoPrefs().recentTitles, ['15초 훅 릴', '틱톡으로 올려']);
     assert.equal(JSON.parse(memory.get(AUTO_PREFS_KEY)).recipeId, 'tiktok_tight');
+    writeAutoPrefs({ market: 'cn', marketTouched: true });
+    assert.equal(readAutoPrefs().market, 'cn');
+    assert.equal(readAutoPrefs().marketTouched, true);
   });
 
   it('names connected seats, never a mystery active bot', () => {

@@ -1,4 +1,5 @@
 import { isBotRole, roleLabel, seatName, skillText, type BotRole } from './bot-skills';
+import { marketLabel, resolveCrewMarket } from './crew-market';
 import { connectedBot, type CrewBot, type CrewRoster } from './desktop-bot-connect';
 
 export const GROK_SEAT_BOT_IDS = {
@@ -470,8 +471,11 @@ export function remoteConnectPaste(
   language: string,
   role: BotRole = 'editor',
   studioPort = DEFAULT_STUDIO_PORT,
+  market?: string,
 ): string {
   const lang = language.slice(0, 2);
+  const dest = resolveCrewMarket(market, language);
+  const skills = skillText(role, language, dest);
   const family = kind === 'grok' ? 'grok' : 'custom';
   const who = seatName(family, role, lang === 'zh' || lang === 'ja' || lang === 'en' ? lang : 'ko');
   const line = `GROK_CREW_OK ${pairCode} ${who}`;
@@ -481,6 +485,7 @@ export function remoteConnectPaste(
     return [
       `당신은 Grok Crew와 연결합니다. 이름은 ${who}입니다.`,
       `역할은 ${job}입니다. 연결할 때 아래 역할 스킬과 보조 스킬을 읽고 그 일만 합니다.`,
+      `보낼 나라는 ${marketLabel(dest, 'ko')}입니다. 나라를 바꿨으면 이 글을 다시 복사하세요.`,
       ...(windows.length ? windows : ['다른 컴퓨터에서는 127.0.0.1에 붙지 마세요. 이 창을 열 수 없습니다.']),
       `연결 코드: ${pairCode}`,
       '',
@@ -489,13 +494,14 @@ export function remoteConnectPaste(
       '',
       '그다음부터 운영자가 주는 일만 합니다. 끝난 컷은 운영자가 이 Windows 창에 놓습니다.',
       '',
-      skillText(role),
+      skills,
     ].join('\n');
   }
   if (lang === 'zh') {
     return [
       `你正在连接 Grok Crew。名字是 ${who}。`,
       `角色是 ${job}。连接后阅读下面的角色技能和一项辅助技能，只做那件事。`,
+      `要发往的国家是 ${marketLabel(dest, 'zh')}。改了国家请重新复制这段文字。`,
       ...(windows.length ? windows : ['另一台电脑不要连接 127.0.0.1。打不开这个窗口。']),
       `连接代码：${pairCode}`,
       '',
@@ -504,13 +510,14 @@ export function remoteConnectPaste(
       '',
       '之后只做操作员给的工作。完成的成片由操作员放到这个 Windows 窗口。',
       '',
-      skillText(role),
+      skills,
     ].join('\n');
   }
   if (lang === 'ja') {
     return [
       `あなたは Grok Crew と接続します。名前は ${who} です。`,
       `役割は ${job} です。下の役割スキルと補助スキルを読んで、その仕事だけします。`,
+      `送る国は ${marketLabel(dest, 'ja')} です。国を変えたらこの文をコピーし直してください。`,
       ...(windows.length ? windows : ['別のコンピュータから 127.0.0.1 に接続しないでください。この窓は開けません。']),
       `接続コード: ${pairCode}`,
       '',
@@ -519,12 +526,13 @@ export function remoteConnectPaste(
       '',
       'そのあとは運営者が渡す仕事だけします。終わったカットは運営者がこの Windows の窓に置きます。',
       '',
-      skillText(role),
+      skills,
     ].join('\n');
   }
   return [
     `You are connecting to Grok Crew as ${who}.`,
     `Your role is ${job}. Read the role skill and one extra below and only do that job.`,
+    `Destination country: ${marketLabel(dest, 'en')}. If you change it, copy this text again.`,
     ...(windows.length ? windows : ['Do not connect to 127.0.0.1 from another computer.']),
     `Connection code: ${pairCode}`,
     '',
@@ -533,6 +541,6 @@ export function remoteConnectPaste(
     '',
     'After that, only do the work the operator gives. The operator drops the finished cut on this Windows window.',
     '',
-    skillText(role),
+    skills,
   ].join('\n');
 }

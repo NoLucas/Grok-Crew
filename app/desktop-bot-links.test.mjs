@@ -76,6 +76,12 @@ describe('remote bot links', () => {
       assert.match(text, /plan_ready/);
       assert.match(text, /grok-crew-planner/);
       assert.match(text, /grok-crew-edit-plan/);
+      if (language === 'en') {
+        assert.match(text, /You are the planner/);
+        assert.match(text, /Destination country: United States/);
+        assert.doesNotMatch(text, /당신은 기획자/);
+        assert.doesNotMatch(text, /네이버 TV/);
+      }
       assert.match(text, /7214가 없다|没有 7214|7214 がない|7214 is missing/);
       assert.match(text, /GROK_CREW_OK 한 줄만|只发 GROK_CREW_OK|GROK_CREW_OK の一行だけ|only the GROK_CREW_OK line/);
       assert.match(text, /디스크에서 스크립트를 찾지 마세요|不要在磁盘上找脚本|ディスクでスクリプトを探さない|Do not search the disk for the script/);
@@ -102,6 +108,11 @@ describe('remote bot links', () => {
     assert.match(scraper, /collect_started/);
     assert.match(scraper, /collect_ready/);
     assert.doesNotMatch(scraper, /plan_started/);
+    const china = remoteConnectPaste('grok', '7K2M9Q', 'en', 'scraper', 7214, 'cn');
+    assert.match(china, /Bilibili public pages/);
+    assert.match(china, /Destination country: China/);
+    assert.doesNotMatch(china, /Vimeo public pages/);
+    assert.doesNotMatch(china, /당신은/);
     const editor = remoteConnectPaste('grok', '7K2M9Q', 'ko', 'editor');
     assert.match(editor, /grok-crew-cut-to-plan/);
     assert.match(editor, /grok-editor/);

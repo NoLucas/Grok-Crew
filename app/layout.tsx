@@ -22,8 +22,9 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const cookieStore = await cookies();
-  const initialLanguage: AppLanguage = cookieStore.get('localVideoWorkspaceLanguage')?.value === 'en' ? 'en' : 'ko';
-  const migrateStoredLanguage = `(function(){try{var saved=localStorage.getItem('localVideoWorkspaceLanguage');if((saved==='ko'||saved==='en')&&document.cookie.indexOf('localVideoWorkspaceLanguage=')===-1){document.cookie='localVideoWorkspaceLanguage='+saved+'; path=/; max-age=31536000; samesite=lax';location.replace(location.href);}}catch(e){}})();`;
+  const cookieLang = cookieStore.get('localVideoWorkspaceLanguage')?.value;
+  const initialLanguage: AppLanguage = cookieLang === 'en' || cookieLang === 'zh' || cookieLang === 'ja' || cookieLang === 'ko' ? cookieLang : 'ko';
+  const migrateStoredLanguage = `(function(){try{var saved=localStorage.getItem('localVideoWorkspaceLanguage');if((saved==='ko'||saved==='en'||saved==='zh'||saved==='ja')&&document.cookie.indexOf('localVideoWorkspaceLanguage=')===-1){document.cookie='localVideoWorkspaceLanguage='+saved+'; path=/; max-age=31536000; samesite=lax';location.replace(location.href);}}catch(e){}})();`;
   const toolsDayBoot = `(function(){try{if(location.pathname==='/')return;var theme='low-light';try{var raw=localStorage.getItem('grokCrewDesktopAppearance');if(raw){var parsed=JSON.parse(raw);if(parsed&&(parsed.theme==='light'||parsed.theme==='dark'||parsed.theme==='low-light'||parsed.theme==='low-dark'))theme=parsed.theme;}}catch(e){}document.documentElement.classList.add('tools-shell');document.documentElement.dataset.theme=theme;}catch(e){}})();`;
   return <html lang={initialLanguage}><head><script dangerouslySetInnerHTML={{ __html: migrateStoredLanguage }} /><script dangerouslySetInnerHTML={{ __html: toolsDayBoot }} /></head><body className={`${geistSans.variable} ${geistMono.variable}`}><LanguageProvider initialLanguage={initialLanguage}><LanguageBootstrap />{children}</LanguageProvider></body></html>;
 }

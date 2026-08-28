@@ -55,6 +55,8 @@ describe('voice model picker', () => {
     assert.deepEqual(readVoiceSetup(), emptyVoiceSetup());
     assert.equal(needsFirstVoiceSetup(emptyVoiceSetup()), true);
     assert.equal(needsFirstVoiceSetup({ done: true, modelId: 'kokoro-82m' }), false);
+    assert.equal(needsFirstVoiceSetup(emptyVoiceSetup(), { active: 'kokoro-82m', chosen: true }), false);
+    assert.equal(needsFirstVoiceSetup(emptyVoiceSetup(), { active: null }), true);
     const next = writeVoiceSetup({ done: true, modelId: confirmVoiceChoice() });
     assert.equal(next.done, true);
     assert.equal(next.modelId, 'kokoro-82m');

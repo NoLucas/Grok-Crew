@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
-import { LanguageSwitcher, useLanguage } from './language';
+import { LanguageSwitcher, needsLanguageGate, useLanguage, type AppLanguage } from './language';
 import { AudioMixer } from './timeline/AudioMixer';
 import { ClipLookPanel } from './timeline/ClipLookPanel';
 import { ProgramMonitor } from './timeline/ProgramMonitor';
@@ -32,8 +32,11 @@ import { seatName, type BotRole } from './bot-skills';
 import { AutoDesk } from './desktop-auto-desk';
 import { autoHeaderDot, writeAutoPrefs } from './desktop-auto-state';
 import { DesktopVoiceSetup } from './desktop-voice-setup';
+import { DesktopLanguageGate, LANGUAGE_GATE_BODY_CLASS } from './desktop-language-gate';
+import { marketFromLanguage } from './crew-market';
 import {
   confirmVoiceChoice,
+  installedVoiceModelId,
   needsFirstVoiceSetup,
   readVoiceSetup,
   VOICE_WIZARD_BODY_CLASS,
@@ -296,7 +299,7 @@ function statusTone(status: string) {
 }
 
 export default function DesktopWorkspace() {
-  const { language, t } = useLanguage();
+  const { language, t, chooseLanguage } = useLanguage();
   const { appearance, updateAppearance } = useDesktopAppearance();
   const [workspace, setWorkspace] = useState<Workspace>({ projects: [], control_jobs: [], runner_events: [], runners: [], media: [] });
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -346,6 +349,7 @@ export default function DesktopWorkspace() {
   const [voiceSetup, setVoiceSetup] = useState(() => readVoiceSetup());
   const [voiceDraft, setVoiceDraft] = useState<VoiceModelId>(() => readVoiceSetup().modelId);
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [langPicked, setLangPicked] = useState(false);
   const [botPanelOpen, setBotPanelOpen] = useState(false);
   const [quitAsk, setQuitAsk] = useState(false);
   const [setupPane, setSetupPane] = useState<'' | 'shape' | 'length' | 'sound' | 'pace'>('');
@@ -431,6 +435,12 @@ export default function DesktopWorkspace() {
   const refreshWorkspace = useCallback(async (quiet = false) => {
     try {
       const next = await api('/api/v2/workspace') as Workspace;
+      const installedId = installedVoiceModelId(next.first_run?.voice_model);
+      if (installedId && !readVoiceSetup().done) {
+        setVoiceSetup(writeVoiceSetup({ done: true, modelId: installedId }));
+        setVoiceDraft(installedId);
+        writeAutoPrefs({ voiceModelId: installedId });
+      }
       setWorkspace(next);
       setSelectedProjectId((current) => (next.projects.some((item) => item.id === current) ? current : ''));
       setDeskPulse((current) => ({
@@ -591,7 +601,22 @@ export default function DesktopWorkspace() {
       : t('확인 후', 'Ask first', '先确认', '確認してから');
 
   const project = workspace.projects.find((item) => item.id === selectedProjectId);
-  const showVoiceWizard = needsFirstVoiceSetup(voiceSetup);
+  const gatePending = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === 'undefined') return () => undefined;
+      window.addEventListener('local-video-workspace-language-change', onStoreChange);
+      window.addEventListener('storage', onStoreChange);
+      return () => {
+        window.removeEventListener('local-video-workspace-language-change', onStoreChange);
+        window.removeEventListener('storage', onStoreChange);
+      };
+    },
+    needsLanguageGate,
+    () => false,
+  );
+  const showLanguageGate = !langPicked && gatePending;
+  const showVoiceWizard = !showLanguageGate && needsFirstVoiceSetup(voiceSetup, workspace.first_run?.voice_model);
+  const firstOpen = showLanguageGate || showVoiceWizard;
   const deskReady = hasConnectedBot(workspace.crew_roster, botLinks) || Boolean(project);
   const showBotRoom = botPanelOpen || (!deskReady && !peekAuto);
   const showAutoDesk = !showBotRoom && !advancedSpecOpen && (activePanel === 'auto' || !project);
@@ -1303,11 +1328,28 @@ export default function DesktopWorkspace() {
   };
 
   return (
-    <main className={`desktop-shell${editToolsOpen ? ' has-timeline' : ' is-form'}${showVoiceWizard ? ' is-voice-first' : ''}`} {...appearanceDataAttrs(appearance)}>
+    <main className={`desktop-shell${editToolsOpen ? ' has-timeline' : ' is-form'}${firstOpen ? ' is-voice-first' : ''}`} {...appearanceDataAttrs(appearance)}>
       <header className="desktop-titlebar">
-        <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="gear" />
-        <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{showVoiceWizard ? t('첫 설치 · TTS', 'First install · TTS', '首次安装 · TTS', '初回インストール · TTS') : t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
-        {showVoiceWizard ? null : (
+        {showLanguageGate ? <span className="desktop-appearance-menu" aria-hidden="true" /> : (
+        <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="gear">
+          {showVoiceWizard ? null : (
+            <div className="desktop-gear-voice">
+              <p className="desktop-appearance-pop-kicker">{t('이 PC의 TTS', 'TTS on this PC', '这台电脑的 TTS', 'この PC の TTS')}</p>
+              <DesktopVoiceSetup
+                variant="panel"
+                selected={voiceDraft}
+                studioReady={studioState === 'ready'}
+                busy={voiceBusy}
+                download={workspace.first_run?.voice_model?.download}
+                onSelect={setVoiceDraft}
+                onConfirm={() => { void confirmVoiceModel(voiceDraft); }}
+              />
+            </div>
+          )}
+        </DesktopAppearanceControls>
+        )}
+        <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{showLanguageGate ? t('첫 설치 · 언어', 'First install · Language', '首次安装 · 语言', '初回インストール · 言語') : showVoiceWizard ? t('첫 설치 · TTS', 'First install · TTS', '首次安装 · TTS', '初回インストール · TTS') : t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
+        {firstOpen ? null : (
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
           <button type="button" className={`${showBotRoom ? 'active' : ''}${hasConnectedBot(workspace.crew_roster, botLinks) ? ' is-connected' : ' needs-bot'}`} aria-current={showBotRoom ? 'page' : undefined} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>{t('연결', 'Connect', '连接', '接続')}</button>
           <button type="button" className={!showBotRoom && showAutoDesk ? 'active' : ''} aria-current={!showBotRoom && showAutoDesk ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(true); setAdvancedSpecOpen(false); setActivePanel('auto'); }}>{t('자동', 'Auto', '自动', '自動')}{autoDot !== 'off' ? <i className={`desktop-auto-nav-dot is-${autoDot}`} aria-hidden="true" /> : null}</button>
@@ -1321,7 +1363,7 @@ export default function DesktopWorkspace() {
         </nav>
         )}
         <div className="desktop-title-actions">
-          {showVoiceWizard ? null : (
+          {firstOpen ? null : (
             <>
           {update.releaseUrl && window.grokCrew?.openRelease
             ? <button type="button" className={`desktop-chip ${update.status === 'up_to_date' || update.status === 'dev_fallback' ? 'ready' : 'wait'}`} title={update.message} onClick={() => void window.grokCrew?.openRelease?.(update.releaseUrl)}>{update.status === 'available_external' || update.status === 'available' ? t(`업데이트 ${update.latestVersion}`, `Update ${update.latestVersion}`, `更新 ${update.latestVersion}`, `更新 ${update.latestVersion}`) : t(`개발 ${update.currentVersion}`, `Dev ${update.currentVersion}`, `开发 ${update.currentVersion}`, `開発 ${update.currentVersion}`)}</button>
@@ -1334,7 +1376,7 @@ export default function DesktopWorkspace() {
           <button type="button" className="desktop-chrome-btn desktop-status-toggle" aria-expanded={drawer === 'status'} onClick={() => { setRemoteOpen(true); setDrawer((value) => value === 'status' ? 'none' : 'status'); }}>{t('상태', 'Status', '状态', '状態')}</button>
             </>
           )}
-          <LanguageSwitcher />
+          {showLanguageGate ? null : <LanguageSwitcher />}
           <button
             type="button"
             className="desktop-chrome-btn desktop-quit"
@@ -1376,7 +1418,17 @@ export default function DesktopWorkspace() {
       ) : null}
       {drawer !== 'none' ? <button type="button" className="desktop-drawer-backdrop" aria-label={t('패널 닫기', 'Close panel', '关闭面板', 'パネルを閉じる')} onClick={() => setDrawer('none')} /> : null}
 
-      {showVoiceWizard ? (
+      {showLanguageGate ? (
+      <div className={LANGUAGE_GATE_BODY_CLASS}>
+        <DesktopLanguageGate
+          onPick={(next: AppLanguage) => {
+            chooseLanguage(next);
+            writeAutoPrefs({ market: marketFromLanguage(next) });
+            setLangPicked(true);
+          }}
+        />
+      </div>
+      ) : showVoiceWizard ? (
       <div className={VOICE_WIZARD_BODY_CLASS}>
         <DesktopVoiceSetup
           variant="wizard"
@@ -1601,8 +1653,7 @@ export default function DesktopWorkspace() {
                 outputReady={outputReady}
                 savingFile={busy && Boolean(project) && activePanel === 'auto'}
                 saveFailed={autoSaveFailed}
-                voiceDownload={workspace.first_run?.voice_model?.download}
-                onChangeVoiceModel={(id) => confirmVoiceModel(id)}
+                
                 onOpenSample={() => { setSpecDeskOpen(false); void openSampleProject(); }}
                 onOpenOwnFootage={() => { setSpecDeskOpen(false); setCreateOpen(true); setDrawer('projects'); }}
                 onCopied={(next) => {
@@ -2100,7 +2151,7 @@ export default function DesktopWorkspace() {
       </div>
       )}
 
-      {!showVoiceWizard && editToolsOpen && timeline ? (
+      {!firstOpen && editToolsOpen && timeline ? (
         <TimelineEditor
           timeline={timeline}
           selectedClipIds={selectedClipIds}
@@ -2114,7 +2165,7 @@ export default function DesktopWorkspace() {
         />
       ) : null}
 
-      {showVoiceWizard ? null : (
+      {firstOpen ? null : (
       <footer className="desktop-command-bar">
         <div className={`desktop-message ${studioState === 'error' ? 'error' : studioState === 'loading' ? 'loading' : ''}${statusOpen ? '' : ' is-folded'}`}>
           <button

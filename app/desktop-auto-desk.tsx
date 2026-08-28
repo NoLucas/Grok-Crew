@@ -37,10 +37,10 @@ import {
   type AutoPhaseId,
 } from './desktop-auto-state';
 import { withCrewInvite } from './bot-skills';
+import { CREW_MARKETS, marketFromLanguage, marketLabel, resolveCrewMarket, type CrewMarket } from './crew-market';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { DesktopNewsCard } from './desktop-news-card';
-import { DesktopVoiceSetup } from './desktop-voice-setup';
-import { confirmVoiceChoice, type VoiceDownloadStatus, type VoiceModelId } from './desktop-voice-models';
+import { confirmVoiceChoice, type VoiceModelId } from './desktop-voice-models';
 import {
   VOICE_ACCENTS,
   VOICE_FEELS,
@@ -99,8 +99,6 @@ type AutoDeskProps = {
   onCopied: (wait: DeskWaitState) => void;
   onRefresh: () => Promise<void>;
   request: (path: string, init?: RequestInit) => Promise<JsonObject>;
-  voiceDownload?: VoiceDownloadStatus | null;
-  onChangeVoiceModel?: (id: VoiceModelId) => Promise<void> | void;
 };
 
 function localized(map: { ko?: string; en?: string; zh?: string; ja?: string } | undefined, language: string, fallback: string) {
@@ -140,8 +138,6 @@ export function AutoDesk({
   onCopied,
   onRefresh,
   request,
-  voiceDownload = null,
-  onChangeVoiceModel,
 }: AutoDeskProps) {
   const { language, t } = useLanguage();
   const [prefs, setPrefs] = useState(() => readAutoPrefs());
@@ -158,12 +154,17 @@ export function AutoDesk({
   const [wantCaptions, setWantCaptions] = useState(Boolean(prefs.wantCaptions));
   const [wantDubbing, setWantDubbing] = useState(Boolean(prefs.wantDubbing));
   const [wantTts, setWantTts] = useState(Boolean(prefs.wantTts));
-  const [voiceModelId, setVoiceModelId] = useState<VoiceModelId>(() => confirmVoiceChoice(prefs.voiceModelId));
+  const [voiceModelId] = useState<VoiceModelId>(() => confirmVoiceChoice(prefs.voiceModelId));
   const [voiceGender, setVoiceGender] = useState<VoiceGender>(() => resolveVoiceGender(prefs.voiceGender));
   const [voiceFeel, setVoiceFeel] = useState<VoiceFeel>(() => resolveVoiceFeel(prefs.voiceFeel));
   const [voiceAccent, setVoiceAccent] = useState<VoiceAccent>(() => resolveVoiceAccent(prefs.voiceAccent));
   const [voiceSaved, setVoiceSaved] = useState(Boolean(prefs.voiceSaved));
-  const [engineOpen, setEngineOpen] = useState(false);
+  const [pickedMarket, setPickedMarket] = useState<CrewMarket | null>(() => (
+    prefs.marketTouched ? resolveCrewMarket(prefs.market, language) : null
+  ));
+  const market = pickedMarket ?? marketFromLanguage(language);
+  const marketTouched = pickedMarket !== null;
+  const [marketNeedsRecopy, setMarketNeedsRecopy] = useState(false);
   const voicePersona = resolveVoicePersona({ gender: voiceGender, feel: voiceFeel, accent: voiceAccent });
   const [ownOver, setOwnOver] = useState(false);
   const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
@@ -270,6 +271,7 @@ export function AutoDesk({
   const togglePane = (pane: Exclude<AutoOptionPane, ''>) => {
     setOptionPane((current) => (current === pane ? '' : pane));
   };
+  const marketName = marketLabel(market, language);
 
   useEffect(() => {
     if (!waitingHandOff) return;
@@ -380,7 +382,7 @@ export function AutoDesk({
         voiceGender,
         voiceFeel,
         voiceAccent,
-      });
+      }, market);
       if (!text.trim()) throw new Error(t('초대문을 만들지 못했습니다.', 'Could not make the invite.', '无法生成邀请。', '招待文を作れませんでした。'));
       setInviteText(text);
       setStayOnCompose(false);
@@ -399,9 +401,11 @@ export function AutoDesk({
         voiceFeel,
         voiceAccent,
         voiceSaved: wantTts ? true : voiceSaved,
+        market,
+        marketTouched,
       }));
       if (wantTts) setVoiceSaved(true);
-      if (wantTts && onChangeVoiceModel) void onChangeVoiceModel(confirmVoiceChoice(voiceModelId));
+      setMarketNeedsRecopy(false);
       setPrefs(rememberRecentTitle(heading));
       const nextWait: DeskWaitState = {
         specId: record.id,
@@ -643,7 +647,7 @@ export function AutoDesk({
         <>
           <header className="desktop-auto-lead">
             <h1>{t('오늘 만들 영상을 적으세요', 'Write the video you want today', '写下今天要做的视频', '今日作る映像を書いてください')}</h1>
-            <p>{t('한 칸이면 됩니다. 화면·올릴 곳·소리는 필요할 때만 엽니다.', 'One box is enough. Open pictures, where, or sound only when you need them.', '一栏就够。画面、去处、声音需要时再开。', '一欄でよい。画面・上げ先・音は必要なときだけ開く。')}</p>
+            <p>{t('한 칸이면 됩니다. 보낼 나라는 여기, 올릴 곳(릴·틱톡·쇼츠)은 다른 칸입니다.', 'One box is enough. Destination country is here. Where to post (Reel, TikTok, Shorts) is a different control.', '一栏就够。要发往的国家在这里。发布处（Reel、TikTok、Shorts）是另一栏。', '一欄でよい。送る国はここ。上げ先（リール・TikTok・Shorts）は別の欄です。')}</p>
           </header>
 
           {mode === 'own_file' ? (
@@ -726,6 +730,37 @@ export function AutoDesk({
                   ))}
                 </div>
               ) : null}
+
+              <fieldset className="desktop-auto-market">
+                <legend>{t('보낼 나라', 'Destination country', '要发往的国家', '送る国')}</legend>
+                <div className="desktop-auto-chips" role="radiogroup" aria-label={t('보낼 나라', 'Destination country', '要发往的国家', '送る国')}>
+                  {CREW_MARKETS.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="radio"
+                      aria-checked={market === id}
+                      className={market === id ? 'desktop-auto-chip is-selected' : 'desktop-auto-chip'}
+                      onClick={() => {
+                        setPickedMarket(id);
+                        setPrefs(writeAutoPrefs({ market: id, marketTouched: true }));
+                        if (inviteText) setMarketNeedsRecopy(true);
+                      }}
+                    >
+                      {marketLabel(id, language)}
+                    </button>
+                  ))}
+                </div>
+                {marketNeedsRecopy ? (
+                  <p className="desktop-spec-meta" role="status">
+                    {t('보낼 나라를 바꿨습니다. 연결 글을 다시 복사하세요.', 'You changed the destination country. Copy the connect text again.', '已改要发往的国家。请重新复制连接文字。', '送る国を変えました。接続文をコピーし直してください。')}
+                  </p>
+                ) : (
+                  <p className="desktop-spec-meta">
+                    {t(`${marketName}용 스킬만 붙습니다. 올릴 곳과는 다릅니다.`, `Skills cover ${marketName} only. This is not the post destination.`, `技能只讲 ${marketName}。这和发布处不同。`, `スキルは ${marketName} だけ。上げ先とは違います。`)}
+                  </p>
+                )}
+              </fieldset>
 
               <div className="desktop-auto-options" role="tablist" aria-label={t('필요한 것만 열기', 'Open only what you need', '只开需要的', '必要なものだけ開く')}>
                 <button
@@ -1007,31 +1042,10 @@ export function AutoDesk({
                             ? t('이 컴퓨터에 기억했습니다. 다음에 열어도 이 목소리로 시작합니다.', 'Remembered on this computer. Next open starts with this voice.', '已记在这台电脑。下次打开还用这个声音。', 'このパソコンに覚えました。次に開いてもこの声で始まります。')
                             : t('미리듣기는 이 창에서 재생하지 않습니다. 고른 값은 저장하면 남고, 만들기를 눌러도 남습니다.', 'This window does not play a preview. Save keeps the pick. Start keeps it too.', '这个窗口不播放试听。保存会留下选择。按开始也会留下。', 'この窓では試し聞きしません。保存すれば残る。作り始めても残る。')}
                         </p>
+                        <p className="desktop-spec-meta">
+                          {t('모델 받기는 왼쪽 위 톱니에서 합니다. 자동은 켜고 끄기만 합니다.', 'Download the model from the top-left gear. Auto only turns TTS on or off.', '下载模型请用左上齿轮。自动只负责开关。', 'モデルの受け取りは左上の歯車。自動はオンオフだけです。')}
+                        </p>
                       </section>
-                      {onChangeVoiceModel ? (
-                        <>
-                          <button type="button" className="desktop-secondary" onClick={() => setEngineOpen((value) => !value)}>
-                            {engineOpen
-                              ? t('엔진 접기', 'Hide engine', '收起引擎', 'エンジンを閉じる')
-                              : t('고급 · 이 컴퓨터 엔진', 'Advanced · this PC’s engine', '高级 · 这台电脑的引擎', '上級 · このパソコンのエンジン')}
-                          </button>
-                          {engineOpen ? (
-                            <DesktopVoiceSetup
-                              variant="panel"
-                              selected={voiceModelId}
-                              studioReady={studioReady}
-                              download={voiceDownload}
-                              onSelect={setVoiceModelId}
-                              onConfirm={() => {
-                                const next = confirmVoiceChoice(voiceModelId);
-                                setVoiceModelId(next);
-                                setPrefs(writeAutoPrefs({ wantTts: true, voiceModelId: next, voiceGender, voiceFeel, voiceAccent, voiceSaved }));
-                                void onChangeVoiceModel(next);
-                              }}
-                            />
-                          ) : null}
-                        </>
-                      ) : null}
                     </div>
                   ) : null}
                 </fieldset>
@@ -1039,7 +1053,7 @@ export function AutoDesk({
 
               {attached && titleFromPrompt(title, goal) ? (
                 <p className="desktop-auto-recap">
-                  {`${attachedName} · ${styleLabel} · ${wayLabel} · ${t('소리', 'Sound', '声音', '音')} ${soundLabel}`}
+                  {`${attachedName} · ${marketName} · ${styleLabel} · ${wayLabel} · ${t('소리', 'Sound', '声音', '音')} ${soundLabel}`}
                 </p>
               ) : null}
               {!attached ? (

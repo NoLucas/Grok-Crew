@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react';
 import { connectPaste, connectedBot, type CrewRoster } from './desktop-bot-connect';
 import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
+import { marketLabel, resolveCrewMarket } from './crew-market';
+import { readAutoPrefs } from './desktop-auto-state';
 import {
   type BotLinkState,
   confirmRemoteReplies,
@@ -99,10 +101,12 @@ export function DesktopBotPanel({
   const studioPort = studioPortFromApiBase(
     typeof window !== 'undefined' ? window.grokCrew?.apiBase : undefined,
   );
+  const market = resolveCrewMarket(readAutoPrefs().market, language);
+  const destName = marketLabel(market, language);
 
   const connectText = useMemo(
-    () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role, studioPort),
-    [language, links.pairCode, openSeat.kind, openSeat.role, studioPort],
+    () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role, studioPort, market),
+    [language, links.pairCode, market, openSeat.kind, openSeat.role, studioPort],
   );
   const localText = useMemo(() => connectPaste(language, studioPort), [language, studioPort]);
 
@@ -121,7 +125,7 @@ export function DesktopBotPanel({
       setError(t('연결 코드가 아직 없습니다. 잠시 후 다시 눌러 주세요.', 'The connect code is not ready yet. Try again in a moment.', '连接代码还没好。请稍后再按。', '接続コードがまだありません。少ししてから押してください。'));
       return;
     }
-    const text = remoteConnectPaste(seat.kind, links.pairCode, language, seat.role, studioPort);
+    const text = remoteConnectPaste(seat.kind, links.pairCode, language, seat.role, studioPort, market);
     try {
       if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
       await navigator.clipboard.writeText(text);
@@ -204,6 +208,9 @@ export function DesktopBotPanel({
           ))}
         </div>
         {links.pairCode ? <p className="desktop-spec-meta">{t(`연결 코드 ${links.pairCode}`, `Code ${links.pairCode}`, `连接代码 ${links.pairCode}`, `接続コード ${links.pairCode}`)}</p> : null}
+        <p className="desktop-spec-meta">
+          {t(`이 글은 ${destName}용입니다. 보낼 나라는 자동에서 바꿉니다. 바꿨으면 다시 복사하세요.`, `This text is for ${destName}. Change the destination country in Auto. Copy again after a change.`, `这段文字是给 ${destName} 的。要发往的国家在自动里改。改了请再复制。`, `この文は ${destName} 用です。送る国は自動で変えます。変えたらコピーし直してください。`)}
+        </p>
         <p className="desktop-spec-meta">{
           studioPort === 7214
             ? t('이 창의 체크인 주소는 127.0.0.1:7214입니다.', 'This window check-in address is 127.0.0.1:7214.', '这个窗口的签到地址是 127.0.0.1:7214。', 'この窓のチェックイン住所は 127.0.0.1:7214 です。')

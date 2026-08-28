@@ -6,6 +6,7 @@ import {
   type BotLinkState,
 } from './desktop-bot-links';
 import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
+import { resolveCrewMarket, type CrewMarket } from './crew-market';
 import { DEFAULT_VOICE_MODEL_ID, resolveVoiceModelId, voiceMustKeep, type VoiceModelId } from './desktop-voice-models';
 import {
   DEFAULT_VOICE_ACCENT,
@@ -55,6 +56,8 @@ export type AutoPrefs = {
   voiceFeel?: VoiceFeel;
   voiceAccent?: VoiceAccent;
   voiceSaved?: boolean;
+  market?: CrewMarket;
+  marketTouched?: boolean;
 };
 
 export type AutoStartCheck =
@@ -184,6 +187,7 @@ export function emptyAutoPrefs(): AutoPrefs {
     voiceFeel: DEFAULT_VOICE_FEEL,
     voiceAccent: DEFAULT_VOICE_ACCENT,
     voiceSaved: false,
+    marketTouched: false,
   };
 }
 
@@ -221,6 +225,8 @@ export function readAutoPrefs(): AutoPrefs {
       voiceFeel: resolveVoiceFeel(parsed.voiceFeel),
       voiceAccent: resolveVoiceAccent(parsed.voiceAccent),
       voiceSaved: Boolean(parsed.voiceSaved),
+      market: parsed.market ? resolveCrewMarket(parsed.market) : undefined,
+      marketTouched: Boolean(parsed.marketTouched),
     };
   } catch {
     return emptyAutoPrefs();
@@ -243,6 +249,10 @@ export function writeAutoPrefs(prefs: Partial<AutoPrefs>): AutoPrefs {
     voiceFeel: resolveVoiceFeel(prefs.voiceFeel ?? current.voiceFeel),
     voiceAccent: resolveVoiceAccent(prefs.voiceAccent ?? current.voiceAccent),
     voiceSaved: prefs.voiceSaved !== undefined ? Boolean(prefs.voiceSaved) : Boolean(current.voiceSaved),
+    market: prefs.market !== undefined
+      ? resolveCrewMarket(prefs.market)
+      : current.market,
+    marketTouched: prefs.marketTouched !== undefined ? Boolean(prefs.marketTouched) : Boolean(current.marketTouched),
   };
   storage()?.setItem(AUTO_PREFS_KEY, JSON.stringify(next));
   return next;

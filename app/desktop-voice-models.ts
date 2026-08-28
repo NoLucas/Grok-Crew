@@ -136,8 +136,20 @@ export function emptyVoiceSetup(): VoiceSetup {
   return { done: false, modelId: DEFAULT_VOICE_MODEL_ID };
 }
 
-export function needsFirstVoiceSetup(setup?: VoiceSetup | null): boolean {
-  return !setup?.done;
+export type VoiceInstallHint = {
+  active?: string | null;
+  chosen?: boolean;
+};
+
+export function installedVoiceModelId(installed?: VoiceInstallHint | null): VoiceModelId | '' {
+  const active = String(installed?.active || '').trim();
+  return isVoiceModelId(active) ? active : '';
+}
+
+export function needsFirstVoiceSetup(setup?: VoiceSetup | null, installed?: VoiceInstallHint | null): boolean {
+  if (setup?.done) return false;
+  if (installedVoiceModelId(installed)) return false;
+  return true;
 }
 
 export function readVoiceSetup(): VoiceSetup {

@@ -4,6 +4,15 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+Country skills, a first-open language gate, and TTS download in the top-left gear. Installer-side TTS pick (custom NSIS, not one-click) is still Codex packaging. No 1.0.6 Windows tag yet.
+
+### Desk
+
+- Connect skills are one destination country at a time (Korea / United States / China / Japan). UI language still chooses the sentence language. English invites no longer append a Korean skill body.
+- Auto has **보낼 나라**, separate from **올릴 곳** (Reel / TikTok / Shorts). Changing it requires copying the connect text again.
+- First open asks for English / 한국어 / 中文 / 日本語 the same way as the homepage gate. Browser language does not skip it. If the installer already left a voice model, the TTS wizard stays closed.
+- Later TTS download lives in the top-left gear. Auto only turns TTS on or off.
+
 ## 1.0.5 - 2026-08-28
 
 Local 1.0.5. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.5` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.5.md`. Guest download stays the same Google Drive file. Already-installed 1.0.4 desks check Grok-crew-test for this tag.
