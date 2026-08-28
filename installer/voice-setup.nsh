@@ -9,6 +9,7 @@
   !define BST_CHECKED 1
 !endif
 
+!ifndef BUILD_UNINSTALLER
 Var GrokCrewVoiceDialog
 Var GrokCrewVoiceKokoro
 Var GrokCrewVoiceStep
@@ -34,7 +35,6 @@ Function grokCrewDownloadVoice
 FunctionEnd
 
 Function grokCrewVoicePage
-  !insertmacro MUI_HEADER_TEXT "이 PC의 목소리 / Voice for this PC" "고른 뒤에만 받습니다. 그다음 프로그램 파일을 복사합니다."
   nsDialogs::Create 1018
   Pop $GrokCrewVoiceDialog
   ${If} $GrokCrewVoiceDialog == error
@@ -107,3 +107,4 @@ FunctionEnd
     ${EndIf}
   grokCrewSkipSilentVoice:
 !macroend
+!endif

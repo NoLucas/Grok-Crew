@@ -21,12 +21,14 @@ describe('installer voice pick', () => {
     assert.equal(pack.build.nsis.oneClick, false);
     assert.equal(pack.build.nsis.allowToChangeInstallationDirectory, false);
     assert.equal(pack.build.nsis.include, 'installer/voice-setup.nsh');
+    assert.doesNotMatch(nsh, /MUI_HEADER_TEXT/);
     assert.match(nsh, /customPageAfterChangeDir/);
     assert.match(nsh, /Page custom grokCrewVoicePage grokCrewVoicePageLeave/);
     assert.match(nsh, /Opening the exe did not start a download/);
     assert.match(nsh, /A failed download stops the install/);
     assert.match(nsh, /customInstall/);
     assert.match(nsh, /IfSilent/);
+    assert.match(nsh, /ifndef BUILD_UNINSTALLER/);
     assert.equal(catalog.default, DEFAULT_VOICE_MODEL_ID);
     assert.equal(catalog.workspaceFolder, 'Grok Crew');
     assert.deepEqual(Object.keys(catalog.models).sort(), [...VOICE_MODEL_IDS].sort());
