@@ -12,7 +12,7 @@ export type CrewRoster = {
 export function connectedBot(roster?: CrewRoster | null): CrewBot | null {
   const bots = roster?.bots?.filter((item) => String(item.display_name || item.bot_id || "").trim()) ?? [];
   if (!bots.length) return null;
-  return bots.find((item) => item.presence === "active") || bots[0];
+  return bots.find((item) => item.presence === "active") || null;
 }
 
 export function connectPaste(language: string): string {

@@ -88,6 +88,18 @@ export function writeBotLinks(state: BotLinkState): void {
   storage()?.setItem(BOT_LINKS_KEY, JSON.stringify(state));
 }
 
+export function forgetBotLinksOnQuit(state?: BotLinkState | null): BotLinkState {
+  const current = state ?? readBotLinks();
+  const next = { pairCode: current.pairCode, bots: [] };
+  try {
+    storage()?.removeItem(BOT_LINKS_KEY);
+  } catch {
+    writeBotLinks(next);
+    return next;
+  }
+  return { pairCode: '', bots: [] };
+}
+
 export function ensureBotLinks(state?: BotLinkState | null): BotLinkState {
   const current = honestRemoteLinks(state ?? readBotLinks());
   if (current.pairCode) return current;

@@ -7,6 +7,7 @@ register('./timeline/ts-resolver.helper.mjs', import.meta.url);
 const {
   BOT_LINKS_KEY,
   emptyBotLinks,
+  forgetBotLinksOnQuit,
   hasConnectedBot,
   linkedByKind,
   linkedBySeat,
@@ -158,6 +159,25 @@ describe('remote bot links', () => {
     assert.match(first, /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);
     assert.match(second, /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);
     assert.notEqual(first, second);
+  });
+
+  it('forgets every seat when the desk quits', () => {
+    memory.set(BOT_LINKS_KEY, JSON.stringify({
+      pairCode: '7K2M9Q',
+      bots: [{
+        id: 'g-plan',
+        name: 'Grok Bot 기획자',
+        kind: 'grok',
+        role: 'planner',
+        place: 'other_pc',
+        status: 'connected',
+        pairCode: '7K2M9Q',
+      }],
+    }));
+    const next = forgetBotLinksOnQuit();
+    assert.deepEqual(next, { pairCode: '', bots: [] });
+    assert.equal(memory.get(BOT_LINKS_KEY), undefined);
+    assert.equal(hasConnectedBot(undefined, next), false);
   });
 
   it('drops stored bots that are not a known seat', () => {

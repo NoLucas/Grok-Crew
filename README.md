@@ -59,6 +59,7 @@ Older Grok-Crew (0.2.1) was closer to a browser workspace. 1.0.0 is **a window o
 - Connect only copies attach text. They do not paste a reply back here. The bot never sees `127.0.0.1`.
 - Captions, dubbing, and TTS stay off until they turn them on. First open asks which TTS this PC should keep. Next with no pick is Kokoro-82M.
 - Connect lamps are only **Connected** (green) and **Not connected** (gray). Copying the connect text does not turn the lamp green.
+- Quit warns first. Confirming disconnects Grok Bot and Agent. Closing the window only hides to the tray.
 - Finished files stay on this PC. A GitHub inbox is optional.
 - Pair codes use cryptographic randomness. GitHub token errors do not echo the token.
 

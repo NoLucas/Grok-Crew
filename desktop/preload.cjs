@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('grokCrew', Object.freeze({
   },
   showOutput: (relativePath) => ipcRenderer.invoke('desktop:show-output', relativePath),
   appInfo: () => ipcRenderer.invoke('desktop:app-info'),
+  quit: () => ipcRenderer.invoke('desktop:quit'),
   updateStatus: () => ipcRenderer.invoke('desktop:update-status'),
   openRelease: (url) => ipcRenderer.invoke('desktop:open-release', url),
   pairRunner: () => ipcRenderer.invoke('relay:pair-runner'),
