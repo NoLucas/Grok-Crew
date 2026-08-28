@@ -6933,6 +6933,11 @@ select {
   display: none; min-height: 32px; padding: 0 10px; border: 1px solid var(--desktop-line);
   border-radius: 8px; background: var(--desktop-panel); color: var(--desktop-text); font-size: var(--desktop-fs); font-weight: var(--desktop-weight-strong);
 }
+.desktop-chrome-btn.desktop-quit {
+  display: inline-flex;
+  align-items: center;
+  border-color: color-mix(in srgb, var(--desktop-red) 35%, var(--desktop-line));
+}
 .desktop-drawer-backdrop {
   position: fixed; inset: 0; z-index: 24; border: 0; background: rgba(20, 21, 24, .28);
 }
