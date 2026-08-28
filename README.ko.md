@@ -55,7 +55,7 @@
 - 자동 수집은 공개 파일 주소만 받습니다. 검색어로는 일을 시작하지 않습니다.
 - 내 파일을 고르면 생기던 `inputs\hero.png` 빨간 오류를 고쳤습니다.
 
-자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.11 릴리스 노트](docs/RELEASE_NOTES.v1.0.11.md)입니다. 손님용 드라이브 파일은 태그를 올리기 전까지 1.0.10입니다.
+자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.11 릴리스 노트](docs/RELEASE_NOTES.v1.0.11.md)입니다. 손님용 드라이브 파일은 그대로 1.0.10입니다. 이미 설치한 책상은 Grok-crew-test의 v1.0.11을 봅니다.
 
 ## v1.0.10에서 달라진 것
 

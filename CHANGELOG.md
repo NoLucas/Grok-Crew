@@ -6,7 +6,7 @@ All notable changes to Grok Crew are documented here.
 
 ## 1.0.11 - 2026-08-28
 
-Local 1.0.11. This cut is a desk zip for the operator, not a GitHub Release and not a Drive overwrite. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. Already-installed desks still check Grok-crew-test for the last published tag (1.0.10).
+Local 1.0.11. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.11` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.11) only. Guest notes: `docs/RELEASE_NOTES.v1.0.11.md`. Guest download stays the same Google Drive file. Already-installed 1.0.10 desks check Grok-crew-test for this tag.
 
 ### Desk
 

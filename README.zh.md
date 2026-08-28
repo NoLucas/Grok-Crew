@@ -55,7 +55,7 @@
 - 自动收集只收公开文件地址。搜索词不会开工。
 - 选自己的文件时，不再因为工作区相对路径 `inputs\...` 报错。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.11 发布说明](docs/RELEASE_NOTES.v1.0.11.md)。在打标签之前，客人用的网盘文件仍是 1.0.10。
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.11 发布说明](docs/RELEASE_NOTES.v1.0.11.md)。客人用的网盘文件仍是 1.0.10。已安装的书桌看 Grok-crew-test 的 v1.0.11。
 
 ## v1.0.10 改了什么
 

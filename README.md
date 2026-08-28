@@ -55,7 +55,7 @@ If attach fails, **Connect** says how to fix it. Do not open Auto first.
 - Auto collect is a direct file URL list only. A search phrase does not start a job.
 - Picking a file on Auto no longer fails on the workspace-relative `inputs\...` path the desk already stored.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.11 notes](docs/RELEASE_NOTES.v1.0.11.md). Guest Drive download is still the last published 1.0.10 exe until a tag is cut.
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.11 notes](docs/RELEASE_NOTES.v1.0.11.md). Guest Drive download stays the last published 1.0.10 exe. Already-installed desks check Grok-crew-test for v1.0.11.
 
 ## What changed in v1.0.10
 

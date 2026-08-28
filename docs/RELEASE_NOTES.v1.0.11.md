@@ -2,9 +2,9 @@
 
 with Grok Bot. 이 PC에서 여는 프로그램입니다.
 
-이 컷은 **로컬 책상용 zip**입니다. GitHub Release를 올리지 않았고, 손님용 Google 드라이브 파일도 덮지 않았습니다. 이미 설치한 책상의 업데이트 칸은 마지막 공개 태그인 [v1.0.10](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.10)을 봅니다.
+공개 파일: **Windows에서 열기** → `GrokCrew-Windows.exe`. 받는 곳: 이 태그 [v1.0.11](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.11). 손님용 Google 드라이브 파일은 덮지 않았습니다. 이미 설치한 책상은 이 업데이트를 봅니다. 설치 파일은 Grok-crew-test 릴리스에만 올립니다.
 
-공개 손님 파일은 그대로 **Windows에서 열기** → 홈페이지에서 인증한 뒤 열리는 Google 드라이브 `GrokCrew-Windows.exe`입니다.
+1.0.10과 같은 길입니다. 받아서 엽니다.
 
 ## 1.0.10에서 달라진 것
 
@@ -14,17 +14,14 @@ with Grok Bot. 이 PC에서 여는 프로그램입니다.
 
 ## 받아서 연다
 
-1. `GrokCrew-Windows-1.0.11.zip`을 풉니다.
-2. 폴더 안의 `Grok Crew Desktop.exe`를 엽니다. 파란 보호 화면이면 **추가 정보 → 그래도 실행**.
-3. 이미 1.0.10이 있으면 책상을 트레이까지 끈 뒤, 작업 관리자에 `grok-crew-studio.exe`가 있으면 끝내고, 이 파일을 엽니다.
+1. `GrokCrew-Windows.exe`를 받아 엽니다. 파란 보호 화면이면 **추가 정보 → 그래도 실행**.
+2. 설치가 TTS를 묻습니다. 이미 있으면 건너뜁니다. 고르지 않으면 Kokoro-82M입니다.
+3. 이미 1.0.10이 있으면 책상을 트레이까지 끈 뒤, 작업 관리자에 `grok-crew-studio.exe`가 있으면 끝내고, 이 파일을 설치하세요.
 4. **자동 → 화면**에 **공개 파일 주소로 받기**가 보여야 합니다. **장면 찾아오기**면 이전 설치가 아직 켜져 있는 것입니다.
 5. 봇 테스트에는 **이미 있는 영상 열기**를 쓰지 마세요. 그건 봇 없이 파일을 여는 칸입니다.
 
-이 zip은 설치 프로그램(NSIS)이 아닙니다. TTS 설치 마법사는 이 폴더 실행에는 없습니다. 이미 받아 둔 Kokoro는 `Videos\Grok Crew\voice-models`에 그대로 있습니다.
+## 1.0.11에 없는 것
 
-## 이 컷에 없는 것
-
-- GitHub Release 태그, 서명된 exe, 드라이브 손님용 파일 덮어쓰기
-- Windows에서 다시 빌드한 사이드카. 이 zip의 `grok-crew-studio.exe`는 공개 1.0.10 바이너리입니다. 화면·스킬·자동 시작 규칙은 1.0.11입니다. 초대문 본문의 「받을 것」줄은 사이드카를 Windows에서 다시 묶기 전에는 1.0.10 글일 수 있습니다.
+- 서명된 exe, SNS OAuth, 드라이브 손님용 파일 자동 덮어쓰기
 
 질문: [NoLucas/Grok-Crew](https://github.com/NoLucas/Grok-Crew) 이슈.
