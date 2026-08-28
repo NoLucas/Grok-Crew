@@ -7,7 +7,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isRendererNavigationAllowed, studioRequestUrl } from './ipc-guard.mjs';
 import { RelayService } from './relay-service.mjs';
-import { createDesktopTray, installCloseToTray } from './tray-controller.mjs';
+import { createDesktopTray, installCloseToTray, installQuitGuard } from './tray-controller.mjs';
 import { fetchLatestRelease, parseReleasePageUrl, resolveUpdateRepo, updatePolicy } from './update-service.mjs';
 
 const desktopDir = dirname(fileURLToPath(import.meta.url));
@@ -33,14 +33,30 @@ function hideMainWindow() {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
 }
 
-function quitApplication() {
-  quitting = true;
-  app.quit();
+async function disconnectBotsForQuit() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  await mainWindow.webContents.executeJavaScript(
+    "try{localStorage.removeItem('grok-crew-bot-links')}catch(e){}",
+  ).catch(() => undefined);
 }
+
+function stopBackgroundServices() {
+  quitting = true;
+  app.isQuitting = true;
+  if (studioProcess && !studioProcess.killed) studioProcess.kill();
+  if (rendererServer) rendererServer.close();
+}
+
+const quitGuard = installQuitGuard(app, {
+  dialog,
+  getWindow: () => mainWindow,
+  disconnect: disconnectBotsForQuit,
+  onConfirmed: stopBackgroundServices,
+});
 
 function createTray() {
   if (tray) return tray;
-  tray = createDesktopTray({ show: showMainWindow, hide: hideMainWindow, quit: quitApplication });
+  tray = createDesktopTray({ show: showMainWindow, hide: hideMainWindow, quit: quitGuard.requestQuit });
   return tray;
 }
 
@@ -225,6 +241,10 @@ function registerIpc(apiBase) {
     }
     throw new Error('File is not in the app workspace.');
   });
+  ipcMain.handle('desktop:quit', (event) => {
+    assertTrustedRenderer(event);
+    quitGuard.requestQuit();
+  });
   ipcMain.handle('desktop:app-info', (event) => {
     assertTrustedRenderer(event);
     return { version: app.getVersion(), platform: process.platform, packaged: app.isPackaged };
@@ -302,7 +322,7 @@ async function createWindow(apiBase, rendererUrl) {
     if (!isRendererNavigationAllowed(url, rendererUrl)) event.preventDefault();
   });
   mainWindow = window;
-  window.on('query-session-end', () => { quitting = true; });
+  window.on('query-session-end', () => { quitGuard.markConfirmed(); });
   installCloseToTray(window, () => quitting);
   window.on('closed', () => {
     if (mainWindow === window) mainWindow = null;
@@ -313,7 +333,7 @@ async function createWindow(apiBase, rendererUrl) {
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) {
-  app.quit();
+  quitGuard.forceQuit();
 } else {
   app.on('second-instance', showMainWindow);
   app.whenReady().then(async () => {
@@ -326,14 +346,8 @@ if (!hasSingleInstanceLock) {
       createTray();
     } catch (error) {
       dialog.showErrorBox('Grok Crew could not start', error instanceof Error ? error.message : String(error));
-      quitApplication();
+      quitGuard.forceQuit();
     }
   });
 }
 app.on('activate', showMainWindow);
-app.on('before-quit', () => {
-  quitting = true;
-  app.isQuitting = true;
-  if (studioProcess && !studioProcess.killed) studioProcess.kill();
-  if (rendererServer) rendererServer.close();
-});

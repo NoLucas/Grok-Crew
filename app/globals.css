@@ -6939,6 +6939,26 @@ select {
 .desktop-connection.connected { color: var(--desktop-green); }
 .desktop-title-actions .language-switcher { display: flex; align-items: center; gap: 6px; color: var(--desktop-muted); font-size: 12px; }
 .desktop-title-actions .language-switcher select { padding: 5px 8px; border: 1px solid var(--desktop-line); background: var(--desktop-panel); color: var(--desktop-text); font-size: var(--desktop-fs-sm); }
+.desktop-quit-ask {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(24, 20, 16, 0.45);
+}
+.desktop-quit-ask-card {
+  width: min(440px, calc(100vw - 32px));
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 16px;
+  background: var(--desktop-panel);
+}
+.desktop-quit-ask-card b { font-size: 16px; line-height: 1.4; }
+.desktop-quit-ask-card p { margin: 0; color: var(--desktop-muted); font-size: 13px; line-height: 1.5; }
+.desktop-quit-ask-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .desktop-body {
   --desktop-sidebar-w: 245px;
   --desktop-inspector-w: 290px;

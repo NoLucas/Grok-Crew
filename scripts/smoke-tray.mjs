@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { app, BrowserWindow } from 'electron';
-import { createDesktopTray, createTrayMenu, installCloseToTray } from '../desktop/tray-controller.mjs';
+import { confirmQuit, createDesktopTray, createTrayMenu, installCloseToTray, installQuitGuard, QUIT_WARNING } from '../desktop/tray-controller.mjs';
 
 async function run() {
   let quitting = false;
@@ -32,6 +32,52 @@ async function run() {
   tray.destroy();
   quitting = true;
   window.destroy();
+
+  const stayDialog = { showMessageBox: async () => ({ response: 1 }) };
+  const quitDialog = { showMessageBox: async () => ({ response: 0 }) };
+  assert.equal(await confirmQuit(stayDialog), false);
+  assert.equal(await confirmQuit(quitDialog), true);
+  assert.match(QUIT_WARNING.message, /Grok Bot과 Agent 연결이 끊어집니다/);
+  assert.equal(QUIT_WARNING.quit, '종료');
+
+  let quitCallsFromGuard = 0;
+  let disconnectCalls = 0;
+  let confirmedCalls = 0;
+  const fakeApp = {
+    listeners: [],
+    quit() { quitCallsFromGuard += 1; this.listeners.forEach((fn) => fn({ preventDefault() {} })); },
+    on(_name, fn) { this.listeners.push(fn); },
+  };
+  const guard = installQuitGuard(fakeApp, {
+    dialog: stayDialog,
+    getWindow: () => undefined,
+    disconnect: async () => { disconnectCalls += 1; },
+    onConfirmed: () => { confirmedCalls += 1; },
+  });
+  guard.requestQuit();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(disconnectCalls, 0, 'Cancel must keep bot links.');
+  assert.equal(confirmedCalls, 0, 'Cancel must not mark the app quitting.');
+
+  const quittingApp = {
+    listeners: [],
+    quit() { quitCallsFromGuard += 1; },
+    on(_name, fn) { this.listeners.push(fn); },
+  };
+  const yesGuard = installQuitGuard(quittingApp, {
+    dialog: quitDialog,
+    getWindow: () => undefined,
+    disconnect: async () => { disconnectCalls += 1; },
+    onConfirmed: () => { confirmedCalls += 1; },
+  });
+  quittingApp.listeners[0]({ preventDefault() {} });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(disconnectCalls, 1, 'Confirm must drop stored bot links.');
+  assert.equal(confirmedCalls, 1, 'Confirm must allow the process to exit.');
+  yesGuard.forceQuit();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.ok(quitCallsFromGuard >= 1);
+
   console.log('Desktop close-to-tray smoke test passed.');
 }
 

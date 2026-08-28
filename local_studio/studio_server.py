@@ -141,6 +141,13 @@ def record_bot_heartbeat(body: dict[str, Any]) -> dict[str, Any]:
     return row_dict(row) or {}
 
 
+def forget_bot_sessions() -> int:
+    """Drop live check-ins. A new desk run starts with no connected bot."""
+    with db() as conn:
+        deleted = conn.execute("DELETE FROM bot_sessions")
+        return int(deleted.rowcount or 0)
+
+
 def list_bots() -> dict[str, Any]:
     with db() as conn:
         rows = conn.execute("SELECT * FROM bot_sessions ORDER BY last_seen DESC LIMIT 100").fetchall()
@@ -1043,6 +1050,9 @@ def main() -> None:
     from handlers import StudioHandler  # deferred: handlers.py imports this module, so avoid a top-level cycle
     with db() as conn:
         conn.execute("UPDATE jobs SET status = 'failed', error_text = ?, updated_at = ? WHERE status = 'running'", ("Interrupted by an unclean Local Studio shutdown.", utc_now()))
+    forgotten = forget_bot_sessions()
+    if forgotten:
+        print(f"cleared {forgotten} leftover bot check-in(s) from the last desk run")
     recovered_receipts = reconcile_publish_receipts()
     if recovered_receipts:
         print(f"recovered {recovered_receipts} interrupted publish receipts", file=sys.stderr)

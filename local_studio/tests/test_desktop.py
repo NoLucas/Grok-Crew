@@ -102,6 +102,15 @@ def test_split_and_restore_always_create_new_revisions(studio):
     assert restored["version"]["parent_revision"] == 2
 
 
+def test_forget_bot_sessions_clears_checkins(studio):
+    studio.record_bot_heartbeat({"bot_id": "desk-bot", "display_name": "Cursor", "action": "entered_local_studio"})
+    with db() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM bot_sessions").fetchone()[0] == 1
+    assert studio.forget_bot_sessions() == 1
+    with db() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM bot_sessions").fetchone()[0] == 0
+
+
 def test_human_edit_settings_do_not_create_fake_bot_presence(studio):
     saved = studio.set_edit_method({"origin": "human", "updated_by": "operator", "method": {"fps": 60}})
     assert saved["origin"] == "human"

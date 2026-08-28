@@ -13,7 +13,7 @@ describe('desk bot connect', () => {
     assert.equal(connectedBot({ bots: [{ display_name: '' }] }), null);
   });
 
-  it('prefers an active check-in', () => {
+  it('prefers an active check-in and ignores leftover idle rows', () => {
     const bot = connectedBot({
       bots: [
         { display_name: 'Idle Bot', presence: 'idle' },
@@ -21,6 +21,7 @@ describe('desk bot connect', () => {
       ],
     });
     assert.equal(bot?.display_name, 'Cursor');
+    assert.equal(connectedBot({ bots: [{ display_name: 'Idle Bot', presence: 'idle' }] }), null);
   });
 
   it('connect paste is check-in only', () => {

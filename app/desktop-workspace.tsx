@@ -20,6 +20,7 @@ import { DesktopBotPanel } from './desktop-bot-panel';
 import {
   connectedRemoteNames,
   ensureBotLinks,
+  forgetBotLinksOnQuit,
   hasConnectedBot,
   type BotLinkState,
 } from './desktop-bot-links';
@@ -76,6 +77,7 @@ declare global {
       getPathForFile?: (file: File) => string;
       showOutput: (path: string) => Promise<void>;
       appInfo: () => Promise<{ version: string; platform: string; packaged: boolean }>;
+      quit?: () => Promise<void>;
       updateStatus?: () => Promise<UpdateStatus>;
       openRelease?: (url: string) => Promise<void>;
       pairRunner: () => Promise<{ runner_id: string; display_name: string } | null>;
@@ -339,6 +341,7 @@ export default function DesktopWorkspace() {
   const [voiceDraft, setVoiceDraft] = useState<VoiceModelId>(() => readVoiceSetup().modelId);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [botPanelOpen, setBotPanelOpen] = useState(false);
+  const [quitAsk, setQuitAsk] = useState(false);
   const [setupPane, setSetupPane] = useState<'' | 'shape' | 'length' | 'sound' | 'pace'>('');
   const [exportPane, setExportPane] = useState<'' | 'post' | 'exchange' | 'receipts'>('');
   const [deskWait, setDeskWait] = useState<DeskWaitState | null>(null);
@@ -1276,8 +1279,45 @@ export default function DesktopWorkspace() {
             </>
           )}
           <LanguageSwitcher />
+          <button
+            type="button"
+            className="desktop-chrome-btn desktop-quit"
+            onClick={() => {
+              if (window.grokCrew?.quit) {
+                void window.grokCrew.quit();
+                return;
+              }
+              setQuitAsk(true);
+            }}
+          >
+            {t('종료', 'Quit', '退出', '終了')}
+          </button>
         </div>
       </header>
+      {quitAsk ? (
+        <div className="desktop-quit-ask" role="alertdialog" aria-modal="true" aria-labelledby="desktop-quit-title">
+          <div className="desktop-quit-ask-card">
+            <b id="desktop-quit-title">{t('지금 종료하면 Grok Bot과 Agent 연결이 끊어집니다.', 'Quitting now disconnects Grok Bot and Agent.', '现在退出会断开 Grok Bot 和 Agent。', '今終了すると Grok Bot と Agent の接続が切れます。')}</b>
+            <p>{t('다시 쓰려면 연결 글을 봇 창에 다시 붙이세요. 창을 닫아 숨기기만 하면 연결은 그대로입니다.', 'Paste the connect text again to use them. Hiding the window keeps the links.', '要再用，请把连接文字重新贴到机器人窗口。只关窗口隐藏时，连接还在。', 'もう一度使うには接続文をボットの窓に貼ってください。窓を閉じて隠すだけなら接続はそのままです。')}</p>
+            <div className="desktop-quit-ask-actions">
+              <button
+                type="button"
+                className="desktop-primary"
+                onClick={() => {
+                  forgetBotLinksOnQuit(botLinks);
+                  setBotLinks(ensureBotLinks());
+                  setQuitAsk(false);
+                }}
+              >
+                {t('종료', 'Quit', '退出', '終了')}
+              </button>
+              <button type="button" className="desktop-secondary" onClick={() => setQuitAsk(false)}>
+                {t('돌아가기', 'Go back', '返回', '戻る')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {drawer !== 'none' ? <button type="button" className="desktop-drawer-backdrop" aria-label={t('패널 닫기', 'Close panel', '关闭面板', 'パネルを閉じる')} onClick={() => setDrawer('none')} /> : null}
 
       {showVoiceWizard ? (

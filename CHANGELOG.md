@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Quit now warns first. Confirming disconnects Grok Bot and Agent seats and same-PC check-ins. Closing the window still hides to the tray and keeps the links. The next desk run starts with no leftover bot sessions.
 - First open of the desk now asks which TTS this PC should install (Kokoro-82M / Step Audio EditX / Zonos-v0.1). The Windows installer stays one-click; Next with no pick keeps Kokoro-82M. TTS stays unused until Auto turns it on.
 - Connect lamps are only **연결됨** / **연결되지않음** (Connected / Not connected). Gray is not connected. Green is connected. Role plus “아직 아님”, and copy-waiting lamp copy, are gone. Copying still does not turn the lamp green.
 - Copying the connect text no longer marks a seat connected. Leftover other-PC “connected” rows from a copy are treated as waiting.
