@@ -1,8 +1,7 @@
 (function () {
   var script = document.currentScript;
   var origin = script && script.src ? new URL('.', script.src).href : location.origin + '/';
-  var api = window.GROK_CREW_GET_API
-    || (script && script.getAttribute('data-api'))
+  var api = (script && script.getAttribute('data-api'))
     || new URL('api/get', origin).href;
   var releaseUrl = 'https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0';
   var repoUrl = 'https://github.com/NoLucas/Grok-Crew';

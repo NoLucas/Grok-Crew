@@ -4,6 +4,8 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Removed a personal chatgpt.site host from the homepage allowlist. Extra origins come only from `GROK_CREW_PUBLIC_ORIGIN`.
+- `POST /api/get` now rejects foreign `Origin` headers, rate-limits repeats, and only returns a GitHub https download URL. `/home` and the preview server send frame and content-type headers.
 - Personal Cursor skills used to build the app are no longer in this repository. Guest bot skills stay in `public/bot-skills/`.
 - Removed unused archive copies, the launch-post draft, the idea scrap, the leftover install-guide note, and the unused bot-pack text file. Bot zip instructions still come from `local_studio/bot_pack.py`. Hero art lives only at `public/hero.png`.
 - The public homepage is back at `/home`. It shows v1.0.0, with Grok Bot, built-in skills, and a free Windows download that does not wait on email. `POST /api/get` accepts the live homepage origin for optional news. `/` stays the desk. The lock is `docs/HOMEPAGE.ko.md`.

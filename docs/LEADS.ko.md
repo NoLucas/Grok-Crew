@@ -24,7 +24,7 @@
 
 ## 당신이 열어야 하는 것
 
-공개 받기 문은 GitHub Release다. 라이브 홈페이지가 `POST /api/get`으로 소식만 남길 수 있다.
+공개 받기 문은 GitHub Release다. 라이브 홈페이지가 `POST /api/get`으로 소식만 남길 수 있다. 그 출처는 `GROK_CREW_PUBLIC_ORIGIN`에만 적는다.
 
 창 안 **나중에 소식** 칸:
 

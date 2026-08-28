@@ -5,6 +5,12 @@ import { dirname, join } from 'node:path';
 export const DEFAULT_DOWNLOAD_URL =
   'https://github.com/NoLucas/Grok-Crew/releases/latest/download/GrokCrew-Windows.exe';
 
+const DOWNLOAD_HOSTS = new Set([
+  'github.com',
+  'objects.githubusercontent.com',
+  'release-assets.githubusercontent.com',
+]);
+
 export type GetLeadInput = {
   email?: string;
   website?: string;
@@ -27,12 +33,22 @@ export function normalizeEmail(value: string): string {
 }
 
 export function isGetEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+  const email = normalizeEmail(value);
+  if (email.length < 3 || email.length > 254) return false;
+  if (/[<>\r\n\0]/.test(email)) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export function downloadUrl(raw?: string): string {
   const value = String(raw ?? process.env.GROK_CREW_DOWNLOAD_URL ?? DEFAULT_DOWNLOAD_URL).trim();
-  return value || DEFAULT_DOWNLOAD_URL;
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== 'https:') return DEFAULT_DOWNLOAD_URL;
+    if (!DOWNLOAD_HOSTS.has(parsed.hostname)) return DEFAULT_DOWNLOAD_URL;
+    return parsed.href;
+  } catch {
+    return DEFAULT_DOWNLOAD_URL;
+  }
 }
 
 export function isHoneypot(value: string | undefined): boolean {
@@ -54,28 +70,24 @@ export function leadRecord(email: string, createdAt = new Date().toISOString()):
   };
 }
 
-/** Public homepage origin. /home in this app, or the live page that loads /connect-install.js. */
-export const HOME_ORIGIN = 'https://grok-crew-local.jinegcc.chatgpt.site';
-export const EXISTING_HOME_ORIGIN = HOME_ORIGIN;
-export const DISCONNECTED_HOME_ORIGIN = HOME_ORIGIN;
-
 export function localLeadsPath(): string {
   const override = String(process.env.GROK_CREW_LEADS_PATH || '').trim();
-  if (override) return override;
-  return join(process.cwd(), 'data', 'leads.jsonl');
+  if (!override || override.includes('..') || override.includes('\0')) {
+    return join(process.cwd(), 'data', 'leads.jsonl');
+  }
+  return override;
 }
 
 export function allowedGetOrigins(): string[] {
-  const extra = String(process.env.GROK_CREW_PUBLIC_ORIGIN || '')
+  return String(process.env.GROK_CREW_PUBLIC_ORIGIN || '')
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
-  return [HOME_ORIGIN, ...extra];
 }
 
 export function isAllowedGetOrigin(origin: string, requestUrl?: string): boolean {
   const value = String(origin || '').trim();
-  if (!value) return true;
+  if (!value) return false;
   if (allowedGetOrigins().includes(value)) return true;
   try {
     const parsed = new URL(value);
@@ -97,6 +109,7 @@ export function corsHeaders(origin: string, requestUrl?: string): Record<string,
   };
 }
 
+const MEMORY_LEAD_CAP = 32;
 const memoryLeads: LeadRecord[] = [];
 
 export function rememberedLeads(): LeadRecord[] {
@@ -110,6 +123,9 @@ export async function saveLeadLocal(record: LeadRecord, path = localLeadsPath())
 
 export async function saveLeadMemory(record: LeadRecord): Promise<void> {
   memoryLeads.push(record);
+  if (memoryLeads.length > MEMORY_LEAD_CAP) {
+    memoryLeads.splice(0, memoryLeads.length - MEMORY_LEAD_CAP);
+  }
 }
 
 export async function saveLeadS3(record: LeadRecord, bucket: string, region: string): Promise<void> {
@@ -153,3 +169,43 @@ export async function takeGetLead(input: GetLeadInput): Promise<GetLeadResult> {
     return { ok: false, reason: 'save' };
   }
 }
+
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const RATE_MAX = 8;
+const recentPosts = new Map<string, number[]>();
+
+export function getLeadClientKey(request: Request): string {
+  const origin = request.headers.get('origin') || '';
+  const forwarded = (request.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+  return `${origin}|${forwarded.slice(0, 64)}`;
+}
+
+export function tooManyGetLeads(key: string, now = Date.now()): boolean {
+  const hits = (recentPosts.get(key) || []).filter((stamp) => now - stamp < RATE_WINDOW_MS);
+  if (hits.length >= RATE_MAX) {
+    recentPosts.set(key, hits);
+    return true;
+  }
+  hits.push(now);
+  recentPosts.set(key, hits);
+  return false;
+}
+
+export const HOME_PAGE_HEADERS: Record<string, string> = {
+  'Content-Type': 'text/html; charset=utf-8',
+  'Cache-Control': 'no-store',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+  'X-Frame-Options': 'DENY',
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "connect-src 'self'",
+    "font-src 'self' data:",
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+  ].join('; '),
+};

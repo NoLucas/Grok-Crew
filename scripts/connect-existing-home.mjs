@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Print how to attach this repo's homepage script to the live page. */
+/** Print how to attach this repo's homepage script to a live page. */
 
 import { access } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -15,7 +15,8 @@ await access(script);
 console.log('Homepage is back on /home.');
 console.log(`Open: ${origin}/home`);
 console.log('');
-console.log('To connect the live chatgpt.site page, add this tag to that page:');
+console.log('To connect a live page, add this tag to that page:');
 console.log(`<script src="${origin}/connect-install.js" data-api="${origin}/api/get"></script>`);
 console.log('');
-console.log('This app already allows https://grok-crew-local.jinegcc.chatgpt.site to call POST /api/get.');
+console.log('Set GROK_CREW_PUBLIC_ORIGIN to that live page origin so POST /api/get accepts it.');
+console.log('Do not commit a personal host into the repo.');

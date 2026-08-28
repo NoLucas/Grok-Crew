@@ -7,21 +7,21 @@ import { afterEach, describe, it } from 'node:test';
 register('./timeline/ts-resolver.helper.mjs', import.meta.url);
 
 const {
-  HOME_ORIGIN,
   corsHeaders,
   downloadUrl,
   DEFAULT_DOWNLOAD_URL,
   isAllowedGetOrigin,
   isGetEmail,
-  isHoneypot,
   leadRecord,
   saveLeadLocal,
   takeGetLead,
+  tooManyGetLeads,
 } = await import('./get-lead.ts');
 
 const previousPath = process.env.GROK_CREW_LEADS_PATH;
 const previousBucket = process.env.GROK_CREW_LEADS_BUCKET;
 const previousDownload = process.env.GROK_CREW_DOWNLOAD_URL;
+const previousOrigin = process.env.GROK_CREW_PUBLIC_ORIGIN;
 
 afterEach(() => {
   if (previousPath === undefined) delete process.env.GROK_CREW_LEADS_PATH;
@@ -30,14 +30,18 @@ afterEach(() => {
   else process.env.GROK_CREW_LEADS_BUCKET = previousBucket;
   if (previousDownload === undefined) delete process.env.GROK_CREW_DOWNLOAD_URL;
   else process.env.GROK_CREW_DOWNLOAD_URL = previousDownload;
+  if (previousOrigin === undefined) delete process.env.GROK_CREW_PUBLIC_ORIGIN;
+  else process.env.GROK_CREW_PUBLIC_ORIGIN = previousOrigin;
 });
 
 describe('optional homepage news door', () => {
-  it('accepts one email line and rejects empty or junk', () => {
+  it('accepts one email line and rejects empty, junk, or oversized values', () => {
     assert.equal(isGetEmail('you@example.com'), true);
     assert.equal(isGetEmail('  You@Example.COM  '), true);
     assert.equal(isGetEmail(''), false);
     assert.equal(isGetEmail('not-an-email'), false);
+    assert.equal(isGetEmail(`bad<user>@example.com`), false);
+    assert.equal(isGetEmail(`${'a'.repeat(250)}@x.co`), false);
   });
 
   it('treats a filled honeypot as a fake success and does not store', async () => {
@@ -71,20 +75,30 @@ describe('optional homepage news door', () => {
     assert.match(text, /"email":"a@b.co"/);
   });
 
-  it('lets the connected homepage call this app and blocks strangers', () => {
-    assert.equal(isAllowedGetOrigin(HOME_ORIGIN), true);
+  it('lets only localhost, same-origin, or GROK_CREW_PUBLIC_ORIGIN call this app', () => {
+    delete process.env.GROK_CREW_PUBLIC_ORIGIN;
     assert.equal(isAllowedGetOrigin('https://evil.example'), false);
+    assert.equal(isAllowedGetOrigin(''), false);
     assert.equal(isAllowedGetOrigin('http://127.0.0.1:43173'), true);
-    const headers = corsHeaders(HOME_ORIGIN);
-    assert.equal(headers['Access-Control-Allow-Origin'], HOME_ORIGIN);
+    assert.equal(isAllowedGetOrigin('https://pages.example', 'https://pages.example/api/get'), true);
+    process.env.GROK_CREW_PUBLIC_ORIGIN = 'https://pages.example';
+    assert.equal(isAllowedGetOrigin('https://pages.example'), true);
+    const headers = corsHeaders('https://pages.example');
+    assert.equal(headers['Access-Control-Allow-Origin'], 'https://pages.example');
+    assert.deepEqual(corsHeaders('https://evil.example'), {});
   });
 
   it('points the Windows file at the Grok-Crew release', () => {
     assert.match(DEFAULT_DOWNLOAD_URL, /NoLucas\/Grok-Crew\/releases/);
   });
 
-  it('uses the download override when set', () => {
-    assert.equal(downloadUrl('https://files.example/GrokCrew-Windows.exe'), 'https://files.example/GrokCrew-Windows.exe');
+  it('ignores a download override that is not a GitHub https URL', () => {
+    assert.equal(downloadUrl('https://files.example/GrokCrew-Windows.exe'), DEFAULT_DOWNLOAD_URL);
+    assert.equal(downloadUrl('javascript:alert(1)'), DEFAULT_DOWNLOAD_URL);
+    assert.equal(
+      downloadUrl('https://github.com/NoLucas/Grok-Crew/releases/latest/download/GrokCrew-Windows.exe'),
+      DEFAULT_DOWNLOAD_URL,
+    );
   });
 
   it('keeps the door open when the disk file cannot be written', async () => {
@@ -95,4 +109,11 @@ describe('optional homepage news door', () => {
     if (result.ok) assert.equal(result.stored, true);
   });
 
+  it('rate-limits repeated news posts from the same caller', () => {
+    const key = `test-rate-${Date.now()}`;
+    for (let i = 0; i < 8; i += 1) {
+      assert.equal(tooManyGetLeads(key), false);
+    }
+    assert.equal(tooManyGetLeads(key), true);
+  });
 });
