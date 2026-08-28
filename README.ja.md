@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — このPCの映像デスク" width="100%" />
 </p>
 
-**v1.0.9** · with Grok Bot · いま無料
+**v1.0.10** · with Grok Bot · いま無料
 
 Shorts を一人で切って夜を明かす必要はありません。
 使っている **Grok Bot** や Agent を付ければ、できたファイルは **このPCのフォルダ** に残ります。
@@ -50,11 +50,17 @@ Shorts を一人で切って夜を明かす必要はありません。
 
 ---
 
+## v1.0.10 で変わったこと
+
+- 選んだ TTS がすでにこの PC にあれば、受け取らずにインストールを続けます。声の受け取りに失敗してもプログラムは入ります。
+
+一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.10 リリースノート](docs/RELEASE_NOTES.v1.0.10.md) です。
+
 ## v1.0.9 で変わったこと
 
 - インストーラが Kokoro-82M を再び受け取れます。Hugging Face にある本物の重みファイルを受け取ります。1.0.8 はない名前を取りに行って失敗していました。
 
-一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.9 リリースノート](docs/RELEASE_NOTES.v1.0.9.md) です。
+1.0.9 の一覧は [1.0.9 リリースノート](docs/RELEASE_NOTES.v1.0.9.md) です。
 
 ## v1.0.8 で変わったこと
 

@@ -1,6 +1,6 @@
-# Downloads one TTS model into Videos\Grok Crew\voice-models — the same
-# folder the packaged sidecar reads. Skip when that model is already there.
-# Do not start a download until the installer calls this with a model id.
+# Keep one TTS model in Videos\Grok Crew\voice-models — the same folder the
+# packaged sidecar reads. If that model is already on this PC, skip.
+# A failed download must not stop the program install.
 param(
   [Parameter(Mandatory = $true)][string]$ModelId,
   [Parameter(Mandatory = $true)][string]$Catalog
@@ -14,18 +14,23 @@ try {
 }
 
 function Write-VoiceError([string]$Message) {
-  $errFile = Join-Path (Split-Path -Parent $Catalog) "voice-error.txt"
-  Set-Content -LiteralPath $errFile -Value $Message -Encoding UTF8
+  try {
+    $errFile = Join-Path (Split-Path -Parent $Catalog) "voice-error.txt"
+    Set-Content -LiteralPath $errFile -Value $Message -Encoding UTF8
+  } catch {
+  }
 }
 
-function Fail([string]$Message) {
-  Write-VoiceError $Message
-  Write-Error $Message
-  exit 1
+function Finish([int]$Code, [string]$Message) {
+  if ($Message) {
+    Write-Host $Message
+    if ($Code -ne 0) { Write-VoiceError $Message }
+  }
+  exit 0
 }
 
 if (-not (Test-Path -LiteralPath $Catalog)) {
-  Fail "Voice catalog is missing."
+  Finish 0 "Voice catalog is missing. Continue the program install."
 }
 
 $catalog = Get-Content -LiteralPath $Catalog -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -40,30 +45,27 @@ if ($known -notcontains $id) {
 
 $item = $catalog.models.$id
 if (-not $item) {
-  Fail "Unknown voice model: $id"
+  Finish 0 "Unknown voice model: $id. Continue the program install."
 }
 
-$videos = [Environment]::GetFolderPath("MyVideos")
-if (-not $videos) {
-  $videos = Join-Path $env:USERPROFILE "Videos"
-}
-$root = Join-Path (Join-Path $videos ([string]$catalog.workspaceFolder)) "voice-models"
-$modelDir = Join-Path $root $id
-$activePath = Join-Path $root "active.json"
-New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
-
-function RequiredNames($entry) {
-  $names = @()
-  foreach ($name in @($entry.files)) {
-    if ($name) { $names += [string]$name }
-  }
-  foreach ($name in @($entry.weight_files)) {
-    if ($name) { $names += [string]$name }
+function VoiceRoots {
+  $names = New-Object System.Collections.Generic.List[string]
+  foreach ($base in @(
+    [Environment]::GetFolderPath("MyVideos"),
+    [Environment]::GetFolderPath("CommonVideos"),
+    (Join-Path $env:USERPROFILE "Videos"),
+    (Join-Path $env:USERPROFILE "OneDrive\Videos"),
+    (Join-Path $env:USERPROFILE "OneDrive\문서\Videos"),
+    (Join-Path $env:PUBLIC "Videos")
+  )) {
+    if (-not $base) { continue }
+    $root = Join-Path (Join-Path $base ([string]$catalog.workspaceFolder)) "voice-models"
+    if (-not $names.Contains($root)) { $names.Add($root) }
   }
   return $names
 }
 
-function HasAny([string]$folder, $names) {
+function HasNamed([string]$folder, $names) {
   foreach ($name in @($names)) {
     if ($name -and (Test-Path -LiteralPath (Join-Path $folder ([string]$name)))) {
       return $true
@@ -72,28 +74,47 @@ function HasAny([string]$folder, $names) {
   return $false
 }
 
-function HasAll([string]$folder, $names) {
-  foreach ($name in @($names)) {
-    if ($name -and -not (Test-Path -LiteralPath (Join-Path $folder ([string]$name)))) {
-      return $false
+function VoiceAlreadyKept([string]$folder, $entry) {
+  if (-not (Test-Path -LiteralPath $folder)) { return $false }
+  if (Test-Path -LiteralPath (Join-Path $folder "chosen.json")) { return $true }
+  $active = Join-Path (Split-Path -Parent $folder) "active.json"
+  if (Test-Path -LiteralPath $active) {
+    try {
+      $payload = Get-Content -LiteralPath $active -Raw -Encoding UTF8 | ConvertFrom-Json
+      if ([string]$payload.active -eq $id -and [bool]$payload.chosen) { return $true }
+    } catch {
     }
   }
-  return $true
+  if (HasNamed $folder @($entry.files)) { return $true }
+  if (HasNamed $folder @($entry.weight_files)) { return $true }
+  if (HasNamed $folder @($entry.fallbacks)) { return $true }
+  $found = Get-ChildItem -LiteralPath $folder -Recurse -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Extension -in ".pth", ".pt", ".safetensors", ".onnx" -and $_.Length -gt 1024 }
+  return [bool]$found
 }
 
-function ModelReady([string]$folder, $entry) {
-  if (-not (HasAll $folder @($entry.files))) { return $false }
-  $weights = @($entry.weight_files)
-  if ($weights.Count -eq 0) { return $true }
-  return (HasAny $folder $weights) -or (HasAny $folder @($entry.fallbacks))
+$roots = VoiceRoots
+$primary = $roots[0]
+$modelDir = Join-Path $primary $id
+$activePath = Join-Path $primary "active.json"
+
+foreach ($root in $roots) {
+  $candidate = Join-Path $root $id
+  if (VoiceAlreadyKept $candidate $item) {
+    $modelDir = $candidate
+    $activePath = Join-Path $root "active.json"
+    break
+  }
 }
 
-function Write-Active([string]$activeId) {
+function Write-Active([string]$activeId, [string]$ErrorText) {
+  $dir = Split-Path -Parent $activePath
+  New-Item -ItemType Directory -Force -Path $dir | Out-Null
   $payload = @{
     schema = [string]$catalog.schema
     active = $activeId
     chosen = $true
-    error  = ""
+    error  = [string]$ErrorText
   } | ConvertTo-Json -Compress
   Set-Content -LiteralPath $activePath -Value ($payload + "`n") -Encoding UTF8
 }
@@ -149,19 +170,23 @@ function Download-File([string]$Url, [string]$Dest) {
   throw $last
 }
 
-if (ModelReady $modelDir $item) {
-  Write-Host "Voice $id is already on this PC. Skip download."
-  Write-Active $id
-  exit 0
+if (VoiceAlreadyKept $modelDir $item) {
+  Write-Active $id ""
+  Finish 0 "Voice $id is already on this PC. Skip download."
 }
+
+New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
 
 $saved = 0
 $lastError = ""
-$required = RequiredNames $item
+$required = @()
+foreach ($name in @($item.files)) { if ($name) { $required += [string]$name } }
+foreach ($name in @($item.weight_files)) { if ($name) { $required += [string]$name } }
 $hf = [string]$catalog.hfResolve
 foreach ($name in $required) {
   $url = $hf.Replace("{repo}", [string]$item.repo).Replace("{name}", $name)
   $dest = Join-Path $modelDir $name
+  if (Test-Path -LiteralPath $dest) { continue }
   try {
     Write-Host "Downloading $name"
     Download-File $url $dest
@@ -173,11 +198,12 @@ foreach ($name in $required) {
   }
 }
 
-if (-not (ModelReady $modelDir $item)) {
+if (-not (VoiceAlreadyKept $modelDir $item)) {
   foreach ($name in @($item.fallbacks)) {
     if (-not $name) { continue }
-    $url = $hf.Replace("{repo}", [string]$item.repo).Replace("{name}", [string]$name)
     $dest = Join-Path $modelDir ([string]$name)
+    if (Test-Path -LiteralPath $dest) { break }
+    $url = $hf.Replace("{repo}", [string]$item.repo).Replace("{name}", [string]$name)
     try {
       Write-Host "Downloading fallback $name"
       Download-File $url $dest
@@ -191,20 +217,17 @@ if (-not (ModelReady $modelDir $item)) {
   }
 }
 
-$receipt = @{
-  schema = [string]$catalog.schema
-  id     = $id
-  label  = [string]$item.label
-  repo   = [string]$item.repo
-  bytes  = $saved
-} | ConvertTo-Json -Compress
-Set-Content -LiteralPath (Join-Path $modelDir "chosen.json") -Value ($receipt + "`n") -Encoding UTF8
-
-if (-not (ModelReady $modelDir $item)) {
-  Write-Active $id
-  Fail "Could not download $id. $lastError"
+if (VoiceAlreadyKept $modelDir $item) {
+  $receipt = @{
+    schema = [string]$catalog.schema
+    id     = $id
+    label  = [string]$item.label
+    repo   = [string]$item.repo
+    bytes  = $saved
+  } | ConvertTo-Json -Compress
+  Set-Content -LiteralPath (Join-Path $modelDir "chosen.json") -Value ($receipt + "`n") -Encoding UTF8
+  Write-Active $id ""
+  Finish 0 "Voice $id is ready."
 }
 
-Write-Active $id
-Write-Host "Voice $id is ready."
-exit 0
+Finish 0 "Could not download $id. Continue the program install. $lastError"

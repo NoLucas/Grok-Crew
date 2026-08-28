@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.9** · with Grok Bot · free now
+**v1.0.10** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,11 +50,17 @@ If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
 ---
 
+## What changed in v1.0.10
+
+- If the chosen TTS is already on this PC, the installer skips it and continues. A failed voice download no longer stops the program install.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.10 notes](docs/RELEASE_NOTES.v1.0.10.md).
+
 ## What changed in v1.0.9
 
 - The Windows installer can keep Kokoro-82M again. It now downloads Hugging Face's real weight file instead of a renamed path that 404s.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.9 notes](docs/RELEASE_NOTES.v1.0.9.md).
+The 1.0.9 list is in [the 1.0.9 notes](docs/RELEASE_NOTES.v1.0.9.md).
 
 ## What changed in v1.0.8
 

@@ -25,7 +25,10 @@ describe('installer voice pick', () => {
     assert.match(nsh, /customPageAfterChangeDir/);
     assert.match(nsh, /Page custom grokCrewVoicePage grokCrewVoicePageLeave/);
     assert.match(nsh, /Opening the exe did not start a download/);
-    assert.match(nsh, /A failed download stops the install|받기 실패면 설치를 끝내지 않습니다/);
+    assert.match(nsh, /이미 Videos\\Grok Crew\\voice-models 에 있으면 받지 않고 넘어갑니다/);
+    assert.match(nsh, /받기에 실패해도 프로그램은 설치됩니다/);
+    assert.doesNotMatch(nsh, /받기 실패면 설치를 끝내지 않습니다/);
+    assert.doesNotMatch(nsh, /MB_ABORTRETRYIGNORE/);
     assert.match(nsh, /customInstall/);
     assert.match(nsh, /IfSilent/);
     assert.match(nsh, /ifndef BUILD_UNINSTALLER/);
@@ -36,7 +39,8 @@ describe('installer voice pick', () => {
     assert.deepEqual(Object.keys(catalog.models).sort(), [...VOICE_MODEL_IDS].sort());
     assert.match(ps1, /GetFolderPath\("MyVideos"\)/);
     assert.match(ps1, /voice-models/);
-    assert.match(ps1, /Skip when that model is already there|already on this PC/);
+    assert.match(ps1, /already on this PC|VoiceAlreadyKept/);
+    assert.match(ps1, /Continue the program install/);
     assert.match(ps1, /chosen\.json/);
     assert.match(ps1, /active\.json/);
     assert.match(ps1, /voice-error\.txt/);

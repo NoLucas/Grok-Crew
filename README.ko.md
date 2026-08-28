@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 로컬 영상 작업대" width="100%" />
 </p>
 
-**v1.0.9** · with Grok Bot · 지금 무료
+**v1.0.10** · with Grok Bot · 지금 무료
 
 쇼츠를 혼자 자르며 밤을 샐 필요 없습니다.
 쓰던 **Grok Bot**이나 Agent를 붙이면, 다듬은 파일이 **이 PC 폴더**에 남습니다.
@@ -50,11 +50,17 @@
 
 ---
 
+## v1.0.10에서 달라진 것
+
+- TTS가 이미 있으면 받지 않고 설치를 이어갑니다. 목소리 받기에 실패해도 프로그램은 설치됩니다.
+
+자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.10 릴리스 노트](docs/RELEASE_NOTES.v1.0.10.md)입니다.
+
 ## v1.0.9에서 달라진 것
 
 - 설치가 Kokoro-82M을 다시 받을 수 있습니다. Hugging Face에 있는 진짜 가중치 파일을 받습니다. 1.0.8은 없는 이름을 받아 실패했습니다.
 
-자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.9 릴리스 노트](docs/RELEASE_NOTES.v1.0.9.md)입니다.
+1.0.9 목록은 [1.0.9 릴리스 노트](docs/RELEASE_NOTES.v1.0.9.md)입니다.
 
 ## v1.0.8에서 달라진 것
 

@@ -4,6 +4,15 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.10 - 2026-08-28
+
+Local 1.0.10. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.10` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.10) only. Guest notes: `docs/RELEASE_NOTES.v1.0.10.md`. Guest download stays the same Google Drive file. Already-installed 1.0.9 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- The installer skips the TTS download when that model is already under `Videos\Grok Crew\voice-models` (or the OneDrive/public Videos copy of that folder).
+- A failed Hugging Face fetch no longer stops the program install. The desk can download the voice later.
+
 ## 1.0.9 - 2026-08-28
 
 Local 1.0.9. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.9` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.9) only. Guest notes: `docs/RELEASE_NOTES.v1.0.9.md`. Guest download stays the same Google Drive file. Already-installed 1.0.8 desks check Grok-crew-test for this tag.
