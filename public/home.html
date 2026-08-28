@@ -1,22 +1,42 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en" data-home-lang="pick">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="v1.0.0. 쓰던 Grok Bot이나 Agent를 붙이면, 다듬은 파일이 이 PC 폴더에 남습니다. 지금은 무료입니다.">
+  <meta name="description" content="v1.0.0. Attach a Grok Bot or Agent you already use. The finished file lands in a folder on this PC. Free now.">
   <meta name="theme-color" content="#0a0a0a">
   <meta property="og:title" content="Grok Crew — with Grok Bot">
-  <meta property="og:description" content="쇼츠를 혼자 자를 필요 없습니다. 쓰던 봇을 붙이면 파일이 이 PC에 남습니다. 지금은 무료입니다.">
+  <meta property="og:description" content="Attach a bot you already use. The finished file lands on this PC. Free now.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Grok Crew — with Grok Bot">
-  <meta name="twitter:description" content="쇼츠를 혼자 자를 필요 없습니다. 쓰던 봇을 붙이면 파일이 이 PC에 남습니다. 지금은 무료입니다.">
+  <meta name="twitter:description" content="Attach a bot you already use. The finished file lands on this PC. Free now.">
   <meta name="twitter:image" content="/og.png">
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/app-mark.png">
   <title>Grok Crew — with Grok Bot</title>
+  <script>
+    (function () {
+      function pick(value) {
+        var lang = String(value || '').slice(0, 2).toLowerCase();
+        return (lang === 'en' || lang === 'ko' || lang === 'zh' || lang === 'ja') ? lang : '';
+      }
+      var query = '';
+      try { query = new URLSearchParams(location.search).get('lang') || ''; } catch (e) {}
+      var saved = '';
+      try { saved = localStorage.getItem('grok-crew-home-lang') || ''; } catch (e) {}
+      var lang = pick(query) || pick(saved);
+      if (lang) {
+        document.documentElement.lang = lang;
+        document.documentElement.setAttribute('data-home-lang', lang);
+      } else {
+        document.documentElement.lang = 'en';
+        document.documentElement.setAttribute('data-home-lang', 'pick');
+      }
+    })();
+  </script>
   <style>
     :root {
       --bg:#0a0a0a;
@@ -72,7 +92,37 @@
       background:color-mix(in srgb,var(--bg) 88%,transparent);
       backdrop-filter:blur(18px);
     }
-    .nav { height:72px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+    .nav { height:72px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .nav-end { display:flex; align-items:center; gap:10px; justify-self:end; }
+    .lang-switch { display:flex; align-items:center; gap:4px; }
+    .lang-switch button {
+      min-height:34px; padding:0 9px; border:1px solid var(--line); border-radius:999px;
+      background:transparent; color:var(--soft); cursor:pointer;
+      font:750 10px var(--mono); letter-spacing:.06em;
+    }
+    .lang-switch button[aria-pressed="true"] { border-color:var(--yellow); color:var(--yellow); }
+    .lang-gate {
+      display:none; position:fixed; inset:0; z-index:80; place-items:center;
+      padding:36px 20px; background:color-mix(in srgb,var(--bg) 92%,transparent); backdrop-filter:blur(18px);
+    }
+    .lang-gate[hidden] { display:none !important; }
+    html[data-home-lang="pick"] { overflow:hidden; }
+    html[data-home-lang="pick"] body { overflow:hidden; }
+    html[data-home-lang="pick"] .lang-gate { display:grid; }
+    html[data-home-lang="pick"] .site-shell { display:none; }
+    .lang-gate-card { width:min(560px,100%); }
+    .lang-gate-kicker { margin:0 0 14px; color:var(--yellow); font:750 10px var(--mono); letter-spacing:.14em; text-transform:uppercase; }
+    .lang-gate-card h1 { margin:0 0 14px; font-size:clamp(40px,7vw,64px); line-height:.92; letter-spacing:-.07em; }
+    .lang-gate-card p { margin:0 0 28px; color:var(--soft); font-size:16px; line-height:1.55; }
+    .lang-choices { display:grid; gap:10px; }
+    .lang-choice {
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      min-height:64px; padding:0 18px; border:1px solid var(--line); border-radius:12px;
+      background:var(--surface); color:var(--text); cursor:pointer; text-align:left;
+    }
+    .lang-choice:hover, .lang-choice:focus-visible { border-color:var(--yellow); }
+    .lang-choice b { font-size:18px; letter-spacing:-.03em; }
+    .lang-choice span { color:var(--soft); font:750 10px var(--mono); letter-spacing:.1em; }
     .brand { display:inline-flex;align-items:center;gap:10px;width:max-content;text-decoration:none;font-size:15px;font-weight:900;letter-spacing:-.045em; }
     .brand-mark { display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:8px;overflow:hidden;padding:0;background:transparent; }
     .brand-mark img { width:100%;height:100%;display:block; }
@@ -224,7 +274,6 @@
     @keyframes blink { 0%,45%{opacity:1}46%,100%{opacity:0} }
 
     @media (max-width:900px) {
-      .nav { grid-template-columns:1fr auto; }
       .nav-links { display:none; }
       .hero::after { display:none; }
       .section-head { grid-template-columns:1fr;gap:16px; }
@@ -238,8 +287,10 @@
     @media (max-width:620px) {
       .wrap { width:min(100% - 30px,var(--max)); }
       .nav { height:64px; }
-      .nav-cta { padding:9px 11px;font-size:0; }
-      .nav-cta::before { content:"저장소 ↗";font-size:11px; }
+      .nav-end { gap:6px; }
+      .lang-switch button { min-height:30px; padding:0 7px; }
+      .nav-cta { padding:9px 11px; }
+      .nav-cta .arrow { display:none; }
       .hero { padding:72px 0 66px; }
       h1 { margin-top:24px;font-size:clamp(49px,15vw,72px); }
       .telemetry-body { grid-template-columns:1fr;gap:14px; }
@@ -290,68 +341,91 @@
   </style>
 </head>
 <body>
-  <header class="site-header">
-    <nav class="wrap nav" aria-label="주요 탐색">
-      <a class="brand" href="#top" aria-label="Grok Crew 홈"><span class="brand-mark"><img src="/app-mark.png" alt="" width="28" height="28"></span><span>GROK <em>CREW</em></span></a>
-      <div class="nav-links">
-        <a href="#how">쓰는 순서</a>
-        <a href="#skills">내장 스킬</a>
-        <a href="#local">왜 이 PC인가</a>
+  <div class="lang-gate" id="langGate" role="dialog" aria-modal="true" aria-labelledby="langGateTitle">
+    <div class="lang-gate-card">
+      <p class="lang-gate-kicker">Grok Crew · v1.0.0</p>
+      <h1 id="langGateTitle">Choose your language</h1>
+      <p>The site starts in English. Pick one of the four languages to continue.</p>
+      <div class="lang-choices">
+        <button type="button" class="lang-choice" data-pick-lang="en"><b>English</b><span>EN</span></button>
+        <button type="button" class="lang-choice" data-pick-lang="ko"><b>한국어</b><span>KO</span></button>
+        <button type="button" class="lang-choice" data-pick-lang="zh"><b>中文</b><span>ZH</span></button>
+        <button type="button" class="lang-choice" data-pick-lang="ja"><b>日本語</b><span>JA</span></button>
       </div>
-      <a class="nav-cta" href="https://github.com/NoLucas/Grok-Crew" target="_blank" rel="noreferrer">저장소 보기 <span aria-hidden="true">↗</span></a>
+    </div>
+  </div>
+
+  <div class="site-shell" id="siteShell">
+  <header class="site-header">
+    <nav class="wrap nav" data-i18n-aria="navAria">
+      <a class="brand" href="#top" data-i18n-aria="brandAria"><span class="brand-mark"><img src="/app-mark.png" alt="" width="28" height="28"></span><span>GROK <em>CREW</em></span></a>
+      <div class="nav-links">
+        <a href="#how" data-i18n="navHow">How it works</a>
+        <a href="#skills" data-i18n="navSkills">Built-in skills</a>
+        <a href="#local" data-i18n="navLocal">Why this PC</a>
+      </div>
+      <div class="nav-end">
+        <div class="lang-switch" data-i18n-aria="langAria">
+          <button type="button" data-lang-btn="en" aria-pressed="true">EN</button>
+          <button type="button" data-lang-btn="ko" aria-pressed="false">KO</button>
+          <button type="button" data-lang-btn="zh" aria-pressed="false">中</button>
+          <button type="button" data-lang-btn="ja" aria-pressed="false">日</button>
+        </div>
+        <a class="nav-cta" href="https://github.com/NoLucas/Grok-Crew" target="_blank" rel="noreferrer"><span data-i18n="navRepo">View repo</span> <span class="arrow" aria-hidden="true">↗</span></a>
+      </div>
     </nav>
   </header>
 
   <main id="top">
     <section class="wrap hero" aria-labelledby="hero-title">
-      <div class="eyebrow reveal"><span class="eyebrow-dot"></span>v1.0.0 · with Grok Bot · 지금 무료</div>
-      <h1 id="hero-title" class="reveal delay-1">쇼츠를 혼자<br>자를 필요 없다.<br><span class="accent">봇을 붙이면 된다.</span></h1>
-      <p class="hero-copy reveal delay-2"><strong>쓰던 Grok Bot이나 Agent를 붙이면, 다듬은 파일이 이 PC 폴더에 남습니다.</strong> 계정 없고, 카드 없고, 크레딧 없습니다. 영상을 대신 만들어 주는 구독이 아닙니다. 받아서 엽니다.</p>
-      <img class="hero-art reveal delay-2" src="/hero.png" alt="Grok Crew with Grok Bot — 로컬 영상 작업대" width="1536" height="1024">
+      <div class="eyebrow reveal"><span class="eyebrow-dot"></span><span data-i18n="heroEyebrow">v1.0.0 · with Grok Bot · free now</span></div>
+      <h1 id="hero-title" class="reveal delay-1" data-i18n-html="heroTitle">You do not have to<br>cut Shorts alone.<br><span class="accent">Attach a bot.</span></h1>
+      <p class="hero-copy reveal delay-2" data-i18n-html="heroCopy"><strong>Attach the Grok Bot or Agent you already use. The finished file lands in a folder on this PC.</strong> No account. No card. No credits. This is not a “we make the video” subscription. Download it and open it.</p>
+      <img class="hero-art reveal delay-2" src="/hero.png" data-i18n-alt="heroAlt" alt="Grok Crew with Grok Bot — local video desk" width="1536" height="1024">
 
-      <div class="telemetry reveal delay-2" aria-label="Grok Crew 손님 한 바퀴 데모">
+      <div class="telemetry reveal delay-2" data-i18n-aria="telemetryAria">
         <div class="telemetry-head">
           <span class="telemetry-label">This PC · guest loop</span>
           <span class="telemetry-mode"><i class="live-dot"></i>Local session</span>
         </div>
         <div class="telemetry-body" role="status" aria-live="polite" aria-atomic="true">
-          <div class="telemetry-status" id="telemetryStatus"><span class="status-caret" aria-hidden="true">›</span><span class="status-text" id="statusText">PERSON: 봇 창에 붙임</span></div>
-          <div class="timecode" id="timecode" aria-label="경과 시간 00시 02분 17초"></div>
+          <div class="telemetry-status" id="telemetryStatus"><span class="status-caret" aria-hidden="true">›</span><span class="status-text" id="statusText">PERSON: paste in the bot window</span></div>
+          <div class="timecode" id="timecode" data-i18n-aria="timeAria"></div>
         </div>
       </div>
 
       <div class="actions reveal delay-3">
-        <a class="btn btn-primary" href="https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0" target="_blank" rel="noreferrer">Windows 받기 <span class="arrow" aria-hidden="true">→</span></a>
-        <a class="btn btn-secondary" href="https://github.com/NoLucas/Grok-Crew" target="_blank" rel="noreferrer">GitHub에서 보기 <span class="arrow" aria-hidden="true">↗</span></a>
+        <a class="btn btn-primary" href="https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0" target="_blank" rel="noreferrer"><span data-i18n="getWindows">Get Windows</span> <span class="arrow" aria-hidden="true">→</span></a>
+        <a class="btn btn-secondary" href="https://github.com/NoLucas/Grok-Crew" target="_blank" rel="noreferrer"><span data-i18n="viewGithub">View on GitHub</span> <span class="arrow" aria-hidden="true">↗</span></a>
       </div>
 
-      <div class="terminal reveal delay-3" id="install" aria-label="Grok Crew 파일 받기">
+      <div class="terminal reveal delay-3" id="install" data-i18n-aria="installAria">
         <div class="terminal-top">
           <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
           <span class="terminal-title">grok-crew / windows file</span>
         </div>
         <div class="get-ready" id="getReady">
-          <b>Windows 파일은 이메일 없이 받습니다</b>
-          <p>v1.0.0입니다. 받아서 엽니다. 계정은 없습니다.</p>
-          <a class="btn btn-primary" id="getDownload" href="https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0" target="_blank" rel="noreferrer">GrokCrew-Windows.exe 받기</a>
+          <b data-i18n="readyTitle">The Windows file does not wait on email</b>
+          <p data-i18n="readyBody">This is v1.0.0. Download it and open it. There is no account.</p>
+          <a class="btn btn-primary" id="getDownload" href="https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0" target="_blank" rel="noreferrer" data-i18n="getExe">Get GrokCrew-Windows.exe</a>
           <ol class="get-steps">
-            <li>파란 “Windows의 PC 보호”가 뜨면 추가 정보 → 그래도 실행.</li>
-            <li>창이 열리면 연결에서 Grok Bot 또는 Agent를 붙입니다.</li>
-            <li>자동에 하고 싶은 말을 적고 만들기를 누릅니다.</li>
-            <li>미리보기가 오면 이 PC에 저장합니다.</li>
+            <li data-i18n="step1">If the blue “Windows protected your PC” screen appears: More info → Run anyway.</li>
+            <li data-i18n="step2">When the window opens, attach a Grok Bot or Agent on Connect.</li>
+            <li data-i18n="step3">On Auto, write what you want and press Make.</li>
+            <li data-i18n="step4">When the preview arrives, save it on this PC.</li>
           </ol>
         </div>
         <form class="get-form" id="getLead">
           <label>
-            <span>나중에 소식만 받을 이메일 (선택)</span>
+            <span data-i18n="newsLabel">Email for news only (optional)</span>
             <input type="email" name="email" autocomplete="email" placeholder="name@example.com">
           </label>
           <label class="get-honey" aria-hidden="true">
             <span>Company</span>
             <input name="website" tabindex="-1" autocomplete="off">
           </label>
-          <button class="btn btn-secondary get-submit" type="submit">소식만 남기기</button>
-          <p class="get-note">이메일은 파일을 받는 문이 아닙니다. 건너뛰어도 Windows 파일은 위에 있습니다. 영상은 받지 않습니다.</p>
+          <button class="btn btn-secondary get-submit" type="submit" data-i18n="newsSubmit">Leave news only</button>
+          <p class="get-note" data-i18n="newsNote">Email is not the door to the file. Skip it and the Windows file is still above. We do not take videos.</p>
           <p class="get-error" id="getError" hidden></p>
         </form>
       </div>
@@ -361,26 +435,26 @@
       <div class="wrap">
         <div class="section-head reveal">
           <div class="section-index">01 / Why local</div>
-          <div><h2 id="local-title">파일은 이 PC에.<br>봇은 옆 창에.</h2><p class="section-lede">클라우드 편집기도, 영상을 대신 만들어 주는 구독도 아닙니다. 프로그램을 열고, 쓰던 봇을 붙이고, 한 줄을 넘기면 컷이 이 화면에 옵니다.</p></div>
+          <div><h2 id="local-title" data-i18n-html="localTitle">The file stays on this PC.<br>The bot stays in the next window.</h2><p class="section-lede" data-i18n="localLede">This is not a cloud editor, and not a service that makes the video for you. Open the program, attach the bot you already use, hand over one line, and the cut arrives here.</p></div>
         </div>
         <div class="compare-grid">
           <article class="compare-card reveal delay-1">
-            <div class="compare-top"><span class="compare-kind">클라우드 에디터</span><span class="compare-chip">REMOTE</span></div>
+            <div class="compare-top"><span class="compare-kind" data-i18n="cloudKind">Cloud editor</span><span class="compare-chip">REMOTE</span></div>
             <ul class="compare-list">
-              <li><b>01</b><span>원본을 서비스로 올려 웹에서 처리</span></li>
-              <li><b>02</b><span>로그인과 결제를 먼저 여야 시작</span></li>
-              <li><b>03</b><span>우리가 영상을 만들거나 알아서 올리는 집</span></li>
+              <li><b>01</b><span data-i18n="cloud1">Upload the source and cut it in a browser</span></li>
+              <li><b>02</b><span data-i18n="cloud2">Sign-in and payment before you start</span></li>
+              <li><b>03</b><span data-i18n="cloud3">A house that makes the video or posts it for you</span></li>
             </ul>
-            <p class="evidence">경계: 파일이 회사 서버에 살고, 손님이 시작을 못 함</p>
+            <p class="evidence" data-i18n="cloudEvidence">Boundary: the file lives on a company server, and the guest cannot start</p>
           </article>
           <article class="compare-card local reveal delay-2">
-            <div class="compare-top"><span class="compare-kind">Grok Crew</span><span class="compare-chip">LOCAL-FIRST</span></div>
+            <div class="compare-top"><span class="compare-kind" data-i18n="localKind">Grok Crew</span><span class="compare-chip">LOCAL-FIRST</span></div>
             <ul class="compare-list">
-              <li><b>01</b><span>프로그램·원본·컷이 같은 PC에 남음</span></li>
-              <li><b>02</b><span>계정 없이 연다. 시작 앞에 로그인이 없음</span></li>
-              <li><b>03</b><span>사람이 봇 창에 붙인다. 글과 끝난 파일만 오간다</span></li>
+              <li><b>01</b><span data-i18n="local1">Program, source, and cut stay on the same PC</span></li>
+              <li><b>02</b><span data-i18n="local2">Open with no account. Login is not in front of Start</span></li>
+              <li><b>03</b><span data-i18n="local3">A person pastes into the bot window. Only text and finished files move</span></li>
             </ul>
-            <p class="evidence">증거: 저장은 이 PC 폴더. 자동 게시는 기본이 아니다</p>
+            <p class="evidence" data-i18n="localEvidence">Proof: save is a folder on this PC. Auto-post is not the default</p>
           </article>
         </div>
       </div>
@@ -390,40 +464,40 @@
       <div class="wrap pipeline-shell">
         <div class="pipeline-intro reveal">
           <div class="section-index">02 / Pipeline</div>
-          <h2 id="how-title">한 PC.<br>다섯 걸음.</h2>
-          <p>받아서 열고, 봇을 붙이고, 하고 싶은 말을 적고, 그 창에 붙이면, 파일이 이 폴더에 남습니다.</p>
+          <h2 id="how-title" data-i18n-html="howTitle">One PC.<br>Five steps.</h2>
+          <p data-i18n="howLede">Get it, open it, attach a bot, write what you want, paste in that window. The file stays in this folder.</p>
         </div>
         <div class="pipeline-track" id="pipelineTrack">
           <div class="pipeline-rail" aria-hidden="true"><div class="pipeline-fill"></div></div>
           <article class="pipeline-step active">
             <div class="step-meta"><span>Step 01</span><span>Open</span></div>
-            <h3 class="step-title">프로그램을 연다</h3>
-            <p class="step-copy">Windows 파일을 받아 더블클릭합니다. 계정은 없습니다. 로그인 칸이 시작을 막지 않습니다.</p>
-            <p class="step-proof">구체적 증거 · 창을 열면 바로 연결·자동</p>
+            <h3 class="step-title" data-i18n="s1Title">Open the program</h3>
+            <p class="step-copy" data-i18n="s1Copy">Download the Windows file and double-click it. There is no account. A login field does not block Start.</p>
+            <p class="step-proof" data-i18n="s1Proof">Proof · Connect and Auto are there when the window opens</p>
           </article>
           <article class="pipeline-step">
             <div class="step-meta"><span>Step 02</span><span>Connect</span></div>
-            <h3 class="step-title">봇을 붙인다</h3>
-            <p class="step-copy">쓰던 Grok Bot이나 Agent를 기획자·스크래핑·편집자로 붙입니다. 붙일 글만 복사합니다. 다른 PC의 봇은 이 주소를 열지 못합니다.</p>
-            <p class="step-proof">구체적 증거 · 글과 끝난 파일만 오간다</p>
+            <h3 class="step-title" data-i18n="s2Title">Attach a bot</h3>
+            <p class="step-copy" data-i18n="s2Copy">Attach the Grok Bot or Agent you already use as planner, scraper, or editor. Copy the attach text only. A bot on another PC cannot open this address.</p>
+            <p class="step-proof" data-i18n="s2Proof">Proof · Only text and finished files move</p>
           </article>
           <article class="pipeline-step">
             <div class="step-meta"><span>Step 03</span><span>Auto</span></div>
-            <h3 class="step-title">오늘 올릴 말</h3>
-            <p class="step-copy">자동에 한 줄만 적고 시작합니다. 크레딧도, 레시피 네 장도 첫 화면에 없습니다.</p>
-            <p class="step-proof">구체적 증거 · 시작은 이메일 없이 된다</p>
+            <h3 class="step-title" data-i18n="s3Title">Today’s line</h3>
+            <p class="step-copy" data-i18n="s3Copy">Write one line on Auto and start. No credits, and no four recipe cards on the first screen.</p>
+            <p class="step-proof" data-i18n="s3Proof">Proof · Start works with no email</p>
           </article>
           <article class="pipeline-step">
             <div class="step-meta"><span>Step 04</span><span>Hand off</span></div>
-            <h3 class="step-title">봇 창에 붙인다</h3>
-            <p class="step-copy">프로그램이 일을 복사해 두고, 사람은 그 창에 붙입니다. 이 화면은 봇이 읽었는지 모릅니다.</p>
-            <p class="step-proof">구체적 증거 · 가짜 읽음·가짜 진행률 없음</p>
+            <h3 class="step-title" data-i18n="s4Title">Paste in the bot window</h3>
+            <p class="step-copy" data-i18n="s4Copy">The program copies the job. A person pastes it in that window. This screen does not know if the bot read it.</p>
+            <p class="step-proof" data-i18n="s4Proof">Proof · No fake read. No fake progress</p>
           </article>
           <article class="pipeline-step">
             <div class="step-meta"><span>Step 05</span><span>Save</span></div>
-            <h3 class="step-title">이 폴더에 저장</h3>
-            <p class="step-copy">컷이 오면 이 화면에서 보고, 이 컴퓨터 폴더에 파일로 둡니다. 올리는 것은 저장한 뒤에, 원할 때만.</p>
-            <p class="step-proof">구체적 증거 · 자동 게시는 기본이 아니다</p>
+            <h3 class="step-title" data-i18n="s5Title">Save in this folder</h3>
+            <p class="step-copy" data-i18n="s5Copy">When the cut arrives, watch it here and keep the file on this PC. Posting is after save, and only if you want it.</p>
+            <p class="step-proof" data-i18n="s5Proof">Proof · Auto-post is not the default</p>
           </article>
         </div>
       </div>
@@ -433,23 +507,23 @@
       <div class="wrap">
         <div class="section-head reveal">
           <div class="section-index">03 / Built-in skills</div>
-          <div><h2 id="skills-title">봇과 Agent용<br>스킬이 이미 있다.</h2><p class="section-lede">연결할 때 자리의 스킬이 함께 붙습니다. 기획·수집·편집 프롬프트를 따로 짤 필요가 없습니다. 이 프로그램은 사이트를 긁지 않습니다.</p></div>
+          <div><h2 id="skills-title" data-i18n-html="skillsTitle">Skills for the bot<br>and Agent are already here.</h2><p class="section-lede" data-i18n="skillsLede">On connect, the seat’s skill attaches with it. You do not have to write planner, scraper, or editor prompts. This program does not scrape.</p></div>
         </div>
         <div class="skill-grid">
           <article class="skill-card reveal delay-1">
-            <span class="plan">기획자</span>
-            <b>Grok Bot / Agent</b>
-            <p><code>planner</code>로 오늘 할 말을 컷 계획으로 바꿉니다. 추가 스킬 <code>edit-plan</code>은 수집·편집자가 읽는 짧은 계획서입니다.</p>
+            <span class="plan" data-i18n="plannerRole">Planner</span>
+            <b data-i18n="plannerTitle">Grok Bot / Agent</b>
+            <p data-i18n-html="plannerBody"><code>planner</code> turns today’s line into a cut plan. The extra skill <code>edit-plan</code> is a short plan the other two seats can read.</p>
           </article>
           <article class="skill-card reveal delay-2">
-            <span class="plan">스크래핑</span>
-            <b>공개 페이지만</b>
-            <p><code>scraper</code>와 <code>public-pick</code>은 공개 페이지만 고릅니다. 로그인 벽이 있는 인스타·틱톡은 적지 않습니다.</p>
+            <span class="plan" data-i18n="scraperRole">Scraper</span>
+            <b data-i18n="scraperTitle">Public pages only</b>
+            <p data-i18n-html="scraperBody"><code>scraper</code> and <code>public-pick</code> pick public pages only. They do not name login-walled Instagram or TikTok.</p>
           </article>
           <article class="skill-card reveal delay-3">
-            <span class="plan">편집자</span>
-            <b>계획대로 자른다</b>
-            <p><code>editor</code>와 <code>cut-to-plan</code>은 장면 순서와 나라별 버릇을 지킵니다. 화질은 규격 그대로입니다.</p>
+            <span class="plan" data-i18n="editorRole">Editor</span>
+            <b data-i18n="editorTitle">Cut to the plan</b>
+            <p data-i18n-html="editorBody"><code>editor</code> and <code>cut-to-plan</code> keep scene order and the named market’s pace. Quality stays locked.</p>
           </article>
         </div>
       </div>
@@ -458,13 +532,13 @@
     <section class="section section-lined" aria-labelledby="final-title">
       <div class="wrap">
         <div class="cta-banner reveal">
-          <h2 id="final-title">받아서 연다.<br>지금은 무료다.</h2>
-          <p>연결에서 봇을 붙이고, 자동에 한 줄을 적고, 그 창에 붙이면 컷이 이 화면에 옵니다. 파일은 그 폴더에 남습니다. 올리는 것은 원할 때만.</p>
+          <h2 id="final-title" data-i18n-html="finalTitle">Download it and open it.<br>Free now.</h2>
+          <p data-i18n="finalCopy">Attach a bot on Connect, write one line on Auto, paste in that window, and the cut arrives here. The file stays in that folder. Posting is only if you want it.</p>
           <div class="actions">
-            <a class="btn btn-primary" href="https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0" target="_blank" rel="noreferrer">Windows 받기 <span class="arrow" aria-hidden="true">↑</span></a>
-            <a class="btn btn-secondary" href="https://github.com/NoLucas/Grok-Crew" target="_blank" rel="noreferrer">저장소 보기 <span class="arrow" aria-hidden="true">↗</span></a>
+            <a class="btn btn-primary" href="https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0" target="_blank" rel="noreferrer"><span data-i18n="getWindows">Get Windows</span> <span class="arrow" aria-hidden="true">↑</span></a>
+            <a class="btn btn-secondary" href="https://github.com/NoLucas/Grok-Crew" target="_blank" rel="noreferrer"><span data-i18n="viewGithub">View on GitHub</span> <span class="arrow" aria-hidden="true">↗</span></a>
           </div>
-          <div class="requirement-line">v1.0.0 · Windows 파일 하나 · 계정 없음 · 지금은 무료</div>
+          <div class="requirement-line" data-i18n="finalMeta">v1.0.0 · one Windows file · no account · free now</div>
         </div>
       </div>
     </section>
@@ -473,66 +547,34 @@
   <footer>
     <div class="wrap footer-inner">
       <div><a class="brand" href="#top"><span class="brand-mark"><img src="/app-mark.png" alt="" width="28" height="28"></span><span>GROK <em>CREW</em></span></a></div>
-      <div class="footer-meta">v1.0.0 · with Grok Bot · 지금은 무료<br>BUSL-1.1 · source-available · 오픈소스 아님</div>
-      <div class="footer-links"><a href="#how">한 바퀴</a><a href="#skills">스킬</a><a href="https://github.com/NoLucas/Grok-Crew" target="_blank" rel="noreferrer">GitHub ↗</a></div>
+      <div class="footer-meta" data-i18n-html="footerMeta">v1.0.0 · with Grok Bot · free now<br>BUSL-1.1 · source-available · not open source</div>
+      <div class="footer-links"><a href="#how" data-i18n="footerHow">The loop</a><a href="#skills" data-i18n="footerSkills">Skills</a><a href="https://github.com/NoLucas/Grok-Crew" target="_blank" rel="noreferrer">GitHub ↗</a></div>
     </div>
   </footer>
+  </div>
 
-  <script>
+  <script type="module">
+    import { HOME_LANG_KEY, applyHomeLanguage, homeCopy, pickHomeLang, readQueryLang, readSavedLang } from '/home-i18n.js';
+
     (() => {
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const getLead = document.getElementById('getLead');
       const getReady = document.getElementById('getReady');
       const getError = document.getElementById('getError');
       const getSubmit = getLead.querySelector('button[type="submit"]');
-      const getApi = '/api/get';
-
-      getLead.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        getError.hidden = true;
-        getSubmit.disabled = true;
-        getSubmit.textContent = '남기는 중';
-        try {
-          const data = new FormData(getLead);
-          const response = await fetch(getApi, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ email: data.get('email'), website: data.get('website') }),
-          });
-          const body = await response.json();
-          if (!response.ok || !body.ok) {
-            getError.textContent = body.reason === 'save'
-              ? '지금은 남기지 못했습니다. 잠시 뒤 다시 적어 주세요.'
-              : '소식을 받으려면 이메일 한 줄이 필요합니다.';
-            getError.hidden = false;
-            return;
-          }
-          getLead.hidden = true;
-          const thanks = document.createElement('p');
-          thanks.className = 'get-note';
-          thanks.textContent = '소식을 남겨 두었습니다. Windows 파일은 위에서 그대로 받습니다.';
-          getReady.after(thanks);
-        } catch (_) {
-          getError.textContent = '연결이 끊겼습니다. 같은 칸에 다시 적어 주세요.';
-          getError.hidden = false;
-        } finally {
-          getSubmit.disabled = false;
-          getSubmit.textContent = '소식만 남기기';
-        }
-      });
-
-      const telemetryStates = [
-        ['OPEN: 프로그램을 연다','00:00:08'],
-        ['CONNECT: 봇을 붙이는 중','00:00:21'],
-        ['AUTO: 오늘 올릴 말을 적음','00:00:34'],
-        ['PERSON: 봇 창에 붙임','00:01:12'],
-        ['CUT: 컷이 이 화면에 도착','00:02:17'],
-        ['SAVE: 이 PC 폴더에 저장','00:02:48']
-      ];
+      const langGate = document.getElementById('langGate');
+      const siteShell = document.getElementById('siteShell');
       const timecode = document.getElementById('timecode');
       const statusText = document.getElementById('statusText');
       const statusWrap = document.getElementById('telemetryStatus');
+      const getApi = '/api/get';
+      let currentLang = pickHomeLang(document.documentElement.lang) || 'en';
       let stateIndex = 3;
+      let pageArmed = false;
+
+      function pack() {
+        return homeCopy(currentLang);
+      }
 
       function makeDigit(char) {
         if (!/\d/.test(char)) {
@@ -557,63 +599,140 @@
 
       function setTime(value) {
         if (!timecode.children.length) {
-          [...value].forEach(char => timecode.appendChild(makeDigit(char)));
-          return;
+          [...value].forEach((char) => timecode.appendChild(makeDigit(char)));
+        } else {
+          [...value].forEach((char, index) => {
+            if (/\d/.test(char)) {
+              const strip = timecode.children[index].firstElementChild;
+              strip.style.transform = `translateY(-${Number(char)}em)`;
+            }
+          });
         }
-        [...value].forEach((char, index) => {
-          if (/\d/.test(char)) {
-            const strip = timecode.children[index].firstElementChild;
-            strip.style.transform = `translateY(-${Number(char)}em)`;
-          }
-        });
-        timecode.setAttribute('aria-label', `경과 시간 ${value}`);
-      }
-      setTime(telemetryStates[stateIndex][1]);
-
-      if (!reduced) {
-        setInterval(() => {
-          stateIndex = (stateIndex + 1) % telemetryStates.length;
-          statusWrap.classList.add('swap');
-          setTimeout(() => {
-            statusText.textContent = telemetryStates[stateIndex][0];
-            setTime(telemetryStates[stateIndex][1]);
-            statusWrap.classList.remove('swap');
-          }, 190);
-        }, 3600);
+        timecode.setAttribute('aria-label', `${pack().timeAria} ${value}`);
       }
 
-      const revealObserver = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            revealObserver.unobserve(entry.target);
-          }
-        });
-      }, { threshold:.12, rootMargin:'0px 0px -7% 0px' });
-      document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-
-      const pipelineTrack = document.getElementById('pipelineTrack');
-      const pipelineSteps = [...document.querySelectorAll('.pipeline-step')];
-      let ticking = false;
-      function updatePipeline() {
-        const rect = pipelineTrack.getBoundingClientRect();
-        const viewport = window.innerHeight;
-        const travel = rect.height + viewport * .22;
-        const progress = Math.max(0, Math.min(1, (viewport * .7 - rect.top) / travel));
-        pipelineTrack.style.setProperty('--fill', `${progress * 100}%`);
-        const activeIndex = Math.max(0, Math.min(pipelineSteps.length - 1, Math.floor(progress * pipelineSteps.length + .12)));
-        pipelineSteps.forEach((step, index) => step.classList.toggle('active', index <= activeIndex));
-        ticking = false;
+      function syncLiveCopy() {
+        const copy = pack();
+        const row = copy.telemetry[stateIndex] || copy.telemetry[0];
+        if (statusText) statusText.textContent = row[0];
+        setTime(row[1]);
+        if (getSubmit && !getSubmit.disabled) getSubmit.textContent = copy.newsSubmit;
       }
-      function requestPipelineUpdate() {
-        if (!ticking) {
-          requestAnimationFrame(updatePipeline);
-          ticking = true;
+
+      function armPage() {
+        if (pageArmed) return;
+        pageArmed = true;
+        if (!reduced) {
+          setInterval(() => {
+            stateIndex = (stateIndex + 1) % pack().telemetry.length;
+            statusWrap.classList.add('swap');
+            setTimeout(() => {
+              syncLiveCopy();
+              statusWrap.classList.remove('swap');
+            }, 190);
+          }, 3600);
         }
+        const revealObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              revealObserver.unobserve(entry.target);
+            }
+          });
+        }, { threshold: .12, rootMargin: '0px 0px -7% 0px' });
+        document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+
+        const pipelineTrack = document.getElementById('pipelineTrack');
+        const pipelineSteps = [...document.querySelectorAll('.pipeline-step')];
+        let ticking = false;
+        function updatePipeline() {
+          const rect = pipelineTrack.getBoundingClientRect();
+          const viewport = window.innerHeight;
+          const travel = rect.height + viewport * .22;
+          const progress = Math.max(0, Math.min(1, (viewport * .7 - rect.top) / travel));
+          pipelineTrack.style.setProperty('--fill', `${progress * 100}%`);
+          const activeIndex = Math.max(0, Math.min(pipelineSteps.length - 1, Math.floor(progress * pipelineSteps.length + .12)));
+          pipelineSteps.forEach((step, index) => step.classList.toggle('active', index <= activeIndex));
+          ticking = false;
+        }
+        function requestPipelineUpdate() {
+          if (!ticking) {
+            requestAnimationFrame(updatePipeline);
+            ticking = true;
+          }
+        }
+        addEventListener('scroll', requestPipelineUpdate, { passive: true });
+        addEventListener('resize', requestPipelineUpdate);
+        updatePipeline();
       }
-      addEventListener('scroll', requestPipelineUpdate, { passive:true });
-      addEventListener('resize', requestPipelineUpdate);
-      updatePipeline();
+
+      function setLanguage(lang, persist) {
+        const resolved = pickHomeLang(lang);
+        if (!resolved) return;
+        currentLang = applyHomeLanguage(resolved);
+        if (siteShell) {
+          siteShell.inert = false;
+          siteShell.removeAttribute('aria-hidden');
+        }
+        if (langGate) langGate.hidden = true;
+        if (persist) {
+          try { localStorage.setItem(HOME_LANG_KEY, currentLang); } catch (_) {}
+          const next = new URL(location.href);
+          next.searchParams.set('lang', currentLang);
+          history.replaceState(null, '', next);
+        }
+        syncLiveCopy();
+        armPage();
+      }
+
+      const queryLang = readQueryLang(location.search);
+      const savedLang = readSavedLang(window.localStorage);
+      if (queryLang || savedLang) {
+        setLanguage(queryLang || savedLang, true);
+      } else if (siteShell) {
+        siteShell.inert = true;
+        siteShell.setAttribute('aria-hidden', 'true');
+        langGate?.querySelector('[data-pick-lang]')?.focus();
+      }
+
+      document.querySelectorAll('[data-pick-lang]').forEach((button) => {
+        button.addEventListener('click', () => setLanguage(button.getAttribute('data-pick-lang'), true));
+      });
+      document.querySelectorAll('[data-lang-btn]').forEach((button) => {
+        button.addEventListener('click', () => setLanguage(button.getAttribute('data-lang-btn'), true));
+      });
+
+      getLead.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        getError.hidden = true;
+        getSubmit.disabled = true;
+        getSubmit.textContent = pack().newsSaving;
+        try {
+          const data = new FormData(getLead);
+          const response = await fetch(getApi, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ email: data.get('email'), website: data.get('website') }),
+          });
+          const body = await response.json();
+          if (!response.ok || !body.ok) {
+            getError.textContent = body.reason === 'save' ? pack().newsSaveFail : pack().newsNeedEmail;
+            getError.hidden = false;
+            return;
+          }
+          getLead.hidden = true;
+          const thanks = document.createElement('p');
+          thanks.className = 'get-note';
+          thanks.textContent = pack().newsThanks;
+          getReady.after(thanks);
+        } catch (_) {
+          getError.textContent = pack().newsOffline;
+          getError.hidden = false;
+        } finally {
+          getSubmit.disabled = false;
+          getSubmit.textContent = pack().newsSubmit;
+        }
+      });
     })();
   </script>
 </body>

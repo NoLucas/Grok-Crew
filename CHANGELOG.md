@@ -4,6 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- `/home` now opens on an English language gate (English / 한국어 / 中文 / 日本語). The browser language is not guessed. The choice is stored and can be changed in the header.
 - Removed a personal chatgpt.site host from the homepage allowlist. Extra origins come only from `GROK_CREW_PUBLIC_ORIGIN`.
 - `POST /api/get` now rejects foreign `Origin` headers, rate-limits repeats, and only returns a GitHub https download URL. `/home` and the preview server send frame and content-type headers.
 - Personal Cursor skills used to build the app are no longer in this repository. Guest bot skills stay in `public/bot-skills/`.
