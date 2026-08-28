@@ -74,7 +74,7 @@
 
 - [x] `README.md` / `README.ko.md` 여는 방법을 **받아서 연다**로 바꾼다. `git clone`은 “소스 받는 사람” 아래로 내린다. (SIMPLE_PATH E)
 - [x] GitHub Release 본문 초안은 버튼 하나(**Windows에서 열기**)다. 봇 zip은 본문 아래 “다른 방법”이다. (`docs/RELEASE_NOTES.v1.0.md`)
-- [x] README와 `/home` 첫 줄도 “받아서 연다”에 맞춘다.
+- [x] README 첫 줄도 “받아서 연다”에 맞춘다. 받기 안내 사이트는 GitHub에 올리지 않는다.
 - [x] 사이트/릴리스에 **관리자로 할까요** 문구를 쓰지 않는지 검토한다.
 
 완료 조건:
