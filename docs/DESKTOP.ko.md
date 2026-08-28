@@ -24,7 +24,7 @@ npm run desktop:dist
 
 ## 현재 제공되는 흐름
 
-exe를 받고 처음 열면 어떤 TTS를 이 PC에 받을지 고릅니다. Kokoro-82M / Step Audio EditX / Zonos-v0.1 중 하나. 다음만 누르면 Kokoro-82M입니다. Step Audio EditX와 Zonos-v0.1은 사양 경고가 있습니다. 한 모델만 받습니다. 자동에서 TTS가 꺼져 있으면 그 모델은 쓰지 않습니다. 자막 인식은 자동에서 자막을 켠 뒤 whisper.cpp입니다.
+설치가 TTS를 고른 뒤에만 그 모델 하나를 `Videos\Grok Crew\voice-models`에 받습니다. Kokoro-82M / Step Audio EditX / Zonos-v0.1 중 하나. 다음만 누르면 Kokoro-82M입니다. exe를 연 것만으로는 받지 않습니다. 같은 파일이 이미 있으면 건너뜁니다. 받기 실패면 설치를 끝내지 않습니다. 처음 책상은 언어입니다. 설치가 목소리를 이미 두었으면 TTS 창은 닫혀 있습니다. 나중에 받기는 왼쪽 위 톱니입니다. Step Audio EditX와 Zonos-v0.1은 사양 경고가 있습니다. 자동에서 TTS가 꺼져 있으면 그 모델은 쓰지 않습니다. 자막 인식은 자동에서 자막을 켠 뒤 whisper.cpp입니다.
 
 창을 닫으면 트레이로 숨고 연결은 남습니다. 창의 **종료** 또는 트레이 **종료**를 누르면 경고가 뜹니다. 종료를 확인하면 Grok Bot·Agent 자리와 이 PC 체크인이 끊어집니다. 다시 쓰려면 연결 글을 다시 붙입니다.
 

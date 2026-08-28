@@ -4,7 +4,9 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
-Country skills, a first-open language gate, installer TTS pick, and a crew board that shows real handoff lines. No 1.0.6 Windows tag yet.
+## 1.0.6 - 2026-08-28
+
+Local 1.0.6. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.6` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.6.md`. Guest download stays the same Google Drive file. Already-installed 1.0.5 desks check Grok-crew-test for this tag.
 
 ### Desk
 

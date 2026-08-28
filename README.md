@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.5** · with Grok Bot · free now
+**v1.0.6** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -40,21 +40,27 @@ The source files live in [`public/bot-skills/`](public/bot-skills/). Copying the
 
 ## How you use it
 
-1. Install from **Get Windows** and open it. There is no sign-in. Get the file from the GitHub Release.
-2. On **Connect**, copy the attach text into the bot window. Grok Bot should check in from the registered Windows after approval. If that does not land, paste the bot `GROK_CREW_OK` line here. Copying alone does not connect.
-3. On **Auto**, write what they want and press **Make**.
-4. A person pastes into the bot window. This window waits.
+1. Open `GrokCrew-Windows.exe`. The installer asks which TTS to keep, downloads that one, then copies the app. Next with no pick is Kokoro-82M.
+2. First open asks for a language. If the installer already left a voice, the TTS wizard stays closed.
+3. On **Connect**, copy the attach text again into the bot window. Grok Bot should check in from the registered Windows after approval. If that does not land, paste the bot `GROK_CREW_OK` line here. Copying alone does not connect.
+4. On **Auto**, write what they want and press **Make**. This window waits. The **crew board** shows who did what and the one line left for the next seat.
 5. When the preview appears, **save on this PC**. Posting is later, and only if they want it.
 
 If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
 ---
 
+## What changed in v1.0.6
+
+- The Windows installer asks which TTS to keep before it copies the app. Opening the exe does not start a download. First open is the language gate. Auto wait shows a crew board of real handoffs (`detail.note`), not an invented chat. Connect skills are one destination country.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.6 notes](docs/RELEASE_NOTES.v1.0.6.md).
+
 ## What changed in v1.0.5
 
 - Auto wait names the seats and the job from the existing heartbeat. It does not invent a read. Grok invite heartbeats are every minute, with `plan_*` / `collect_*` / `cut_*` when work changes. A dropped seat raises a connection-lost alarm.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.5 notes](docs/RELEASE_NOTES.v1.0.5.md).
+The 1.0.5 list is in [the 1.0.5 notes](docs/RELEASE_NOTES.v1.0.5.md).
 
 ## What changed in v1.0.4
 
