@@ -1,6 +1,8 @@
 export const VOICE_SETUP_KEY = 'grok-crew-voice-setup';
 export const DEFAULT_VOICE_MODEL_ID = 'kokoro-82m';
 export const VOICE_MODEL_IDS = ['kokoro-82m', 'step-audio-editx', 'zonos-v0.1'] as const;
+/** First-open TTS picker. Must stay off the desk 3-column grid (`local-first`). */
+export const VOICE_WIZARD_BODY_CLASS = 'desktop-body desktop-voice-first';
 
 export type VoiceModelId = (typeof VOICE_MODEL_IDS)[number];
 

@@ -8,6 +8,7 @@ const {
   DEFAULT_VOICE_MODEL_ID,
   VOICE_MODELS,
   VOICE_SETUP_KEY,
+  VOICE_WIZARD_BODY_CLASS,
   confirmVoiceChoice,
   dubbingMustKeep,
   operatorDubMustKeep,
@@ -39,6 +40,8 @@ describe('voice model picker', () => {
     assert.equal(confirmVoiceChoice('nope'), 'kokoro-82m');
     assert.equal(resolveVoiceModelId('STEP-AUDIO-EDITX'), 'step-audio-editx');
     assert.equal(resolveVoiceModelId('zonos-v0.1'), 'zonos-v0.1');
+    assert.equal(VOICE_WIZARD_BODY_CLASS, 'desktop-body desktop-voice-first');
+    assert.doesNotMatch(VOICE_WIZARD_BODY_CLASS, /local-first/);
     assert.equal(VOICE_MODELS.length, 3);
     assert.equal(VOICE_MODELS.filter((item) => item.recommended).length, 1);
     assert.match(VOICE_MODELS.find((item) => item.id === 'kokoro-82m').warning.ko, /4GB/);

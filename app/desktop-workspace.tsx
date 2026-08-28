@@ -31,6 +31,7 @@ import {
   confirmVoiceChoice,
   needsFirstVoiceSetup,
   readVoiceSetup,
+  VOICE_WIZARD_BODY_CLASS,
   writeVoiceSetup,
   type VoiceModelId,
 } from './desktop-voice-models';
@@ -1247,10 +1248,10 @@ export default function DesktopWorkspace() {
   };
 
   return (
-    <main className={`desktop-shell${editToolsOpen ? ' has-timeline' : ' is-form'}`} {...appearanceDataAttrs(appearance)}>
+    <main className={`desktop-shell${editToolsOpen ? ' has-timeline' : ' is-form'}${showVoiceWizard ? ' is-voice-first' : ''}`} {...appearanceDataAttrs(appearance)}>
       <header className="desktop-titlebar">
         <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="gear" />
-        <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
+        <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{showVoiceWizard ? t('첫 설치 · TTS', 'First install · TTS', '首次安装 · TTS', '初回インストール · TTS') : t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
         {showVoiceWizard ? null : (
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
           <button type="button" className={`${showBotRoom ? 'active' : ''}${hasConnectedBot(workspace.crew_roster, botLinks) ? ' is-connected' : ' needs-bot'}`} aria-current={showBotRoom ? 'page' : undefined} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>{t('연결', 'Connect', '连接', '接続')}</button>
@@ -1321,7 +1322,7 @@ export default function DesktopWorkspace() {
       {drawer !== 'none' ? <button type="button" className="desktop-drawer-backdrop" aria-label={t('패널 닫기', 'Close panel', '关闭面板', 'パネルを閉じる')} onClick={() => setDrawer('none')} /> : null}
 
       {showVoiceWizard ? (
-      <div className="desktop-body local-first desktop-voice-first">
+      <div className={VOICE_WIZARD_BODY_CLASS}>
         <DesktopVoiceSetup
           variant="wizard"
           selected={voiceDraft}
