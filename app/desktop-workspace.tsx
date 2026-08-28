@@ -21,6 +21,7 @@ import {
   connectedRemoteNames,
   ensureBotLinks,
   forgetBotLinksOnQuit,
+  grokSeatLampRows,
   hasConnectedBot,
   lostConnectedSeats,
   seatConnectSnapshot,
@@ -1377,6 +1378,22 @@ export default function DesktopWorkspace() {
           </button>
         </div>
       </header>
+      {firstOpen ? null : (
+        <div className="desktop-seat-follow" role="status" aria-label={t('자리 연결', 'Seat connection', '位子连接', '席の接続')}>
+          {grokSeatLampRows(workspace.crew_roster, botLinks).map((seat) => (
+            <button
+              key={seat.role}
+              type="button"
+              className={seat.connected ? 'is-on' : 'is-off'}
+              onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}
+            >
+              <i aria-hidden="true" />
+              <b>{seat.role === 'planner' ? t('기획', 'Plan', '策划', '企画') : seat.role === 'scraper' ? t('수집', 'Fetch', '收集', '収集') : t('편집', 'Cut', '剪辑', '編集')}</b>
+              <span>{seat.connected ? t('연결됨', 'Connected', '已连接', '接続済み') : t('연결되지않음', 'Not connected', '未连接', '未接続')}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {quitAsk ? (
         <div className="desktop-quit-ask" role="alertdialog" aria-modal="true" aria-labelledby="desktop-quit-title">
           <div className="desktop-quit-ask-card">

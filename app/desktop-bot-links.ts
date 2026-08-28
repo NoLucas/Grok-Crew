@@ -409,6 +409,16 @@ export function hasConnectedBot(roster?: CrewRoster | null, links?: BotLinkState
   return Boolean(connectedBot(roster));
 }
 
+export function grokSeatLampRows(
+  roster?: CrewRoster | null,
+  links?: BotLinkState | null,
+): Array<{ role: BotRole; connected: boolean }> {
+  return BOT_ROLES.map((role) => ({
+    role,
+    connected: seatIsConnected('grok', role, links, roster),
+  }));
+}
+
 export function connectedRemoteNames(links?: BotLinkState | null, roster?: CrewRoster | null): string[] {
   const names = links?.bots.filter((item) => item.status === 'connected').map((item) => item.name) ?? [];
   for (const role of ['planner', 'scraper', 'editor'] as const) {

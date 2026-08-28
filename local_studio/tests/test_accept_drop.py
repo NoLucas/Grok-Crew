@@ -19,6 +19,22 @@ def _post(server: str, path: str, payload: dict) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
+def test_loose_inbox_mp4_counts_as_pending_and_pulls(studio, tmp_path):
+    from handoff_inbox import door_inbox_dir, handoff_status, pull_handoff
+
+    inbox = door_inbox_dir("editor")
+    inbox.mkdir(parents=True, exist_ok=True)
+    loose = inbox / "reel-15s.mp4"
+    loose.write_bytes(b"inbox-cut")
+    status = handoff_status()
+    assert status["doors"]["editor"]["pending_count"] >= 1
+    assert "reel-15s.mp4" in status["doors"]["editor"]["pending"]
+    pulled = pull_handoff({"door": "editor"})
+    assert any(item.get("ok") for item in pulled["imported"])
+    assert not loose.exists()
+    assert handoff_status()["doors"]["editor"]["pending_count"] == 0
+
+
 def test_accept_dropped_media_builds_inbox_package(studio, tmp_path):
     source = tmp_path / "hook.mp4"
     source.write_bytes(b"cut-bytes")

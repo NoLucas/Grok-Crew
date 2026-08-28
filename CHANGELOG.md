@@ -4,6 +4,11 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+### Desk
+
+- A finished cut left as a loose `mp4` in `handoff-inbox/editor` now counts as pending and opens on Auto. The editor bot often writes `reel-15s.mp4` there instead of a bundle folder.
+- The three Grok seats stay visible under the title bar on every tab. Each lamp still only says 연결됨 or 연결되지않음.
+
 ## 1.0.11 - 2026-08-28
 
 Local 1.0.11. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.11` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.11) only. Guest notes: `docs/RELEASE_NOTES.v1.0.11.md`. Guest download stays the same Google Drive file. Already-installed 1.0.10 desks check Grok-crew-test for this tag.

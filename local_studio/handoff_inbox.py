@@ -253,6 +253,45 @@ def pending_inbox_folders(inbox: Path | None = None) -> list[Path]:
     return [item for item in sorted(root.iterdir()) if item.is_dir() and item.name not in reserved]
 
 
+def pending_inbox_media_for_door(door: str) -> list[Path]:
+    """Loose finished cuts left in the door inbox (not a bundle folder)."""
+    normalized = normalize_door(door, required=True)
+    inbox = local_inbox_dir()
+    roots = [inbox / alias for alias in door_folder_aliases(normalized)]
+    if normalized == EDITOR_DOOR:
+        roots.append(inbox)
+    seen: set[str] = set()
+    files: list[Path] = []
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for item in sorted(root.iterdir()):
+            if not item.is_file():
+                continue
+            suffix = item.suffix.lower()
+            if suffix not in ALLOWED_MEDIA_EXTENSIONS and suffix != ".m4v":
+                continue
+            if item.name in seen:
+                continue
+            seen.add(item.name)
+            files.append(item)
+    return files
+
+
+def wrap_loose_inbox_media(door: str) -> list[Path]:
+    wrapped: list[Path] = []
+    for media in pending_inbox_media_for_door(door):
+        written = _write_cut_package(media, door=door, edit_spec_id=None, title=media.stem)
+        dest = Path(written["path"])
+        try:
+            if media.resolve() != dest.resolve() and media.is_file():
+                media.unlink()
+        except OSError:
+            pass
+        wrapped.append(dest)
+    return wrapped
+
+
 def pending_inbox_folders_for_door(door: str) -> list[Path]:
     normalized = normalize_door(door, required=True)
     inbox = local_inbox_dir()
@@ -298,6 +337,7 @@ def _pull_local_inbox_locked(
     max_per_cycle: int,
 ) -> dict[str, Any]:
     normalized = normalize_door(door, required=True)
+    wrap_loose_inbox_media(normalized)
     folders = pending_inbox_folders_for_door(normalized)
     selected = folders[: max(1, int(max_per_cycle))]
     results: list[dict[str, Any]] = []
@@ -521,12 +561,13 @@ def write_demo_package(spec_id: str | None = None, door: str | None = None) -> d
 
 def _door_status(door: str) -> dict[str, Any]:
     pending = pending_inbox_folders_for_door(door)
+    loose = pending_inbox_media_for_door(door)
     inbox = door_inbox_dir(door)
     return {
         "door": door,
         "inbox_dir": str(inbox),
-        "pending_count": len(pending),
-        "pending": [item.name for item in pending],
+        "pending_count": len(pending) + len(loose),
+        "pending": [item.name for item in pending] + [item.name for item in loose],
     }
 
 
