@@ -24,6 +24,10 @@
 __pycache__/
 *.py[cod]
 
+# Personal Cursor skills (app-building). Guest bot skills stay in public/bot-skills/.
+.cursor/skills/
+Grok-Crew-skills.zip
+
 # debug
 npm-debug.log*
 yarn-debug.log*
