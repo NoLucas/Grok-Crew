@@ -5,7 +5,7 @@ AUTO 3판. UI는 이 계약이 merge되기 전에 “봇이 읽는 중”을 그
 
 ## Task packet
 - Workstream / owner: `codex/same-pc-invite-read` · Codex (Integration Owner)
-- Base commit: `3b32b9a` on `cursor/fix-tts-first-run-26a7` (Grok-crew-test). Rebase onto the later Auto/Connect commit on that branch if it is newer.
+- Base commit: `6c5038a` on `cursor/fix-tts-first-run-26a7` (Grok-crew-test). Rebase onto this Auto/Connect commit if the branch moved.
 - User-visible outcome: 같은 Windows에 이미 체크인한 Grok 자리(`grok-planner` · `grok-scraper` · `grok-editor`)가, 운영자가 자동에서 일을 시작한 뒤, 사람이 초대문을 두 번 붙이지 않아도 자기 자리의 대기 초대문을 가져간다. 램프 문구는 여전히 **연결됨 / 연결되지않음**만. 복사만으로 초록불이 켜지지 않는다.
 - Allowed paths:
   - `local_studio/handlers.py`
