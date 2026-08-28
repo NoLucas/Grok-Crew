@@ -11,6 +11,7 @@ const {
   linkedByKind,
   linkedBySeat,
   makePairCode,
+  markRemoteCopied,
   parseConnectReply,
   readBotLinks,
   remoteConnectPaste,
@@ -62,6 +63,35 @@ describe('remote bot links', () => {
     assert.match(remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper'), /grok-crew-scraper/);
     assert.match(remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper'), /grok-crew-public-pick/);
     assert.match(remoteConnectPaste('grok', '7K2M9Q', 'ko', 'editor'), /grok-crew-cut-to-plan/);
+  });
+
+  it('marks a copied remote seat as waiting, not connected', () => {
+    const empty = { pairCode: '7K2M9Q', bots: [] };
+    const next = markRemoteCopied(empty, { kind: 'grok', role: 'planner', language: 'ko' });
+    assert.equal(next.bots.length, 1);
+    assert.equal(next.bots[0].status, 'waiting');
+    assert.equal(next.bots[0].place, 'other_pc');
+    assert.equal(hasConnectedBot(undefined, next), false);
+  });
+
+  it('does not treat a stored other-PC copy as a live connection', () => {
+    memory.set(BOT_LINKS_KEY, JSON.stringify({
+      pairCode: '7K2M9Q',
+      bots: [{
+        id: 'fake',
+        name: 'Grok Bot 기획자',
+        kind: 'grok',
+        role: 'planner',
+        place: 'other_pc',
+        status: 'connected',
+        pairCode: '7K2M9Q',
+        connectedAt: '2026-08-28T01:00:00.000Z',
+      }],
+    }));
+    const next = readBotLinks();
+    assert.equal(next.bots[0].status, 'waiting');
+    assert.equal(next.bots[0].connectedAt, undefined);
+    assert.equal(hasConnectedBot(undefined, next), false);
   });
 
   it('treats a linked remote bot as connected and ignores waiting', () => {

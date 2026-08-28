@@ -6,12 +6,10 @@ import { botSeenSeconds, formatSince } from './desktop-auto-state';
 import { BOT_ROLES, roleLabel, seatName, type BotRole } from './bot-skills';
 import {
   type BotLinkState,
-  type LinkedBot,
   linkedBySeat,
+  markRemoteCopied,
   remoteConnectPaste,
   removeLinkedBot,
-  seatId,
-  upsertLinkedBot,
   writeBotLinks,
 } from './desktop-bot-links';
 import { useLanguage } from './language';
@@ -56,9 +54,9 @@ const OTHER_FAMILIES: Array<{ id: 'grok' | 'custom'; ko: string; en: string; zh:
 
 type OtherSeat = { kind: 'grok' | 'custom'; role: BotRole };
 
-function Lamp({ on, label }: { on: boolean; label: string }) {
+function Lamp({ on, wait, label }: { on: boolean; wait?: boolean; label: string }) {
   return (
-    <span className={`desktop-connect-lamp${on ? ' is-on' : ''}`}>
+    <span className={`desktop-connect-lamp${on ? ' is-on' : wait ? ' is-wait' : ''}`}>
       <i aria-hidden="true" />
       {label}
     </span>
@@ -83,6 +81,7 @@ export function DesktopBotPanel({
   const [error, setError] = useState('');
   const local = connectedBot(roster);
   const liveLink = links.bots.find((item) => item.status === 'connected');
+  const waiting = links.bots.some((item) => item.status === 'waiting');
   const connected = Boolean(local) || Boolean(liveLink);
   const seenSeconds = botSeenSeconds(roster, liveLink?.connectedAt);
   const seenLabel = seenSeconds === null ? '' : formatSince(seenSeconds, language);
@@ -93,19 +92,8 @@ export function DesktopBotPanel({
   );
   const localText = useMemo(() => connectPaste(language), [language]);
 
-  const markConnected = (seat: OtherSeat) => {
-    if (!links.pairCode) return;
-    const attached: LinkedBot = {
-      id: seatId(seat.kind, seat.role, links.pairCode),
-      name: seatName(seat.kind, seat.role, language),
-      kind: seat.kind,
-      role: seat.role,
-      place: 'other_pc',
-      status: 'connected',
-      pairCode: links.pairCode,
-      connectedAt: new Date().toISOString(),
-    };
-    const next = upsertLinkedBot(links, attached);
+  const markCopied = (seat: OtherSeat) => {
+    const next = markRemoteCopied(links, { kind: seat.kind, role: seat.role, language });
     writeBotLinks(next);
     onLinksChange(next);
   };
@@ -125,11 +113,10 @@ export function DesktopBotPanel({
       await navigator.clipboard.writeText(text);
       setCopied(`${seat.kind}-${seat.role}`);
       window.setTimeout(() => setCopied(''), 4000);
-      markConnected(seat);
     } catch {
       setBlockedKind(`${seat.kind}-${seat.role}`);
-      markConnected(seat);
     }
+    markCopied(seat);
     await onRefresh();
   };
 
@@ -157,15 +144,18 @@ export function DesktopBotPanel({
     <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
       <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('연결 글을 복사해 봇 창에 붙이세요. 그 봇은 이 주소를 열 수 없습니다. 붙으면 설정·편집·내보내기가 켜집니다.', 'Copy the connect text and paste it in the bot window. That bot cannot open this address. Setup, Edit, and Export turn on after it attaches.', '复制连接文字并贴到机器人窗口。那个机器人打不开这个地址。接上后设置、编辑、导出才会打开。', '接続文をコピーしてボットの窓に貼る。そのボットはこの住所を開けない。付くと設定・編集・書き出しが開く。')}</p>
+        <p>{t('연결 글을 복사해 봇 창에 붙이세요. 복사만으로는 연결되지 않습니다. 그 봇은 이 주소를 열 수 없습니다.', 'Copy the connect text and paste it in the bot window. Copying is not a connection. That bot cannot open this address.', '复制连接文字并贴到机器人窗口。只复制不算已连接。那个机器人打不开这个地址。', '接続文をコピーしてボットの窓に貼る。コピーしただけでは接続されない。そのボットはこの住所を開けない。')}</p>
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">
         <Lamp
           on={connected}
+          wait={!connected && waiting}
           label={connected
             ? t(`연결됨${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `Connected${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `已连接${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`, `接続済み${local?.display_name || liveLink?.name ? ` · ${local?.display_name || liveLink?.name}` : ''}${seenLabel ? ` · ${seenLabel}` : ''}`)
-            : t('아직 연결되지 않음', 'Not connected yet', '尚未连接', 'まだ接続されていない')}
+            : waiting
+              ? t('복사함 · 봇 창에 붙이세요. 아직 연결되지 않음', 'Copied · paste in the bot window. Not connected yet', '已复制 · 请贴到机器人窗口。尚未连接', 'コピー済み · ボットの窓に貼る。まだ接続されていない')
+              : t('아직 연결되지 않음', 'Not connected yet', '尚未连接', 'まだ接続されていない')}
         />
       </section>
 
@@ -185,7 +175,9 @@ export function DesktopBotPanel({
               <span>{t(family.ko, family.en, family.zh, family.ja)}</span>
               <b>{links.bots.some((item) => item.kind === family.id && item.status === 'connected')
                 ? t('붙음', 'Attached', '已接上', '付いた')
-                : t('아직', 'Not yet', '还没有', 'まだ')}</b>
+                : links.bots.some((item) => item.kind === family.id && item.status === 'waiting')
+                  ? t('복사함', 'Copied', '已复制', 'コピー済み')
+                  : t('아직', 'Not yet', '还没有', 'まだ')}</b>
             </button>
           ))}
         </div>
@@ -198,6 +190,7 @@ export function DesktopBotPanel({
                 const seat: OtherSeat = { kind: family.id, role };
                 const row = linkedBySeat(links.bots, seat.kind, seat.role);
                 const on = row?.status === 'connected';
+                const copiedSeat = row?.status === 'waiting';
                 const key = `${seat.kind}-${seat.role}`;
                 const label = seatName(seat.kind, seat.role, language);
                 return (
@@ -207,9 +200,12 @@ export function DesktopBotPanel({
                       <b>{label}</b>
                       <Lamp
                         on={on}
+                        wait={copiedSeat}
                         label={on
                           ? t(`연결됨 · ${row?.name || label}`, `Connected · ${row?.name || label}`, `已连接 · ${row?.name || label}`, `接続済み · ${row?.name || label}`)
-                          : t(`${roleLabel(seat.role, language)} · 아직 아님`, `${roleLabel(seat.role, 'en')} · not yet`, `${roleLabel(seat.role, 'zh')} · 还没有`, `${roleLabel(seat.role, 'ja')} · まだ`)}
+                          : copiedSeat
+                            ? t('복사함 · 아직 연결되지 않음', 'Copied · not connected yet', '已复制 · 尚未连接', 'コピー済み · まだ接続されていない')
+                            : t(`${roleLabel(seat.role, language)} · 아직 아님`, `${roleLabel(seat.role, 'en')} · not yet`, `${roleLabel(seat.role, 'zh')} · 还没有`, `${roleLabel(seat.role, 'ja')} · まだ`)}
                       />
                     </div>
                     <div className="desktop-simple-copy-row">

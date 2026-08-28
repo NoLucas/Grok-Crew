@@ -7276,6 +7276,11 @@ select {
   background: var(--desktop-green);
   box-shadow: 0 0 0 3px #dff3e9;
 }
+.desktop-connect-lamp.is-wait { color: var(--desktop-amber); }
+.desktop-connect-lamp.is-wait i {
+  background: #d4a017;
+  box-shadow: 0 0 0 3px #f8efc8;
+}
 .desktop-shell[data-theme="dark"] .desktop-connect-summary.is-ready,
 .desktop-shell[data-theme="low-dark"] .desktop-connect-summary.is-ready {
   border-color: rgba(78, 203, 141, 0.35);
