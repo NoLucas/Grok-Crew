@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 로컬 영상 작업대" width="100%" />
 </p>
 
-**v1.0.2** · with Grok Bot · 지금 무료
+**v1.0.3** · with Grok Bot · 지금 무료
 
 쇼츠를 혼자 자르며 밤을 샐 필요 없습니다.
 쓰던 **Grok Bot**이나 Agent를 붙이면, 다듬은 파일이 **이 PC 폴더**에 남습니다.
@@ -50,11 +50,17 @@
 
 ---
 
+## v1.0.3에서 달라진 것
+
+- **연결**에서 Grok Bot은 등록된 Windows에서 승인 후 체크인하면 붙습니다. 안 되면 봇이 보낸 `GROK_CREW_OK` 한 줄을 여기 붙입니다. 복사만으로는 연결되지 않습니다.
+
+자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.3 릴리스 노트](docs/RELEASE_NOTES.v1.0.3.md)입니다.
+
 ## v1.0.2에서 달라진 것
 
 - 처음 열면 어떤 TTS를 이 PC에 받을지 고릅니다. 그 창이 이제 책상 전체를 씁니다. 고르지 않으면 Kokoro-82M입니다. 설치는 그대로 한 번 클릭입니다.
 
-자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.2 릴리스 노트](docs/RELEASE_NOTES.v1.0.2.md)입니다.
+1.0.2 목록은 [1.0.2 릴리스 노트](docs/RELEASE_NOTES.v1.0.2.md)입니다.
 
 ## v1.0.1에서 달라진 것
 

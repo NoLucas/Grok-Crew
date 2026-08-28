@@ -9,7 +9,7 @@ on:
       tag:
         description: "Release tag to build and publish"
         required: true
-        default: "v1.0.2"
+        default: "v1.0.3"
 
 permissions:
   contents: write
@@ -54,7 +54,7 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
           name: Grok Crew ${{ env.RELEASE_TAG }}
-          body_path: docs/RELEASE_NOTES.v1.0.2.md
+          body_path: docs/RELEASE_NOTES.v1.0.3.md
           files: |
             release/GrokCrew-Windows.exe
             release/GrokCrew-Windows.exe.blockmap

@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.2** · with Grok Bot · 现在免费
+**v1.0.3** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,11 +50,17 @@
 
 ---
 
+## v1.0.3 改了什么
+
+- 在 **连接**，Grok Bot 应在已登记的 Windows 上批准后签到。没到的话，把机器人回的 `GROK_CREW_OK` 贴到这里。只复制不算已连接。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.3 发布说明](docs/RELEASE_NOTES.v1.0.3.md)。
+
 ## v1.0.2 改了什么
 
 - 第一次打开仍会问这台电脑要装哪个 TTS。那个窗口现在铺满书桌，不再挤在侧栏里。不选就用 Kokoro-82M。安装仍是一键。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.2 发布说明](docs/RELEASE_NOTES.v1.0.2.md)。
+1.0.2 列表见 [1.0.2 发布说明](docs/RELEASE_NOTES.v1.0.2.md)。
 
 ## v1.0.1 改了什么
 
