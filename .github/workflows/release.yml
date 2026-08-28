@@ -52,6 +52,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
           name: Grok Crew ${{ env.RELEASE_TAG }}
           body_path: docs/RELEASE_NOTES.v1.0.2.md
           files: |
