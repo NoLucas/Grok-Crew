@@ -760,7 +760,6 @@ ${body}
 }
 
 function scraperCore(language: string, market: CrewMarket): string {
-  const dest = marketLabel(market, language);
   const facts = MARKET_COPY[market];
   const loop = pick(LOOPBACK, language);
   const wall = pick(LOGIN_WALL, language);
