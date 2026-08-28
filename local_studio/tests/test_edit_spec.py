@@ -293,6 +293,7 @@ def test_crew_roster_suggests_names_from_checkin_purpose(studio):
     assert roster["suggested_editor"] == "Editor Agent"
     names = {item["display_name"] for item in roster["bots"]}
     assert names == {"Nova", "Orion"}
+    assert {item["last_action"] for item in roster["bots"]} == {"heartbeat"}
     record = create_spec({
         "title": "Connected names",
         "goal": "Use whoever checked in",

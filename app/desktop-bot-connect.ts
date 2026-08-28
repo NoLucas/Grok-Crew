@@ -3,6 +3,7 @@ export type CrewBot = {
   display_name?: string;
   presence?: string;
   seconds_since_checkin?: number;
+  last_action?: string;
 };
 
 export type CrewRoster = {

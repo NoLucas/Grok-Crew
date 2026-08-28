@@ -10,11 +10,16 @@ const {
   attachedBotName,
   autoHeaderDot,
   autoJobPayload,
+  autoSeatRows,
   autoSourceMode,
   autoDeskStage,
   autoMachineState,
   autoPhaseLamps,
+  autoWaitHeadline,
+  autoWorkingNote,
   botSeenSeconds,
+  heartbeatActionLabel,
+  recentActivityLines,
   canStartAuto,
   formatElapsed,
   formatSince,
@@ -401,10 +406,133 @@ describe('auto desk prefs and names', () => {
     assert.equal(JSON.parse(memory.get(AUTO_PREFS_KEY)).recipeId, 'tiktok_tight');
   });
 
-  it('uses the bot name, not a role name', () => {
-    assert.equal(attachedBotName({ bots: [{ display_name: 'Grok', presence: 'active' }] }), 'Grok');
-    assert.equal(attachedBotName(undefined, ['Claude']), 'Claude');
+  it('names connected seats, never a mystery active bot', () => {
+    assert.equal(attachedBotName({ bots: [{ display_name: 'Grok', presence: 'active' }] }), '');
+    assert.equal(attachedBotName({
+      bots: [{ bot_id: 'grok-planner', display_name: 'Grok', presence: 'active' }],
+    }), 'Grok Bot 기획자');
+    assert.equal(attachedBotName({
+      bots: [{ display_name: 'Grok Bot 기획자', presence: 'active' }],
+    }), 'Grok Bot 기획자');
+    assert.equal(attachedBotName({
+      bots: [
+        { bot_id: 'grok-planner', display_name: 'Grok', presence: 'active' },
+        { bot_id: 'grok-scraper', display_name: 'Grok', presence: 'active' },
+      ],
+    }), 'Grok Bot 기획자 · Grok Bot 스크래핑');
+    assert.equal(attachedBotName(undefined, ['Claude']), '');
+    assert.equal(attachedBotName(undefined, ['Grok Bot 기획자']), 'Grok Bot 기획자');
     assert.equal(attachedBotName(undefined, []), '');
+    assert.doesNotMatch(attachedBotName({ bots: [{ display_name: 'Grok ???', presence: 'active' }] }), /\?\?\?/);
+  });
+});
+
+describe('auto desk who and what', () => {
+  it('shows one seat row when only the planner is attached', () => {
+    const rows = autoSeatRows({
+      roster: {
+        bots: [{
+          bot_id: 'grok-planner',
+          display_name: 'Grok Bot 기획자',
+          presence: 'active',
+          last_action: 'still_here',
+          seconds_since_checkin: 20,
+        }],
+      },
+      language: 'ko',
+    });
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].name, 'Grok Bot 기획자');
+    assert.equal(rows[0].mark, 'current');
+    assert.match(rows[0].detail, /할 일은 아직 안 적음/);
+    assert.doesNotMatch(rows[0].name, /\?\?\?/);
+    assert.equal(heartbeatActionLabel('still_here', 'ko'), '이 자리에 있음 · 할 일은 아직 안 적음');
+    assert.equal(autoWaitHeadline(rows, 'ko').showUnknownRead, false);
+  });
+
+  it('shows three rows for three seats and keeps still_here honest', () => {
+    const rows = autoSeatRows({
+      roster: {
+        bots: [
+          { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'still_here', seconds_since_checkin: 12 },
+          { bot_id: 'grok-scraper', display_name: 'Grok Bot 스크래핑', presence: 'active', last_action: 'still_here', seconds_since_checkin: 40 },
+          { bot_id: 'grok-editor', display_name: 'Grok Bot 편집자', presence: 'active', last_action: 'entered_local_studio', seconds_since_checkin: 8 },
+        ],
+      },
+      language: 'ko',
+    });
+    assert.equal(rows.length, 3);
+    assert.deepEqual(rows.map((row) => row.name), ['Grok Bot 기획자', 'Grok Bot 스크래핑', 'Grok Bot 편집자']);
+    assert.match(rows[0].detail, /할 일은 아직 안 적음/);
+    assert.equal(rows[1].detail, '대기 · 연결됨');
+    assert.equal(rows[2].detail, '대기 · 연결됨');
+  });
+
+  it('makes the planner current on plan_started and leaves others waiting', () => {
+    const rows = autoSeatRows({
+      roster: {
+        bots: [
+          { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'plan_started', seconds_since_checkin: 60 },
+          { bot_id: 'grok-scraper', display_name: 'Grok Bot 스크래핑', presence: 'active', last_action: 'still_here', seconds_since_checkin: 10 },
+          { bot_id: 'grok-editor', display_name: 'Grok Bot 편집자', presence: 'idle' },
+        ],
+      },
+      links: {
+        pairCode: '7K2M9Q',
+        bots: [{
+          id: 'g-editor',
+          name: 'Grok Bot 편집자',
+          kind: 'grok',
+          role: 'editor',
+          place: 'other_pc',
+          status: 'waiting',
+          pairCode: '7K2M9Q',
+        }],
+      },
+      language: 'ko',
+    });
+    assert.equal(rows.length, 3);
+    assert.equal(rows[0].current, true);
+    assert.match(rows[0].detail, /컷 계획 쓰는 중/);
+    assert.equal(rows[1].detail, '대기 · 연결됨');
+    assert.equal(rows[2].detail, '아직 연결되지않음');
+    const headline = autoWaitHeadline(rows, 'ko');
+    assert.equal(headline.title, 'Grok Bot 기획자가 컷 계획을 쓰는 중 · 창을 끄지 마세요');
+    assert.equal(headline.showUnknownRead, false);
+    assert.equal(autoWorkingNote({
+      elapsedLabel: '10분',
+      rows,
+      language: 'ko',
+    }), '10분째 · Grok Bot 기획자 · 컷 계획 쓰는 중');
+  });
+
+  it('keeps unknown only when that seat has no heartbeat', () => {
+    const rows = autoSeatRows({
+      roster: {
+        bots: [{ bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active' }],
+      },
+      language: 'ko',
+      lastCheckedLabel: '12:01:00',
+    });
+    assert.equal(rows.length, 1);
+    assert.match(rows[0].detail, /모름/);
+    assert.match(rows[0].detail, /12:01:00/);
+    assert.equal(autoWaitHeadline(rows, 'ko').showUnknownRead, true);
+    assert.doesNotMatch(heartbeatActionLabel('plan_started', 'ko'), /plan_started/);
+  });
+
+  it('folds the last three named activity lines without raw actions', () => {
+    const lines = recentActivityLines([
+      { id: '1', bot_id: 'grok-planner', action: 'plan_started', created_at: new Date(Date.now() - 60_000).toISOString() },
+      { id: '2', bot_id: 'mystery', action: 'hacked', created_at: new Date().toISOString() },
+      { id: '3', bot_id: 'grok-scraper', action: 'still_here', created_at: new Date().toISOString() },
+      { id: '4', bot_id: 'grok-editor', action: 'cut_ready', created_at: new Date().toISOString() },
+    ], 'ko', 3);
+    assert.equal(lines.length, 3);
+    assert.equal(lines[0].name, 'Grok Bot 기획자');
+    assert.equal(lines[0].text, '컷 계획 쓰는 중');
+    assert.equal(lines[1].name, 'Grok Bot 스크래핑');
+    assert.doesNotMatch(JSON.stringify(lines), /plan_started|still_here|cut_ready|hacked|\?\?\?/);
   });
 });
 

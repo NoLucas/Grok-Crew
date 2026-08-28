@@ -22,8 +22,13 @@ import {
   ensureBotLinks,
   forgetBotLinksOnQuit,
   hasConnectedBot,
+  lostConnectedSeats,
+  seatConnectSnapshot,
+  shouldPingLostSeat,
   type BotLinkState,
+  type SeatKey,
 } from './desktop-bot-links';
+import { seatName, type BotRole } from './bot-skills';
 import { AutoDesk } from './desktop-auto-desk';
 import { autoHeaderDot, writeAutoPrefs } from './desktop-auto-state';
 import { DesktopVoiceSetup } from './desktop-voice-setup';
@@ -291,7 +296,7 @@ function statusTone(status: string) {
 }
 
 export default function DesktopWorkspace() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { appearance, updateAppearance } = useDesktopAppearance();
   const [workspace, setWorkspace] = useState<Workspace>({ projects: [], control_jobs: [], runner_events: [], runners: [], media: [] });
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -330,8 +335,8 @@ export default function DesktopWorkspace() {
   const [launch, setLaunch] = useState<LaunchStatus | null>(null);
   const [update, setUpdate] = useState<UpdateStatus>({
     status: 'dev_fallback',
-    currentVersion: '1.0.4',
-    latestVersion: '1.0.4',
+    currentVersion: '1.0.5',
+    latestVersion: '1.0.5',
     releaseUrl: '',
     message: 'Browser workspace uses the local tree. Packaged desktop checks GitHub releases.',
   });
@@ -349,6 +354,10 @@ export default function DesktopWorkspace() {
   const [firstCut, setFirstCut] = useState(false);
   const [deskPulse, setDeskPulse] = useState<{ lastCheckedAt: string; pull: DeskPullStatus }>({ lastCheckedAt: '', pull: 'idle' });
   const deskWaitRef = useRef<DeskWaitState | null>(null);
+  const seatSnapRef = useRef<ReturnType<typeof seatConnectSnapshot> | null>(null);
+  const lostPingedRef = useRef(new Set<string>());
+  const [lostSeats, setLostSeats] = useState<Array<{ key: SeatKey; kind: 'grok' | 'custom'; role: BotRole }>>([]);
+  const [lostDismissed, setLostDismissed] = useState<string[]>([]);
   const syncingRelay = useRef(false);
   const autoProxyKey = useRef('');
   const selectedClipId = selectedClipIds[selectedClipIds.length - 1] ?? '';
@@ -364,6 +373,52 @@ export default function DesktopWorkspace() {
     setBotLinks(ensureBotLinks());
     return () => { setGithubToken(''); };
   }, []);
+
+  useEffect(() => {
+    if (studioState !== 'ready') return;
+    const next = seatConnectSnapshot(botLinks, workspace.crew_roster);
+    const previous = seatSnapRef.current;
+    seatSnapRef.current = next;
+    if (!previous) return;
+    const lost = lostConnectedSeats(previous, next);
+    setLostSeats((current) => {
+      const kept = current.filter((item) => !next[item.key]);
+      const map = new Map(kept.map((item) => [item.key, item]));
+      for (const item of lost) map.set(item.key, item);
+      return [...map.values()];
+    });
+    setLostDismissed((current) => current.filter((key) => !next[key as SeatKey]));
+    for (const key of Object.keys(next) as SeatKey[]) {
+      if (next[key]) lostPingedRef.current.delete(key);
+    }
+  }, [botLinks, studioState, workspace.crew_roster]);
+
+  useEffect(() => {
+    const visible = lostSeats.filter((item) => !lostDismissed.includes(item.key));
+    if (!visible.length) return;
+    const hidden = typeof document !== 'undefined' && document.hidden;
+    for (const seat of visible) {
+      if (!shouldPingLostSeat({ hidden, key: seat.key, pinged: lostPingedRef.current.has(seat.key) })) continue;
+      if (typeof Notification === 'undefined') continue;
+      const name = seatName(seat.kind, seat.role, language);
+      const fire = () => {
+        lostPingedRef.current.add(seat.key);
+        try {
+          new Notification(t('Grok Crew · 연결 끊김', 'Grok Crew · connection lost', 'Grok Crew · 连接断开', 'Grok Crew · 接続が切れた'), {
+            body: t(`${name} 창이 꺼졌습니다. 연결에서 다시 붙이세요.`, `${name} went dark. Open Connect and attach it again.`, `${name} 窗口关了。请到连接再接上。`, `${name} の窓が消えました。接続から付け直してください。`),
+          });
+        } catch {
+          /* permission or OS block */
+        }
+      };
+      if (Notification.permission === 'granted') fire();
+      else if (Notification.permission === 'default') {
+        void Notification.requestPermission().then((permission) => {
+          if (permission === 'granted') fire();
+        });
+      }
+    }
+  }, [language, lostDismissed, lostSeats, t]);
 
   const api = useCallback(async (path: string, init?: RequestInit): Promise<JsonObject> => {
     if (window.grokCrew) return await window.grokCrew.request(path, { method: init?.method ?? 'GET', body: typeof init?.body === 'string' ? init.body : null }) as JsonObject;
@@ -1414,6 +1469,41 @@ export default function DesktopWorkspace() {
         />
 
         <section className="desktop-stage">
+          {lostSeats.filter((item) => !lostDismissed.includes(item.key)).length ? (
+            <div className="desk-lost-alert" role="alert">
+              <span className="desk-lost-alert-pulse" aria-hidden="true" />
+              <div className="desk-lost-alert-copy">
+                <p className="desk-lost-alert-kicker">{t('연결 끊김', 'Connection lost', '连接断开', '接続が切れた')}</p>
+                <p className="desk-lost-alert-title">
+                  {t(
+                    `${lostSeats.filter((item) => !lostDismissed.includes(item.key)).map((item) => seatName(item.kind, item.role, language)).join(', ')} 창이 꺼졌습니다`,
+                    `${lostSeats.filter((item) => !lostDismissed.includes(item.key)).map((item) => seatName(item.kind, item.role, language)).join(', ')} went dark`,
+                    `${lostSeats.filter((item) => !lostDismissed.includes(item.key)).map((item) => seatName(item.kind, item.role, language)).join('、')} 窗口关了`,
+                    `${lostSeats.filter((item) => !lostDismissed.includes(item.key)).map((item) => seatName(item.kind, item.role, language)).join('、')} の窓が消えました`,
+                  )}
+                </p>
+                <p className="desk-lost-alert-body">
+                  {t('다시 붙으려면 연결에서 초대문을 복사하세요. 램프는 연결됨 또는 연결되지않음만 씁니다.', 'Copy the invite in Connect to attach again. The lamp only says connected or not connected.', '要再接上，请到连接复制邀请。灯只显示已连接或未连接。', '付け直すなら接続で招待文をコピー。ランプは接続済みか未接続だけです。')}
+                </p>
+              </div>
+              <div className="desk-lost-alert-actions">
+                <button
+                  type="button"
+                  className="desktop-primary"
+                  onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}
+                >
+                  {t('연결 열기', 'Open Connect', '打开连接', '接続を開く')}
+                </button>
+                <button
+                  type="button"
+                  className="desktop-secondary"
+                  onClick={() => setLostDismissed((current) => [...new Set([...current, ...lostSeats.map((item) => item.key)])])}
+                >
+                  {t('닫기', 'Dismiss', '关闭', '閉じる')}
+                </button>
+              </div>
+            </div>
+          ) : null}
           {studioState === 'error' && project ? <div className="desktop-banner error" role="alert"><div><b>{t('Local Studio에 연결하지 못했습니다', 'Could not reach Local Studio', '无法连接 Local Studio', 'Local Studio に接続できません')}</b><p>{t('사이드카가 꺼져 있으면 프로젝트와 렌더를 읽을 수 없습니다.', 'The sidecar is offline, so projects and renders cannot load.', '侧车离线时无法读取项目和渲染。', 'サイドカーが停止しているとプロジェクトとレンダーを読めません。')}</p></div><button type="button" className="desktop-secondary" onClick={() => void refreshWorkspace()}>{t('다시 연결', 'Reconnect', '重新连接', '再接続')}</button></div> : null}
           {studioState === 'loading' && !project ? <div className="desktop-empty" aria-busy="true"><span className="desktop-spinner" /><h1>{t('작업 공간을 불러오는 중', 'Loading the workspace', '正在加载工作区', 'ワークスペースを読み込み中')}</h1><p>{t('Local Studio의 프로젝트와 게시 영수증을 확인합니다.', 'Checking Local Studio projects and publish receipts.', '正在检查本地工作室项目和发布回执。', 'Local Studio のプロジェクトと公開レシートを確認しています。')}</p></div>
           : studioState === 'error' && !project ? <div className="desktop-empty"><span>!</span><h1>{t('데스크톱이 로컬 서비스에 닿지 않습니다', 'The desktop cannot reach the local service', '桌面无法连接本地服务', 'デスクトップがローカルサービスに届きません')}</h1><p>{t('npm run local 또는 데스크톱 앱을 실행한 뒤 다시 연결하세요.', 'Start npm run local or the desktop app, then reconnect.', '请先运行 npm run local 或桌面应用，然后重试。', 'npm run local かデスクトップアプリを起動してから再接続してください。')}</p><button type="button" className="desktop-primary" onClick={() => void refreshWorkspace()}>{t('다시 시도', 'Try again', '重试', '再試行')}</button></div>
@@ -1495,6 +1585,7 @@ export default function DesktopWorkspace() {
                 recipes={workspace.style_recipes ?? []}
                 roster={workspace.crew_roster}
                 remoteNames={connectedRemoteNames(botLinks, workspace.crew_roster)}
+                links={botLinks}
                 connectWaiting={botLinks.bots.some((item) => item.status === 'waiting')}
                 busy={busy}
                 studioReady={studioState === 'ready'}

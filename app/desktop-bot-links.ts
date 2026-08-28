@@ -316,6 +316,56 @@ export function connectedRemoteNames(links?: BotLinkState | null, roster?: CrewR
   return names;
 }
 
+export type SeatKey = `${'grok' | 'custom'}:${BotRole}`;
+export type SeatConnectSnapshot = Record<SeatKey, boolean>;
+
+export function seatKey(kind: 'grok' | 'custom', role: BotRole): SeatKey {
+  return `${kind}:${role}`;
+}
+
+export function seatConnectSnapshot(
+  links?: BotLinkState | null,
+  roster?: CrewRoster | null,
+): SeatConnectSnapshot {
+  const next = {} as SeatConnectSnapshot;
+  for (const kind of ['grok', 'custom'] as const) {
+    for (const role of ['planner', 'scraper', 'editor'] as const) {
+      next[seatKey(kind, role)] = seatIsConnected(kind, role, links, roster);
+    }
+  }
+  return next;
+}
+
+export function lostConnectedSeats(
+  previous: SeatConnectSnapshot | null | undefined,
+  next: SeatConnectSnapshot,
+): Array<{ key: SeatKey; kind: 'grok' | 'custom'; role: BotRole }> {
+  if (!previous) return [];
+  const lost: Array<{ key: SeatKey; kind: 'grok' | 'custom'; role: BotRole }> = [];
+  for (const kind of ['grok', 'custom'] as const) {
+    for (const role of ['planner', 'scraper', 'editor'] as const) {
+      const key = seatKey(kind, role);
+      if (previous[key] && !next[key]) lost.push({ key, kind, role });
+    }
+  }
+  return lost;
+}
+
+export function shouldPingLostSeat(input: {
+  hidden: boolean;
+  key: string;
+  pinged?: boolean;
+}): boolean {
+  if (!input.hidden || input.pinged) return false;
+  return Boolean(String(input.key || '').trim());
+}
+
+export function heartbeatWorkPair(role: BotRole): { start: string; ready: string } {
+  if (role === 'planner') return { start: 'plan_started', ready: 'plan_ready' };
+  if (role === 'scraper') return { start: 'collect_started', ready: 'collect_ready' };
+  return { start: 'cut_started', ready: 'cut_ready' };
+}
+
 export function linkedByKind(bots: LinkedBot[] | undefined, kind: BotKind): LinkedBot | undefined {
   const list = bots ?? [];
   return list.find((item) => item.kind === kind && item.status === 'connected')
@@ -345,6 +395,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
   const ps = `Invoke-RestMethod -Uri ${origin}/api/bot-entry -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","purpose":"${purpose}"}'`;
   const py = `python grok-crew.py entry --server ${origin} --bot-id ${id} --display-name "${who}" --purpose ${purpose}`;
   const beat = `Invoke-RestMethod -Uri ${origin}/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","action":"still_here"}'`;
+  const work = heartbeatWorkPair(role);
   if (lang === 'ko') {
     return [
       '명령을 실행할 컴퓨터는 운영자가 등록한 Windows Computer만입니다. 이름을 지어내지 마세요.',
@@ -355,8 +406,9 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       ps,
       py,
       `(스크립트는 그 Windows에서 ${origin}/downloads/grok-crew.py)`,
-      '5분마다 같은 Windows에서 heartbeat를 남기세요.',
+      '1분마다 같은 Windows에서 still_here heartbeat를 남기세요. 창이 켜져 있는지 이 책상이 알게 합니다.',
       beat,
+      `할 일이 바뀌면 같은 주소에 heartbeat를 바로 보냅니다. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 채팅에는 토큰을 넣지 마세요.`,
       `${port}가 안 열리면 멈추고 "${port}가 없다"고 하세요. 디스크에서 스크립트를 찾지 마세요.`,
       '그래도 안 되면 GROK_CREW_OK 한 줄만 보내고 멈추세요.',
     ];
@@ -371,8 +423,9 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       ps,
       py,
       `(脚本在那台 Windows 上：${origin}/downloads/grok-crew.py)`,
-      '每 5 分钟在同一台 Windows 上留下 heartbeat。',
+      '每 1 分钟在同一台 Windows 上留下 still_here heartbeat，好让这张书桌知道窗口还开着。',
       beat,
+      `事情一变就立刻往同一地址发 heartbeat。action 先用 ${work.start}，做完改成 ${work.ready}。不要把令牌写进聊天。`,
       `若 ${port} 没开，停下来只写“没有 ${port}”。不要在磁盘上找脚本。`,
       '还不行就只发 GROK_CREW_OK 那一行然后停下。',
     ];
@@ -387,8 +440,9 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       ps,
       py,
       `(スクリプトはその Windows で ${origin}/downloads/grok-crew.py)`,
-      '5 分ごとに同じ Windows で heartbeat を残してください。',
+      '1 分ごとに同じ Windows で still_here heartbeat を残してください。窓が開いていることをこのデスクが分かります。',
       beat,
+      `仕事が変わったら同じ住所にすぐ heartbeat を送ります。action は ${work.start} で始め、終わったら ${work.ready} です。トークンをチャットに書かないでください。`,
       `${port} が開いていなければ止まって「${port} がない」と書いてください。ディスクでスクリプトを探さないでください。`,
       'それでもだめなら GROK_CREW_OK の一行だけ送って止まってください。',
     ];
@@ -402,8 +456,9 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     ps,
     py,
     `(script on that Windows: ${origin}/downloads/grok-crew.py)`,
-    'Leave a heartbeat on the same Windows every five minutes.',
+    'Leave a still_here heartbeat on the same Windows every minute so this desk knows the window is open.',
     beat,
+    `When the job changes, send a heartbeat to the same address at once. Start with action ${work.start}, then ${work.ready} when done. Do not put the token in chat.`,
     `If ${port} is not open, stop and say ${port} is missing. Do not search the disk for the script.`,
     'If that still fails, send only the GROK_CREW_OK line and stop.',
   ];

@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.4** · with Grok Bot · 现在免费
+**v1.0.5** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,11 +50,17 @@
 
 ---
 
+## v1.0.5 改了什么
+
+- 自动等待用座位名和已有 heartbeat 写现在在做什么，不假装“已读”。Grok 邀请改为每分钟 `still_here`，工作变了就发 `plan_*` / `collect_*` / `cut_*`。已接上的位子断开时会响连接断开警报。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.5 发布说明](docs/RELEASE_NOTES.v1.0.5.md)。
+
 ## v1.0.4 改了什么
 
 - 窗口开着时监听 `127.0.0.1:7214`，各国一样。同一台 Windows 上的 PowerShell 签到不再需要聊天令牌。没有 7214 时机器人只回一行就停。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.4 发布说明](docs/RELEASE_NOTES.v1.0.4.md)。
+1.0.4 列表见 [1.0.4 发布说明](docs/RELEASE_NOTES.v1.0.4.md)。
 
 ## v1.0.3 改了什么
 

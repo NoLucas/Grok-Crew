@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — このPCの映像デスク" width="100%" />
 </p>
 
-**v1.0.4** · with Grok Bot · いま無料
+**v1.0.5** · with Grok Bot · いま無料
 
 Shorts を一人で切って夜を明かす必要はありません。
 使っている **Grok Bot** や Agent を付ければ、できたファイルは **このPCのフォルダ** に残ります。
@@ -50,11 +50,17 @@ Shorts を一人で切って夜を明かす必要はありません。
 
 ---
 
+## v1.0.5 で変わったこと
+
+- 自動の待ち画面は席の名前と heartbeat の仕事を書きます。読んだかは作りません。Grok の接続文は 1 分ごとの `still_here` と、仕事が変わったときの `plan_*` / `collect_*` / `cut_*` です。付いていた席が消えると接続切れの警報が出ます。
+
+一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.5 リリースノート](docs/RELEASE_NOTES.v1.0.5.md) です。
+
 ## v1.0.4 で変わったこと
 
 - 窓が開いていれば `127.0.0.1:7214` を開けます。国が違っても同じです。その Windows の PowerShell チェックインにチャット用トークンは要りません。7214 がなければボットは一行で止まります。
 
-一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.4 リリースノート](docs/RELEASE_NOTES.v1.0.4.md) です。
+1.0.4 の一覧は [1.0.4 リリースノート](docs/RELEASE_NOTES.v1.0.4.md) です。
 
 ## v1.0.3 で変わったこと
 

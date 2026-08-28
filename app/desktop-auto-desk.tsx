@@ -2,23 +2,27 @@
 
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { CrewRoster } from './desktop-bot-connect';
+import { hasConnectedBot, type BotLinkState } from './desktop-bot-links';
 import {
   DEFAULT_RECIPE_ID,
   PASTE_TARGET,
   RECIPE_ORDER,
   attachedBotName,
   autoJobPayload,
+  autoSeatRows,
   autoSourceMode,
   autoDeskStage,
   autoMachineState,
   autoPhaseLamps,
+  autoWaitHeadline,
+  autoWorkingNote,
+  recentActivityLines,
   type AutoOptionPane,
-  botSeenSeconds,
+  type BotActivityItem,
   canStartAuto,
   droppedFilePath,
   titleFromPrompt,
   formatElapsed,
-  formatSince,
   readAutoPrefs,
   rememberRecentTitle,
   rememberSave,
@@ -72,6 +76,7 @@ type AutoDeskProps = {
   showAdvanced: boolean;
   roster?: CrewRoster;
   remoteNames?: string[];
+  links?: BotLinkState;
   connectWaiting?: boolean;
   wait: DeskWaitState | null;
   lastCheckedAt: string;
@@ -112,6 +117,7 @@ export function AutoDesk({
   showAdvanced,
   roster,
   remoteNames = [],
+  links,
   connectWaiting = false,
   wait,
   lastCheckedAt,
@@ -175,12 +181,13 @@ export function AutoDesk({
   const [askPublish, setAskPublish] = useState(false);
   const [replaceAsk, setReplaceAsk] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [activity, setActivity] = useState<BotActivityItem[]>([]);
   const pingedSpecRef = useRef('');
   const pendingCutRef = useRef<File | null>(null);
   const cutInputRef = useRef<HTMLInputElement>(null);
   const ownInputRef = useRef<HTMLInputElement>(null);
-  const attachedName = attachedBotName(roster, remoteNames);
-  const attached = Boolean(attachedName);
+  const attachedName = attachedBotName(roster, remoteNames, links, language);
+  const attached = Boolean(attachedName) || hasConnectedBot(roster, links);
   const hasProject = Boolean(previewUrl || projectTitle);
   const cards = useMemo(() => {
     const byId = new Map(recipes.map((item) => [item.id, item]));
@@ -234,9 +241,15 @@ export function AutoDesk({
     ownedPaths,
     collectQuery,
   }).ok;
-  const seenSeconds = botSeenSeconds(roster, connectedAt, nowMs);
-  const seenLabel = seenSeconds === null ? '' : formatSince(seenSeconds, language);
   const elapsedLabel = wait ? formatElapsed(waitElapsedSeconds(wait.copiedAt, nowMs), language) : '';
+  const seatRows = autoSeatRows({
+    roster,
+    links,
+    language,
+    lastCheckedLabel: formatCheckTime(lastCheckedAt, language),
+  });
+  const waitHeadline = autoWaitHeadline(seatRows, language);
+  const activityLines = recentActivityLines(activity, language, 3);
   const recentTitles = prefs.recentTitles.filter((item) => item !== title.trim());
   const waitingHandOff = mode === 'hand_off' && Boolean(wait) && machine === 'waiting';
   const showCutDrop = mode === 'hand_off' && (Boolean(wait) || machine === 'waiting');
@@ -263,6 +276,25 @@ export function AutoDesk({
     const timer = window.setInterval(() => setNowMs(Date.now()), 30000);
     return () => window.clearInterval(timer);
   }, [waitingHandOff]);
+
+  useEffect(() => {
+    if (!showWaiting) return undefined;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await request('/api/bot-activity') as { activity?: BotActivityItem[] };
+        if (!cancelled) setActivity(Array.isArray(data.activity) ? data.activity : []);
+      } catch {
+        if (!cancelled) setActivity([]);
+      }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [request, showWaiting]);
 
   useEffect(() => {
     if (!shouldPingCut({
@@ -549,7 +581,14 @@ export function AutoDesk({
         : wait && pullStatus === 'arrived'
           ? t('컷이 이 탭에 있음', 'The cut is in this tab', '成片在这个标签', 'カットはこのタブにあります')
           : wait
-            ? t(`${elapsedLabel ? `${elapsedLabel}째` : t('방금', 'just now', '刚刚', 'たった今')} · 이 창은 봇이 읽었는지 모름 · 마지막 확인 ${checkedClock || t('아직', 'soon', '稍后', 'まもなく')}`, `${elapsedLabel || 'just now'} · this window does not know if the bot read it · last check ${checkedClock || 'soon'}`, `${elapsedLabel || '刚刚'} · 这个窗口不知道机器人读没读 · 上次检查 ${checkedClock || '稍后'}`, `${elapsedLabel || 'たった今'} · この窓はボットが読んだか知らない · 最後の確認 ${checkedClock || 'まもなく'}`)
+            ? autoWorkingNote({
+              elapsedLabel,
+              lastCheckedLabel: checkedClock,
+              rows: seatRows,
+              language,
+              pullFailed: false,
+              cutHere: false,
+            })
             : t('일을 보낸 뒤 기다립니다', 'Wait after you send the job', '发送任务后等待', '仕事を送ってから待ちます'),
     },
     {
@@ -1027,15 +1066,43 @@ export function AutoDesk({
           <section className="desktop-auto-card">
             <b>{t('아까 적은 말', 'What you asked', '刚才写的话', 'さっき書いた言葉')}</b>
             <p>{wait?.title || title}</p>
-            <p>{attached
-              ? `${attachedName}${seenLabel ? ` · ${seenLabel}` : ''} · ${t(`아직 없음 · ${elapsedLabel || t('방금', 'just now', '刚刚', 'たった今')}째`, `not yet · ${elapsedLabel || 'just now'}`, `还没有 · ${elapsedLabel || '刚刚'}`, `まだない · ${elapsedLabel || 'たった今'}`)}`
-              : t('연결이 끊겼습니다. 연결 열기를 누르세요.', 'The bot is gone. Open Connect.', '连接断了。请打开连接。', '接続が切れています。接続を開いてください。')}</p>
+            {seatRows.length ? (
+              <div className="desktop-auto-now">
+                <b>{t('지금 이 일', 'This job now', '现在这件事', '今この仕事')}</b>
+                <ul>
+                  {seatRows.map((row) => (
+                    <li key={row.key} data-mark={row.mark}>
+                      <span className="desktop-auto-now-mark" aria-hidden="true">{row.mark === 'current' ? '●' : '○'}</span>
+                      <span className="desktop-auto-now-name">{row.name}</span>
+                      <span className="desktop-auto-now-detail">{row.detail}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p>{attached
+                ? t('자리를 아직 읽지 못했습니다.', 'The seats have not loaded yet.', '还没读到位子。', '席をまだ読めません。')
+                : t('연결이 끊겼습니다. 연결 열기를 누르세요.', 'The bot is gone. Open Connect.', '连接断了。请打开连接。', '接続が切れています。接続を開いてください。')}</p>
+            )}
           </section>
           {waitingHandOff ? (
             <section className={`desktop-simple-wait is-${pullStatus === 'failed' ? 'failed' : 'busy'}`} role="status">
-              <b>{t('봇이 작업 중 · 창을 끄지 마세요', 'The bot is working · do not close this window', '机器人正在工作 · 不要关掉这个窗口', 'ボットが作業中 · この窓を閉じないでください')}</b>
-              <p>{t('안 누르면 이 탭에 미리보기만 남습니다. 올리지는 않습니다. 이 창은 봇이 읽었는지 모릅니다.', 'If you do nothing, only the preview stays in this tab. It does not post. This window does not know if the bot read it.', '不点的话只有预览留在这个标签。不会发布。这个窗口不知道机器人读没读。', '押さなければこのタブにプレビューだけ残ります。上げません。この窓はボットが読んだか知りません。')}</p>
+              <b>{waitHeadline.title}</b>
+              <p>{t('안 누르면 이 탭에 미리보기만 남습니다. 올리지는 않습니다.', 'If you do nothing, only the preview stays in this tab. It does not post.', '不点的话只有预览留在这个标签。不会发布。', '押さなければこのタブにプレビューだけ残ります。上げません。')}</p>
+              {waitHeadline.showUnknownRead ? (
+                <p>{t('이 창은 봇이 읽었는지 모릅니다. 그 자리 heartbeat가 아직 없습니다.', 'This window does not know if the bot read it. That seat has no heartbeat yet.', '这个窗口不知道机器人读没读。那个位子还没有 heartbeat。', 'この窓はボットが読んだか知りません。その席の heartbeat はまだありません。')}</p>
+              ) : null}
             </section>
+          ) : null}
+          {activityLines.length ? (
+            <details className="desktop-auto-help desktop-auto-activity">
+              <summary>{t('최근 확인 세 줄', 'Last three check-ins', '最近三次确认', '最近の確認三行')}</summary>
+              <ol>
+                {activityLines.map((line) => (
+                  <li key={line.id}>{`${line.name} · ${line.text}${line.when ? ` · ${line.when}` : ''}`}</li>
+                ))}
+              </ol>
+            </details>
           ) : null}
           <ol className="desktop-auto-stepper">
             {phases.map((phase) => (

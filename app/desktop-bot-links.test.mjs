@@ -27,6 +27,10 @@ const {
   seatIsConnected,
   seatPurpose,
   connectedRemoteNames,
+  heartbeatWorkPair,
+  lostConnectedSeats,
+  seatConnectSnapshot,
+  shouldPingLostSeat,
 } = await import('./desktop-bot-links.ts');
 
 const memory = new Map();
@@ -66,6 +70,10 @@ describe('remote bot links', () => {
       assert.match(text, /grok-planner/);
       assert.match(text, /plan_edit/);
       assert.match(text, /heartbeat/);
+      assert.match(text, /1분마다|每 1 分钟|1 分ごと|every minute/);
+      assert.doesNotMatch(text, /5분마다|每 5 分钟|5 分ごと|every five minutes/);
+      assert.match(text, /plan_started/);
+      assert.match(text, /plan_ready/);
       assert.match(text, /grok-crew-planner/);
       assert.match(text, /grok-crew-edit-plan/);
       assert.match(text, /7214가 없다|没有 7214|7214 がない|7214 is missing/);
@@ -89,10 +97,36 @@ describe('remote bot links', () => {
     assert.match(agent, /grok-crew-public-pick/);
     assert.doesNotMatch(agent, /bot-entry/);
     assert.doesNotMatch(agent, /Invoke-RestMethod/);
-    assert.match(remoteConnectPaste('grok', '7K2M9Q', 'ko', 'editor'), /grok-crew-cut-to-plan/);
-    assert.match(remoteConnectPaste('grok', '7K2M9Q', 'ko', 'editor'), /grok-editor/);
+    assert.doesNotMatch(agent, /plan_started|collect_started|still_here/);
+    const scraper = remoteConnectPaste('grok', '7K2M9Q', 'ko', 'scraper');
+    assert.match(scraper, /collect_started/);
+    assert.match(scraper, /collect_ready/);
+    assert.doesNotMatch(scraper, /plan_started/);
+    const editor = remoteConnectPaste('grok', '7K2M9Q', 'ko', 'editor');
+    assert.match(editor, /grok-crew-cut-to-plan/);
+    assert.match(editor, /grok-editor/);
+    assert.match(editor, /cut_started/);
+    assert.match(editor, /cut_ready/);
     assert.equal(grokSeatBotId('editor'), 'grok-editor');
     assert.equal(seatPurpose('scraper'), 'collect');
+    assert.deepEqual(heartbeatWorkPair('planner'), { start: 'plan_started', ready: 'plan_ready' });
+  });
+
+  it('alarms once when a live seat drops, not on the first snapshot', () => {
+    const empty = emptyBotLinks();
+    const live = {
+      bots: [{ bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active' }],
+    };
+    const first = seatConnectSnapshot(empty, live);
+    assert.equal(first['grok:planner'], true);
+    assert.deepEqual(lostConnectedSeats(null, first), []);
+    const gone = seatConnectSnapshot(empty, { bots: [] });
+    const lost = lostConnectedSeats(first, gone);
+    assert.equal(lost.length, 1);
+    assert.equal(lost[0].role, 'planner');
+    assert.equal(shouldPingLostSeat({ hidden: true, key: lost[0].key }), true);
+    assert.equal(shouldPingLostSeat({ hidden: false, key: lost[0].key }), false);
+    assert.equal(shouldPingLostSeat({ hidden: true, key: lost[0].key, pinged: true }), false);
   });
 
   it('turns a Grok seat green from an active same-PC check-in', () => {

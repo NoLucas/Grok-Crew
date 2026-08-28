@@ -4,6 +4,16 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.5 - 2026-08-28
+
+Local 1.0.5. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.5` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.5.md`. Guest download stays the same Google Drive file. Already-installed 1.0.4 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- Auto wait names seats (`Grok Bot 기획자`), not one mystery active bot. It reads the existing roster `last_action` and does not invent “the bot read it.”
+- Grok connect text now asks for a `still_here` heartbeat every minute, plus `plan_*` / `collect_*` / `cut_*` when that seat’s work changes. The 5-minute active window is unchanged. The token stays out of chat.
+- A seat that was connected and then drops shows a persistent connection-lost banner (and an OS notification if the window is hidden). Lamps still only say 연결됨 / 연결되지않음.
+
 ## 1.0.4 - 2026-08-28
 
 Local 1.0.4. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.4` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.4.md`. Guest download stays the same Google Drive file. Already-installed 1.0.3 desks check Grok-crew-test for this tag.

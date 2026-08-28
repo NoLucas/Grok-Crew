@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 로컬 영상 작업대" width="100%" />
 </p>
 
-**v1.0.4** · with Grok Bot · 지금 무료
+**v1.0.5** · with Grok Bot · 지금 무료
 
 쇼츠를 혼자 자르며 밤을 샐 필요 없습니다.
 쓰던 **Grok Bot**이나 Agent를 붙이면, 다듬은 파일이 **이 PC 폴더**에 남습니다.
@@ -50,11 +50,17 @@
 
 ---
 
+## v1.0.5에서 달라진 것
+
+- 자동 대기가 자리 이름과 heartbeat 할 일을 씁니다. 읽었는지는 지어내지 않습니다. Grok 연결 글은 1분마다 `still_here`를 남기고, 할 일이 바뀌면 `plan_*` / `collect_*` / `cut_*`를 보냅니다. 붙어 있던 자리가 꺼지면 연결 끊김 알람이 납니다.
+
+자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.5 릴리스 노트](docs/RELEASE_NOTES.v1.0.5.md)입니다.
+
 ## v1.0.4에서 달라진 것
 
 - 창이 켜져 있으면 `127.0.0.1:7214`를 엽니다. 나라도 같습니다. 그 Windows에서 PowerShell 체크인은 채팅 토큰이 필요 없습니다. 7214가 없으면 봇은 한 줄로 멈춥니다.
 
-자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.4 릴리스 노트](docs/RELEASE_NOTES.v1.0.4.md)입니다.
+1.0.4 목록은 [1.0.4 릴리스 노트](docs/RELEASE_NOTES.v1.0.4.md)입니다.
 
 ## v1.0.3에서 달라진 것
 

@@ -753,6 +753,7 @@ def crew_roster() -> dict[str, Any]:
             "display_name": str(bot.get("display_name") or bot.get("bot_id") or "").strip(),
             "presence": "active" if seconds <= 300 else "idle",
             "seconds_since_checkin": seconds,
+            "last_action": str(bot.get("last_action") or "").strip(),
             "purpose": purpose,
             "role_hint": _purpose_role(purpose),
         })
