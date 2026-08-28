@@ -5,8 +5,9 @@ This repository is jointly maintained with Codex. Read
 
 ## Repository and branch safety
 
-- The only permitted GitHub push target is `https://github.com/NoLucas/Grok-crew-test.git`.
-- Never push to `origin`; this clone's `origin` may point at a different repository.
+- The only permitted push target is `https://github.com/NoLucas/Grok-crew-test.git`.
+- Never push to `origin` (Cursor git host), `https://github.com/NoLucas/Grok-Crew.git`, or any other remote.
+- Do not overlay this tree onto Grok-Crew. The maintainer copies to that repo if they want.
 - Never commit directly to `main`. Use a short-lived branch named `claude/<workstream>`.
 - Start from the exact `Grok-crew-test/main` commit named in the task packet.
 - Do not merge, tag, publish a release, or change GitHub settings. The maintainer owns those actions.

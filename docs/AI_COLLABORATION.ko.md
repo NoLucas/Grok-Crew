@@ -21,8 +21,8 @@ Cursor가 **제품 봇**으로 붙는 경로(체크인·초대문·편집 인박
 
 ## 2. 저장소와 브랜치 규칙
 
-- GitHub 공개 저장소는 `https://github.com/NoLucas/Grok-crew-test.git` (`github` remote)입니다.
-- Cursor Cloud Agent 세션의 `origin`은 Cursor git 호스트일 수 있습니다. 그때는 `origin`과 `github`를 같이 push한 뒤 upstream을 `origin`에 되돌립니다.
+- 에이전트가 push할 곳은 `https://github.com/NoLucas/Grok-crew-test.git` (`github` remote)뿐입니다.
+- `origin`(Cursor git 호스트), `https://github.com/NoLucas/Grok-Crew.git`, 그 밖의 remote에는 push하지 않습니다. Grok-Crew로 옮기는 일은 Maintainer가 합니다.
 - Codex 브랜치는 `codex/<workstream>`, Claude Code 브랜치는 `claude/<workstream>`, Cursor 세션은 요청이 없으면 현재 브랜치를 유지합니다.
 - 두 에이전트는 각각 별도 worktree 또는 clone에서 작업합니다. 같은 작업 폴더의 동시 편집은
   금지합니다.
