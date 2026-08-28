@@ -192,11 +192,11 @@ export function DesktopCrewBoard({
       </header>
       {layout === 'job' ? (
         <>
-          {talk}
           <div className="desktop-crew-handoff">
             <b>{t('지금 자리', 'Seats now', '现在的位子', '今の席')}</b>
             {pipe}
           </div>
+          {talk}
         </>
       ) : (
         <>

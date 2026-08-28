@@ -1,6 +1,6 @@
 import { BOT_ROLES, isBotRole, roleLabel, seatName, skillText, type BotRole } from './bot-skills';
 import { marketLabel, resolveCrewMarket } from './crew-market';
-import { connectedBot, type CrewBot, type CrewRoster } from './desktop-bot-connect';
+import { type CrewBot, type CrewRoster } from './desktop-bot-connect';
 
 export const GROK_SEAT_BOT_IDS = {
   planner: 'grok-planner',
@@ -401,22 +401,32 @@ export function familyIsConnected(
 }
 
 export function hasConnectedBot(roster?: CrewRoster | null, links?: BotLinkState | null): boolean {
-  if (BOT_ROLES.some((role) => (
+  return BOT_ROLES.some((role) => (
     seatIsConnected('grok', role, links, roster) || seatIsConnected('custom', role, links, roster)
-  ))) {
-    return true;
-  }
-  return Boolean(connectedBot(roster));
+  ));
+}
+
+/** One follow bar for Grok or Agent. A leftover mystery roster bot does not light a lamp. */
+export function seatLampRows(
+  roster?: CrewRoster | null,
+  links?: BotLinkState | null,
+): Array<{ role: BotRole; connected: boolean; family: 'grok' | 'custom' | 'none' }> {
+  return BOT_ROLES.map((role) => {
+    const grok = seatIsConnected('grok', role, links, roster);
+    const custom = seatIsConnected('custom', role, links, roster);
+    return {
+      role,
+      connected: grok || custom,
+      family: grok ? 'grok' : custom ? 'custom' : 'none',
+    };
+  });
 }
 
 export function grokSeatLampRows(
   roster?: CrewRoster | null,
   links?: BotLinkState | null,
 ): Array<{ role: BotRole; connected: boolean }> {
-  return BOT_ROLES.map((role) => ({
-    role,
-    connected: seatIsConnected('grok', role, links, roster),
-  }));
+  return seatLampRows(roster, links).map(({ role, connected }) => ({ role, connected }));
 }
 
 export type LinkChangeCause = 'copy' | 'release' | 'attach' | 'other';

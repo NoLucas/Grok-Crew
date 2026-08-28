@@ -5,17 +5,17 @@ import type { CrewRoster } from './desktop-bot-connect';
 import { hasConnectedBot, writeLastConnectBundle, type BotLinkState } from './desktop-bot-links';
 import {
   DEFAULT_RECIPE_ID,
-  PASTE_TARGET,
   RECIPE_ORDER,
+  alwaysCrewSeats,
   attachedBotName,
   autoJobPayload,
-  autoSeatRows,
   autoSourceMode,
   autoDeskStage,
   autoMachineState,
   autoPhaseLamps,
   autoWaitHeadline,
   autoWorkingNote,
+  pasteTargetForSeats,
   type AutoOptionPane,
   type BotActivityItem,
   canStartAuto,
@@ -39,7 +39,7 @@ import {
 } from './desktop-auto-state';
 import { DesktopCrewBoard } from './desktop-crew-board';
 import { activityForSpec, type CrewLoadState } from './desktop-crew-log';
-import { withCrewInvite } from './bot-skills';
+import { seatShortLabel, withCrewInvite } from './bot-skills';
 import { CREW_MARKETS, marketFromLanguage, marketLabel, resolveCrewMarket, type CrewMarket } from './crew-market';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { DesktopNewsCard } from './desktop-news-card';
@@ -201,7 +201,6 @@ export function AutoDesk({
   }, [recipes]);
   const selected = cards.find((item) => item.id === recipeId) || cards[0];
   const locked = busy || saving || accepting || savingFile || !studioReady;
-  const pasteTarget = wait?.pasteTarget || PASTE_TARGET;
   const checkedClock = formatCheckTime(lastCheckedAt, language);
   const lamps = autoPhaseLamps({
     attached,
@@ -249,7 +248,7 @@ export function AutoDesk({
   }).ok;
   const elapsedLabel = wait ? formatElapsed(waitElapsedSeconds(wait.copiedAt, nowMs), language) : '';
   const scopedActivity = activityForSpec(activity, wait?.specId);
-  const seatRows = autoSeatRows({
+  const seatRows = alwaysCrewSeats({
     roster,
     links,
     language,
@@ -257,6 +256,7 @@ export function AutoDesk({
     activity: scopedActivity,
   });
   const waitHeadline = autoWaitHeadline(seatRows, language);
+  const pasteTarget = pasteTargetForSeats(seatRows, language) || wait?.pasteTarget || '';
   const recentTitles = prefs.recentTitles.filter((item) => item !== title.trim());
   const waitingHandOff = mode === 'hand_off' && Boolean(wait) && machine === 'waiting';
   const showCutDrop = mode === 'hand_off' && (Boolean(wait) || machine === 'waiting');
@@ -440,7 +440,7 @@ export function AutoDesk({
         specId: record.id,
         title: heading,
         copiedAt: new Date().toISOString(),
-        pasteTarget: PASTE_TARGET,
+        pasteTarget,
         inviteText: text,
       };
       try {
@@ -670,21 +670,14 @@ export function AutoDesk({
         </p>
       ) : null}
 
-      <section className={`desktop-auto-connect${attached ? ' is-ready' : ''}`} aria-live="polite">
-        <b className={attached ? 'desktop-connect-lamp is-on' : 'desktop-connect-lamp'}>
-          <i aria-hidden="true" />
-          {attached
-            ? attachedName
-              ? t(`연결됨 · ${attachedName}`, `Connected · ${attachedName}`, `已连接 · ${attachedName}`, `接続済み · ${attachedName}`)
-              : t('연결됨', 'Connected', '已连接', '接続済み')
-            : t('연결되지않음', 'Not connected', '未连接', '未接続')}
-        </b>
-        {showComposer ? (
+      {showComposer && !attached ? (
+        <section className="desktop-auto-connect" aria-live="polite">
+          <p>{t('자리 램프는 위 막대입니다. 기획·스크랩·편집은 Grok이든 Agent든 같은 세 칸입니다.', 'Seat lamps are the bar above. Plan, scrap, and cut use the same three cells for Grok or Agent.', '位子灯在上面那条。策划、抓取、剪辑对 Grok 或 Agent 都是同一三格。', '席ランプは上の棒です。企画・スクラップ・編集は Grok でも Agent でも同じ三マスです。')}</p>
           <button type="button" className="desktop-secondary" onClick={onOpenBots}>
             {t('연결 열기', 'Open Connect', '打开连接', '接続を開く')}
           </button>
-        ) : null}
-      </section>
+        </section>
+      ) : null}
 
       {showComposer && wait ? (
         <button type="button" className="desktop-auto-jump" onClick={() => setStayOnCompose(false)}>
@@ -698,7 +691,7 @@ export function AutoDesk({
         <>
           <header className="desktop-auto-lead">
             <h1>{t('오늘 만들 영상을 적으세요', 'Write the video you want today', '写下今天要做的视频', '今日作る映像を書いてください')}</h1>
-            <p>{t('연결한 뒤 여기 한 칸만 적으면 됩니다. 화면·올릴 곳·소리는 아래 칸입니다. 시작하면 초대문을 복사하니, 봇 창에 한 번 붙이세요.', 'After you connect, write in this one box. Pictures, where to post, and sound are below. Start copies the invite, so paste it once in the bot window.', '连好后只在这一栏写。画面、发布处、声音在下面。一开始会复制邀请文，请在机器人窗口贴一次。', '接続したあと、ここ一欄だけ書いてください。画面・上げ先・音は下の欄です。始めると招待文をコピーするので、ボット窓に一度貼ってください。')}</p>
+            <p>{t('한 칸만 적으면 됩니다. 화면·올릴 곳·소리는 아래 칩입니다. 시작은 초대문을 복사하니, 지금 자리 창에 한 번 붙이세요.', 'Write in this one box. Pictures, where to post, and sound are chips below. Start copies the invite, so paste it once in the current seat window.', '只写这一栏。画面、发布处、声音是下面的芯片。一开始会复制邀请，请贴到现在的位子窗口一次。', 'ここ一欄だけ書いてください。画面・上げ先・音は下のチップです。始めると招待文をコピーするので、今の席の窓に一度貼ってください。')}</p>
           </header>
 
           {mode === 'own_file' ? (
@@ -1123,21 +1116,42 @@ export function AutoDesk({
       ) : null}
 
       {showWaiting ? (
-        <section className="desktop-auto-job" aria-live="polite">
-          <header className="desktop-auto-lead">
-            <h1>{wait?.title || title || t('자리 넘김', 'Seat handoff', '位子转交', '席の受け渡し')}</h1>
-            <p>{t(`복사했습니다. ${pasteTarget} 창에 한 번 붙이세요.`, `Copied. Paste it once in the ${pasteTarget} window.`, `已复制。请在 ${pasteTarget} 窗口贴一次。`, `コピーしました。${pasteTarget} の窓に一度貼ってください。`)}</p>
-            <div className="desktop-wait-recopy">
-              <button type="button" className="desktop-primary desktop-recopy-btn" disabled={!inviteText.trim()} onClick={() => { void recopyInvite(); }}>
-                {copied
-                  ? t('복사했습니다. 봇 창에 붙이세요.', 'Copied. Paste it in the bot window.', '已复制。请贴到机器人窗口。', 'コピーしました。ボットの窓に貼ってください。')
-                  : t('다시 복사', 'Copy again', '再复制', 'もう一度コピー')}
-              </button>
+        <section className="desktop-auto-job desktop-auto-run" aria-live="polite">
+          <header className="desktop-auto-run-head">
+            <div>
+              <p className="desktop-auto-run-kicker">{elapsedLabel
+                ? t(`${elapsedLabel}째`, `${elapsedLabel}`, `${elapsedLabel}`, `${elapsedLabel}`)
+                : t('방금 보냄', 'Just sent', '刚刚发送', 'たった今送った')}</p>
+              <h1>{wait?.title || title || t('자리 넘김', 'Seat handoff', '位子转交', '席の受け渡し')}</h1>
+              <p>{waitHeadline.title}</p>
             </div>
           </header>
-          {waitingHandOff && waitHeadline.current ? (
-            <p className="desktop-spec-meta">{waitHeadline.title}</p>
-          ) : null}
+          <ol className="desktop-auto-run-rail" aria-label={t('지금 자리', 'Seats now', '现在的位子', '今の席')}>
+            {seatRows.map((seat, index) => (
+              <li key={seat.key} data-mark={seat.mark} data-role={seat.role}>
+                {index > 0 ? <span className="desktop-auto-run-arrow" aria-hidden="true">→</span> : null}
+                <button
+                  type="button"
+                  className={`desktop-auto-run-seat${seat.connected ? ' is-on' : ' is-off'}${seat.current ? ' is-current' : ''}`}
+                  onClick={onOpenBots}
+                >
+                  <i aria-hidden="true" />
+                  <b>{seatShortLabel(seat.role, language)}</b>
+                  <span>{seat.connected
+                    ? t('연결됨', 'Connected', '已连接', '接続済み')
+                    : t('연결되지않음', 'Not connected', '未连接', '未接続')}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div className="desktop-auto-interrupt">
+            <p>{t(`사람 손길 · ${pasteTarget} 창에 한 번 붙이세요.`, `Your step · paste it once in the ${pasteTarget} window.`, `人手 · 请在 ${pasteTarget} 窗口贴一次。`, `人の手 · ${pasteTarget} の窓に一度貼ってください。`)}</p>
+            <button type="button" className="desktop-primary desktop-recopy-btn" disabled={!inviteText.trim()} onClick={() => { void recopyInvite(); }}>
+              {copied
+                ? t(`복사했습니다. ${pasteTarget} 창에 붙이세요.`, `Copied. Paste it in the ${pasteTarget} window.`, `已复制。请贴到 ${pasteTarget} 窗口。`, `コピーしました。${pasteTarget} の窓に貼ってください。`)
+                : t(`다시 복사 · ${pasteTarget}`, `Copy again · ${pasteTarget}`, `再复制 · ${pasteTarget}`, `もう一度コピー · ${pasteTarget}`)}
+            </button>
+          </div>
           <DesktopCrewBoard
             rows={seatRows}
             activity={activity}
@@ -1167,7 +1181,7 @@ export function AutoDesk({
             </ol>
           </details>
           {showCutDrop ? (
-            <section className="desktop-auto-drop">
+            <section className="desktop-auto-drop is-quiet">
               <input
                 ref={cutInputRef}
                 type="file"
@@ -1181,7 +1195,7 @@ export function AutoDesk({
               />
               <button
                 type="button"
-                className={cutOver ? 'desktop-simple-drop is-over' : 'desktop-simple-drop'}
+                className={cutOver ? 'desktop-simple-drop is-over is-quiet' : 'desktop-simple-drop is-quiet'}
                 disabled={locked}
                 onClick={() => cutInputRef.current?.click()}
                 onDragEnter={(event) => { event.preventDefault(); setCutOver(true); }}
@@ -1194,13 +1208,13 @@ export function AutoDesk({
               >
                 <b>{cutOver
                   ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
-                  : t('끝난 파일을 여기 놓기', 'Drop the finished file here', '把完成文件放这里', '終わったファイルをここに置く')}</b>
-                <span>{t('이 PC 편집 인박스에 혼자 있는 reel-15s.mp4 같은 컷도 여기 고르면 이 탭에 열립니다. 경로는 적지 마세요.', 'A loose cut such as reel-15s.mp4 in this PC editor inbox also opens here if you pick it. Do not type a path.', '这台电脑剪辑收件箱里单独的 reel-15s.mp4 一类成片，在这里选也会打开。不要填写路径。', 'この PC の編集受信箱に単体である reel-15s.mp4 のようなカットも、ここで選べば開きます。パスは書かない。')}</span>
+                  : t('끝난 파일을 직접 놓기', 'Drop the finished file yourself', '自己放下完成文件', '終わったファイルを自分で置く')}</b>
+                <span>{t('어제 인박스에 혼자 남은 컷은 자동으로 열지 않습니다. 고르면 이 탭에 엽니다.', 'A leftover inbox cut does not open by itself. Pick it here to open it in this tab.', '收件箱里昨天剩下的成片不会自己打开。在这里选才会在这个标签打开。', '受信箱に昨日残ったカットは自動では開きません。ここで選べばこのタブで開きます。')}</span>
               </button>
             </section>
           ) : null}
           {waitingHandOff && !hasProject && pullStatus !== 'arrived' ? (
-            <p className="desktop-spec-meta">{t('컷이 오면 이 탭에 남습니다.', 'The cut will land in this tab.', '成片会留在这个标签。', 'カットが来たらこのタブに残ります。')}</p>
+            <p className="desktop-spec-meta">{t('컷이 오면 이 탭 가운데에 남습니다. 퍼센트는 없습니다.', 'The cut will land in the middle of this tab. There is no percent.', '成片会留在这个标签中间。没有百分比。', 'カットが来たらこのタブの真ん中に残ります。パーセントはありません。')}</p>
           ) : null}
           <button type="button" className="desktop-auto-text" onClick={() => setStayOnCompose(true)}>
             {t('다시 적기', 'Write it again', '再写一次', 'もう一度書く')}
@@ -1209,9 +1223,10 @@ export function AutoDesk({
       ) : null}
 
       {showArrived ? (
-        <section className="desktop-auto-preview">
+        <section className="desktop-auto-preview desktop-auto-canvas">
           <header className="desktop-auto-lead desktop-auto-lead-inline">
             <div>
+              <p className="desktop-auto-run-kicker">{t('도착', 'Arrived', '已到', '到着')}</p>
               <h1>{projectTitle || wait?.title || t('도착한 컷', 'Arrived cut', '已到达的成片', '届いたカット')}</h1>
               <p className="desktop-auto-preview-note">
                 {outputReady
@@ -1235,6 +1250,18 @@ export function AutoDesk({
           ) : (
             <p>{t('컷이 열렸습니다. 미리보기를 아직 읽지 못했습니다.', 'The cut is open. The preview has not loaded yet.', '成片已打开。预览还没读到。', 'カットは開いています。プレビューはまだ読めません。')}</p>
           )}
+          <div className="desktop-auto-preview-actions">
+            <button type="button" className="desktop-primary" disabled={busy || savingFile || !hasProject} onClick={() => void saveLocal()}>
+              {savingFile
+                ? t('저장 중…', 'Saving…', '保存中…', '保存中…')
+                : outputReady
+                  ? t('다시 이 PC에 저장', 'Save to this PC again', '再次保存到这台电脑', 'もう一度この PC に保存')
+                  : t('이 PC에 저장', 'Save to this PC', '保存到这台电脑', 'この PC に保存')}
+            </button>
+            <button type="button" className="desktop-secondary" disabled={!hasProject} onClick={onOpenEdit}>
+              {t('타임라인에서 손질', 'Trim on the timeline', '在时间线上修一下', 'タイムラインで整える')}
+            </button>
+          </div>
           <DesktopCrewBoard
             rows={seatRows}
             activity={activity}
@@ -1251,18 +1278,6 @@ export function AutoDesk({
               }).catch(() => setActivityState('error'));
             }}
           />
-          <div className="desktop-auto-preview-actions">
-            <button type="button" className="desktop-primary" disabled={busy || savingFile || !hasProject} onClick={() => void saveLocal()}>
-              {savingFile
-                ? t('저장 중…', 'Saving…', '保存中…', '保存中…')
-                : outputReady
-                  ? t('다시 이 PC에 저장', 'Save to this PC again', '再次保存到这台电脑', 'もう一度この PC に保存')
-                  : t('이 PC에 저장', 'Save to this PC', '保存到这台电脑', 'この PC に保存')}
-            </button>
-            <button type="button" className="desktop-secondary" disabled={!hasProject} onClick={onOpenEdit}>
-              {t('타임라인에서 손질', 'Trim on the timeline', '在时间线上修一下', 'タイムラインで整える')}
-            </button>
-          </div>
           {askPublish || outputReady ? (
             <section className="desktop-auto-card desktop-auto-save-card">
               <b>{t('이 PC에 두었음', 'Saved on this PC', '已留在这台电脑', 'この PC に残した')}</b>

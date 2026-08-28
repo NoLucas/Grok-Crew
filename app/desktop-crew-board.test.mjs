@@ -124,7 +124,8 @@ describe('crew board notes', () => {
     });
     assert.match(nextSeatOfflineNote(rows, 'planner', 'ko', 'grok'), /연결되지않음/);
     assert.equal(presenceStaleMinutes(180), 3);
-    assert.match(presenceStaleCopy(3, 'ko'), /3분 끊김/);
+    assert.match(presenceStaleCopy(3, 'ko'), /3분 전/);
+    assert.doesNotMatch(presenceStaleCopy(3, 'ko'), /끊김/);
     const pipe = crewPipeline(rows, [
       { id: '1', bot_id: 'grok-planner', action: 'plan_ready', created_at: new Date().toISOString(), detail_json: { note: '넘긴 말' } },
     ], 'ko');

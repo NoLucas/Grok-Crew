@@ -114,10 +114,10 @@ export function presenceStaleCopy(minutes: number, language = 'ko'): string {
   const n = Math.max(1, Math.floor(minutes));
   return boardCopy(
     language,
-    `자리 확인이 ${n}분 끊김`,
-    `Seat check stopped ${n} min ago`,
-    `位子确认已停 ${n} 分钟`,
-    `席の確認が ${n} 分途切れている`,
+    `마지막 확인 ${n}분 전`,
+    `Last check ${n} min ago`,
+    `上次确认 ${n} 分钟前`,
+    `最後の確認は ${n} 分前`,
   );
 }
 
@@ -202,10 +202,15 @@ export function nextHandoffRole(role: BotRole | ''): BotRole | 'desk' | '' {
   return '';
 }
 
-export function handoffTargetName(role: BotRole | '', language = 'ko'): string {
+export function handoffTargetName(
+  role: BotRole | '',
+  language = 'ko',
+  family: AutoSeatRow['kind'] = 'grok',
+): string {
   const next = nextHandoffRole(role);
-  if (next === 'scraper') return seatName('grok', 'scraper', language);
-  if (next === 'editor') return seatName('grok', 'editor', language);
+  const kind = family === 'custom' ? 'custom' : 'grok';
+  if (next === 'scraper') return seatName(kind, 'scraper', language);
+  if (next === 'editor') return seatName(kind, 'editor', language);
   if (next === 'desk') {
     return boardCopy(language, '이 창', 'this window', '这个窗口', 'この窓');
   }
@@ -314,7 +319,7 @@ export function crewTalkThread(
       name: row.name,
       actionLabel: heartbeatActionLabel(row.item.action, language),
       note,
-      toName: ready ? handoffTargetName(row.role, language) : '',
+      toName: ready ? handoffTargetName(row.role, language, familyFromBotId(String(row.item.bot_id || '')) || 'grok') : '',
       when: activityWhen(row.item, language),
     });
   }

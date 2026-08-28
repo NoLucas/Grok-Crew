@@ -1,4 +1,4 @@
-import { connectedBot, type CrewRoster } from './desktop-bot-connect';
+import type { CrewRoster } from './desktop-bot-connect';
 import {
   GROK_SEAT_BOT_IDS,
   rosterMatchesSeat,
@@ -534,6 +534,101 @@ export function autoSeatRows(input: {
   });
 }
 
+/** Prefer Grok if any Grok seat is attached or waiting. Agent-only desks use Agent names. */
+export function preferredSeatFamily(
+  roster?: CrewRoster | null,
+  links?: BotLinkState | null,
+): 'grok' | 'custom' {
+  if (BOT_ROLES.some((role) => shouldShowSeat('grok', role, roster, links))) return 'grok';
+  if (BOT_ROLES.some((role) => shouldShowSeat('custom', role, roster, links))) return 'custom';
+  return 'grok';
+}
+
+function pickShownSeat(rows: AutoSeatRow[], role: BotRole): AutoSeatRow | undefined {
+  const hits = rows.filter((row) => row.role === role);
+  if (!hits.length) return undefined;
+  return hits.find((row) => row.connected) ?? hits.find((row) => row.kind === 'grok') ?? hits[0];
+}
+
+/** Always 기획 → 스크랩 → 편집. Missing seats stay gray. Connect’s board still uses autoSeatRows. */
+export function alwaysCrewSeats(input: {
+  roster?: CrewRoster | null;
+  links?: BotLinkState | null;
+  language?: string;
+  lastCheckedLabel?: string;
+  activity?: BotActivityItem[];
+}): AutoSeatRow[] {
+  const language = input.language || 'ko';
+  const shown = autoSeatRows(input);
+  const family = preferredSeatFamily(input.roster, input.links);
+  const offline = autoCopy(language, '아직 연결되지않음', 'not connected yet', '还没连接', 'まだ接続されていない');
+  return BOT_ROLES.map((role) => {
+    const hit = pickShownSeat(shown, role);
+    if (hit) return hit;
+    return {
+      key: `${family}:${role}`,
+      kind: family,
+      role,
+      name: seatName(family, role, language),
+      connected: false,
+      current: false,
+      lastAction: '',
+      secondsSinceCheckin: null,
+      mark: 'off',
+      detail: offline,
+    };
+  });
+}
+
+/** First seat that has not left a ready handoff. After plan_ready this is the scraper, not the planner. */
+export function pasteTargetForSeats(rows: AutoSeatRow[], language = 'ko'): string {
+  for (const role of BOT_ROLES) {
+    const row = rows.find((item) => item.role === role);
+    if (!row) continue;
+    if (heartbeatActionKind(row.lastAction) === 'ready') continue;
+    return row.name;
+  }
+  const last = rows.find((item) => item.role === 'editor') ?? rows[rows.length - 1];
+  return last?.name || seatName('grok', 'planner', language);
+}
+
+export function shouldAutoPullInbox(input: {
+  connectOpen: boolean;
+  wait: DeskWaitState | null | undefined;
+  pending: number;
+  pendingAtWaitStart: number | null;
+}): boolean {
+  if (input.connectOpen) return false;
+  if (!input.wait?.specId) return false;
+  if (!Number.isFinite(input.pending) || input.pending < 1) return false;
+  if (typeof input.pendingAtWaitStart === 'number' && input.pending <= input.pendingAtWaitStart) return false;
+  return true;
+}
+
+export function importedEditSpecId(imported: unknown): string {
+  if (!Array.isArray(imported) || !imported.length) return '';
+  const first = imported[0];
+  if (!first || typeof first !== 'object') return '';
+  const row = first as Record<string, unknown>;
+  const direct = String(row.edit_spec_id || '').trim();
+  if (direct) return direct;
+  const project = row.project && typeof row.project === 'object'
+    ? row.project as Record<string, unknown>
+    : null;
+  return String(project?.edit_spec_id || '').trim();
+}
+
+/** wrap_loose leftover has no spec id. Do not end the current wait for yesterday’s file. */
+export function shouldClearWaitForImport(input: {
+  waitSpecId?: string;
+  importedSpecId?: string | null;
+}): boolean {
+  const wait = String(input.waitSpecId || '').trim();
+  const imported = String(input.importedSpecId || '').trim();
+  if (!wait || !imported) return false;
+  return imported === wait;
+}
+
 export function autoWaitHeadline(rows: AutoSeatRow[], language = 'ko'): {
   title: string;
   showUnknownRead: boolean;
@@ -796,10 +891,6 @@ export function botSeenSeconds(
   const current = autoSeatRows({ roster }).find((row) => row.current && row.secondsSinceCheckin !== null);
   if (typeof current?.secondsSinceCheckin === 'number') {
     return current.secondsSinceCheckin;
-  }
-  const bot = connectedBot(roster);
-  if (typeof bot?.seconds_since_checkin === 'number' && Number.isFinite(bot.seconds_since_checkin)) {
-    return Math.max(0, Math.floor(bot.seconds_since_checkin));
   }
   const stamp = String(connectedAt || '').trim();
   if (!stamp) return null;

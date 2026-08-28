@@ -29,6 +29,7 @@ const {
   familyIsConnected,
   grokSeatBotId,
   grokSeatLampRows,
+  seatLampRows,
   seatIsConnected,
   seatIsReleased,
   releaseLinkedSeat,
@@ -361,7 +362,21 @@ describe('remote bot links', () => {
       connectedAt: '2026-08-27T06:00:00.000Z',
     });
     assert.equal(hasConnectedBot(undefined, next), true);
-    assert.equal(hasConnectedBot({ bots: [{ display_name: 'Cursor', presence: 'active' }] }, empty), true);
+    assert.equal(hasConnectedBot({ bots: [{ display_name: 'Cursor', presence: 'active' }] }, empty), false);
+    assert.deepEqual(seatLampRows({
+      bots: [{ bot_id: 'desk-bot', display_name: 'Cursor', presence: 'active' }],
+    }, empty).map((row) => row.connected), [false, false, false]);
+    const agent = confirmRemoteReplies(
+      { pairCode: 'QDWAVN', bots: [] },
+      'GROK_CREW_OK QDWAVN Agent 기획자',
+      'ko',
+    ).next;
+    assert.equal(hasConnectedBot(undefined, agent), true);
+    assert.deepEqual(seatLampRows(undefined, agent), [
+      { role: 'planner', connected: true, family: 'custom' },
+      { role: 'scraper', connected: false, family: 'none' },
+      { role: 'editor', connected: false, family: 'none' },
+    ]);
   });
 
   it('prefers the connected row for a kind', () => {

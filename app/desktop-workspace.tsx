@@ -21,8 +21,8 @@ import {
   connectedRemoteNames,
   ensureBotLinks,
   forgetBotLinksOnQuit,
-  grokSeatLampRows,
   hasConnectedBot,
+  seatLampRows,
   lostConnectedSeats,
   seatConnectSnapshot,
   shouldKeepConnectOpenAfterReady,
@@ -33,7 +33,13 @@ import {
 } from './desktop-bot-links';
 import { seatName, seatShortLabel, type BotRole } from './bot-skills';
 import { AutoDesk } from './desktop-auto-desk';
-import { autoHeaderDot, writeAutoPrefs } from './desktop-auto-state';
+import {
+  autoHeaderDot,
+  importedEditSpecId,
+  shouldAutoPullInbox,
+  shouldClearWaitForImport,
+  writeAutoPrefs,
+} from './desktop-auto-state';
 import { DesktopVoiceSetup } from './desktop-voice-setup';
 import { DesktopLanguageGate, LANGUAGE_GATE_BODY_CLASS } from './desktop-language-gate';
 import { marketFromLanguage } from './crew-market';
@@ -353,6 +359,7 @@ export default function DesktopWorkspace() {
   const [firstCut, setFirstCut] = useState(false);
   const [deskPulse, setDeskPulse] = useState<{ lastCheckedAt: string; pull: DeskPullStatus }>({ lastCheckedAt: '', pull: 'idle' });
   const deskWaitRef = useRef<DeskWaitState | null>(null);
+  const inboxPendingAtWaitRef = useRef<number | null>(null);
   const seatSnapRef = useRef<ReturnType<typeof seatConnectSnapshot> | null>(null);
   const lostPingedRef = useRef(new Set<string>());
   const [lostSeats, setLostSeats] = useState<Array<{ key: SeatKey; kind: 'grok' | 'custom'; role: BotRole }>>([]);
@@ -516,18 +523,40 @@ export default function DesktopWorkspace() {
   const pullKeyRef = useRef('');
   const pullingRef = useRef(false);
   useEffect(() => {
-    if (studioState !== 'ready' || editorPending < 1 || pullingRef.current) return;
-    const key = `${editorPending}:${editorInbox?.inbox_dir ?? ''}`;
+    if (!deskWait) {
+      inboxPendingAtWaitRef.current = null;
+      return;
+    }
+    if (inboxPendingAtWaitRef.current === null) {
+      inboxPendingAtWaitRef.current = editorPending;
+    }
+  }, [deskWait, editorPending]);
+  useEffect(() => {
+    if (studioState !== 'ready' || pullingRef.current) return;
+    if (!shouldAutoPullInbox({
+      connectOpen: botPanelOpen,
+      wait: deskWait,
+      pending: editorPending,
+      pendingAtWaitStart: inboxPendingAtWaitRef.current,
+    })) return;
+    const key = `${editorPending}:${editorInbox?.inbox_dir ?? ''}:${deskWait?.specId ?? ''}`;
     if (pullKeyRef.current === key) return;
     pullingRef.current = true;
     void api('/api/v2/handoff/pull', { method: 'POST', body: JSON.stringify({ door: 'editor' }) })
       .then(async (result) => {
         pullKeyRef.current = key;
-        const imported = Array.isArray(result.imported) ? result.imported as Array<{ project?: { id?: string }; agent?: string }> : [];
+        const imported = Array.isArray(result.imported) ? result.imported as Array<{ project?: { id?: string }; agent?: string; edit_spec_id?: string }> : [];
         const projectId = imported[0]?.project?.id;
+        const importedSpec = importedEditSpecId(imported);
         await refreshWorkspace(true);
         if (!projectId) {
           if (deskWaitRef.current) setDeskPulse({ lastCheckedAt: new Date().toISOString(), pull: 'none' });
+          return;
+        }
+        if (!shouldClearWaitForImport({
+          waitSpecId: deskWaitRef.current?.specId,
+          importedSpecId: importedSpec,
+        })) {
           return;
         }
         markFirstCutArrived();
@@ -535,10 +564,10 @@ export default function DesktopWorkspace() {
         clearDeskWait();
         deskWaitRef.current = null;
         setDeskWait(null);
+        inboxPendingAtWaitRef.current = null;
         setDeskPulse({ lastCheckedAt: new Date().toISOString(), pull: 'arrived' });
         setSpecDeskOpen(false);
         setAdvancedSpecOpen(false);
-        setBotPanelOpen(false);
         setPeekAuto(true);
         setSelectedProjectId(projectId);
         setActivePanel('auto');
@@ -553,7 +582,7 @@ export default function DesktopWorkspace() {
       .finally(() => {
         pullingRef.current = false;
       });
-  }, [api, editorInbox?.inbox_dir, editorPending, refreshProject, refreshWorkspace, studioState, t]);
+  }, [api, botPanelOpen, deskWait, editorInbox?.inbox_dir, editorPending, refreshProject, refreshWorkspace, studioState, t]);
   useEffect(() => {
     if (!window.grokCrew) return;
     void window.grokCrew.githubStatus().then(setGithub).catch(() => undefined);
@@ -1394,7 +1423,7 @@ export default function DesktopWorkspace() {
       </header>
       {firstOpen ? null : (
         <div className="desktop-seat-follow" role="status" aria-label={t('자리 연결', 'Seat connection', '位子连接', '席の接続')}>
-          {grokSeatLampRows(workspace.crew_roster, botLinks).map((seat) => (
+          {seatLampRows(workspace.crew_roster, botLinks).map((seat) => (
             <button
               key={seat.role}
               type="button"
@@ -1706,6 +1735,7 @@ export default function DesktopWorkspace() {
                 onCopied={(next) => {
                   writeDeskWait(next);
                   deskWaitRef.current = next;
+                  inboxPendingAtWaitRef.current = editorPending;
                   setDeskWait(next);
                   setDeskPulse({ lastCheckedAt: next.copiedAt, pull: 'none' });
                 }}

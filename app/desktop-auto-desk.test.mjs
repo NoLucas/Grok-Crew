@@ -10,8 +10,14 @@ const {
   attachedBotName,
   autoHeaderDot,
   autoJobPayload,
+  alwaysCrewSeats,
   autoSeatRows,
   autoSourceMode,
+  importedEditSpecId,
+  pasteTargetForSeats,
+  preferredSeatFamily,
+  shouldAutoPullInbox,
+  shouldClearWaitForImport,
   autoDeskStage,
   autoMachineState,
   autoPhaseLamps,
@@ -646,7 +652,16 @@ describe('auto desk wait honesty', () => {
   });
 
   it('reads last-seen from check-in seconds or a connect stamp, not from a guessed read', () => {
-    assert.equal(botSeenSeconds({ bots: [{ display_name: 'Grok', presence: 'active', seconds_since_checkin: 95 }] }), 95);
+    assert.equal(botSeenSeconds({
+      bots: [{
+        bot_id: 'grok-planner',
+        display_name: 'Grok Bot 기획자',
+        presence: 'active',
+        last_action: 'plan_started',
+        seconds_since_checkin: 95,
+      }],
+    }), 95);
+    assert.equal(botSeenSeconds({ bots: [{ display_name: 'Cursor', presence: 'active', seconds_since_checkin: 95 }] }), null);
     const now = Date.parse('2026-08-27T03:10:00.000Z');
     assert.equal(botSeenSeconds(undefined, '2026-08-27T03:00:00.000Z', now), 10 * 60);
     assert.equal(botSeenSeconds(undefined), null);
@@ -686,5 +701,105 @@ describe('auto desk wait honesty', () => {
     assert.equal(shouldPingCut({ pull: 'arrived', hidden: true, specId: 'spec-1', lastPingedSpecId: 'spec-1' }), false);
     assert.equal(shouldAskReplaceCut(true), true);
     assert.equal(shouldAskReplaceCut(false), false);
+  });
+});
+
+describe('auto desk seats and inbox guards', () => {
+  it('keeps three job seats when only the planner is attached', () => {
+    const rows = alwaysCrewSeats({
+      roster: {
+        bots: [{
+          bot_id: 'grok-planner',
+          display_name: 'Grok Bot 기획자',
+          presence: 'active',
+          last_action: 'still_here',
+        }],
+      },
+      language: 'ko',
+    });
+    assert.equal(rows.length, 3);
+    assert.deepEqual(rows.map((row) => row.role), ['planner', 'scraper', 'editor']);
+    assert.equal(rows[0].connected, true);
+    assert.equal(rows[1].connected, false);
+    assert.equal(rows[2].connected, false);
+    assert.equal(rows[1].name, 'Grok Bot 스크래핑');
+    assert.equal(autoSeatRows({
+      roster: {
+        bots: [{ bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active' }],
+      },
+    }).length, 1);
+  });
+
+  it('names Agent seats when only Agent is attached', () => {
+    const links = {
+      pairCode: 'QDWAVN',
+      bots: [{
+        id: 'c-planner',
+        name: 'Agent 기획자',
+        kind: 'custom',
+        role: 'planner',
+        place: 'other_pc',
+        status: 'connected',
+        pairCode: 'QDWAVN',
+      }],
+    };
+    assert.equal(preferredSeatFamily(undefined, links), 'custom');
+    const rows = alwaysCrewSeats({ links, language: 'ko' });
+    assert.equal(rows[0].name, 'Agent 기획자');
+    assert.equal(rows[1].name, 'Agent 스크래핑');
+    assert.equal(rows[2].connected, false);
+  });
+
+  it('moves the paste target to the next seat after a ready handoff', () => {
+    const idle = alwaysCrewSeats({
+      roster: {
+        bots: [{ bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'still_here' }],
+      },
+      language: 'ko',
+    });
+    assert.equal(pasteTargetForSeats(idle, 'ko'), 'Grok Bot 기획자');
+    const afterPlan = alwaysCrewSeats({
+      roster: {
+        bots: [
+          { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'plan_ready' },
+          { bot_id: 'grok-scraper', display_name: 'Grok Bot 스크래핑', presence: 'active', last_action: 'still_here' },
+        ],
+      },
+      language: 'ko',
+    });
+    assert.equal(pasteTargetForSeats(afterPlan, 'ko'), 'Grok Bot 스크래핑');
+  });
+
+  it('does not auto-pull leftover inbox files or close a wait for a wrap_loose cut', () => {
+    const wait = { specId: 'spec-today', title: '오늘', copiedAt: '2026-08-28T03:00:00.000Z', pasteTarget: 'Grok Bot 기획자' };
+    assert.equal(shouldAutoPullInbox({
+      connectOpen: true,
+      wait,
+      pending: 2,
+      pendingAtWaitStart: 0,
+    }), false);
+    assert.equal(shouldAutoPullInbox({
+      connectOpen: false,
+      wait: null,
+      pending: 1,
+      pendingAtWaitStart: null,
+    }), false);
+    assert.equal(shouldAutoPullInbox({
+      connectOpen: false,
+      wait,
+      pending: 1,
+      pendingAtWaitStart: 1,
+    }), false);
+    assert.equal(shouldAutoPullInbox({
+      connectOpen: false,
+      wait,
+      pending: 2,
+      pendingAtWaitStart: 1,
+    }), true);
+    assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: '' }), false);
+    assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: 'spec-old' }), false);
+    assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: 'spec-today' }), true);
+    assert.equal(importedEditSpecId([{ project: { id: 'p1' }, edit_spec_id: 'spec-today' }]), 'spec-today');
+    assert.equal(importedEditSpecId([{ project: { id: 'p1' } }]), '');
   });
 });
