@@ -8,7 +8,7 @@
 ## 하는 것
 
 - `/home`에 v1.0.0 안내. with Grok Bot, 내장 스킬, 지금은 무료
-- 처음 방문은 영어 안내의 언어 선택. 네 언어: English / 한국어 / 中文 / 日本語. 브라우저 언어로 건너뛰지 않는다. 선택은 `?lang=` 과 localStorage `grok-crew-home-lang`에 남고, 헤더에서 다시 바꿀 수 있다
+- 처음 방문은 설명 문장 없이 마크와 고유어 이름만 둔다. 네 언어: English / 한국어 / 中文 / 日本語. 브라우저 언어로 건너뛰지 않는다. 선택은 `?lang=` 과 localStorage `grok-crew-home-lang`에 남고, 헤더에서 다시 바꿀 수 있다
 - Windows 파일은 GitHub Release에서 이메일 없이 받는다
 - 소식 이메일은 선택. `POST /api/get`
 - 라이브 페이지에 `public/connect-install.js`를 꽂으면 문구와 받기 칸이 맞춰진다
