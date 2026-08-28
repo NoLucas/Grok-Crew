@@ -4,7 +4,7 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
-Country skills, a first-open language gate, and TTS download in the top-left gear. Installer-side TTS pick (custom NSIS, not one-click) is still Codex packaging. No 1.0.6 Windows tag yet.
+Country skills, a first-open language gate, installer TTS pick, and a crew board that shows real handoff lines. No 1.0.6 Windows tag yet.
 
 ### Desk
 
@@ -12,6 +12,8 @@ Country skills, a first-open language gate, and TTS download in the top-left gea
 - Auto has **보낼 나라**, separate from **올릴 곳** (Reel / TikTok / Shorts). Changing it requires copying the connect text again.
 - First open asks for English / 한국어 / 中文 / 日本語 the same way as the homepage gate. Browser language does not skip it. If the installer already left a voice model, the TTS wizard stays closed.
 - Later TTS download lives in the top-left gear. Auto only turns TTS on or off.
+- The Windows installer is no longer one-click. It asks which TTS to keep, downloads that one model into `Videos\Grok Crew\voice-models`, then copies the app. Opening the exe does not start a download. The same files already on disk are skipped. A failed download stops the install. Next with no pick is Kokoro-82M.
+- Auto wait (and the arrived cut) shows a **크루 보드**: planner → scraper → editor, then the lines they left each other. It reads `GET /api/bot-activity` and `detail.note` only. It does not invent “봇이 읽었다” or a chat. Grok connect text asks for that one-line `detail.note` on `*_ready`.
 
 ## 1.0.5 - 2026-08-28
 

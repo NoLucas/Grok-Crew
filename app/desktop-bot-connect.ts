@@ -4,6 +4,7 @@ export type CrewBot = {
   presence?: string;
   seconds_since_checkin?: number;
   last_action?: string;
+  last_detail_json?: Record<string, unknown> | string;
 };
 
 export type CrewRoster = {

@@ -8087,6 +8087,146 @@ select {
   font-size: 12px;
   line-height: 1.45;
 }
+.desktop-crew-board {
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--desktop-line);
+  border-radius: 12px;
+  background: var(--desktop-panel);
+}
+.desktop-crew-board-lead b {
+  display: block;
+  font-size: 14px;
+  letter-spacing: -.02em;
+}
+.desktop-crew-board-lead p,
+.desktop-crew-board-empty,
+.desktop-crew-board-empty-card p,
+.desktop-crew-board-error p {
+  margin: 4px 0 0;
+  color: var(--desktop-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.desktop-crew-pipe {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.desktop-crew-pipe li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+.desktop-crew-pipe-arrow {
+  align-self: center;
+  color: var(--desktop-muted);
+  font-size: 14px;
+}
+.desktop-crew-pipe-card {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--desktop-line);
+  border-left: 3px solid var(--desktop-line);
+  border-radius: 10px;
+  background: var(--desktop-panel-2);
+}
+.desktop-crew-pipe li[data-role="planner"] .desktop-crew-pipe-card { border-left-color: var(--desktop-blue); }
+.desktop-crew-pipe li[data-role="scraper"] .desktop-crew-pipe-card { border-left-color: var(--desktop-amber); }
+.desktop-crew-pipe li[data-role="editor"] .desktop-crew-pipe-card { border-left-color: var(--desktop-green); }
+.desktop-crew-pipe li[data-mark="current"] .desktop-crew-pipe-card {
+  background: color-mix(in srgb, var(--desktop-blue) 8%, var(--desktop-panel));
+}
+.desktop-crew-pipe li[data-mark="off"] { opacity: .7; }
+.desktop-crew-pipe-name { font-size: 13px; font-weight: 650; letter-spacing: -.02em; }
+.desktop-crew-pipe-action { color: var(--desktop-muted); font-size: 12px; line-height: 1.4; }
+.desktop-crew-pipe-note,
+.desktop-crew-talk-list q {
+  display: block;
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--desktop-blue) 7%, var(--desktop-panel));
+  color: var(--desktop-ink);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.45;
+  quotes: none;
+}
+.desktop-crew-pipe-card small,
+.desktop-crew-talk-meta time {
+  color: var(--desktop-muted);
+  font-size: 11px;
+}
+.desktop-crew-talk { display: grid; gap: 8px; }
+.desktop-crew-talk > b {
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: var(--desktop-muted);
+}
+.desktop-crew-talk-list {
+  display: grid;
+  gap: 8px;
+  max-height: 22rem;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+.desktop-crew-talk-list li {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--desktop-line-soft);
+  border-radius: 10px;
+  background: var(--desktop-wash);
+}
+.desktop-crew-talk-list li[data-kind="presence"] {
+  padding: 6px 10px;
+  background: transparent;
+  border-style: dashed;
+  opacity: .86;
+}
+.desktop-crew-talk-list li[data-role="planner"] { border-left: 3px solid var(--desktop-blue); }
+.desktop-crew-talk-list li[data-role="scraper"] { border-left: 3px solid var(--desktop-amber); }
+.desktop-crew-talk-list li[data-role="editor"] { border-left: 3px solid var(--desktop-green); }
+.desktop-crew-talk-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+.desktop-crew-talk-who { font-size: 13px; font-weight: 650; letter-spacing: -.02em; }
+.desktop-crew-talk-action { margin: 0; color: var(--desktop-muted); font-size: 12px; }
+.desktop-crew-board-empty-card,
+.desktop-crew-board-error {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--desktop-line);
+}
+.desktop-crew-board-error {
+  border-style: solid;
+  border-color: #f0c2be;
+  background: #fff5f4;
+}
+.desktop-shell[data-theme="dark"] .desktop-crew-board-error,
+.desktop-shell[data-theme="low-dark"] .desktop-crew-board-error {
+  background: color-mix(in srgb, var(--desktop-red) 16%, var(--desktop-panel));
+  border-color: color-mix(in srgb, var(--desktop-red) 42%, var(--desktop-line));
+}
+@media (max-width: 720px) {
+  .desktop-crew-pipe { grid-template-columns: 1fr; }
+  .desktop-crew-pipe li { grid-template-columns: 18px minmax(0, 1fr); }
+}
 .desk-lost-alert {
   display: flex;
   align-items: flex-start;

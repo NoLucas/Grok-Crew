@@ -90,7 +90,7 @@
 
 할 일:
 
-- [x] electron-builder `nsis`를 계정 설치로 둔다. `perMachine: false`. 기본은 비밀번호를 올리지 않는다. 기본 경로는 마법사 페이지가 없다(`oneClick` 또는 받아서 바로 실행). (SIMPLE_PATH F)
+- [x] electron-builder `nsis`를 계정 설치로 둔다. `perMachine: false`. 기본은 비밀번호를 올리지 않는다. TTS를 고르기 위해 `oneClick`은 끈다. 폴더 고르기는 없다. (SIMPLE_PATH F)
 - [x] 산출물 파일명을 `GrokCrew-Windows.exe`로 고정하는 설정을 넣는다.
 - [ ] 설치 경로 기본은 사용자 폴더다. Program Files가 기본이 아니다.
 - [ ] `npm run desktop:dist`가 이 exe를 `release/`에 남기는지 확인한다.

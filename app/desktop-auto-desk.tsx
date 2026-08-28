@@ -16,7 +16,6 @@ import {
   autoPhaseLamps,
   autoWaitHeadline,
   autoWorkingNote,
-  recentActivityLines,
   type AutoOptionPane,
   type BotActivityItem,
   canStartAuto,
@@ -36,6 +35,8 @@ import {
   type AutoMode,
   type AutoPhaseId,
 } from './desktop-auto-state';
+import { DesktopCrewBoard } from './desktop-crew-board';
+import type { CrewLoadState } from './desktop-crew-log';
 import { withCrewInvite } from './bot-skills';
 import { CREW_MARKETS, marketFromLanguage, marketLabel, resolveCrewMarket, type CrewMarket } from './crew-market';
 import { DesktopInstallHelp } from './desktop-install-help';
@@ -183,6 +184,7 @@ export function AutoDesk({
   const [replaceAsk, setReplaceAsk] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [activity, setActivity] = useState<BotActivityItem[]>([]);
+  const [activityState, setActivityState] = useState<CrewLoadState>('loading');
   const pingedSpecRef = useRef('');
   const pendingCutRef = useRef<File | null>(null);
   const cutInputRef = useRef<HTMLInputElement>(null);
@@ -250,7 +252,6 @@ export function AutoDesk({
     lastCheckedLabel: formatCheckTime(lastCheckedAt, language),
   });
   const waitHeadline = autoWaitHeadline(seatRows, language);
-  const activityLines = recentActivityLines(activity, language, 3);
   const recentTitles = prefs.recentTitles.filter((item) => item !== title.trim());
   const waitingHandOff = mode === 'hand_off' && Boolean(wait) && machine === 'waiting';
   const showCutDrop = mode === 'hand_off' && (Boolean(wait) || machine === 'waiting');
@@ -263,6 +264,7 @@ export function AutoDesk({
   const showComposer = jobStage === 'compose';
   const showWaiting = jobStage === 'waiting';
   const showArrived = jobStage === 'arrived';
+  const showCrewBoard = showWaiting || showArrived;
   const soundLabel = wantTts
     ? t(`만듦 · ${voicePersonaLabel(voicePersona, language)}`, `Made · ${voicePersonaLabel(voicePersona, language)}`, `做了 · ${voicePersonaLabel(voicePersona, language)}`, `作った · ${voicePersonaLabel(voicePersona, language)}`)
     : wantCaptions || wantDubbing
@@ -280,23 +282,26 @@ export function AutoDesk({
   }, [waitingHandOff]);
 
   useEffect(() => {
-    if (!showWaiting) return undefined;
+    if (!showCrewBoard) return undefined;
     let cancelled = false;
     const load = async () => {
       try {
         const data = await request('/api/bot-activity') as { activity?: BotActivityItem[] };
-        if (!cancelled) setActivity(Array.isArray(data.activity) ? data.activity : []);
+        if (cancelled) return;
+        setActivity(Array.isArray(data.activity) ? data.activity : []);
+        setActivityState('ready');
       } catch {
-        if (!cancelled) setActivity([]);
+        if (cancelled) return;
+        setActivityState('error');
       }
     };
     void load();
-    const timer = window.setInterval(() => void load(), 30000);
+    const timer = window.setInterval(() => void load(), 8000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [request, showWaiting]);
+  }, [request, showCrewBoard]);
 
   useEffect(() => {
     if (!shouldPingCut({
@@ -1108,16 +1113,19 @@ export function AutoDesk({
               ) : null}
             </section>
           ) : null}
-          {activityLines.length ? (
-            <details className="desktop-auto-help desktop-auto-activity">
-              <summary>{t('최근 확인 세 줄', 'Last three check-ins', '最近三次确认', '最近の確認三行')}</summary>
-              <ol>
-                {activityLines.map((line) => (
-                  <li key={line.id}>{`${line.name} · ${line.text}${line.when ? ` · ${line.when}` : ''}`}</li>
-                ))}
-              </ol>
-            </details>
-          ) : null}
+          <DesktopCrewBoard
+            rows={seatRows}
+            activity={activity}
+            loadState={activityState}
+            onRetry={() => {
+              setActivityState('loading');
+              void request('/api/bot-activity').then((data) => {
+                const payload = data as { activity?: BotActivityItem[] };
+                setActivity(Array.isArray(payload.activity) ? payload.activity : []);
+                setActivityState('ready');
+              }).catch(() => setActivityState('error'));
+            }}
+          />
           <ol className="desktop-auto-stepper">
             {phases.map((phase) => (
               <li key={phase.id} className={`desktop-auto-stepper-item is-${lamps[phase.id]}`}>
@@ -1199,6 +1207,19 @@ export function AutoDesk({
           ) : (
             <p>{t('컷이 열렸습니다. 미리보기를 아직 읽지 못했습니다.', 'The cut is open. The preview has not loaded yet.', '成片已打开。预览还没读到。', 'カットは開いています。プレビューはまだ読めません。')}</p>
           )}
+          <DesktopCrewBoard
+            rows={seatRows}
+            activity={activity}
+            loadState={activityState}
+            onRetry={() => {
+              setActivityState('loading');
+              void request('/api/bot-activity').then((data) => {
+                const payload = data as { activity?: BotActivityItem[] };
+                setActivity(Array.isArray(payload.activity) ? payload.activity : []);
+                setActivityState('ready');
+              }).catch(() => setActivityState('error'));
+            }}
+          />
           <div className="desktop-auto-preview-actions">
             <button type="button" className="desktop-primary" disabled={busy || savingFile || !hasProject} onClick={() => void saveLocal()}>
               {savingFile

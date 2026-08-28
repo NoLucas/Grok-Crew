@@ -397,6 +397,14 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
   const py = `python grok-crew.py entry --server ${origin} --bot-id ${id} --display-name "${who}" --purpose ${purpose}`;
   const beat = `Invoke-RestMethod -Uri ${origin}/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","action":"still_here"}'`;
   const work = heartbeatWorkPair(role);
+  const noteHint = lang === 'zh'
+    ? '留给下一位子的一行'
+    : lang === 'ja'
+      ? '次の席に残した一行'
+      : lang === 'en'
+        ? 'one line left for the next seat'
+        : '다음 자리에 남긴 한 줄';
+  const readyBeat = `Invoke-RestMethod -Uri ${origin}/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","action":"${work.ready}","detail":{"note":"${noteHint}"}}'`;
   if (lang === 'ko') {
     return [
       '명령을 실행할 컴퓨터는 운영자가 등록한 Windows Computer만입니다. 이름을 지어내지 마세요.',
@@ -409,7 +417,8 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       `(스크립트는 그 Windows에서 ${origin}/downloads/grok-crew.py)`,
       '1분마다 같은 Windows에서 still_here heartbeat를 남기세요. 창이 켜져 있는지 이 책상이 알게 합니다.',
       beat,
-      `할 일이 바뀌면 같은 주소에 heartbeat를 바로 보냅니다. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 채팅에는 토큰을 넣지 마세요.`,
+      `할 일이 바뀌면 같은 주소에 heartbeat를 바로 보냅니다. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 끝나면 detail.note에 다음 자리에 남긴 말을 한 줄만 넣습니다. 없는 말은 만들지 마세요. 채팅에는 토큰을 넣지 마세요.`,
+      readyBeat,
       `${port}가 안 열리면 멈추고 "${port}가 없다"고 하세요. 디스크에서 스크립트를 찾지 마세요.`,
       '그래도 안 되면 GROK_CREW_OK 한 줄만 보내고 멈추세요.',
     ];
@@ -426,7 +435,8 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       `(脚本在那台 Windows 上：${origin}/downloads/grok-crew.py)`,
       '每 1 分钟在同一台 Windows 上留下 still_here heartbeat，好让这张书桌知道窗口还开着。',
       beat,
-      `事情一变就立刻往同一地址发 heartbeat。action 先用 ${work.start}，做完改成 ${work.ready}。不要把令牌写进聊天。`,
+      `事情一变就立刻往同一地址发 heartbeat。action 先用 ${work.start}，做完改成 ${work.ready}。做完时只在 detail.note 写留给下一位子的一行。不要编造没有的话。不要把令牌写进聊天。`,
+      readyBeat,
       `若 ${port} 没开，停下来只写“没有 ${port}”。不要在磁盘上找脚本。`,
       '还不行就只发 GROK_CREW_OK 那一行然后停下。',
     ];
@@ -443,7 +453,8 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       `(スクリプトはその Windows で ${origin}/downloads/grok-crew.py)`,
       '1 分ごとに同じ Windows で still_here heartbeat を残してください。窓が開いていることをこのデスクが分かります。',
       beat,
-      `仕事が変わったら同じ住所にすぐ heartbeat を送ります。action は ${work.start} で始め、終わったら ${work.ready} です。トークンをチャットに書かないでください。`,
+      `仕事が変わったら同じ住所にすぐ heartbeat を送ります。action は ${work.start} で始め、終わったら ${work.ready} です。終わったら detail.note に次の席へ残した一行だけ。ない言葉は作らないでください。トークンをチャットに書かないでください。`,
+      readyBeat,
       `${port} が開いていなければ止まって「${port} がない」と書いてください。ディスクでスクリプトを探さないでください。`,
       'それでもだめなら GROK_CREW_OK の一行だけ送って止まってください。',
     ];
@@ -459,7 +470,8 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     `(script on that Windows: ${origin}/downloads/grok-crew.py)`,
     'Leave a still_here heartbeat on the same Windows every minute so this desk knows the window is open.',
     beat,
-    `When the job changes, send a heartbeat to the same address at once. Start with action ${work.start}, then ${work.ready} when done. Do not put the token in chat.`,
+    `When the job changes, send a heartbeat to the same address at once. Start with action ${work.start}, then ${work.ready} when done. On ${work.ready}, put only one line in detail.note for the next seat. Do not invent a line. Do not put the token in chat.`,
+    readyBeat,
     `If ${port} is not open, stop and say ${port} is missing. Do not search the disk for the script.`,
     'If that still fails, send only the GROK_CREW_OK line and stop.',
   ];

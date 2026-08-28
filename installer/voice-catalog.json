@@ -1,0 +1,36 @@
+{
+  "schema": "grok-crew.voice-model/v1",
+  "default": "kokoro-82m",
+  "workspaceFolder": "Grok Crew",
+  "hfResolve": "https://huggingface.co/{repo}/resolve/main/{name}",
+  "userAgent": "GrokCrew-Desktop/1.0",
+  "models": {
+    "kokoro-82m": {
+      "id": "kokoro-82m",
+      "label": "Kokoro-82M",
+      "repo": "hexgrad/Kokoro-82M",
+      "license": "Apache-2.0",
+      "files": ["config.json"],
+      "weight_files": ["kokoro-v1.0.pth"],
+      "fallbacks": []
+    },
+    "step-audio-editx": {
+      "id": "step-audio-editx",
+      "label": "Step Audio EditX",
+      "repo": "stepfun-ai/Step-Audio-EditX",
+      "license": "Apache-2.0",
+      "files": ["README.md"],
+      "weight_files": [],
+      "fallbacks": ["config.json"]
+    },
+    "zonos-v0.1": {
+      "id": "zonos-v0.1",
+      "label": "Zonos-v0.1",
+      "repo": "Zyphra/Zonos-v0.1-transformer",
+      "license": "Apache-2.0",
+      "files": ["config.json"],
+      "weight_files": ["model.safetensors"],
+      "fallbacks": ["README.md"]
+    }
+  }
+}

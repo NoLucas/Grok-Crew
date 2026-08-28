@@ -159,10 +159,10 @@ Linux 개발 기계에서는 최종 exe를 사용자에게 주지 못한다. 설
 
 할 일:
 
-- [x] `package.json` `build.nsis`: `oneClick: true`, `perMachine: false`, 폴더 고르기 없음.
+- [x] `package.json` `build.nsis`: `oneClick: false` (설치 안 TTS 고르기), `perMachine: false`, 폴더 고르기 없음.
 - [x] 공개 파일 이름 `GrokCrew-Windows.exe`.
 - [x] 설치 후 바로 실행. 사이드카 `extraResources`는 유지.
-- [x] 마법사 페이지(다음, 경로, 관리자)가 없어야 한다.
+- [x] TTS를 고른 뒤에만 그 모델 하나와 프로그램 파일을 받습니다. exe를 연 것만으로는 받지 않습니다.
 - [x] README 링크가 이 파일을 가리키게 E판과 맞춘다.
 
 완료: 비밀번호 없이 더블클릭 → 첫 화면. SmartScreen은 서명 전이면 남을 수 있다. 같은 페이지 그림 세 장으로만 설명한다. PDF 다운로드는 아직 만들지 않는다.

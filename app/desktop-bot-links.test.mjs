@@ -74,6 +74,8 @@ describe('remote bot links', () => {
       assert.doesNotMatch(text, /5분마다|每 5 分钟|5 分ごと|every five minutes/);
       assert.match(text, /plan_started/);
       assert.match(text, /plan_ready/);
+      assert.match(text, /detail\.note/);
+      assert.match(text, /없는 말은 만들지 마세요|不要编造没有的话|ない言葉は作らない|Do not invent a line/);
       assert.match(text, /grok-crew-planner/);
       assert.match(text, /grok-crew-edit-plan/);
       if (language === 'en') {

@@ -296,6 +296,7 @@ export type BotActivityItem = {
   bot_id?: string;
   action?: string;
   created_at?: string;
+  detail_json?: Record<string, unknown> | string;
 };
 
 export type AutoActivityLine = {
