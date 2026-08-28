@@ -84,7 +84,7 @@ export function installQuitGuard(app, { dialog: dialogApi, getWindow, disconnect
     finishing = true;
     await disconnect?.();
     confirmed = true;
-    onConfirmed?.();
+    await onConfirmed?.();
   };
 
   const markConfirmed = () => {
@@ -101,7 +101,7 @@ export function installQuitGuard(app, { dialog: dialogApi, getWindow, disconnect
 
   app.on('before-quit', (event) => {
     if (confirmed) {
-      onConfirmed?.();
+      void onConfirmed?.();
       return;
     }
     event.preventDefault();

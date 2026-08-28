@@ -4,6 +4,10 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+### Desk
+
+- Quit now kills the Windows sidecar tree (`grok-crew-studio.exe` and its PyInstaller child). `process.kill()` left that process in Task Manager after 종료.
+
 ## 1.0.6 - 2026-08-28
 
 Local 1.0.6. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.6` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.6.md`. Guest download stays the same Google Drive file. Already-installed 1.0.5 desks check Grok-crew-test for this tag.

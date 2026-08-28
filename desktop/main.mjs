@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { isRendererNavigationAllowed, studioRequestUrl } from './ipc-guard.mjs';
 import { RelayService } from './relay-service.mjs';
 import { DEFAULT_STUDIO_PORT, reserveLoopbackPort } from './studio-port.mjs';
+import { STUDIO_IMAGE_WIN, stopNamedWindowsProcess, stopProcessTree } from './process-tree.mjs';
 import { createDesktopTray, installCloseToTray, installQuitGuard } from './tray-controller.mjs';
 import { fetchLatestRelease, parseReleasePageUrl, resolveUpdateRepo, updatePolicy } from './update-service.mjs';
 
@@ -44,8 +45,22 @@ async function disconnectBotsForQuit() {
 function stopBackgroundServices() {
   quitting = true;
   app.isQuitting = true;
-  if (studioProcess && !studioProcess.killed) studioProcess.kill();
-  if (rendererServer) rendererServer.close();
+  if (tray && !tray.isDestroyed()) {
+    try { tray.destroy(); } catch { /* already gone */ }
+    tray = null;
+  }
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.removeAllListeners('close');
+    mainWindow.destroy();
+    mainWindow = null;
+  }
+  stopProcessTree(studioProcess);
+  studioProcess = null;
+  stopNamedWindowsProcess(STUDIO_IMAGE_WIN);
+  if (rendererServer) {
+    try { rendererServer.close(); } catch { /* already closed */ }
+    rendererServer = null;
+  }
 }
 
 const quitGuard = installQuitGuard(app, {
