@@ -195,7 +195,7 @@ GrokCrew-봇에게주기/
 
 할 일:
 
-- [ ] PDF를 나중에 만들 때만 원본 페이지를 둔다. 지금은 `/home`과 README가 안내다. 스크린샷은 실제 창이다.
+- [ ] PDF를 나중에 만들 때만 원본 페이지를 둔다. 지금은 README와 GitHub Release가 안내다. 스크린샷은 실제 창이다.
 - [ ] PDF를 `release/GrokCrew-설치설명서.pdf`로 보낸다. 앱에 PDF 엔진을 넣지 않는다.
 - [ ] 사이트 “설치가 막히면”이 이 PDF를 연다.
 - [ ] PDF에 `git`, 포트, purpose, Runner, Instagram을 넣지 않는다.

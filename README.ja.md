@@ -4,13 +4,13 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — このPCの映像デスク" width="100%" />
 </p>
 
-**v1.0.0** · with Grok Bot · いま無料
+**v1.0.1** · with Grok Bot · いま無料
 
 Shorts を一人で切って夜を明かす必要はありません。
 使っている **Grok Bot** や Agent を付ければ、できたファイルは **このPCのフォルダ** に残ります。
 アカウントなし。カードなし。カットごとのクレジットなし。受け取って開きます。
 
-[Windows を入手](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0) · [한국어](README.ko.md) · [English](README.md) · [中文](README.zh.md)
+[Windows を入手](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.1) · [한국어](README.ko.md) · [English](README.md) · [中文](README.zh.md)
 
 ---
 
@@ -50,6 +50,14 @@ Shorts を一人で切って夜を明かす必要はありません。
 
 ---
 
+## v1.0.1 で変わったこと
+
+- 初めて開くと、このPCに入れる TTS を選びます。選ばなければ Kokoro-82M です。インストーラはワンクリックのままです。
+- 接続ランプは **接続済み**（緑）と **未接続**（灰）だけです。付ける文をコピーしただけでは緑になりません。
+- 終了する前に警告します。確認すると Grok Bot と Agent の接続が切れます。窓だけ閉じるとトレイに隠れ、接続は残ります。
+
+一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.1 リリースノート](docs/RELEASE_NOTES.v1.0.1.md) です。
+
 ## v1.0.0 で変わったこと
 
 以前の Grok-Crew（0.2.1）はブラウザの作業台に近いものでした。いまの 1.0.0 は **このPCの窓** です。
@@ -57,11 +65,11 @@ Shorts を一人で切って夜を明かす必要はありません。
 - 接続・自動・設定・編集・書き出しが同じ書き方です。やること一つ、ほかはチップ。
 - **Grok Bot** と **Agent** を企画・収集・編集で付けます。内蔵スキルが一緒に行きます。
 - 付ける文をコピーするだけです。返事をこの窓に貼り直しません。ボットに `127.0.0.1` を見せません。
-- 字幕・吹き替え・TTS は入れたときだけ動きます。最初は全部オフです。
+- 字幕・吹き替え・TTS は入れたときだけ動きます。最初は全部オフです。初回に声の選択で止まりません。
 - できたファイルはこのPCに残ります。GitHub の受信箱はなくても動きます。
 - ペアコードは暗号用の乱数です。GitHub トークンの失敗でトークンを書き戻しません。
 
-一覧は [CHANGELOG.md](CHANGELOG.md) と [リリースノート](docs/RELEASE_NOTES.v1.0.md) です。
+1.0.0 の一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.0 リリースノート](docs/RELEASE_NOTES.v1.0.md) です。
 
 ---
 

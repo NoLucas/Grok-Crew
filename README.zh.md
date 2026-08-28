@@ -4,13 +4,13 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.0** · with Grok Bot · 现在免费
+**v1.0.1** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
 没有账号，没有银行卡，没有按条计费。下载后打开即可。
 
-[下载 Windows](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0) · [한국어](README.ko.md) · [English](README.md) · [日本語](README.ja.md)
+[下载 Windows](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.1) · [한국어](README.ko.md) · [English](README.md) · [日本語](README.ja.md)
 
 ---
 
@@ -50,6 +50,14 @@
 
 ---
 
+## v1.0.1 改了什么
+
+- 第一次打开会问这台电脑要装哪个 TTS。不选就用 Kokoro-82M。安装仍是一键。
+- 连接灯只有 **已连接**（绿）和 **未连接**（灰）。只复制接上用的文字不会变绿。
+- 退出先警告。确认后断开 Grok Bot 和 Agent。只关窗口会藏到托盘，连接还在。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.1 发布说明](docs/RELEASE_NOTES.v1.0.1.md)。
+
 ## v1.0.0 改了什么
 
 以前的 Grok-Crew（0.2.1）更像浏览器工作台。现在的 1.0.0 是 **这台电脑上的窗口**。
@@ -57,11 +65,11 @@
 - 连接、自动、设置、编辑、导出同一套写法：一件事，其余是芯片。
 - **Grok Bot** 和 **Agent** 按策划、抓取、剪辑接上。内置技能一起走。
 - 只复制接上用的文字。不用把回复再贴回这个窗口。不把 `127.0.0.1` 给机器人看。
-- 字幕、配音、TTS 默认全关，打开才跑。
+- 字幕、配音、TTS 默认全关，打开才跑。第一次打开不挡在选声页面。
 - 成品留在这台电脑。GitHub 收件箱可有可无。
 - 配对码用密码学随机数。GitHub 令牌出错时不再把令牌写回去。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [发布说明](docs/RELEASE_NOTES.v1.0.md)。
+1.0.0 列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.0 发布说明](docs/RELEASE_NOTES.v1.0.md)。
 
 ---
 
