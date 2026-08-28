@@ -149,7 +149,7 @@ export function AutoDesk({
   const [title, setTitle] = useState(wait?.title ?? '');
   const [goal, setGoal] = useState('');
   const [useOwn, setUseOwn] = useState(false);
-  const [useScrape, setUseScrape] = useState(true);
+  const [useScrape, setUseScrape] = useState(false);
   const [ownedPaths, setOwnedPaths] = useState<string[]>([]);
   const [collectQuery, setCollectQuery] = useState('');
   const [wantCaptions, setWantCaptions] = useState(Boolean(prefs.wantCaptions));
@@ -230,9 +230,9 @@ export function AutoDesk({
     : t('인스타 릴', 'Instagram Reel', 'Instagram Reel', 'Instagram リール');
   const sourceMode = autoSourceMode({ useOwn, useScrape });
   const wayLabel = sourceMode === 'own_and_collect'
-    ? t('내 영상 + 공개 장면', 'My clips + public scenes', '我的影像 + 公开镜头', '自分の映像 + 公開の場面')
-    : sourceMode === 'collect'
-      ? t('공개 장면을 찾아옴', 'Find public scenes', '去找公开镜头', '公開の場面を探す')
+    ? t('내 영상 + 파일 주소', 'My clips + file URLs', '我的影像 + 文件地址', '自分の映像 + ファイル住所')
+      : sourceMode === 'collect'
+      ? t('공개 파일 주소', 'Public file URLs', '公开文件地址', '公開ファイルの住所')
       : sourceMode === 'own'
         ? t('내가 넣은 영상', 'Clips I put in', '我放进的影像', '自分が入れた映像')
         : t('화면 아직 없음', 'No pictures yet', '还没有画面', '画面はまだない');
@@ -353,10 +353,10 @@ export function AutoDesk({
         ? t('만들고 싶은 영상을 적어 주세요. 주소여도 됩니다.', 'Write the video you want. A URL is fine.', '请写下想做的视频。网址也可以。', '作りたい映像を書いてください。URL でもよいです。')
         : check.reason === 'materials'
           ? !useOwn && !useScrape
-            ? t('내 영상·사진을 넣을지, 공개 장면을 찾아올지 고르세요.', 'Choose your files, public scenes, or both.', '请选择放自己的影像，或找公开镜头，或两者。', '自分の映像を入れるか、公開の場面を探すか、両方を選んでください。')
+            ? t('내 파일을 넣거나, 받을 공개 파일 주소를 적으세요. 검색어는 안 됩니다.', 'Add your files, or write the public file URLs to fetch. Not a search phrase.', '放入自己的文件，或写下要收的公开文件地址。不要写搜索词。', '自分のファイルを入れるか、受け取る公開ファイルの住所を書く。検索語はだめです。')
             : useOwn && !ownedPaths.length
               ? t('영상이나 사진을 넣으세요.', 'Put in a video or an image.', '请放入视频或图片。', '映像か写真を入れてください。')
-              : t('어떤 장면을 찾아올지 적어 주세요. 그걸 알아야 자를 수 있습니다.', 'Write which scenes to find. The cut needs that list.', '请写下要找的镜头。剪辑需要这份清单。', 'どの場面を探すか書いてください。それが分からないと切れません。')
+              : t('한 줄에 공개 파일 주소 하나만 적으세요. http로 시작하는 직접 주소여야 합니다.', 'Write one public file URL per line. It must be a direct http address.', '每行只写一个公开文件地址。必须是以 http 开头的直接地址。', '一行に公開ファイルの住所一つ。http で始まる直接の住所にしてください。')
         : t('먼저 연결하세요.', 'Connect first.', '请先连接。', '先に接続してください。'));
       return;
     }
@@ -838,7 +838,7 @@ export function AutoDesk({
                 <fieldset className="desktop-auto-option-pane">
                   <legend>{t('화면 넣기', 'Add pictures', '放入画面', '画面を入れる')}</legend>
                   <p className="desktop-spec-meta">
-                    {t('내 파일을 넣거나, 찾고 싶은 장면을 적으세요. 둘 다 해도 됩니다.', 'Add your files, or write the scenes to find. You can do both.', '放自己的文件，或写下要找的镜头。也可以两个都做。', '自分のファイルを入れるか、探したい場面を書く。両方でもよい。')}
+                    {t('내 파일이 있으면 그걸 먼저 씁니다. 더 받을 때만 공개 파일 주소를 적으세요. 검색어는 안 됩니다.', 'Your files come first. Write public file URLs only when you need more. Not a search phrase.', '有自己的文件就先用。只有还要收时才写公开文件地址。不要写搜索词。', '自分のファイルがあればそれを先に使う。さらに取るときだけ公開ファイルの住所を書く。検索語はだめです。')}
                   </p>
                   <div className="desktop-spec-source-grid">
                     <button
@@ -862,8 +862,8 @@ export function AutoDesk({
                         if (error) setError('');
                       }}
                     >
-                      <b>{t('장면 찾아오기', 'Find scenes', '找镜头', '場面を探す')}</b>
-                      <span>{t('찾고 싶은 장면을 적으면, 붙은 봇이 공개된 것만 모읍니다.', 'Write the scenes you want. The attached bot gathers public clips only.', '写下想找的镜头。接上的机器人只收集公开的。', '探したい場面を書く。付けるボットが公開のものだけ集める。')}</span>
+                      <b>{t('공개 파일 주소로 받기', 'Fetch public file URLs', '用公开文件地址收取', '公開ファイルの住所で受け取る')}</b>
+                      <span>{t('한 줄에 직접 받을 주소 하나. 붙은 봇이 curl로 받아 자료함에 둡니다.', 'One direct download URL per line. The attached bot curls it into the materials box.', '每行一个可直接下载的地址。接上的机器人用 curl 收到资料箱。', '一行に直接受け取れる住所一つ。付けるボットが curl で資料箱に置く。')}</span>
                     </button>
                   </div>
                   {useOwn ? (
@@ -914,20 +914,20 @@ export function AutoDesk({
                   ) : null}
                   {useScrape ? (
                     <label className="desktop-spec-field desktop-spec-wide desktop-auto-nested">
-                      <span>{t('찾고 싶은 장면', 'Scenes to find', '要找的镜头', '探したい場面')}</span>
+                      <span>{t('받을 공개 파일 주소', 'Public file URLs to fetch', '要收的公开文件地址', '受け取る公開ファイルの住所')}</span>
                       <textarea
                         value={collectQuery}
                         onChange={(event) => {
                           setCollectQuery(event.target.value);
                           if (error) setError('');
                         }}
-                        placeholder={t('예: 카페 오픈, 손과 간판. 비우면 위에서 적은 말로 찾습니다.', 'Example: cafe open, hands and the sign. Empty uses the words above.', '例如：咖啡馆开业、手和招牌。留空就用上面的话。', '例: カフェ開店、手と看板。空なら上の言葉で探す。')}
-                        rows={2}
-                        aria-invalid={Boolean(error) && !collectQuery.trim()}
+                        placeholder={t('예: https://images-assets.nasa.gov/.../clip.mp4', 'Example: https://images-assets.nasa.gov/.../clip.mp4', '例如：https://images-assets.nasa.gov/.../clip.mp4', '例: https://images-assets.nasa.gov/.../clip.mp4')}
+                        rows={3}
+                        aria-invalid={Boolean(error) && useScrape}
                         disabled={saving}
                       />
                       <small className="desktop-spec-meta">
-                        {t('이 프로그램은 사이트를 긁지 않습니다. 로그인해야 하는 인스타·틱톡은 적지 마세요.', 'This program does not scrape. Do not name login-walled Instagram or TikTok.', '这个程序不抓站。不要写必须登录的 Instagram 或 TikTok。', 'このプログラムは掻きません。ログインが要る Instagram や TikTok は書かない。')}
+                        {t('한 줄에 http 주소 하나. 검색어·로그인 벽 주소는 적지 마세요. 이 프로그램은 사이트를 긁지 않습니다.', 'One http URL per line. No search phrases or login-walled links. This program does not scrape.', '每行一个 http 地址。不要写搜索词或登录墙链接。这个程序不抓站。', '一行に http 住所一つ。検索語やログイン壁のリンクは書かない。このプログラムは掻きません。')}
                       </small>
                     </label>
                   ) : null}

@@ -563,8 +563,13 @@ export function SpecDesk({
               <input value={collectorName} readOnly />
             </label>
             <label className="desktop-spec-field desktop-spec-wide">
-              <span>{t('찾아올 것', 'Find', '要找什么', '探してくるもの')}</span>
-              <input value={draft.collect_query} onChange={(event) => setDraft({ ...draft, collect_query: event.target.value })} placeholder={t('카페 오픈, 손, 간판 클로즈업', 'cafe opening, hands, sign close-up', '咖啡馆开业、手、招牌特写', 'カフェ開店、手、看板のクローズアップ')} />
+              <span>{t('받을 공개 파일 주소', 'Public file URLs to fetch', '要收的公开文件地址', '受け取る公開ファイルの住所')}</span>
+              <textarea
+                value={draft.collect_query}
+                onChange={(event) => setDraft({ ...draft, collect_query: event.target.value })}
+                placeholder={t('한 줄에 http 주소 하나. 검색어는 안 됩니다.', 'One http URL per line. Not a search phrase.', '每行一个 http 地址。不要写搜索词。', '一行に http 住所一つ。検索語はだめです。')}
+                rows={3}
+              />
             </label>
             <div className="desktop-spec-row">
               <label className="desktop-spec-field">

@@ -116,6 +116,23 @@ export function ownedFileName(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
+const DIRECT_FILE_URL = /^https?:\/\/[^\s]+$/i;
+
+export function collectUrlLines(value: string): string[] {
+  return String(value || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => DIRECT_FILE_URL.test(line));
+}
+
+export function collectQueryIsUrlList(value: string): boolean {
+  const lines = String(value || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines.length > 0 && lines.every((line) => DIRECT_FILE_URL.test(line));
+}
+
 export function autoSourceMode(input: { useOwn?: boolean; useScrape?: boolean }): AutoSourceMode | '' {
   if (input.useOwn && input.useScrape) return 'own_and_collect';
   if (input.useOwn) return 'own';
@@ -139,7 +156,9 @@ export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
     upload: false,
     captions: Boolean(input.wantCaptions),
   };
-  if (useScrape) body.collect_query = String(input.collectQuery || '').trim() || prompt;
+  if (useScrape && collectQueryIsUrlList(String(input.collectQuery || ''))) {
+    body.collect_query = collectUrlLines(String(input.collectQuery || '')).join('\n');
+  }
   if (useOwn) body.owned_paths = ownedPaths;
   const persona = input.wantTts
     ? resolveVoicePersona({
@@ -620,11 +639,9 @@ export function canStartAuto(input: {
   const ownedPaths = cleanOwnedPaths(input.ownedPaths);
   const useOwn = Boolean(input.useOwn);
   const useScrape = Boolean(input.useScrape);
-  const prompt = String(input.goal || '').trim();
-  const scrapeList = String(input.collectQuery || '').trim() || prompt;
   if (!useOwn && !useScrape) return { ok: false, reason: 'materials' };
   if (useOwn && !ownedPaths.length) return { ok: false, reason: 'materials' };
-  if (useScrape && !scrapeList) return { ok: false, reason: 'materials' };
+  if (useScrape && !collectQueryIsUrlList(String(input.collectQuery || ''))) return { ok: false, reason: 'materials' };
   return { ok: true };
 }
 

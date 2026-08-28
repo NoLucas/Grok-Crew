@@ -31,8 +31,8 @@ Shorts を一人で切って夜を明かす必要はありません。
 | 席 | 基本スキル | 一緒に付く追加スキル |
 |---|---|---|
 | **Grok Bot / Agent 企画者** | `planner` — 今日の一言をカット計画に | `edit-plan` — 収集と編集が読む短い計画 |
-| **Grok Bot / Agent 収集** | `scraper` — 公開ページだけ選ぶ | `public-pick` — ログイン壁のSNSは書かない |
-| **Grok Bot / Agent 編集者** | `editor` — 計画どおりに切る | `cut-to-plan` — シーン順と国の癖を守る |
+| **Grok Bot / Agent 収集** | `scraper` — 企画が書いた直接ファイル URL だけ受け取る | `public-pick` — curl のあと CopyFromBox で招待フォルダへ。検索しない |
+| **Grok Bot / Agent 編集者** | `editor` — Windows 素材箱だけ切る | `cut-to-plan` — シーン順と国の癖を守る |
 
 原文は [`public/bot-skills/`](public/bot-skills/) にあります。付ける文をコピーすると、その席のスキルも一緒に行きます。このプログラムはサイトを掻きません。
 

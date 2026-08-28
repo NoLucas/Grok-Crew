@@ -31,8 +31,8 @@ On connect, the seat already gets its skill. They do not have to write a planner
 | Seat | Base skill | Extra skill that ships with it |
 |---|---|---|
 | **Grok Bot / Agent planner** | `planner` — turn today’s line into a cut plan | `edit-plan` — a short plan the other two seats can read |
-| **Grok Bot / Agent scraper** | `scraper` — pick public pages only | `public-pick` — do not name login-walled social apps |
-| **Grok Bot / Agent editor** | `editor` — cut to the plan | `cut-to-plan` — keep scene order and the named market’s pace |
+| **Grok Bot / Agent scraper** | `scraper` — fetch only the planner’s direct file URLs | `public-pick` — curl, then CopyFromBox into the invite folder; no search |
+| **Grok Bot / Agent editor** | `editor` — cut only the Windows materials folder | `cut-to-plan` — keep scene order and the named market’s pace |
 
 The source files live in [`public/bot-skills/`](public/bot-skills/). Copying the attach text takes that seat’s skills with it. This program does not scrape.
 

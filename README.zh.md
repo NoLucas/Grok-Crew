@@ -31,8 +31,8 @@
 | 座位 | 基础技能 | 一并带上的额外技能 |
 |---|---|---|
 | **Grok Bot / Agent 策划** | `planner` — 把今天的话写成剪辑计划 | `edit-plan` — 给抓取和剪辑读的短计划 |
-| **Grok Bot / Agent 抓取** | `scraper` — 只挑公开页面 | `public-pick` — 不写登录墙里的社交应用 |
-| **Grok Bot / Agent 剪辑** | `editor` — 按计划剪 | `cut-to-plan` — 守场景顺序和目标市场的节奏 |
+| **Grok Bot / Agent 抓取** | `scraper` — 只收策划写的直接文件地址 | `public-pick` — curl 后再 CopyFromBox 到邀请文件夹，不搜索 |
+| **Grok Bot / Agent 剪辑** | `editor` — 只剪 Windows 素材箱 | `cut-to-plan` — 守场景顺序和目标市场的节奏 |
 
 原文在 [`public/bot-skills/`](public/bot-skills/)。复制接上用的文字时，该座位的技能一起走。这个程序不抓网站。
 

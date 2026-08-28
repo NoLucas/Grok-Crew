@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+import config
 from config import utc_now
 from db import db, row_dict
 from style_recipes import (
@@ -393,7 +394,8 @@ def _collect_hint_block(spec: dict[str, Any], language: str) -> str:
             "로그인 막힌 인스타/틱톡은 긁지 마세요. 이 앱은 스크래퍼가 아닙니다.",
         ]
         if query:
-            lines.insert(0, f"찾아올 것: {query}")
+            lines.insert(0, f"받을 것: {query}")
+            lines.insert(1, "검색어로 페이지를 찾지 마세요. 직접 파일 URL만 curl한 뒤 CopyFromBox로 자료함에 둡니다.")
         if counts:
             extra = f"클립 {counts.get('min')}–{counts.get('max')}장"
             if seconds:
@@ -407,7 +409,8 @@ def _collect_hint_block(spec: dict[str, Any], language: str) -> str:
         "Do not scrape login-walled Instagram or TikTok. This app is not a scraper.",
     ]
     if query:
-        lines.insert(0, f"Find: {query}")
+        lines.insert(0, f"Receive: {query}")
+        lines.insert(1, "Do not search pages by phrase. curl only direct file URLs, then CopyFromBox into the materials folder.")
     if counts:
         extra = f"Clips: {counts.get('min')}–{counts.get('max')}"
         if seconds:
@@ -816,6 +819,29 @@ def _invite_length(spec: dict[str, Any], language: str) -> str:
     return f"{low}–{high}초" if language.startswith("ko") else f"{low}–{high}s"
 
 
+def _materials_abs_dir(spec_id: str) -> str:
+    return str((config.WORKSPACE_DIR / "handoff-materials" / spec_id).resolve())
+
+
+def _invite_materials_block(spec_id: str, language: str) -> str:
+    path = _materials_abs_dir(spec_id)
+    if language.startswith("ko"):
+        return (
+            f"자료함 절대 경로 (이 일):\n"
+            f"  {path}\n"
+            "경로가 없으면 missing: dest_path. 상자에서 127.0.0.1을 이 폴더로 열지 마세요.\n"
+            "기획자는 이 경로와 URL 목록을 SendToAgent로 수집에게 넘깁니다.\n"
+            "수집은 각 URL을 curl로 받은 뒤 CopyFromBox로 여기 둡니다. 편집자는 이 폴더만 자릅니다. 수집 스킬은 없습니다.\n"
+        )
+    return (
+        f"Materials absolute path (this job):\n"
+        f"  {path}\n"
+        "If this path is missing, write missing: dest_path. Do not open 127.0.0.1 from the box as this folder.\n"
+        "Planner: SendToAgent the collector this path plus the URL list.\n"
+        "Collector: curl each URL, then CopyFromBox here. Editor: cut only this folder. No collect skill.\n"
+    )
+
+
 def _invite_find_block(spec: dict[str, Any], language: str) -> str:
     query = _invite_find_query(spec)
     mode = source_mode_of(spec)
@@ -824,32 +850,32 @@ def _invite_find_block(spec: dict[str, Any], language: str) -> str:
             return "운영자가 넣은 영상·사진으로 첫 컷을 만듭니다. 새로 찾지 마세요.\n"
         if query:
             owned = (
-                "운영자가 넣은 파일은 남기고, 아래에 적은 것만 더 찾습니다.\n"
+                "운영자가 넣은 파일은 남기고, 아래에 적은 직접 파일 URL만 더 받습니다.\n"
                 if mode == "own_and_collect"
                 else ""
             )
             return (
-                f"자료: 운영자가 적은 것만 스크랩 봇이 공개로 모읍니다.\n"
-                f"찾아올 것: {query}\n"
+                f"자료: 스크랩 봇이 받을 것은 아래에 적은 직접 파일 URL만입니다. 검색어는 missing입니다.\n"
+                f"받을 것: {query}\n"
                 f"{owned}"
                 "이 앱은 스크래퍼가 아닙니다. 로그인 막힌 인스타/틱톡은 긁지 마세요.\n"
-                "모은 자료는 자료함에 두고, 그걸로 첫 컷을 만듭니다.\n"
+                "각 URL을 curl로 받은 뒤 CopyFromBox로 아래 자료함 절대 경로에 둡니다. 127.0.0.1을 그 폴더로 열지 마세요.\n"
             )
         return "원본과 첫 컷을 당신이 만듭니다. 운영자는 영상을 주지 않습니다.\n"
     if mode == "own":
         return "Cut the videos or images the operator put in. Do not hunt a new source.\n"
     if query:
         owned = (
-            "Keep the operator files. Fetch only what is named below.\n"
+            "Keep the operator files. Fetch only the direct file URLs named below.\n"
             if mode == "own_and_collect"
             else ""
         )
         return (
-            f"Materials: the scrape bot gathers only the public clips the operator named.\n"
-            f"Find: {query}\n"
+            f"Materials: the scrape bot fetches only the direct file URLs named below. A search phrase is missing.\n"
+            f"Receive: {query}\n"
             f"{owned}"
             "This app is not a scraper. Do not scrape login-walled Instagram or TikTok.\n"
-            "Put gathered clips in the materials box, then make the first cut from those.\n"
+            "curl each URL, then CopyFromBox into the materials absolute path below. Do not open 127.0.0.1 as that folder.\n"
         )
     return "You make the source and the first cut. The operator will not attach footage.\n"
 
@@ -870,6 +896,7 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
     lang = (language or "ko").strip().lower()
     goal = str(spec.get("goal") or title).strip()
     find_text = _invite_find_block(spec, lang)
+    materials_text = _invite_materials_block(record["id"], lang)
     ratio = _invite_ratio(spec, lang)
     length = _invite_length(spec, lang)
     if lang.startswith("ko"):
@@ -879,6 +906,7 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
             f"목표: {goal}\n"
             f"형태: {recipe_name}, {ratio}, {length}.\n"
             f"{find_text}\n"
+            f"{materials_text}\n"
             f"같은 컴퓨터에서 명령할 수 있으면:\n"
             f"  python grok-crew.py entry --bot-id desk-bot --display-name \"당신의 이름\" --purpose edit_video\n"
             f"  (스크립트는 http://127.0.0.1:7214/downloads/grok-crew.py)\n\n"
@@ -894,6 +922,7 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
             f"Goal: {goal}\n"
             f"Shape: {recipe_name}, {ratio}, {length}.\n"
             f"{find_text}\n"
+            f"{materials_text}\n"
             f"If you can run a command on this computer:\n"
             f"  python grok-crew.py entry --bot-id desk-bot --display-name \"your name\" --purpose edit_video\n"
             f"  (script: http://127.0.0.1:7214/downloads/grok-crew.py)\n\n"

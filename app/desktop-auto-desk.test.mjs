@@ -22,6 +22,8 @@ const {
   recentActivityLines,
   recipeFallbackLabel,
   canStartAuto,
+  collectQueryIsUrlList,
+  collectUrlLines,
   formatElapsed,
   formatSince,
   readAutoPrefs,
@@ -67,6 +69,12 @@ describe('auto desk start rules', () => {
       attached: true,
       useScrape: true,
       collectQuery: '카페 오픈 손·간판',
+    }), { ok: false, reason: 'materials' });
+    assert.deepEqual(canStartAuto({
+      title: '15초 훅 릴',
+      attached: true,
+      useScrape: true,
+      collectQuery: 'https://example.com/open.mp4',
     }), { ok: true });
     assert.deepEqual(canStartAuto({
       title: '15초 훅 릴',
@@ -80,7 +88,13 @@ describe('auto desk start rules', () => {
       goal: 'https://example.com/open',
       attached: true,
       useScrape: true,
-    }), { ok: true });
+    }), { ok: false, reason: 'materials' });
+    assert.equal(collectQueryIsUrlList('카페 오픈 손·간판'), false);
+    assert.equal(collectQueryIsUrlList('https://example.com/a.mp4\nhttps://example.com/b.jpg'), true);
+    assert.deepEqual(collectUrlLines('  https://example.com/a.mp4  \n손과 간판\nhttps://example.com/b.jpg'), [
+      'https://example.com/a.mp4',
+      'https://example.com/b.jpg',
+    ]);
   });
 });
 
@@ -93,7 +107,7 @@ describe('auto desk job payload', () => {
       recipeId: 'tiktok_tight',
       language: 'ko',
       useScrape: true,
-      collectQuery: '  카페 오픈 공개 클립  ',
+      collectQuery: '  https://example.com/open.mp4  ',
     }), {
       title: '카페 오픈',
       goal: '손과 간판',
@@ -102,7 +116,7 @@ describe('auto desk job payload', () => {
       language: 'ko',
       upload: false,
       captions: false,
-      collect_query: '카페 오픈 공개 클립',
+      collect_query: 'https://example.com/open.mp4',
     });
     assert.deepEqual(autoJobPayload({
       title: '',
@@ -118,8 +132,15 @@ describe('auto desk job payload', () => {
       language: 'ko',
       upload: false,
       captions: false,
-      collect_query: 'https://example.com/open',
     });
+    assert.equal(autoJobPayload({
+      title: '카페 오픈',
+      goal: '손과 간판',
+      recipeId: 'tiktok_tight',
+      language: 'ko',
+      useScrape: true,
+      collectQuery: '카페 오픈 공개 클립',
+    }).collect_query, undefined);
     assert.deepEqual(autoJobPayload({
       title: '내 컷',
       recipeId: 'instagram_reel',
@@ -143,14 +164,14 @@ describe('auto desk job payload', () => {
       useOwn: true,
       useScrape: true,
       ownedPaths: ['/tmp/talk.mp4'],
-      collectQuery: '간판 클로즈업',
+      collectQuery: 'https://example.com/sign.mp4',
     }).source_mode, 'own_and_collect');
     assert.equal(autoJobPayload({
       title: '자막 켬',
       recipeId: 'instagram_reel',
       language: 'ko',
       useScrape: true,
-      collectQuery: '간판',
+      collectQuery: 'https://example.com/a.mp4',
       wantCaptions: true,
     }).captions, true);
     const dubOnly = autoJobPayload({
@@ -158,7 +179,7 @@ describe('auto desk job payload', () => {
       recipeId: 'instagram_reel',
       language: 'ko',
       useScrape: true,
-      collectQuery: '간판',
+      collectQuery: 'https://example.com/a.mp4',
       wantDubbing: true,
     });
     assert.match(String(dubOnly.must_keep), /운영자가 넣은 음성/);
@@ -168,14 +189,14 @@ describe('auto desk job payload', () => {
       recipeId: 'instagram_reel',
       language: 'ko',
       useScrape: true,
-      collectQuery: '간판',
+      collectQuery: 'https://example.com/a.mp4',
     }).must_keep, undefined);
     assert.match(String(autoJobPayload({
       title: 'TTS 켬',
       recipeId: 'instagram_reel',
       language: 'ko',
       useScrape: true,
-      collectQuery: '간판',
+      collectQuery: 'https://example.com/a.mp4',
       wantTts: true,
     }).must_keep), /Kokoro-82M 하나만/);
     assert.match(String(autoJobPayload({
@@ -183,7 +204,7 @@ describe('auto desk job payload', () => {
       recipeId: 'instagram_reel',
       language: 'ko',
       useScrape: true,
-      collectQuery: '간판',
+      collectQuery: 'https://example.com/a.mp4',
       wantTts: true,
       voiceGender: 'male',
       voiceFeel: 'calm',
@@ -194,7 +215,7 @@ describe('auto desk job payload', () => {
       recipeId: 'instagram_reel',
       language: 'ko',
       useScrape: true,
-      collectQuery: '간판',
+      collectQuery: 'https://example.com/a.mp4',
       wantTts: true,
       voiceGender: 'male',
       voiceFeel: 'calm',
@@ -205,7 +226,7 @@ describe('auto desk job payload', () => {
       recipeId: 'instagram_reel',
       language: 'ko',
       useScrape: true,
-      collectQuery: '간판',
+      collectQuery: 'https://example.com/a.mp4',
       wantTts: true,
       voiceModelId: 'zonos-v0.1',
     }).must_keep), /Zonos-v0.1 하나만/);

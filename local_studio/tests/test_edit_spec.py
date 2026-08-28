@@ -340,7 +340,12 @@ def test_simple_path_spec_is_one_bot(studio):
     assert "git clone" not in korean["text"]
     assert "local_studio/grok_crew.py" not in korean["text"]
     assert "찾아올 것" not in korean["text"]
+    assert "받을 것" not in korean["text"]
     assert "Find:" not in invite["text"]
+    assert "Receive:" not in invite["text"]
+    assert str((config.WORKSPACE_DIR / "handoff-materials" / record["id"]).resolve()) in invite["text"]
+    assert "CopyFromBox" in invite["text"]
+    assert "missing: dest_path" in invite["text"]
 
 
 def test_bot_invite_uses_operator_find_query_not_recipe_default(studio):
@@ -353,11 +358,15 @@ def test_bot_invite_uses_operator_find_query_not_recipe_default(studio):
         "collect_query": "카페 오픈 공개 클립",
     })
     korean = spec_invite(found["id"], "ko")
-    assert "찾아올 것: 카페 오픈 공개 클립" in korean["text"]
+    assert "받을 것: 카페 오픈 공개 클립" in korean["text"]
+    assert "찾아올 것" not in korean["text"]
     assert "스크래퍼가 아닙니다" in korean["text"]
     assert "로그인 막힌 인스타" in korean["text"]
+    assert "CopyFromBox" in korean["text"]
+    assert str((config.WORKSPACE_DIR / "handoff-materials" / found["id"]).resolve()) in korean["text"]
     english = spec_invite(found["id"], "en")
-    assert "Find: 카페 오픈 공개 클립" in english["text"]
+    assert "Receive: 카페 오픈 공개 클립" in english["text"]
+    assert "Find:" not in english["text"]
     assert "This app is not a scraper" in english["text"]
 
     made = create_spec({
@@ -369,6 +378,7 @@ def test_bot_invite_uses_operator_find_query_not_recipe_default(studio):
     })
     invite = spec_invite(made["id"], "en")
     assert "Find:" not in invite["text"]
+    assert "Receive:" not in invite["text"]
     assert "You make the source and the first cut" in invite["text"]
     assert made["collect_query"] == "face or product close-up, readable text space, bright vertical clip"
 
@@ -384,23 +394,29 @@ def test_bot_invite_uses_operator_find_query_not_recipe_default(studio):
     assert "가로" in long_invite["text"]
     assert "8–12분" in long_invite["text"]
     assert "찾아올 것" not in long_invite["text"]
+    assert "받을 것" not in long_invite["text"]
 
 
 def test_auto_invite_names_scrape_list_or_owned_stills(studio, tmp_path):
     still = tmp_path / "sign.png"
     still.write_bytes(b"png-bytes")
+    file_url = "https://images-assets.nasa.gov/image/as11-40-5874/as11-40-5874~small.jpg"
     scrape = create_spec({
         "title": "Cafe open",
         "goal": "Hands and the sign",
         "language": "ko",
         "source_mode": "collect",
         "recipe_id": "instagram_reel",
-        "collect_query": "카페 오픈 손·간판",
+        "collect_query": file_url,
     })
     scrape_text = spec_invite(scrape["id"], "ko")["text"]
-    assert "찾아올 것: 카페 오픈 손·간판" in scrape_text
+    assert f"받을 것: {file_url}" in scrape_text
+    assert "찾아올 것" not in scrape_text
     assert "스크랩 봇" in scrape_text
-    assert scrape["collect_query"] == "카페 오픈 손·간판"
+    assert "CopyFromBox" in scrape_text
+    assert "missing: dest_path" in scrape_text
+    assert str((config.WORKSPACE_DIR / "handoff-materials" / scrape["id"]).resolve()) in scrape_text
+    assert scrape["collect_query"] == file_url
     assert scrape["crew"] is True
 
     owned = create_spec({
@@ -414,6 +430,8 @@ def test_auto_invite_names_scrape_list_or_owned_stills(studio, tmp_path):
     owned_text = spec_invite(owned["id"], "ko")["text"]
     assert "넣은 영상·사진" in owned_text
     assert "찾아올 것" not in owned_text
+    assert "받을 것" not in owned_text
+    assert str((config.WORKSPACE_DIR / "handoff-materials" / owned["id"]).resolve()) in owned_text
     assert owned["source_mode"] == "own"
 
 

@@ -47,6 +47,8 @@ describe('built-in bot skills', () => {
     assert.match(planner, /중국 영상 → 한국 컷/);
     assert.match(planner, /자동 스위치/);
     assert.match(planner, /봇이 돌아가는 리눅스/);
+    assert.match(planner, /직접 파일 URL/);
+    assert.match(planner, /SendToAgent/);
     assert.doesNotMatch(planner, /미국 버릇|중국 버릇|일본 버릇/);
     assert.doesNotMatch(planner, /中文\(zh\)/);
     assert.doesNotMatch(planner, /日本語\(ja\)/);
@@ -57,6 +59,9 @@ describe('built-in bot skills', () => {
     assert.match(scraper, /비슷한 것/);
     assert.match(scraper, /네이버 TV 공개/);
     assert.match(scraper, /빌리빌리·니코니코를 기본으로 넣지 않습니다/);
+    assert.match(scraper, /curl/);
+    assert.match(scraper, /CopyFromBox/);
+    assert.match(scraper, /missing: dest_path/);
     assert.doesNotMatch(scraper, /Vimeo 공개, 공개 뉴스/);
     assert.match(editor, /기획자가 정한 방법/);
     assert.match(editor, /grok-crew-cut-to-plan/);
@@ -65,6 +70,9 @@ describe('built-in bot skills', () => {
     assert.match(editor, /중국 영상 → 한국 컷/);
     assert.match(editor, /한글 자막/);
     assert.match(editor, /자막 끔/);
+    assert.match(editor, /Windows 자료함/);
+    assert.match(editor, /수집 스킬은 없습니다/);
+    assert.match(editor, /CopyFromBox/);
     assert.doesNotMatch(editor, /컷을 더 자주/);
     assert.doesNotMatch(editor, /효과는 과하지 않게/);
     assert.deepEqual(ROLE_EXTRA_SKILLS.planner, ['edit-plan']);
@@ -109,6 +117,8 @@ describe('built-in bot skills', () => {
     assert.match(text, /스크래핑/);
     assert.match(text, /편집자/);
     assert.match(text, /이 앱은 긁지 않는다/);
+    assert.match(text, /CopyFromBox/);
+    assert.match(text, /직접 파일 URL/);
     assert.match(text, /보낼 나라: 한국/);
     assert.match(text, /\/bot-skills\/planner\.md/);
     assert.match(text, /\/bot-skills\/edit-plan\.md/);

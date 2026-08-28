@@ -31,8 +31,8 @@
 | 자리 | 기본 스킬 | 함께 붙는 추가 스킬 |
 |---|---|---|
 | **Grok Bot / Agent 기획자** | `planner` — 오늘 할 말을 컷 계획으로 바꿉니다 | `edit-plan` — 수집·편집자가 읽는 짧은 계획서 |
-| **Grok Bot / Agent 스크래핑** | `scraper` — 공개 페이지만 고릅니다 | `public-pick` — 로그인 벽이 있는 SNS는 적지 않습니다 |
-| **Grok Bot / Agent 편집자** | `editor` — 계획대로 자릅니다 | `cut-to-plan` — 장면 순서와 나라별 버릇을 지킵니다 |
+| **Grok Bot / Agent 스크래핑** | `scraper` — 기획자가 적은 직접 파일 URL만 받습니다 | `public-pick` — curl 후 CopyFromBox로 초대문 폴더에 둡니다. 검색하지 않습니다 |
+| **Grok Bot / Agent 편집자** | `editor` — Windows 자료함만 자릅니다 | `cut-to-plan` — 장면 순서와 나라별 버릇을 지킵니다 |
 
 원문은 [`public/bot-skills/`](public/bot-skills/)에 있습니다. 연결 글을 복사하면 그 역할의 스킬이 함께 붙습니다. 이 프로그램은 사이트를 긁지 않습니다.
 
