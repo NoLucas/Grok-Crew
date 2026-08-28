@@ -1195,7 +1195,7 @@ export function AutoDesk({
                 <b>{cutOver
                   ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
                   : t('끝난 파일을 여기 놓기', 'Drop the finished file here', '把完成文件放这里', '終わったファイルをここに置く')}</b>
-                <span>{t('이 PC 인박스에 둔 컷도 여기 놓으면 이 탭에 열립니다. 경로는 적지 마세요.', 'A cut left in this PC inbox also opens here if you drop it. Do not type a path.', '放在这台电脑收件箱里的成片，拖到这里也会打开。不要填写路径。', 'この PC の受信箱に置いたカットも、ここに置けばこのタブで開きます。パスは書かない。')}</span>
+                <span>{t('이 PC 편집 인박스에 혼자 있는 reel-15s.mp4 같은 컷도 여기 고르면 이 탭에 열립니다. 경로는 적지 마세요.', 'A loose cut such as reel-15s.mp4 in this PC editor inbox also opens here if you pick it. Do not type a path.', '这台电脑剪辑收件箱里单独的 reel-15s.mp4 一类成片，在这里选也会打开。不要填写路径。', 'この PC の編集受信箱に単体である reel-15s.mp4 のようなカットも、ここで選べば開きます。パスは書かない。')}</span>
               </button>
             </section>
           ) : null}

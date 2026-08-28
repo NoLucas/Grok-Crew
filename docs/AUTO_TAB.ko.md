@@ -201,18 +201,7 @@
 | 트레이에 “일 보냄 / 컷 도착” | 창을 보고 있지 않아도 됨 | 트레이는 이미 있음, 문구만 |
 | 같은 제목으로 다시 | 어제 일을 오늘 한 번 | 규격 목록은 있음, UI 없음 |
 
-계약 요청이 필요하면:
-
-```
-Contract request
-- consumer: app/desktop-auto-desk (가칭)
-- missing operation: 체크인된 auto_local 봇이 대기 중인 editor invite를 가져가는 읽기
-- input validation: 같은 PC, 토큰, door=editor, waiting_for_bot만
-- expected success: invite text 또는 이미 읽은 표시
-- stale/locked: 다른 봇이 가져간 spec은 재사용 금지
-```
-
-이 계약이 오기 전에 UI가 “봇이 알아서 읽습니다”라고 쓰면 안 된다. 1판 문구는 “복사했습니다. 그 창에 붙이세요.”가 맞다.
+정식 작업 패킷은 `docs/packets/CODEX-same-pc-invite-read.ko.md`다. 이 계약이 오기 전에 UI가 “봇이 알아서 읽습니다”라고 쓰면 안 된다. 1판 문구는 “복사했습니다. 그 창에 붙이세요.”가 맞다.
 
 ### 6.3 3판 — 컷 이후를 짧게
 
@@ -296,7 +285,7 @@ done
 
 ### 2판. 착지를 자동으로
 
-연결이 끝나는 순간(`hasConnectedBot` 또는 내가 열기) `activePanel`을 자동으로 둔다. 연결 탭에서 성공하면 자동으로 넘어간다. 사람이 연결을 다시 누르면 연결에 머문다.
+연결 글 복사는 연결이 아니다. 연결 탭이 열려 있는 동안(`연결 글 복사`, 첫 자리 체크인 포함) 자동으로 넘어가지 않는다. 세 자리 글을 다 복사한 뒤 사람이 **자동**을 누른다. 사람이 연결을 다시 누르면 연결에 머문다.
 
 ### 3판. 같은 PC 봇이 초대문을 읽게
 

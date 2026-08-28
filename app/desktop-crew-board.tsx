@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { seatShortLabel } from './bot-skills';
 import { useLanguage } from './language';
 import {
   activityForSpec,
@@ -88,6 +89,15 @@ export function DesktopCrewBoard({
             <li key={seat.key} data-mark={seat.mark} data-role={seat.role} data-offline={seat.nextOfflineNote ? 'next' : undefined}>
               {index > 0 ? <span className="desktop-crew-pipe-arrow" aria-hidden="true">→</span> : null}
               <div className="desktop-crew-pipe-card">
+                <div className="desktop-crew-pipe-head">
+                  <span className={`desktop-connect-lamp${seat.connected ? ' is-on' : ''}`}>
+                    <i aria-hidden="true" />
+                    {seat.connected
+                      ? t('연결됨', 'Connected', '已连接', '接続済み')
+                      : t('연결되지않음', 'Not connected', '未连接', '未接続')}
+                  </span>
+                  <b className="desktop-crew-pipe-short">{seatShortLabel(seat.role, language)}</b>
+                </div>
                 <span className="desktop-crew-pipe-name">{seat.name}</span>
                 {seat.actionLabel ? <span className="desktop-crew-pipe-action">{seat.actionLabel}</span> : null}
                 {seat.nextOfflineNote ? <p className="desktop-crew-pipe-offline">{seat.nextOfflineNote}</p> : null}

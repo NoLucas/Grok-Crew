@@ -38,6 +38,8 @@ const {
   heartbeatWorkPair,
   lostConnectedSeats,
   seatConnectSnapshot,
+  shouldKeepConnectOpenAfterReady,
+  shouldLandAutoAfterLinkChange,
   shouldPingLostSeat,
 } = await import('./desktop-bot-links.ts');
 
@@ -221,6 +223,54 @@ describe('remote bot links', () => {
     const byName = { bots: [{ display_name: 'Grok Bot Planner', presence: 'active' }] };
     assert.equal(seatIsConnected('grok', 'planner', empty, byName), true);
     assert.equal(seatIsConnected('grok', 'editor', empty, byName), false);
+  });
+
+  it('does not leave Connect when the operator copies connect text', () => {
+    assert.equal(shouldLandAutoAfterLinkChange({
+      previousConnected: true,
+      nextConnected: true,
+      cause: 'copy',
+      connectOpen: true,
+    }), false);
+    assert.equal(shouldLandAutoAfterLinkChange({
+      previousConnected: false,
+      nextConnected: true,
+      cause: 'copy',
+      connectOpen: true,
+    }), false);
+    assert.equal(shouldLandAutoAfterLinkChange({
+      previousConnected: false,
+      nextConnected: true,
+      cause: 'attach',
+      connectOpen: true,
+    }), false);
+    assert.equal(shouldLandAutoAfterLinkChange({
+      previousConnected: false,
+      nextConnected: true,
+      cause: 'attach',
+      connectOpen: false,
+    }), true);
+    assert.equal(shouldLandAutoAfterLinkChange({
+      previousConnected: false,
+      nextConnected: true,
+      cause: 'release',
+      connectOpen: false,
+    }), false);
+    assert.equal(shouldKeepConnectOpenAfterReady({
+      wasForcedConnect: true,
+      nextForcedConnect: false,
+      peekAuto: false,
+    }), true);
+    assert.equal(shouldKeepConnectOpenAfterReady({
+      wasForcedConnect: true,
+      nextForcedConnect: false,
+      peekAuto: true,
+    }), false);
+    assert.equal(shouldKeepConnectOpenAfterReady({
+      wasForcedConnect: false,
+      nextForcedConnect: false,
+      peekAuto: false,
+    }), false);
   });
 
   it('marks a copied remote seat as waiting, not connected', () => {

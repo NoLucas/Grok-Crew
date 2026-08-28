@@ -92,6 +92,10 @@ describe('crew board notes', () => {
     assert.equal(pipe[1].note, '');
     assert.match(pipe[0].actionLabel, /컷 계획 남김/);
     assert.match(pipe[1].actionLabel, /공개 자료 고르는 중/);
+    assert.equal(pipe[0].connected, true);
+    assert.equal(pipe[1].connected, true);
+    assert.equal(pipe[0].role, 'planner');
+    assert.equal(pipe[1].role, 'scraper');
     assert.match(crewNowLine(pipe, 'ko'), /기획자 · 컷 계획 남김|스크래핑 · 공개 자료 고르는 중/);
     assert.doesNotMatch(JSON.stringify(pipe), /plan_ready|collect_started|할 일은 아직 안 적음/);
   });

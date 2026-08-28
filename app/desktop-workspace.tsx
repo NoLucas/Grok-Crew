@@ -25,11 +25,13 @@ import {
   hasConnectedBot,
   lostConnectedSeats,
   seatConnectSnapshot,
+  shouldKeepConnectOpenAfterReady,
+  shouldLandAutoAfterLinkChange,
   shouldPingLostSeat,
   type BotLinkState,
   type SeatKey,
 } from './desktop-bot-links';
-import { seatName, type BotRole } from './bot-skills';
+import { seatName, seatShortLabel, type BotRole } from './bot-skills';
 import { AutoDesk } from './desktop-auto-desk';
 import { autoHeaderDot, writeAutoPrefs } from './desktop-auto-state';
 import { DesktopVoiceSetup } from './desktop-voice-setup';
@@ -343,6 +345,7 @@ export default function DesktopWorkspace() {
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [langPicked, setLangPicked] = useState(false);
   const [botPanelOpen, setBotPanelOpen] = useState(false);
+  const forcedConnectRef = useRef(false);
   const [quitAsk, setQuitAsk] = useState(false);
   const [setupPane, setSetupPane] = useState<'' | 'shape' | 'length' | 'sound' | 'pace'>('');
   const [exportPane, setExportPane] = useState<'' | 'post' | 'exchange' | 'receipts'>('');
@@ -611,6 +614,17 @@ export default function DesktopWorkspace() {
   const deskReady = hasConnectedBot(workspace.crew_roster, botLinks) || Boolean(project);
   const showWorkTabs = Boolean(project);
   const showBotRoom = botPanelOpen || (!deskReady && !peekAuto);
+  useEffect(() => {
+    const forced = !deskReady && !peekAuto;
+    if (shouldKeepConnectOpenAfterReady({
+      wasForcedConnect: forcedConnectRef.current,
+      nextForcedConnect: forced,
+      peekAuto,
+    })) {
+      setBotPanelOpen(true);
+    }
+    forcedConnectRef.current = forced;
+  }, [deskReady, peekAuto]);
   const showAutoDesk = !showBotRoom && !advancedSpecOpen && (activePanel === 'auto' || !project);
   const projectJobs = workspace.control_jobs.filter((job) => job.project_id === selectedProjectId);
   const latestJob = projectJobs[0];
@@ -1388,7 +1402,7 @@ export default function DesktopWorkspace() {
               onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}
             >
               <i aria-hidden="true" />
-              <b>{seat.role === 'planner' ? t('기획', 'Plan', '策划', '企画') : seat.role === 'scraper' ? t('수집', 'Fetch', '收集', '収集') : t('편집', 'Cut', '剪辑', '編集')}</b>
+              <b>{seatShortLabel(seat.role, language)}</b>
               <span>{seat.connected ? t('연결됨', 'Connected', '已连接', '接続済み') : t('연결되지않음', 'Not connected', '未连接', '未接続')}</span>
             </button>
           ))}
@@ -1643,9 +1657,16 @@ export default function DesktopWorkspace() {
                     onConnectRelay: () => { void relayAction('git-connect'); },
                     onRefreshStudio: () => { void refreshWorkspace(); },
                   }}
-                  onLinksChange={(next) => {
+                  onLinksChange={(next, cause = 'other') => {
+                    const previousConnected = hasConnectedBot(workspace.crew_roster, botLinks);
+                    const nextConnected = hasConnectedBot(workspace.crew_roster, next);
                     setBotLinks(next);
-                    if (hasConnectedBot(workspace.crew_roster, next)) {
+                    if (shouldLandAutoAfterLinkChange({
+                      previousConnected,
+                      nextConnected,
+                      cause,
+                      connectOpen: true,
+                    })) {
                       setBotPanelOpen(false);
                       setPeekAuto(true);
                       setActivePanel('auto');

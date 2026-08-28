@@ -843,25 +843,6 @@ export function droppedFilePath(file: File): string {
 
 /*
 Contract request · D판 · 같은 PC 봇이 초대문을 읽기
-- consumer: app/desktop-auto-desk, app/desktop-crew-board
-- missing operation:
-  GET (or POST) a waiting invite for one checked-in auto_local seat
-  seats: planner | scraper | editor
-  after the operator has connected once, that seat pulls the next invite itself
-- input validation:
-  same PC loopback only
-  token required
-  bot_id matches the seat
-  spec status waiting_for_bot
-  door matches the seat (planner/collector/editor — do not invent a fourth door)
-- expected success:
-  invite text + edit_spec_id
-  or already-read mark for that bot_id + spec
-  next seat can start without a second human paste
-- expected error:
-  404 none waiting · 409 another bot already took it · 403 not this seat
-- stale/locked:
-  a spec another bot already took must not be reused
-  a leftover yesterday spec must not be returned when a newer wait exists
-Do not draw “the bot is reading it” or skip “paste it in the bot window” until this contract exists.
+Formal packet: docs/packets/CODEX-same-pc-invite-read.ko.md
+Do not draw “the bot is reading it” or skip “paste it in the bot window” until that contract exists.
 */

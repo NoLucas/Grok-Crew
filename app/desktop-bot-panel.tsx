@@ -11,6 +11,7 @@ import { readDeskWait, type DeskWaitState } from './desktop-wait-state';
 import { activityForSpec, crewBoardScope, type CrewLoadState } from './desktop-crew-log';
 import {
   type BotLinkState,
+  type LinkChangeCause,
   confirmRemoteReplies,
   connectedRemoteNames,
   familyIsConnected,
@@ -58,7 +59,7 @@ type BotPanelProps = {
   allowOwnFile?: boolean;
   services?: ConnectServices;
   wait?: DeskWaitState | null;
-  onLinksChange: (next: BotLinkState) => void;
+  onLinksChange: (next: BotLinkState, cause?: LinkChangeCause) => void;
   onRefresh: () => Promise<void>;
   onOpenOwnFile?: () => void;
   request?: (path: string, init?: RequestInit) => Promise<Record<string, unknown>>;
@@ -188,7 +189,7 @@ export function DesktopBotPanel({
   const markCopied = (seat: OtherSeat) => {
     const next = markRemoteCopied(links, { kind: seat.kind, role: seat.role, language });
     writeBotLinks(next);
-    onLinksChange(next);
+    onLinksChange(next, 'copy');
   };
 
   const copyRemote = async (seat: OtherSeat) => {
@@ -242,7 +243,7 @@ export function DesktopBotPanel({
     }
     const next = clearAllReleased(links);
     writeBotLinks(next);
-    onLinksChange(next);
+    onLinksChange(next, 'copy');
     setReleasedNote('');
     await onRefresh();
   };
@@ -260,7 +261,7 @@ export function DesktopBotPanel({
     }
     const next = clearAllReleased(links);
     writeBotLinks(next);
-    onLinksChange(next);
+    onLinksChange(next, 'copy');
     setReleasedNote('');
     await onRefresh();
   };
@@ -268,7 +269,7 @@ export function DesktopBotPanel({
   const disconnectSeat = (seat: OtherSeat) => {
     const next = releaseLinkedSeat(links, seat.kind, seat.role);
     writeBotLinks(next);
-    onLinksChange(next);
+    onLinksChange(next, 'release');
     setReleasedNote(t(
       '이 창에서 끊었습니다. 봇 창이 켜져 있으면 그 쪽은 그대로일 수 있습니다.',
       'This window released the seat. The bot window may still be open.',
@@ -280,7 +281,7 @@ export function DesktopBotPanel({
   const disconnectAll = () => {
     const next = releaseHeldSeats(links, roster);
     writeBotLinks(next);
-    onLinksChange(next);
+    onLinksChange(next, 'release');
     setReleasedNote(t(
       '이 창에서 모든 자리를 끊었습니다. 다시 쓰려면 연결 글을 붙이세요.',
       'This window released every seat. Paste the connect text to use them again.',
@@ -302,7 +303,7 @@ export function DesktopBotPanel({
       return;
     }
     writeBotLinks(result.next);
-    onLinksChange(result.next);
+    onLinksChange(result.next, 'attach');
     setReplyText('');
     setReleasedNote('');
   };
@@ -314,7 +315,7 @@ export function DesktopBotPanel({
     <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
       <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('연결 글을 봇 창에 붙이세요. 램프가 켜지면 연결됨입니다. 끊기는 여기 버튼으로만 합니다.', 'Paste the connect text in the bot window. The lamp means connected. Only these buttons disconnect.', '把连接文字贴到机器人窗口。灯亮就是已连接。断开只用这里的按钮。', '接続文をボット窓に貼る。ランプが付けば接続済み。切断はこのボタンだけです。')}</p>
+        <p>{t('연결 글을 봇 창에 붙이세요. 복사만으로는 연결되지 않고, 이 탭에 머뭅니다. 세 자리 글을 다 복사한 뒤 자동으로 가세요. 램프가 켜지면 연결됨입니다.', 'Paste the connect text in the bot window. Copying is not a connection, and this tab stays open. Copy all three seats, then go to Auto. The lamp means connected.', '把连接文字贴到机器人窗口。只复制不算已连接，也不会离开这个页。三个位子都复制后再去自动。灯亮就是已连接。', '接続文をボット窓に貼る。コピーしただけでは接続されず、このタブに留まります。三席をコピーしてから自動へ。ランプが付けば接続済み。')}</p>
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">

@@ -59,6 +59,24 @@ export function seatName(kind: 'grok' | 'custom' | string, role: BotRole, langua
   return `${family} ${roleLabel(role, language)}`;
 }
 
+/** Short lamp labels on the follow bar and crew cards. Not the seat chat name. */
+export function seatShortLabel(role: BotRole, language = 'ko'): string {
+  const lang = langOf(language);
+  if (role === 'planner') {
+    if (lang === 'zh') return '策划';
+    if (lang === 'ja') return '企画';
+    return lang === 'en' ? 'Plan' : '기획';
+  }
+  if (role === 'scraper') {
+    if (lang === 'zh') return '抓取';
+    if (lang === 'ja') return 'スクラップ';
+    return lang === 'en' ? 'Scrap' : '스크랩';
+  }
+  if (lang === 'zh') return '剪辑';
+  if (lang === 'ja') return '編集';
+  return lang === 'en' ? 'Cut' : '편집';
+}
+
 const LOOPBACK: L4 = {
   ko: '봇이 돌아가는 리눅스나 다른 컴퓨터에서 127.0.0.1을 열지 않습니다. 그 주소는 이 책상이 아닙니다. Windows 체크인은 초대문 겉문장만 따릅니다.',
   en: 'Do not open 127.0.0.1 from the bot Linux or another computer. That address is not this desk. Windows check-in is only in the connect wrapper.',

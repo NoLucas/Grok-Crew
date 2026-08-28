@@ -15,6 +15,7 @@ const {
   isBotRole,
   roleLabel,
   seatName,
+  seatShortLabel,
   skillText,
   voiceInviteBlock,
   withCrewInvite,
@@ -32,6 +33,10 @@ describe('built-in bot skills', () => {
     assert.equal(seatName('custom', 'planner', 'ko'), 'Agent 기획자');
     assert.equal(seatName('custom', 'editor', 'en'), 'Agent Editor');
     assert.equal(roleLabel('planner', 'ko'), '기획자');
+    assert.equal(seatShortLabel('planner', 'ko'), '기획');
+    assert.equal(seatShortLabel('scraper', 'ko'), '스크랩');
+    assert.equal(seatShortLabel('editor', 'ko'), '편집');
+    assert.equal(seatShortLabel('scraper', 'en'), 'Scrap');
   });
 
   it('keeps Korean Korea skills in their lane and forbids loopback plus login walls', () => {

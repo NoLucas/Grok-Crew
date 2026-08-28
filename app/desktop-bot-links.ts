@@ -419,6 +419,29 @@ export function grokSeatLampRows(
   }));
 }
 
+export type LinkChangeCause = 'copy' | 'release' | 'attach' | 'other';
+
+/** Copying connect text is not a connection. Stay on Connect while that tab is open. */
+export function shouldLandAutoAfterLinkChange(input: {
+  previousConnected: boolean;
+  nextConnected: boolean;
+  cause: LinkChangeCause;
+  connectOpen: boolean;
+}): boolean {
+  if (input.connectOpen) return false;
+  if (input.cause === 'copy' || input.cause === 'release') return false;
+  return !input.previousConnected && input.nextConnected;
+}
+
+/** First seat check-in must not kick the operator off Connect before the other seats are copied. */
+export function shouldKeepConnectOpenAfterReady(input: {
+  wasForcedConnect: boolean;
+  nextForcedConnect: boolean;
+  peekAuto: boolean;
+}): boolean {
+  return input.wasForcedConnect && !input.nextForcedConnect && !input.peekAuto;
+}
+
 export function connectedRemoteNames(links?: BotLinkState | null, roster?: CrewRoster | null): string[] {
   const names = links?.bots.filter((item) => item.status === 'connected').map((item) => item.name) ?? [];
   for (const role of ['planner', 'scraper', 'editor'] as const) {
