@@ -319,7 +319,12 @@ export function crewTalkThread(
     const kind = heartbeatActionKind(row.item.action);
     if (kind === 'idle') {
       if (pending && pending.name === row.name) {
-        pending = { ...pending, item: row.item, count: pending.count + 1 };
+        pending = {
+          item: row.item,
+          name: pending.name,
+          role: pending.role,
+          count: pending.count + 1,
+        };
       } else {
         flushPresence(pending);
         pending = { item: row.item, name: row.name, role: row.role, count: 1 };
