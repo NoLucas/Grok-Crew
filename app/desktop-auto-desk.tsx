@@ -178,7 +178,7 @@ export function AutoDesk({
   const [clipboardBlocked, setClipboardBlocked] = useState(false);
   const [sendFailed, setSendFailed] = useState(false);
   const [error, setError] = useState('');
-  const [inviteText, setInviteText] = useState('');
+  const [inviteText, setInviteText] = useState(() => String(wait?.inviteText || ''));
   const [cutOver, setCutOver] = useState(false);
   const [askPublish, setAskPublish] = useState(false);
   const [replaceAsk, setReplaceAsk] = useState(false);
@@ -274,6 +274,12 @@ export function AutoDesk({
     setOptionPane((current) => (current === pane ? '' : pane));
   };
   const marketName = marketLabel(market, language);
+
+  useEffect(() => {
+    const stored = String(wait?.inviteText || '').trim();
+    if (!stored) return;
+    setInviteText((current) => (current.trim() ? current : stored));
+  }, [wait?.inviteText]);
 
   useEffect(() => {
     if (!waitingHandOff) return;
@@ -418,6 +424,7 @@ export function AutoDesk({
         title: heading,
         copiedAt: new Date().toISOString(),
         pasteTarget: PASTE_TARGET,
+        inviteText: text,
       };
       try {
         if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');

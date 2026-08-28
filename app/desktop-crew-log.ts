@@ -125,10 +125,11 @@ export function nextSeatOfflineNote(
   rows: AutoSeatRow[],
   role: BotRole | '',
   language = 'ko',
+  kind?: AutoSeatRow['kind'],
 ): string {
   const next = nextHandoffRole(role);
   if (next !== 'planner' && next !== 'scraper' && next !== 'editor') return '';
-  const seat = rows.find((row) => row.role === next);
+  const seat = rows.find((row) => row.role === next && (!kind || row.kind === kind));
   if (seat?.connected) return '';
   return boardCopy(
     language,
@@ -137,6 +138,24 @@ export function nextSeatOfflineNote(
     '下一位子 · 未连接',
     '次の席 · 接続されていない',
   );
+}
+
+/** Prefer the open wait only while that job is still on the board. Yesterday leftover yields to the latest spec. */
+export function crewBoardScope(
+  wait: { specId?: string; title?: string } | null | undefined,
+  activity: BotActivityItem[] | undefined,
+): { specId?: string; jobTitle?: string } {
+  const waitId = String(wait?.specId || '').trim();
+  const jobTitle = String(wait?.title || '').trim() || undefined;
+  const items = activity ?? [];
+  const latest = latestActivitySpecId(items);
+  const waitInActivity = Boolean(waitId) && items.some((item) => activitySpecId(item.detail_json) === waitId);
+  if (!waitId) return { specId: latest || undefined };
+  // A brand-new wait has no heartbeat yet. A leftover wait yields to a newer spec.
+  if (!latest || latest === waitId || !waitInActivity) {
+    return { specId: waitId, jobTitle };
+  }
+  return { specId: latest };
 }
 
 export function crewTalkMemo(
@@ -169,6 +188,13 @@ export function roleFromBotId(botId: string): BotRole | '' {
   return '';
 }
 
+export function familyFromBotId(botId: string): AutoSeatRow['kind'] | '' {
+  const id = String(botId || '').trim().toLowerCase();
+  if (!id) return '';
+  if (id === 'grok' || id.startsWith('grok-')) return 'grok';
+  return roleFromBotId(id) ? 'custom' : '';
+}
+
 export function nextHandoffRole(role: BotRole | ''): BotRole | 'desk' | '' {
   if (role === 'planner') return 'scraper';
   if (role === 'scraper') return 'editor';
@@ -199,16 +225,27 @@ function namedSeat(item: BotActivityItem, language: string): { name: string; rol
   return { name, role: roleFromBotId(botId) };
 }
 
-function latestWorkByRole(activity: BotActivityItem[]): Partial<Record<BotRole, BotActivityItem>> {
-  const latest: Partial<Record<BotRole, BotActivityItem>> = {};
+function seatWorkKey(kind: AutoSeatRow['kind'] | '', role: BotRole | ''): string {
+  if (!kind || !role) return '';
+  return `${kind}:${role}`;
+}
+
+function latestWorkBySeat(activity: BotActivityItem[]): Map<string, BotActivityItem> {
+  const latest = new Map<string, BotActivityItem>();
   for (const item of activity) {
-    const role = roleFromBotId(String(item.bot_id || ''));
-    if (!role) continue;
+    const botId = String(item.bot_id || '');
+    const key = seatWorkKey(familyFromBotId(botId), roleFromBotId(botId));
+    if (!key) continue;
     const kind = heartbeatActionKind(item.action);
     if (kind !== 'started' && kind !== 'ready') continue;
-    if (!latest[role]) latest[role] = item;
+    if (!latest.has(key)) latest.set(key, item);
   }
   return latest;
+}
+
+function seatHasReadyHandoff(row: AutoSeatRow, item?: BotActivityItem): boolean {
+  if (heartbeatActionKind(row.lastAction) === 'ready') return true;
+  return item ? heartbeatActionKind(item.action) === 'ready' : false;
 }
 
 export function crewPipeline(
@@ -216,11 +253,13 @@ export function crewPipeline(
   activity: BotActivityItem[],
   language = 'ko',
 ): CrewPipelineSeat[] {
-  const latest = latestWorkByRole(activity);
+  const latest = latestWorkBySeat(activity);
   return rows.map((row) => {
-    const item = latest[row.role];
-    const nextOfflineNote = nextSeatOfflineNote(rows, row.role, language);
-    const note = nextOfflineNote ? '' : (item ? activityHandoffNote(item.detail_json) : '');
+    const item = latest.get(seatWorkKey(row.kind, row.role));
+    const nextOfflineNote = seatHasReadyHandoff(row, item)
+      ? nextSeatOfflineNote(rows, row.role, language, row.kind)
+      : '';
+    const note = item ? activityHandoffNote(item.detail_json) : '';
     const when = item ? activityWhen(item, language) : '';
     const kind = heartbeatActionKind(row.lastAction);
     const actionLabel = kind === 'unknown'

@@ -2,6 +2,11 @@
 
 import { useLanguage } from './language';
 
+function figureLine(text: string, max = 28): string {
+  const raw = String(text || '').trim();
+  return raw.length > max ? `${raw.slice(0, max - 1)}…` : raw;
+}
+
 function SmartScreenFigure({
   step,
   title,
@@ -9,6 +14,7 @@ function SmartScreenFigure({
   kind,
   dontRun,
   unknownPublisher,
+  afterMore,
 }: {
   step: string;
   title: string;
@@ -16,13 +22,15 @@ function SmartScreenFigure({
   kind: 'shield' | 'more' | 'run';
   dontRun: string;
   unknownPublisher: string;
+  afterMore: string;
 }) {
+  const heading = figureLine(title, 26);
   return (
     <figure className="desktop-simple-figure">
       <svg viewBox="0 0 240 168" role="img" aria-label={`${step}. ${title}`}>
         <rect width="240" height="168" rx="10" fill="#0b5ed7" />
         <rect x="10" y="10" width="220" height="148" rx="6" fill="#0b5ed7" />
-        <text x="20" y="28" fill="#fff" fontSize="11" fontFamily="Segoe UI, sans-serif" fontWeight="700">{title}</text>
+        <text x="20" y="28" fill="#fff" fontSize={heading.length > 22 ? 9 : 11} fontFamily="Segoe UI, sans-serif" fontWeight="700">{heading}</text>
         {kind === 'shield' ? (
           <>
             <circle cx="36" cy="58" r="12" fill="#f3b000" />
@@ -30,24 +38,24 @@ function SmartScreenFigure({
             <text x="54" y="56" fill="#fff" fontSize="11" fontFamily="Segoe UI, sans-serif">Microsoft Defender</text>
             <text x="54" y="70" fill="#d7e6ff" fontSize="10" fontFamily="Segoe UI, sans-serif">SmartScreen</text>
             <text x="20" y="96" fill="#fff" fontSize="10" fontFamily="Segoe UI, sans-serif">GrokCrew-Windows.exe</text>
-            <text x="20" y="112" fill="#d7e6ff" fontSize="9" fontFamily="Segoe UI, sans-serif">{caption}</text>
+            <text x="20" y="112" fill="#d7e6ff" fontSize="9" fontFamily="Segoe UI, sans-serif">{figureLine(caption, 32)}</text>
             <rect x="118" y="128" width="100" height="20" rx="3" fill="#fff" />
-            <text x="128" y="142" fill="#0b5ed7" fontSize="9" fontFamily="Segoe UI, sans-serif">{dontRun}</text>
+            <text x="128" y="142" fill="#0b5ed7" fontSize="9" fontFamily="Segoe UI, sans-serif">{figureLine(dontRun, 14)}</text>
           </>
         ) : null}
         {kind === 'more' ? (
           <>
-            <text x="20" y="56" fill="#fff" fontSize="11" fontFamily="Segoe UI, sans-serif">{caption}</text>
-            <text x="20" y="88" fill="#d7e6ff" fontSize="10" fontFamily="Segoe UI, sans-serif">{unknownPublisher}</text>
-            <text x="20" y="130" fill="#fff" fontSize="11" fontFamily="Segoe UI, sans-serif" textDecoration="underline">{caption}</text>
+            <text x="20" y="56" fill="#fff" fontSize="11" fontFamily="Segoe UI, sans-serif">{figureLine(caption, 22)}</text>
+            <text x="20" y="88" fill="#d7e6ff" fontSize="10" fontFamily="Segoe UI, sans-serif">{figureLine(unknownPublisher, 30)}</text>
+            <text x="20" y="130" fill="#fff" fontSize="11" fontFamily="Segoe UI, sans-serif" textDecoration="underline">{figureLine(caption, 22)}</text>
           </>
         ) : null}
         {kind === 'run' ? (
           <>
-            <text x="20" y="56" fill="#d7e6ff" fontSize="10" fontFamily="Segoe UI, sans-serif">{unknownPublisher}</text>
-            <text x="20" y="88" fill="#fff" fontSize="12" fontFamily="Segoe UI, sans-serif" fontWeight="700">{caption}</text>
+            <text x="20" y="56" fill="#d7e6ff" fontSize="10" fontFamily="Segoe UI, sans-serif">{figureLine(afterMore, 30)}</text>
+            <text x="20" y="88" fill="#fff" fontSize="12" fontFamily="Segoe UI, sans-serif" fontWeight="700">{figureLine(caption, 20)}</text>
             <rect x="20" y="124" width="92" height="22" rx="3" fill="#fff" />
-            <text x="32" y="139" fill="#0b5ed7" fontSize="10" fontFamily="Segoe UI, sans-serif" fontWeight="700">{caption}</text>
+            <text x="32" y="139" fill="#0b5ed7" fontSize="10" fontFamily="Segoe UI, sans-serif" fontWeight="700">{figureLine(caption, 14)}</text>
           </>
         ) : null}
       </svg>
@@ -63,6 +71,7 @@ export function DesktopInstallHelp({ variant = 'fold' }: { variant?: 'fold' | 'o
   const { t } = useLanguage();
   const dontRun = t('실행하지 않음', 'Don’t run', '不运行', '実行しない');
   const unknownPublisher = t('게시자를 확인할 수 없음', 'Publisher could not be verified', '无法验证发布者', '発行元を確認できません');
+  const afterMore = t('추가 정보를 연 다음', 'After more info', '打开更多信息之后', '詳細情報のあと');
   const figures = (
     <>
       <ol className="desktop-simple-help">
@@ -77,6 +86,7 @@ export function DesktopInstallHelp({ variant = 'fold' }: { variant?: 'fold' | 'o
           caption={t('파란 보호 화면', 'The blue shield', '蓝色保护屏', '青い保護画面')}
           dontRun={dontRun}
           unknownPublisher={unknownPublisher}
+          afterMore={afterMore}
         />
         <SmartScreenFigure
           step="2"
@@ -85,6 +95,7 @@ export function DesktopInstallHelp({ variant = 'fold' }: { variant?: 'fold' | 'o
           caption={t('추가 정보', 'More info', '更多信息', '詳細情報')}
           dontRun={dontRun}
           unknownPublisher={unknownPublisher}
+          afterMore={afterMore}
         />
         <SmartScreenFigure
           step="3"
@@ -93,6 +104,7 @@ export function DesktopInstallHelp({ variant = 'fold' }: { variant?: 'fold' | 'o
           caption={t('그래도 실행', 'Run anyway', '仍要运行', '実行')}
           dontRun={dontRun}
           unknownPublisher={unknownPublisher}
+          afterMore={afterMore}
         />
       </div>
       <p className="desktop-simple-help">

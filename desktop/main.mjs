@@ -260,7 +260,12 @@ function registerIpc(apiBase) {
   });
   ipcMain.handle('desktop:quit', (event) => {
     assertTrustedRenderer(event);
-    quitGuard.requestQuit();
+    // Renderer already showed the in-app hide/quit card. Do not ask again.
+    quitGuard.forceQuit();
+  });
+  ipcMain.handle('desktop:hide', (event) => {
+    assertTrustedRenderer(event);
+    hideMainWindow();
   });
   ipcMain.handle('desktop:app-info', (event) => {
     assertTrustedRenderer(event);

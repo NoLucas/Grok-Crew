@@ -87,6 +87,7 @@ declare global {
       showOutput: (path: string) => Promise<void>;
       appInfo: () => Promise<{ version: string; platform: string; packaged: boolean }>;
       quit?: () => Promise<void>;
+      hide?: () => Promise<void>;
       updateStatus?: () => Promise<UpdateStatus>;
       openRelease?: (url: string) => Promise<void>;
       pairRunner: () => Promise<{ runner_id: string; display_name: string } | null>;
@@ -1381,13 +1382,7 @@ export default function DesktopWorkspace() {
             type="button"
             className="desktop-chrome-btn desktop-quit"
             title={t('작업 관리자에 남는 것은 종료로만 끊깁니다.', 'Only Quit stops what stays in Task Manager.', '任务管理器里剩下的只能用退出断开。', 'タスク マネージャーに残るものは終了だけで切れます。')}
-            onClick={() => {
-              if (window.grokCrew?.quit) {
-                void window.grokCrew.quit();
-                return;
-              }
-              setQuitAsk(true);
-            }}
+            onClick={() => setQuitAsk(true)}
           >
             {t('종료', 'Quit', '退出', '終了')}
           </button>
@@ -1401,6 +1396,18 @@ export default function DesktopWorkspace() {
               <div className="desktop-quit-path is-hide">
                 <b>{t('창 닫기 · 숨기기', 'Close the window · Hide', '关窗口 · 隐藏', '窓を閉じる · 隠す')}</b>
                 <p>{t('X 또는 트레이 숨기기. 연결은 남습니다. grok-crew-studio.exe는 작업 관리자에 남을 수 있습니다.', 'X or Hide in the tray. Links stay. grok-crew-studio.exe may stay in Task Manager.', 'X 或托盘里的隐藏。连接还在。grok-crew-studio.exe 可能留在任务管理器。', 'X またはトレイの隠す。接続は残ります。grok-crew-studio.exe はタスク マネージャーに残ることがあります。')}</p>
+                {typeof window !== 'undefined' && window.grokCrew?.hide ? (
+                  <button
+                    type="button"
+                    className="desktop-secondary"
+                    onClick={() => {
+                      setQuitAsk(false);
+                      void window.grokCrew?.hide?.();
+                    }}
+                  >
+                    {t('숨기기', 'Hide', '隐藏', '隠す')}
+                  </button>
+                ) : null}
               </div>
               <div className="desktop-quit-path is-quit">
                 <b>{t('종료', 'Quit', '退出', '終了')}</b>
@@ -1415,6 +1422,7 @@ export default function DesktopWorkspace() {
                   forgetBotLinksOnQuit(botLinks);
                   setBotLinks(ensureBotLinks());
                   setQuitAsk(false);
+                  if (window.grokCrew?.quit) void window.grokCrew.quit();
                 }}
               >
                 {t('종료', 'Quit', '退出', '終了')}
@@ -1639,6 +1647,7 @@ export default function DesktopWorkspace() {
                   }}
                   onRefresh={() => refreshWorkspace(true)}
                   onOpenOwnFile={() => void openOwnFileFromDesk()}
+                  wait={deskWait}
                   request={api}
                 />
               ) : null}

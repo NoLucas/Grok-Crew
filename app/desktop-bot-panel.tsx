@@ -6,9 +6,9 @@ import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
 import { marketLabel, resolveCrewMarket } from './crew-market';
 import { autoSeatRows, readAutoPrefs, recipeFallbackLabel, writeAutoPrefs, type BotActivityItem } from './desktop-auto-state';
 import { DesktopCrewBoard } from './desktop-crew-board';
-import type { CrewLoadState } from './desktop-crew-log';
 import { DesktopInstallHelp } from './desktop-install-help';
-import { readDeskWait } from './desktop-wait-state';
+import { readDeskWait, type DeskWaitState } from './desktop-wait-state';
+import { crewBoardScope, type CrewLoadState } from './desktop-crew-log';
 import {
   type BotLinkState,
   confirmRemoteReplies,
@@ -54,6 +54,7 @@ type BotPanelProps = {
   studioReady: boolean;
   allowOwnFile?: boolean;
   services?: ConnectServices;
+  wait?: DeskWaitState | null;
   onLinksChange: (next: BotLinkState) => void;
   onRefresh: () => Promise<void>;
   onOpenOwnFile?: () => void;
@@ -91,6 +92,7 @@ export function DesktopBotPanel({
   studioReady,
   allowOwnFile = false,
   services,
+  wait,
   onLinksChange,
   onRefresh,
   onOpenOwnFile,
@@ -120,8 +122,9 @@ export function DesktopBotPanel({
   const recipeId = lastBundle?.recipeId || prefs.recipeId || 'instagram_reel';
   const recipeName = recipeFallbackLabel(recipeId, language);
   const lastMarketName = marketLabel(resolveCrewMarket(lastBundle?.market || market, language), language);
-  const wait = readDeskWait();
+  const liveWait = wait !== undefined ? wait : readDeskWait();
   const seatRows = autoSeatRows({ roster, links, language });
+  const boardScope = crewBoardScope(liveWait, activity);
 
   const connectText = useMemo(
     () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role, studioPort, market),
@@ -389,11 +392,27 @@ export function DesktopBotPanel({
             ) : null}
           </div>
         ))}
-        {blockedKind && blockedKind !== 'same_pc' ? (
+        {blockedKind && blockedKind !== 'same_pc' && blockedKind !== 'yesterday' ? (
           <textarea className="desktop-bot-paste" value={connectText} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
         ) : null}
         {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
       </section>
+
+      <DesktopCrewBoard
+        rows={seatRows}
+        activity={activity}
+        loadState={activityState}
+        specId={boardScope.specId}
+        jobTitle={boardScope.jobTitle}
+        onRetry={request ? () => {
+          setActivityState('loading');
+          void request('/api/bot-activity').then((data) => {
+            const payload = data as { activity?: BotActivityItem[] };
+            setActivity(Array.isArray(payload.activity) ? payload.activity : []);
+            setActivityState('ready');
+          }).catch(() => setActivityState('error'));
+        } : undefined}
+      />
 
       <details className="desktop-auto-help">
         <summary>{t('이 PC에서 봇 쓰기', 'Use a bot on this PC', '在这台电脑用机器人', 'この PC でボットを使う')}</summary>
@@ -490,22 +509,6 @@ export function DesktopBotPanel({
           </ul>
         </details>
       ) : null}
-
-      <DesktopCrewBoard
-        rows={seatRows}
-        activity={activity}
-        loadState={activityState}
-        specId={wait?.specId}
-        jobTitle={wait?.title}
-        onRetry={request ? () => {
-          setActivityState('loading');
-          void request('/api/bot-activity').then((data) => {
-            const payload = data as { activity?: BotActivityItem[] };
-            setActivity(Array.isArray(payload.activity) ? payload.activity : []);
-            setActivityState('ready');
-          }).catch(() => setActivityState('error'));
-        } : undefined}
-      />
 
       <DesktopInstallHelp variant={connected ? 'fold' : 'open'} />
 

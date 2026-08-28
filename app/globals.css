@@ -6971,6 +6971,7 @@ select {
 .desktop-quit-path.is-quit { border-left: 3px solid var(--desktop-red); }
 .desktop-quit-path > b { font-size: 13px; letter-spacing: -.02em; }
 .desktop-quit-path p { font-size: 12px; }
+.desktop-quit-path .desktop-secondary { justify-self: start; margin-top: 4px; }
 .desktop-quit-ask-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .desktop-quit-confirm { background: var(--desktop-red); color: #fff !important; }
 .desktop-quit-confirm:hover { background: color-mix(in srgb, var(--desktop-red) 82%, #000); }

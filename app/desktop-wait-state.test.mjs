@@ -57,6 +57,21 @@ describe('desk wait state', () => {
       copiedAt: '2026-08-27T03:02:00.000Z',
     }));
     assert.equal(readDeskWait()?.pasteTarget, 'Grok Bot');
+    writeDeskWait({
+      specId: 'spec-4',
+      title: 'Keep invite',
+      copiedAt: '2026-08-27T03:03:00.000Z',
+      pasteTarget: 'Grok Bot',
+      inviteText: '  봇 창에 붙일 글  ',
+    });
+    assert.equal(readDeskWait()?.inviteText, '봇 창에 붙일 글');
+    memory.set(DESK_WAIT_KEY, JSON.stringify({
+      specId: 'spec-5',
+      title: 'Old wait',
+      copiedAt: '2026-08-27T03:04:00.000Z',
+      pasteTarget: 'Grok Bot',
+    }));
+    assert.equal(readDeskWait()?.inviteText, undefined);
   });
 
   it('remembers the first arrived cut', () => {

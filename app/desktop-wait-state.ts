@@ -3,11 +3,15 @@ export const FIRST_CUT_KEY = "grok-crew-first-cut-arrived";
 
 export type DeskPullStatus = "idle" | "none" | "arrived" | "failed";
 
+export const WAIT_INVITE_MAX = 20_000;
+
 export type DeskWaitState = {
   specId: string;
   title: string;
   copiedAt: string;
   pasteTarget: string;
+  /** Job invite only. Never a studio token or connect paste. */
+  inviteText?: string;
 };
 
 function storage(): Storage | null {
@@ -19,6 +23,11 @@ function storage(): Storage | null {
   }
 }
 
+export function cleanWaitInvite(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.replace(/\u0000/g, "").trim().slice(0, WAIT_INVITE_MAX);
+}
+
 function asWait(value: unknown): DeskWaitState | null {
   if (!value || typeof value !== "object") return null;
   const record = value as Record<string, unknown>;
@@ -26,8 +35,11 @@ function asWait(value: unknown): DeskWaitState | null {
   const title = String(record.title || "").trim();
   const copiedAt = String(record.copiedAt || "").trim();
   const pasteTarget = String(record.pasteTarget || "").trim() || "Grok Bot";
+  const inviteText = cleanWaitInvite(record.inviteText);
   if (!specId || !copiedAt) return null;
-  return { specId, title, copiedAt, pasteTarget };
+  return inviteText
+    ? { specId, title, copiedAt, pasteTarget, inviteText }
+    : { specId, title, copiedAt, pasteTarget };
 }
 
 export function readDeskWait(): DeskWaitState | null {
@@ -41,7 +53,14 @@ export function readDeskWait(): DeskWaitState | null {
 }
 
 export function writeDeskWait(state: DeskWaitState): void {
-  storage()?.setItem(DESK_WAIT_KEY, JSON.stringify(state));
+  const inviteText = cleanWaitInvite(state.inviteText);
+  storage()?.setItem(DESK_WAIT_KEY, JSON.stringify({
+    specId: state.specId,
+    title: state.title,
+    copiedAt: state.copiedAt,
+    pasteTarget: state.pasteTarget || "Grok Bot",
+    ...(inviteText ? { inviteText } : {}),
+  }));
 }
 
 export function clearDeskWait(): void {

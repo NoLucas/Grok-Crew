@@ -8,6 +8,7 @@ const {
   activityForSpec,
   activityHandoffNote,
   activitySpecId,
+  crewBoardScope,
   crewPipeline,
   crewTalkLine,
   crewTalkMemo,
@@ -98,7 +99,7 @@ describe('crew board notes', () => {
     assert.equal(scoped.some((item) => item.action === 'still_here'), true);
   });
 
-  it('writes only 연결되지않음 when the next seat is off, and stale minutes on the board only', () => {
+  it('keeps the real note and only marks the next seat offline after a ready handoff', () => {
     const rows = autoSeatRows({
       roster: {
         bots: [
@@ -107,16 +108,79 @@ describe('crew board notes', () => {
       },
       language: 'ko',
     });
-    assert.match(nextSeatOfflineNote(rows, 'planner', 'ko'), /연결되지않음/);
+    assert.match(nextSeatOfflineNote(rows, 'planner', 'ko', 'grok'), /연결되지않음/);
     assert.equal(presenceStaleMinutes(180), 3);
     assert.match(presenceStaleCopy(3, 'ko'), /3분 끊김/);
     const pipe = crewPipeline(rows, [
       { id: '1', bot_id: 'grok-planner', action: 'plan_ready', created_at: new Date().toISOString(), detail_json: { note: '넘긴 말' } },
     ], 'ko');
-    assert.equal(pipe[0].note, '');
+    assert.equal(pipe[0].note, '넘긴 말');
     assert.match(pipe[0].nextOfflineNote, /연결되지않음/);
     assert.equal(pipe[0].staleMinutes, 3);
     assert.doesNotMatch(JSON.stringify(pipe), /읽었|read|읽음/);
+  });
+
+  it('does not put 연결되지않음 on a seat that has not left a ready handoff', () => {
+    const rows = autoSeatRows({
+      roster: {
+        bots: [
+          { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'still_here' },
+        ],
+      },
+      language: 'ko',
+    });
+    const pipe = crewPipeline(rows, [
+      { id: '1', bot_id: 'grok-planner', action: 'still_here', created_at: new Date().toISOString() },
+    ], 'ko');
+    assert.equal(pipe[0].nextOfflineNote, '');
+    assert.equal(pipe[0].note, '');
+  });
+
+  it('matches the next offline seat in the same family, not the other bot kind', () => {
+    const rows = autoSeatRows({
+      roster: {
+        bots: [
+          { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'plan_ready' },
+        ],
+      },
+      links: {
+        pairCode: 'ABCD',
+        bots: [
+          { id: 'c1', name: 'Agent 스크래핑', kind: 'custom', role: 'scraper', place: 'other_pc', status: 'connected', pairCode: 'ABCD' },
+        ],
+      },
+      language: 'ko',
+    });
+    assert.match(nextSeatOfflineNote(rows, 'planner', 'ko', 'grok'), /연결되지않음/);
+    assert.equal(nextSeatOfflineNote(rows, 'planner', 'ko', 'custom'), '');
+    const pipe = crewPipeline(rows, [
+      { id: '1', bot_id: 'grok-planner', action: 'plan_ready', created_at: new Date().toISOString(), detail_json: { note: '손과 간판' } },
+    ], 'ko');
+    const grokPlanner = pipe.find((seat) => seat.key === 'grok:planner');
+    assert.equal(grokPlanner?.note, '손과 간판');
+    assert.match(String(grokPlanner?.nextOfflineNote), /연결되지않음/);
+  });
+
+  it('keeps a live wait job and drops a leftover wait when a newer spec is on the board', () => {
+    const today = [
+      { id: '2', bot_id: 'grok-planner', action: 'plan_ready', detail_json: { note: '오늘', edit_spec_id: 'spec-today' } },
+      { id: '1', bot_id: 'grok-planner', action: 'plan_ready', detail_json: { note: '어제', edit_spec_id: 'spec-old' } },
+    ];
+    assert.deepEqual(crewBoardScope({ specId: 'spec-today', title: '오늘 일' }, today), {
+      specId: 'spec-today',
+      jobTitle: '오늘 일',
+    });
+    assert.deepEqual(crewBoardScope({ specId: 'spec-old', title: '어제 일' }, today), {
+      specId: 'spec-today',
+    });
+    assert.deepEqual(crewBoardScope({ specId: 'spec-wait', title: '아직' }, []), {
+      specId: 'spec-wait',
+      jobTitle: '아직',
+    });
+    assert.deepEqual(crewBoardScope({ specId: 'spec-new', title: '방금' }, today), {
+      specId: 'spec-new',
+      jobTitle: '방금',
+    });
   });
 
   it('copies the thread as a local memo without inventing a line', () => {
