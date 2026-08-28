@@ -47,7 +47,8 @@ describe('homepage language packs', () => {
     assert.equal(homeHtml.includes('navigator.language'), false);
     assert.equal(homeI18n.includes('navigator.language'), false);
     assert.match(homeHtml, /data-home-lang="pick"/);
-    assert.match(homeHtml, /Choose your language/);
+    assert.equal(homeHtml.includes('The site starts in English'), false);
+    assert.equal(homeHtml.includes('Choose your language'), false);
     assert.match(homeHtml, /data-pick-lang="en"/);
     assert.match(homeHtml, /data-pick-lang="ko"/);
     assert.match(homeHtml, /data-pick-lang="zh"/);
