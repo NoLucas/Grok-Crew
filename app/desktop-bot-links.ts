@@ -73,7 +73,12 @@ export function readBotLinks(): BotLinkState {
   try {
     const parsed = JSON.parse(raw) as Partial<BotLinkState>;
     const pairCode = String(parsed.pairCode || '').trim().toUpperCase();
-    return { pairCode, bots: normalizeBots(parsed.bots) };
+    const bots = normalizeBots(parsed.bots);
+    const next = honestRemoteLinks({ pairCode, bots });
+    if (bots.some((bot) => bot.place === 'other_pc' && bot.status === 'connected')) {
+      writeBotLinks(next);
+    }
+    return next;
   } catch {
     return emptyBotLinks();
   }
@@ -84,7 +89,7 @@ export function writeBotLinks(state: BotLinkState): void {
 }
 
 export function ensureBotLinks(state?: BotLinkState | null): BotLinkState {
-  const current = state ?? readBotLinks();
+  const current = honestRemoteLinks(state ?? readBotLinks());
   if (current.pairCode) return current;
   const stored = readBotLinks();
   if (stored.pairCode) return stored;
@@ -96,6 +101,34 @@ export function ensureBotLinks(state?: BotLinkState | null): BotLinkState {
 export function upsertLinkedBot(state: BotLinkState, bot: LinkedBot): BotLinkState {
   const rest = state.bots.filter((item) => item.id !== bot.id);
   return { ...state, bots: [bot, ...rest] };
+}
+
+export function honestRemoteLinks(state: BotLinkState): BotLinkState {
+  return {
+    ...state,
+    bots: state.bots.map((bot) => (
+      bot.place === 'other_pc' && bot.status === 'connected'
+        ? { ...bot, status: 'waiting', connectedAt: undefined }
+        : bot
+    )),
+  };
+}
+
+export function markRemoteCopied(
+  state: BotLinkState,
+  seat: { kind: BotKind; role: BotRole; language: string },
+): BotLinkState {
+  if (!state.pairCode) return state;
+  const family = seat.kind === 'grok' ? 'grok' : 'custom';
+  return upsertLinkedBot(state, {
+    id: seatId(family, seat.role, state.pairCode),
+    name: seatName(family, seat.role, seat.language),
+    kind: family,
+    role: seat.role,
+    place: 'other_pc',
+    status: 'waiting',
+    pairCode: state.pairCode,
+  });
 }
 
 export function removeLinkedBot(state: BotLinkState, id: string): BotLinkState {
