@@ -28,6 +28,21 @@ __pycache__/
 .cursor/skills/
 Grok-Crew-skills.zip
 
+# Operator-only marketing site. Keep on this machine; do not push to GitHub.
+/public/home.html
+/public/home-i18n.js
+/public/connect-install.js
+/public/og.png
+/app/home/
+/app/home-i18n.test.mjs
+/app/get-lead.ts
+/app/get-lead.test.mjs
+/app/api/get/
+/scripts/preview-homepage.mjs
+/scripts/connect-existing-home.mjs
+/docs/homepage.env.example
+/docs/HOMEPAGE.local.ko.md
+
 # debug
 npm-debug.log*
 yarn-debug.log*

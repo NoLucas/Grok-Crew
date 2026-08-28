@@ -40,7 +40,7 @@ The source files live in [`public/bot-skills/`](public/bot-skills/). Copying the
 
 ## How you use it
 
-1. Install from **Get Windows** and open it. There is no sign-in. The public guide is `/home` after the desk is open.
+1. Install from **Get Windows** and open it. There is no sign-in. Get the file from the GitHub Release.
 2. On **Connect**, attach the bot they already use. Copy the attach text into the bot window.
 3. On **Auto**, write what they want and press **Make**.
 4. A person pastes into the bot window. This window waits.
