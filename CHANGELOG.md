@@ -4,6 +4,8 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+- Other-PC Grok Bot / Agent seats turn **Connected** when the operator pastes the bot `GROK_CREW_OK` line. Copying the invite still does not turn the lamp green.
+
 ## 1.0.2 - 2026-08-28
 
 Local 1.0.2. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.2` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.2.md`. Guest download stays the same Google Drive file. Already-installed 1.0.1 desks check Grok-crew-test for this tag.

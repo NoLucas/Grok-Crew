@@ -16,7 +16,9 @@ const {
   parseConnectReply,
   readBotLinks,
   remoteConnectPaste,
+  replyMatchesSeat,
   suggestedConnectReply,
+  confirmRemoteReplies,
   upsertLinkedBot,
 } = await import('./desktop-bot-links.ts');
 
@@ -73,6 +75,43 @@ describe('remote bot links', () => {
     assert.equal(next.bots[0].status, 'waiting');
     assert.equal(next.bots[0].place, 'other_pc');
     assert.equal(hasConnectedBot(undefined, next), false);
+  });
+
+  it('attaches a seat when the operator pastes the bot GROK_CREW_OK line', () => {
+    const waiting = markRemoteCopied({ pairCode: 'QDWAVN', bots: [] }, { kind: 'grok', role: 'editor', language: 'ko' });
+    const miss = confirmRemoteReplies(waiting, 'GROK_CREW_OK AAAAAA Grok Bot 편집자', 'ko');
+    assert.equal(miss.confirmed.length, 0);
+    assert.equal(hasConnectedBot(undefined, miss.next), false);
+    const wrongSeat = confirmRemoteReplies(waiting, 'GROK_CREW_OK QDWAVN Grok Bot 기획자', 'ko');
+    assert.equal(wrongSeat.confirmed.length, 1);
+    assert.equal(wrongSeat.confirmed[0].role, 'planner');
+    const hit = confirmRemoteReplies(waiting, 'GROK_CREW_OK QDWAVN Grok Bot 편집자', 'ko');
+    assert.deepEqual(hit.confirmed, [{ kind: 'grok', role: 'editor' }]);
+    assert.equal(hit.next.bots[0].status, 'connected');
+    assert.ok(hit.next.bots[0].confirmedAt);
+    assert.equal(hasConnectedBot(undefined, hit.next), true);
+    assert.equal(replyMatchesSeat('Grok Bot 편집자', 'grok', 'editor'), true);
+    assert.equal(replyMatchesSeat('Grok Bot 편집자', 'grok', 'planner'), false);
+  });
+
+  it('attaches every named seat from a pasted bot chat', () => {
+    const empty = { pairCode: 'QDWAVN', bots: [] };
+    const chat = [
+      'GROK_CREW_OK QDWAVN Grok Bot 편집자',
+      '지금은 Grok Crew 편집자로 붙어 있습니다.',
+      'GROK_CREW_OK QDWAVN Grok Bot 스크래핑',
+      'GROK_CREW_OK QDWAVN Grok Bot 기획자',
+    ].join('\n');
+    const hit = confirmRemoteReplies(empty, chat, 'ko');
+    assert.equal(hit.confirmed.length, 3);
+    assert.equal(hit.next.bots.filter((item) => item.status === 'connected').length, 3);
+    assert.equal(hasConnectedBot(undefined, hit.next), true);
+    const stored = JSON.stringify(hit.next);
+    memory.set(BOT_LINKS_KEY, stored);
+    const again = readBotLinks();
+    assert.equal(again.bots.filter((item) => item.status === 'connected' && item.confirmedAt).length, 3);
+    const recopy = markRemoteCopied(again, { kind: 'grok', role: 'editor', language: 'ko' });
+    assert.equal(linkedBySeat(recopy.bots, 'grok', 'editor')?.status, 'connected');
   });
 
   it('does not treat a stored other-PC copy as a live connection', () => {

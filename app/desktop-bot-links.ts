@@ -16,6 +16,7 @@ export type LinkedBot = {
   status: 'waiting' | 'connected';
   pairCode: string;
   connectedAt?: string;
+  confirmedAt?: string;
 };
 
 export type BotLinkState = {
@@ -63,6 +64,7 @@ function normalizeBots(value: unknown): LinkedBot[] {
     if (!bot.id || !bot.pairCode || !bot.name) return false;
     if (!BOT_KINDS.has(bot.kind) || !BOT_PLACES.has(bot.place) || !BOT_STATUSES.has(bot.status)) return false;
     if (bot.role && !isBotRole(bot.role)) return false;
+    if (bot.confirmedAt && typeof bot.confirmedAt !== 'string') return false;
     return true;
   });
 }
@@ -119,7 +121,7 @@ export function honestRemoteLinks(state: BotLinkState): BotLinkState {
   return {
     ...state,
     bots: state.bots.map((bot) => (
-      bot.place === 'other_pc' && bot.status === 'connected'
+      bot.place === 'other_pc' && bot.status === 'connected' && !bot.confirmedAt
         ? { ...bot, status: 'waiting', connectedAt: undefined }
         : bot
     )),
@@ -132,8 +134,11 @@ export function markRemoteCopied(
 ): BotLinkState {
   if (!state.pairCode) return state;
   const family = seat.kind === 'grok' ? 'grok' : 'custom';
+  const id = seatId(family, seat.role, state.pairCode);
+  const existing = state.bots.find((item) => item.id === id);
+  if (existing?.status === 'connected' && existing.confirmedAt) return state;
   return upsertLinkedBot(state, {
-    id: seatId(family, seat.role, state.pairCode),
+    id,
     name: seatName(family, seat.role, seat.language),
     kind: family,
     role: seat.role,
@@ -152,16 +157,73 @@ export function suggestedConnectReply(kind: BotKind, pairCode: string, role: Bot
 }
 
 export function parseConnectReply(text: string, pairCode: string): { name: string } | null {
+  return extractConnectReplies(text, pairCode)[0] ?? null;
+}
+
+export function extractConnectReplies(text: string, pairCode: string): { name: string }[] {
   const expected = String(pairCode || '').trim();
-  if (!expected) return null;
-  const raw = String(text || '').replace(/[“”"'`]/g, ' ').trim();
-  if (!raw) return null;
-  const line = raw.split(/\r?\n/).map((item) => item.trim()).find((item) => /GROK_CREW_OK/i.test(item)) || raw;
-  const match = line.match(/GROK_CREW_OK\s+(\S+)\s+(.+)$/i);
-  if (!match) return null;
-  if (match[1].toUpperCase() !== expected.toUpperCase()) return null;
-  const name = match[2].trim().slice(0, 80);
-  return name ? { name } : null;
+  if (!expected) return [];
+  const raw = String(text || '').replace(/[“”"'`]/g, ' ');
+  if (!raw.trim()) return [];
+  const lines = raw.match(/GROK_CREW_OK\s+\S+\s+.+/gi) ?? [];
+  const found: { name: string }[] = [];
+  const seen = new Set<string>();
+  for (const line of lines) {
+    const match = line.trim().match(/GROK_CREW_OK\s+(\S+)\s+(.+)$/i);
+    if (!match) continue;
+    if (match[1].toUpperCase() !== expected.toUpperCase()) continue;
+    const name = match[2].trim().slice(0, 80);
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    found.push({ name });
+  }
+  return found;
+}
+
+export function replyMatchesSeat(name: string, kind: BotKind, role: BotRole): boolean {
+  const family = kind === 'grok' ? 'grok' : 'custom';
+  const needle = String(name || '').trim().toLowerCase();
+  if (!needle) return false;
+  if (family === 'grok' && !needle.includes('grok')) return false;
+  if (family === 'custom' && !needle.includes('agent')) return false;
+  return (['ko', 'en', 'zh', 'ja'] as const).some((lang) => (
+    needle.includes(roleLabel(role, lang).toLowerCase())
+  ));
+}
+
+export function confirmRemoteReplies(
+  state: BotLinkState,
+  reply: string,
+  language = 'ko',
+): { next: BotLinkState; confirmed: Array<{ kind: 'grok' | 'custom'; role: BotRole }> } {
+  if (!state.pairCode) return { next: state, confirmed: [] };
+  const lang = language.slice(0, 2);
+  const now = new Date().toISOString();
+  let next = state;
+  const confirmed: Array<{ kind: 'grok' | 'custom'; role: BotRole }> = [];
+  for (const parsed of extractConnectReplies(reply, state.pairCode)) {
+    for (const kind of ['grok', 'custom'] as const) {
+      for (const role of ['planner', 'scraper', 'editor'] as const) {
+        if (!replyMatchesSeat(parsed.name, kind, role)) continue;
+        if (confirmed.some((item) => item.kind === kind && item.role === role)) continue;
+        next = upsertLinkedBot(next, {
+          id: seatId(kind, role, state.pairCode),
+          name: seatName(kind, role, lang === 'zh' || lang === 'ja' || lang === 'en' ? lang : 'ko'),
+          kind,
+          role,
+          place: 'other_pc',
+          status: 'connected',
+          pairCode: state.pairCode,
+          connectedAt: now,
+          confirmedAt: now,
+        });
+        confirmed.push({ kind, role });
+      }
+    }
+  }
+  return { next, confirmed };
 }
 
 export function hasConnectedBot(roster?: CrewRoster | null, links?: BotLinkState | null): boolean {
