@@ -4,13 +4,13 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 로컬 영상 작업대" width="100%" />
 </p>
 
-**v1.0.0** · with Grok Bot · 지금 무료
+**v1.0.1** · with Grok Bot · 지금 무료
 
 쇼츠를 혼자 자르며 밤을 샐 필요 없습니다.
 쓰던 **Grok Bot**이나 Agent를 붙이면, 다듬은 파일이 **이 PC 폴더**에 남습니다.
 계정 없고, 카드 없고, 크레딧 없습니다. 받아서 엽니다.
 
-[Windows 받기](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0) · [English](README.md) · [中文](README.zh.md) · [日本語](README.ja.md)
+[Windows 받기](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.1) · [English](README.md) · [中文](README.zh.md) · [日本語](README.ja.md)
 
 ---
 
@@ -50,6 +50,14 @@
 
 ---
 
+## v1.0.1에서 달라진 것
+
+- exe를 처음 열면 어떤 TTS를 이 PC에 받을지 고릅니다. 고르지 않으면 Kokoro-82M입니다. 설치는 그대로 한 번 클릭입니다.
+- 연결 램프는 **연결됨**(초록)과 **연결되지않음**(회색)만 씁니다. 복사만으로는 초록불이 켜지지 않습니다.
+- **종료**를 누르면 경고가 뜹니다. 확인하면 Grok Bot·Agent 연결이 끊어집니다. 창만 닫으면 트레이로 숨고 연결은 남습니다.
+
+자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.1 릴리스 노트](docs/RELEASE_NOTES.v1.0.1.md)입니다.
+
 ## v1.0.0에서 달라진 것
 
 예전 Grok-Crew(0.2.1)는 브라우저 작업대에 가까웠습니다. 지금 1.0.0은 **이 PC의 창**입니다.
@@ -57,13 +65,11 @@
 - 연결 · 자동 · 설정 · 편집 · 내보내기가 같은 방식으로 적습니다. 할 일은 하나이고, 나머지는 칩입니다.
 - **Grok Bot**과 **Agent**를 기획자·스크래핑·편집자로 붙입니다. 내장 스킬이 함께 붙습니다.
 - 붙일 글만 복사합니다. 답장을 이 창에 다시 붙이지 않습니다. `127.0.0.1`을 봇에게 보여 주지 않습니다.
-- 자막·더빙·TTS는 켠 것만 돌아갑니다. 기본값은 모두 꺼져 있습니다. exe를 처음 열면 어떤 TTS를 이 PC에 받을지 고릅니다. 고르지 않으면 Kokoro-82M입니다.
-- 연결 램프는 **연결됨**(초록)과 **연결되지않음**(회색)만 씁니다. 복사만으로는 초록불이 켜지지 않습니다.
-- **종료**를 누르면 경고가 뜹니다. 확인하면 Grok Bot·Agent 연결이 끊어집니다. 창만 닫으면 트레이로 숨고 연결은 남습니다.
+- 자막·더빙·TTS는 켠 것만 돌아갑니다. 기본값은 모두 꺼져 있습니다. 첫 화면에서 목소리를 고르지 않습니다.
 - 다듬은 파일은 이 PC에 남습니다. GitHub 편지함이 없어도 됩니다.
 - 짝 코드는 암호학적으로 안전한 난수입니다. GitHub 토큰 오류 메시지에 토큰을 다시 보여 주지 않습니다.
 
-자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [릴리스 노트](docs/RELEASE_NOTES.v1.0.md)입니다.
+1.0.0 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.0 릴리스 노트](docs/RELEASE_NOTES.v1.0.md)입니다.
 
 ---
 

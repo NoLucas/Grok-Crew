@@ -14,4 +14,4 @@
 - 우리가 영상을 만들어 준다는 문장
 - 사이트 원본을 GitHub에 다시 올리기
 
-파일은 [Grok Crew v1.0.0](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0)에서 받는다.
+파일은 [Grok Crew v1.0.1](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.1)에서 받는다.

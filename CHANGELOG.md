@@ -4,17 +4,28 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
-- The marketing site (`/home`, `home.html`, lead inbox, install inject script) is no longer in the GitHub tree. It stays on the operator machine only. Guests get the exe from the GitHub Release. `/` stays the desk.
-- Quit now warns first. Confirming disconnects Grok Bot and Agent seats and same-PC check-ins. Closing the window still hides to the tray and keeps the links. The next desk run starts with no leftover bot sessions.
+## 1.0.1 - 2026-08-28
+
+Local 1.0.1. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.1` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.1.md`. Guest download: [NoLucas/Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.1). Already-installed 1.0.0 desks still check Grok-crew-test for the same tag.
+
+### Desk
+
 - First open of the desk now asks which TTS this PC should install (Kokoro-82M / Step Audio EditX / Zonos-v0.1). The Windows installer stays one-click; Next with no pick keeps Kokoro-82M. TTS stays unused until Auto turns it on.
 - Connect lamps are only **연결됨** / **연결되지않음** (Connected / Not connected). Gray is not connected. Green is connected. Role plus “아직 아님”, and copy-waiting lamp copy, are gone. Copying still does not turn the lamp green.
 - Copying the connect text no longer marks a seat connected. Leftover other-PC “connected” rows from a copy are treated as waiting.
-- `/home` now opens on an English language gate (English / 한국어 / 中文 / 日本語). The browser language is not guessed, and a leftover localStorage choice does not skip the gate. Only `?lang=` skips it. The first screen is the mark plus native names — no explainer copy. The choice can be changed in the header.
-- Removed a personal chatgpt.site host from the homepage allowlist. Extra origins come only from `GROK_CREW_PUBLIC_ORIGIN`.
-- `POST /api/get` now rejects foreign `Origin` headers, rate-limits repeats, and only returns a GitHub https download URL. `/home` and the preview server send frame and content-type headers.
+- Quit now warns first. Confirming disconnects Grok Bot and Agent seats and same-PC check-ins. Closing the window still hides to the tray and keeps the links. The next desk run starts with no leftover bot sessions.
+
+### Repository
+
+- The marketing site (`/home`, `home.html`, lead inbox, install inject script) is no longer in the GitHub tree. It stays on the operator machine only. Guests get the exe from the GitHub Release. `/` stays the desk.
 - Personal Cursor skills used to build the app are no longer in this repository. Guest bot skills stay in `public/bot-skills/`.
 - Removed unused archive copies, the launch-post draft, the idea scrap, the leftover install-guide note, and the unused bot-pack text file. Bot zip instructions still come from `local_studio/bot_pack.py`. Hero art lives only at `public/hero.png`.
-- The public homepage is back at `/home`. It shows v1.0.0, with Grok Bot, built-in skills, and a free Windows download that does not wait on email. `POST /api/get` accepts the live homepage origin for optional news. `/` stays the desk. The lock is `docs/HOMEPAGE.ko.md`.
+
+### Operator site (not in this repository)
+
+- The operator homepage opens on an English language gate (English / 한국어 / 中文 / 日本語). The browser language is not guessed, and a leftover localStorage choice does not skip the gate. Only `?lang=` skips it. The first screen is the mark plus native names — no explainer copy. The choice can be changed in the header.
+- Removed a personal chatgpt.site host from the homepage allowlist. Extra origins come only from `GROK_CREW_PUBLIC_ORIGIN`.
+- `POST /api/get` rejects foreign `Origin` headers, rate-limits repeats, and only returns a GitHub https download URL.
 
 ## 1.0.0 - 2026-08-27
 

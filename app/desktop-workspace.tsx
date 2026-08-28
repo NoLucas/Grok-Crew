@@ -329,8 +329,8 @@ export default function DesktopWorkspace() {
   const [launch, setLaunch] = useState<LaunchStatus | null>(null);
   const [update, setUpdate] = useState<UpdateStatus>({
     status: 'dev_fallback',
-    currentVersion: '1.0.0',
-    latestVersion: '1.0.0',
+    currentVersion: '1.0.1',
+    latestVersion: '1.0.1',
     releaseUrl: '',
     message: 'Browser workspace uses the local tree. Packaged desktop checks GitHub releases.',
   });

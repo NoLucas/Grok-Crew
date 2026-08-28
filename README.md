@@ -4,13 +4,13 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.0** · with Grok Bot · free now
+**v1.0.1** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
 No account. No card. No per-cut credits. Download it and open it.
 
-[Get Windows](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.0) · [한국어](README.ko.md) · [中文](README.zh.md) · [日本語](README.ja.md)
+[Get Windows](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.1) · [한국어](README.ko.md) · [中文](README.zh.md) · [日本語](README.ja.md)
 
 ---
 
@@ -50,6 +50,14 @@ If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
 ---
 
+## What changed in v1.0.1
+
+- First open asks which TTS this PC should keep. Next with no pick is Kokoro-82M. The installer stays one-click.
+- Connect lamps are only **Connected** (green) and **Not connected** (gray). Copying the connect text does not turn the lamp green.
+- Quit warns first. Confirming disconnects Grok Bot and Agent. Closing the window only hides to the tray.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.1 notes](docs/RELEASE_NOTES.v1.0.1.md).
+
 ## What changed in v1.0.0
 
 Older Grok-Crew (0.2.1) was closer to a browser workspace. 1.0.0 is **a window on this PC**.
@@ -57,13 +65,11 @@ Older Grok-Crew (0.2.1) was closer to a browser workspace. 1.0.0 is **a window o
 - Connect, Auto, Setup, Edit, and Export share one writing style: one job, then chips.
 - **Grok Bot** and **Agent** attach as planner, scraper, and editor. Built-in skills go with the seat.
 - Connect only copies attach text. They do not paste a reply back here. The bot never sees `127.0.0.1`.
-- Captions, dubbing, and TTS stay off until they turn them on. First open asks which TTS this PC should keep. Next with no pick is Kokoro-82M.
-- Connect lamps are only **Connected** (green) and **Not connected** (gray). Copying the connect text does not turn the lamp green.
-- Quit warns first. Confirming disconnects Grok Bot and Agent. Closing the window only hides to the tray.
+- Captions, dubbing, and TTS stay off until they turn them on. First open does not block on a voice picker.
 - Finished files stay on this PC. A GitHub inbox is optional.
 - Pair codes use cryptographic randomness. GitHub token errors do not echo the token.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the release notes](docs/RELEASE_NOTES.v1.0.md).
+The 1.0.0 list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.0 notes](docs/RELEASE_NOTES.v1.0.md).
 
 ---
 
