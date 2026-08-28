@@ -384,6 +384,10 @@ export function readSavedLang(storage) {
   }
 }
 
+export function shouldShowLangGate(search = '') {
+  return !readQueryLang(search);
+}
+
 export function homeCopy(lang) {
   return HOME_COPY[pickHomeLang(lang) || 'en'];
 }

@@ -25,9 +25,7 @@
       }
       var query = '';
       try { query = new URLSearchParams(location.search).get('lang') || ''; } catch (e) {}
-      var saved = '';
-      try { saved = localStorage.getItem('grok-crew-home-lang') || ''; } catch (e) {}
-      var lang = pick(query) || pick(saved);
+      var lang = pick(query);
       if (lang) {
         document.documentElement.lang = lang;
         document.documentElement.setAttribute('data-home-lang', lang);
@@ -123,6 +121,8 @@
       border-radius:0; background:transparent; color:var(--text); cursor:pointer; text-align:left;
     }
     .lang-choice:last-child { border-bottom:0; }
+    .lang-choice[aria-pressed="true"] { background:color-mix(in srgb,var(--yellow) 7%,var(--surface)); }
+    .lang-choice[aria-pressed="true"] .lang-code { color:var(--yellow); }
     .lang-choice:hover, .lang-choice:focus-visible {
       background:color-mix(in srgb,var(--yellow) 7%,var(--surface)); outline:none;
     }
@@ -567,7 +567,7 @@
   </div>
 
   <script type="module">
-    import { HOME_LANG_KEY, applyHomeLanguage, homeCopy, pickHomeLang, readQueryLang, readSavedLang } from '/home-i18n.js';
+    import { HOME_LANG_KEY, applyHomeLanguage, homeCopy, pickHomeLang, readQueryLang, readSavedLang, shouldShowLangGate } from '/home-i18n.js';
 
     (() => {
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -700,11 +700,16 @@
 
       const queryLang = readQueryLang(location.search);
       const savedLang = readSavedLang(window.localStorage);
-      if (queryLang || savedLang) {
-        setLanguage(queryLang || savedLang, true);
+      if (!shouldShowLangGate(location.search) && queryLang) {
+        setLanguage(queryLang, true);
       } else if (siteShell) {
         siteShell.inert = true;
         siteShell.setAttribute('aria-hidden', 'true');
+        if (savedLang) {
+          document.querySelectorAll('[data-pick-lang]').forEach((button) => {
+            button.setAttribute('aria-pressed', button.getAttribute('data-pick-lang') === savedLang ? 'true' : 'false');
+          });
+        }
         langGate?.querySelector('[data-pick-lang]')?.focus();
       }
 

@@ -10,6 +10,7 @@ import {
   pickHomeLang,
   readQueryLang,
   readSavedLang,
+  shouldShowLangGate,
 } from '../public/home-i18n.js';
 
 const homeHtml = await readFile(new URL('../public/home.html', import.meta.url), 'utf8');
@@ -42,6 +43,11 @@ describe('homepage language packs', () => {
     assert.equal(readQueryLang('?lang=fr'), '');
     assert.equal(readSavedLang({ getItem: () => 'zh' }), 'zh');
     assert.equal(readSavedLang({ getItem: () => 'de' }), '');
+    assert.equal(shouldShowLangGate(''), true);
+    assert.equal(shouldShowLangGate('?utm=1'), true);
+    assert.equal(shouldShowLangGate('?lang=ko'), false);
+    assert.equal(shouldShowLangGate('?lang=fr'), true);
+    assert.equal(homeHtml.includes("localStorage.getItem('grok-crew-home-lang')"), false);
     assert.equal(homeCopy('').metaTitle, HOME_COPY.en.metaTitle);
     assert.match(homeCopy('ko').heroEyebrow, /무료/);
     assert.equal(homeHtml.includes('navigator.language'), false);
