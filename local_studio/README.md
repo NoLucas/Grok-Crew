@@ -40,9 +40,9 @@ Open `http://localhost:3000/bot-guide` for the bot-facing editing manual. Same-P
 
 Read a bot's choice with `GET /api/bots/{bot_id}/execution-policy`, or record it with `POST /api/bots/execution-policy` using `mode=auto_local` or `mode=approval_required`. The Bot Check page shows the current choice beside each verified bot.
 
-Local agents can record a check-in with `POST /api/bots/heartbeat`. Supply a `bot_id`, `display_name`, `action`, and optional `detail` object. If `LOCAL_STUDIO_TOKEN` is configured, the agent must receive that token through its own runtime configuration; it must not read `.env` or SQLite to obtain it. The browser’s Bot Check page includes a copy-ready request example.
+Local agents can record a check-in with `POST /api/bots/heartbeat`. Supply a `bot_id`, `display_name`, `action`, and optional `detail` object. If `LOCAL_STUDIO_TOKEN` is configured, the agent must receive that token through its own runtime configuration; it must not read `.env` or SQLite to obtain it. The browser’s Bot Check page includes a copy-ready request example. PowerShell on the same Windows with no `Origin` header may call `POST /api/bot-entry` and `POST /api/bots/heartbeat` without a token. Browser and render/publish calls still need the token. Do not put the token in a chat invite.
 
-If `LOCAL_STUDIO_TOKEN` is set, it is required on every reading request as well as every writing request — only `/health`, `/api/terminal-contract`, `/api/bot-guide`, `GET /api/v2/tools`, `GET /api/bot-entry`, and the CLI download stay open without it. Local Studio also rejects any request whose browser `Origin` header is outside `http://localhost:3000` / `http://127.0.0.1:3000`, regardless of whether a token is configured, so a page open in another tab cannot drive this service.
+If `LOCAL_STUDIO_TOKEN` is set, it is required on every reading request as well as every writing request — only `/health`, `/api/terminal-contract`, `/api/bot-guide`, `GET /api/v2/tools`, `GET /api/bot-entry`, the CLI download, and those two loopback check-in POSTs (no `Origin`) stay open without it. Local Studio also rejects any request whose browser `Origin` header is outside `http://localhost:3000` / `http://127.0.0.1:3000`, regardless of whether a token is configured, so a page open in another tab cannot drive this service.
 
 ## Operations center
 

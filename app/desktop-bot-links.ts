@@ -17,6 +17,35 @@ export function grokSeatBotId(role: BotRole): string {
   return GROK_SEAT_BOT_IDS[role];
 }
 
+export const DEFAULT_STUDIO_PORT = 7214;
+
+export function studioCheckInPort(port?: number): number {
+  const n = Number(port);
+  if (!Number.isInteger(n) || n < 1 || n > 65535) return DEFAULT_STUDIO_PORT;
+  return n;
+}
+
+export function studioPortFromApiBase(apiBase?: string): number {
+  try {
+    const url = new URL(String(apiBase || `http://127.0.0.1:${DEFAULT_STUDIO_PORT}`));
+    if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost' && url.hostname !== '[::1]') {
+      return DEFAULT_STUDIO_PORT;
+    }
+    if (!url.port) {
+      if (url.protocol === 'https:') return 443;
+      if (url.protocol === 'http:') return 80;
+      return DEFAULT_STUDIO_PORT;
+    }
+    return studioCheckInPort(Number(url.port));
+  } catch {
+    return DEFAULT_STUDIO_PORT;
+  }
+}
+
+export function studioCheckInOrigin(port?: number): string {
+  return `http://127.0.0.1:${studioCheckInPort(port)}`;
+}
+
 export const BOT_LINKS_KEY = 'grok-crew-bot-links';
 
 export type BotKind = 'grok' | 'cursor' | 'claude' | 'custom' | 'same_pc';
@@ -307,13 +336,15 @@ export function seatId(kind: BotKind, role: BotRole, pairCode: string): string {
   return `${kind}-${role}-${pairCode}`;
 }
 
-function grokWindowsCheckIn(who: string, role: BotRole, language: string): string[] {
+function grokWindowsCheckIn(who: string, role: BotRole, language: string, studioPort = DEFAULT_STUDIO_PORT): string[] {
   const lang = language.slice(0, 2);
+  const port = studioCheckInPort(studioPort);
+  const origin = studioCheckInOrigin(port);
   const id = grokSeatBotId(role);
   const purpose = seatPurpose(role);
-  const ps = `Invoke-RestMethod -Uri http://127.0.0.1:7214/api/bot-entry -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","purpose":"${purpose}"}'`;
-  const py = `python grok-crew.py entry --bot-id ${id} --display-name "${who}" --purpose ${purpose}`;
-  const beat = `Invoke-RestMethod -Uri http://127.0.0.1:7214/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","action":"still_here"}'`;
+  const ps = `Invoke-RestMethod -Uri ${origin}/api/bot-entry -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","purpose":"${purpose}"}'`;
+  const py = `python grok-crew.py entry --server ${origin} --bot-id ${id} --display-name "${who}" --purpose ${purpose}`;
+  const beat = `Invoke-RestMethod -Uri ${origin}/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","action":"still_here"}'`;
   if (lang === 'ko') {
     return [
       '명령을 실행할 컴퓨터는 운영자가 등록한 Windows Computer만입니다. 이름을 지어내지 마세요.',
@@ -323,9 +354,11 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string): strin
       '그 Windows에서만 아래를 실행하세요. Python이 있으면 둘 중 하나면 됩니다.',
       ps,
       py,
-      '(스크립트는 그 Windows에서 http://127.0.0.1:7214/downloads/grok-crew.py)',
+      `(스크립트는 그 Windows에서 ${origin}/downloads/grok-crew.py)`,
       '5분마다 같은 Windows에서 heartbeat를 남기세요.',
       beat,
+      `${port}가 안 열리면 멈추고 "${port}가 없다"고 하세요. 디스크에서 스크립트를 찾지 마세요.`,
+      '그래도 안 되면 GROK_CREW_OK 한 줄만 보내고 멈추세요.',
     ];
   }
   if (lang === 'zh') {
@@ -337,9 +370,11 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string): strin
       '只在那台 Windows 上执行下面的命令。有 Python 时两选一即可。',
       ps,
       py,
-      '(脚本在那台 Windows 上：http://127.0.0.1:7214/downloads/grok-crew.py)',
+      `(脚本在那台 Windows 上：${origin}/downloads/grok-crew.py)`,
       '每 5 分钟在同一台 Windows 上留下 heartbeat。',
       beat,
+      `若 ${port} 没开，停下来只写“没有 ${port}”。不要在磁盘上找脚本。`,
+      '还不行就只发 GROK_CREW_OK 那一行然后停下。',
     ];
   }
   if (lang === 'ja') {
@@ -351,9 +386,11 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string): strin
       'その Windows だけで下を実行してください。Python があればどちらかでよいです。',
       ps,
       py,
-      '(スクリプトはその Windows で http://127.0.0.1:7214/downloads/grok-crew.py)',
+      `(スクリプトはその Windows で ${origin}/downloads/grok-crew.py)`,
       '5 分ごとに同じ Windows で heartbeat を残してください。',
       beat,
+      `${port} が開いていなければ止まって「${port} がない」と書いてください。ディスクでスクリプトを探さないでください。`,
+      'それでもだめなら GROK_CREW_OK の一行だけ送って止まってください。',
     ];
   }
   return [
@@ -364,19 +401,27 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string): strin
     'Run the next command on that Windows only. If Python is there, either line is enough.',
     ps,
     py,
-    '(script on that Windows: http://127.0.0.1:7214/downloads/grok-crew.py)',
+    `(script on that Windows: ${origin}/downloads/grok-crew.py)`,
     'Leave a heartbeat on the same Windows every five minutes.',
     beat,
+    `If ${port} is not open, stop and say ${port} is missing. Do not search the disk for the script.`,
+    'If that still fails, send only the GROK_CREW_OK line and stop.',
   ];
 }
 
-export function remoteConnectPaste(kind: BotKind, pairCode: string, language: string, role: BotRole = 'editor'): string {
+export function remoteConnectPaste(
+  kind: BotKind,
+  pairCode: string,
+  language: string,
+  role: BotRole = 'editor',
+  studioPort = DEFAULT_STUDIO_PORT,
+): string {
   const lang = language.slice(0, 2);
   const family = kind === 'grok' ? 'grok' : 'custom';
   const who = seatName(family, role, lang === 'zh' || lang === 'ja' || lang === 'en' ? lang : 'ko');
   const line = `GROK_CREW_OK ${pairCode} ${who}`;
   const job = roleLabel(role, lang === 'zh' || lang === 'ja' || lang === 'en' ? lang : 'ko');
-  const windows = family === 'grok' ? grokWindowsCheckIn(who, role, lang) : [];
+  const windows = family === 'grok' ? grokWindowsCheckIn(who, role, lang, studioPort) : [];
   if (lang === 'ko') {
     return [
       `당신은 Grok Crew와 연결합니다. 이름은 ${who}입니다.`,

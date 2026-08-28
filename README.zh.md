@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.3** · with Grok Bot · 现在免费
+**v1.0.4** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,11 +50,17 @@
 
 ---
 
+## v1.0.4 改了什么
+
+- 窗口开着时监听 `127.0.0.1:7214`，各国一样。同一台 Windows 上的 PowerShell 签到不再需要聊天令牌。没有 7214 时机器人只回一行就停。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.4 发布说明](docs/RELEASE_NOTES.v1.0.4.md)。
+
 ## v1.0.3 改了什么
 
 - 在 **连接**，Grok Bot 应在已登记的 Windows 上批准后签到。没到的话，把机器人回的 `GROK_CREW_OK` 贴到这里。只复制不算已连接。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.3 发布说明](docs/RELEASE_NOTES.v1.0.3.md)。
+1.0.3 列表见 [1.0.3 发布说明](docs/RELEASE_NOTES.v1.0.3.md)。
 
 ## v1.0.2 改了什么
 

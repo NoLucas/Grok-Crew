@@ -124,6 +124,15 @@ def test_parse_allowed_origins_accepts_comma_separated_override():
     assert origins == frozenset({"https://studio.example.com", "http://localhost:5173"})
 
 
+def test_studio_api_base_url_uses_local_studio_port(monkeypatch):
+    monkeypatch.delenv("LOCAL_STUDIO_PORT", raising=False)
+    assert config.studio_api_base_url() == "http://127.0.0.1:7214"
+    monkeypatch.setenv("LOCAL_STUDIO_PORT", "8123")
+    assert config.studio_api_base_url() == "http://127.0.0.1:8123"
+    monkeypatch.setenv("LOCAL_STUDIO_PORT", "not-a-port")
+    assert config.studio_api_base_url() == "http://127.0.0.1:7214"
+
+
 def test_loopback_preview_ports_are_allowed_without_env_override():
     defaults = config.parse_allowed_origins("")
     assert config.origin_is_allowed("http://127.0.0.1:43123", defaults) is True

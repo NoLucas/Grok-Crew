@@ -4,6 +4,16 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.4 - 2026-08-28
+
+Local 1.0.4. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.4` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.4.md`. Guest download stays the same Google Drive file. Already-installed 1.0.3 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- Packaged Windows now opens Local Studio on `127.0.0.1:7214` when that port is free. If 7214 is busy, Connect shows the real port and the copied invite uses it.
+- Same-Windows PowerShell check-in (`POST /api/bot-entry` and `POST /api/bots/heartbeat` with no Origin) no longer needs the desk token. Browser, render, and publish still do. The token is not put in the chat invite.
+- If 7214 is not open, the invite tells the bot to stop in one line and not search the disk for a script. `GROK_CREW_OK` remains the fallback.
+
 ## 1.0.3 - 2026-08-28
 
 Local 1.0.3. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.3` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.3.md`. Guest download stays the same Google Drive file. Already-installed 1.0.2 desks check Grok-crew-test for this tag.

@@ -36,6 +36,7 @@ from config import (
     RENDER_EXECUTOR,
     SITE_BASE_URL,
     load_dotenv,
+    studio_api_base_url,
     require_path,
     utc_now,
     workspace_path,
@@ -515,7 +516,7 @@ def terminal_contract() -> dict[str, Any]:
     return {
         "schema": "local-video-workspace.terminal-cli/v1",
         "scope": "Same workstation and loopback HTTP only.",
-        "api_base_url": "http://127.0.0.1:7214",
+        "api_base_url": studio_api_base_url(),
         "browser_site_base_url": SITE_BASE_URL,
         "browser_rule": "Port 7214 is the CLI and JSON API only. Open or capture browser pages at http://localhost:3000; never append /production or other browser paths to port 7214.",
         "clone_cli_path": "local_studio/grok_crew.py",
@@ -1044,6 +1045,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run Local Video Studio on loopback only.")
     parser.add_argument("--port", type=int, default=7214)
     args = parser.parse_args(); load_dotenv(); init_db()
+    os.environ["LOCAL_STUDIO_PORT"] = str(args.port)
     from first_run import provision_sample_media
     if provision_sample_media():
         print("Bundled sample clip is in workspace/inputs/grok-crew-sample.mp4")

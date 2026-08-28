@@ -69,6 +69,18 @@ ALLOWED_ORIGINS = parse_allowed_origins(os.getenv("LOCAL_STUDIO_ALLOWED_ORIGINS"
 SITE_BASE_URL = "http://localhost:3000"
 BROWSER_PAGE_PATHS = {"/", "/tools", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy"}
 PUBLIC_GET_PATHS = frozenset({"/health", "/api/terminal-contract", "/api/bot-guide", "/api/bot-entry", "/api/v2/tools", "/downloads/grok-crew.py", "/downloads/grok-crew-bot.zip"})
+PUBLIC_POST_PATHS = frozenset({"/api/bot-entry", "/api/bots/heartbeat"})
+
+
+def studio_api_base_url() -> str:
+    raw = os.getenv("LOCAL_STUDIO_PORT", "7214").strip()
+    try:
+        port = int(raw)
+    except ValueError:
+        port = 7214
+    if port < 1 or port > 65535:
+        port = 7214
+    return f"http://127.0.0.1:{port}"
 DEFAULT_EDIT_METHOD = {
     "schema": "local-video-workspace.edit-method/v1",
     "hook_strategy": "payoff_first",

@@ -22,6 +22,7 @@ from config import (
     CAPTION_LAYOUT_PRESETS,
     PLATFORM_PRESETS,
     PUBLIC_GET_PATHS,
+    PUBLIC_POST_PATHS,
     QUALITY_PRESETS,
     SITE_BASE_URL,
     TERMINAL_CLI_PATH,
@@ -246,6 +247,9 @@ class StudioHandler(BaseHTTPRequestHandler):
         expected_digest = hashlib.sha256(expected_header.encode("utf-8")).digest()
         return hmac.compare_digest(provided_digest, expected_digest)
 
+    def _public_loopback_write(self, path: str) -> bool:
+        return path in PUBLIC_POST_PATHS and self.headers.get("Origin") is None
+
     @staticmethod
     def _route_id(path: str, prefix: str, suffix: str) -> str:
         if not path.startswith(prefix) or not path.endswith(suffix):
@@ -455,11 +459,11 @@ class StudioHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         if not self._origin_allowed():
             self._json(403, {"error": "Cross-origin requests are not allowed."}); return
-        if not self._token_ok():
+        parsed = urlparse(self.path)
+        path = parsed.path.rstrip("/")
+        if not self._token_ok() and not self._public_loopback_write(path):
             self._json(401, {"error": "Invalid local studio token."}); return
         try:
-            parsed = urlparse(self.path)
-            path = parsed.path.rstrip("/")
             if path == "/api/v2/handoff/accept-file":
                 query = parse_qs(parsed.query)
                 length = int(self.headers.get("Content-Length", "0"))

@@ -15,15 +15,17 @@ export function connectedBot(roster?: CrewRoster | null): CrewBot | null {
   return bots.find((item) => item.presence === "active") || null;
 }
 
-export function connectPaste(language: string): string {
+export function connectPaste(language: string, studioPort = 7214): string {
   const lang = language.slice(0, 2);
+  const port = Number(studioPort);
+  const origin = `http://127.0.0.1:${Number.isInteger(port) && port >= 1 && port <= 65535 ? port : 7214}`;
   if (lang === "ko") {
     return [
       "이 컴퓨터의 Grok Crew에 먼저 체크인하세요. 같은 PC에서만 됩니다.",
       "다른 PC에서는 127.0.0.1에 붙지 마세요.",
       "",
       "python grok-crew.py entry --bot-id desk-bot --display-name \"당신의 이름\" --purpose edit_video",
-      "(스크립트는 http://127.0.0.1:7214/downloads/grok-crew.py)",
+      `(스크립트는 ${origin}/downloads/grok-crew.py)`,
       "",
       "체크인되면 이 창에 이름이 보입니다. 그다음 일을 받습니다.",
     ].join("\n");
@@ -34,7 +36,7 @@ export function connectPaste(language: string): string {
       "另一台电脑不要连接 127.0.0.1。",
       "",
       "python grok-crew.py entry --bot-id desk-bot --display-name \"你的名字\" --purpose edit_video",
-      "(脚本：http://127.0.0.1:7214/downloads/grok-crew.py)",
+      `(脚本：${origin}/downloads/grok-crew.py)`,
       "",
       "签到后这个窗口会显示名字。然后再接工作。",
     ].join("\n");
@@ -45,7 +47,7 @@ export function connectPaste(language: string): string {
       "別の PC から 127.0.0.1 に接続しないでください。",
       "",
       "python grok-crew.py entry --bot-id desk-bot --display-name \"あなたの名前\" --purpose edit_video",
-      "(スクリプトは http://127.0.0.1:7214/downloads/grok-crew.py)",
+      `(スクリプトは ${origin}/downloads/grok-crew.py)`,
       "",
       "チェックインするとこの窓に名前が出ます。それから仕事を受けます。",
     ].join("\n");
@@ -55,7 +57,7 @@ export function connectPaste(language: string): string {
     "Do not connect to 127.0.0.1 from another PC.",
     "",
     "python grok-crew.py entry --bot-id desk-bot --display-name \"your name\" --purpose edit_video",
-    "(script: http://127.0.0.1:7214/downloads/grok-crew.py)",
+    `(script: ${origin}/downloads/grok-crew.py)`,
     "",
     "When this window shows your name, you are connected. Then take the job.",
   ].join("\n");

@@ -1,6 +1,6 @@
 {
   "name": "grok-crew",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "license": "BUSL-1.1",
   "author": "Grok Crew contributors",
   "description": "Local-first short-form desk: you write the brief, a Grok bot supplies source and cut.",
@@ -34,7 +34,7 @@
     "desktop:dist": "npm run build && npm run sidecar:build && electron-builder",
     "dist:bot-pack": "node scripts/pack-bot-bundle.mjs",
     "runner:test": "node scripts/test-relay.mjs",
-    "timeline:test": "node --experimental-strip-types --test --test-concurrency=1 app/timeline/*.test.mjs app/desktop-remote.test.mjs app/desktop-appearance.test.mjs app/desktop-column-widths.test.mjs app/desktop-note-folds.test.mjs app/desktop-edit-presets.test.mjs app/desktop-project-library.test.mjs app/desktop-wait-state.test.mjs app/desktop-bot-connect.test.mjs app/desktop-bot-links.test.mjs app/desktop-auto-desk.test.mjs app/desktop-desk-composer.test.mjs app/desktop-voice-models.test.mjs app/desktop-voice-personas.test.mjs app/bot-skills.test.mjs app/advanced-tools.test.mjs desktop/ipc-guard.test.mjs desktop/update-service.test.mjs desktop/app-icon.test.mjs",
+    "timeline:test": "node --experimental-strip-types --test --test-concurrency=1 app/timeline/*.test.mjs app/desktop-remote.test.mjs app/desktop-appearance.test.mjs app/desktop-column-widths.test.mjs app/desktop-note-folds.test.mjs app/desktop-edit-presets.test.mjs app/desktop-project-library.test.mjs app/desktop-wait-state.test.mjs app/desktop-bot-connect.test.mjs app/desktop-bot-links.test.mjs app/desktop-auto-desk.test.mjs app/desktop-desk-composer.test.mjs app/desktop-voice-models.test.mjs app/desktop-voice-personas.test.mjs app/bot-skills.test.mjs app/advanced-tools.test.mjs desktop/ipc-guard.test.mjs desktop/update-service.test.mjs desktop/app-icon.test.mjs desktop/studio-port.test.mjs",
     "launch:verify": "node scripts/launch-verify.mjs",
     "sample": "node scripts/run-sample-project.mjs",
     "build": "vinext build",

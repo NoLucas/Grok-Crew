@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — このPCの映像デスク" width="100%" />
 </p>
 
-**v1.0.3** · with Grok Bot · いま無料
+**v1.0.4** · with Grok Bot · いま無料
 
 Shorts を一人で切って夜を明かす必要はありません。
 使っている **Grok Bot** や Agent を付ければ、できたファイルは **このPCのフォルダ** に残ります。
@@ -50,11 +50,17 @@ Shorts を一人で切って夜を明かす必要はありません。
 
 ---
 
+## v1.0.4 で変わったこと
+
+- 窓が開いていれば `127.0.0.1:7214` を開けます。国が違っても同じです。その Windows の PowerShell チェックインにチャット用トークンは要りません。7214 がなければボットは一行で止まります。
+
+一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.4 リリースノート](docs/RELEASE_NOTES.v1.0.4.md) です。
+
 ## v1.0.3 で変わったこと
 
 - **接続** で Grok Bot は登録した Windows で承認してチェックインすると付きます。来なければボットの `GROK_CREW_OK` をここに貼ります。コピーしただけでは接続されません。
 
-一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.3 リリースノート](docs/RELEASE_NOTES.v1.0.3.md) です。
+1.0.3 の一覧は [1.0.3 リリースノート](docs/RELEASE_NOTES.v1.0.3.md) です。
 
 ## v1.0.2 で変わったこと
 

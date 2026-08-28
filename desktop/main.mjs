@@ -7,6 +7,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isRendererNavigationAllowed, studioRequestUrl } from './ipc-guard.mjs';
 import { RelayService } from './relay-service.mjs';
+import { DEFAULT_STUDIO_PORT, reserveLoopbackPort } from './studio-port.mjs';
 import { createDesktopTray, installCloseToTray, installQuitGuard } from './tray-controller.mjs';
 import { fetchLatestRelease, parseReleasePageUrl, resolveUpdateRepo, updatePolicy } from './update-service.mjs';
 
@@ -95,7 +96,7 @@ async function waitForStudio(apiBase) {
 }
 
 async function startStudio() {
-  studioPort = await freePort();
+  studioPort = await reserveLoopbackPort(DEFAULT_STUDIO_PORT);
   studioToken = randomBytes(32).toString('base64url');
   const apiBase = `http://127.0.0.1:${studioPort}`;
   const e2eRoot = development && process.env.GROK_CREW_E2E_ROOT
@@ -107,6 +108,7 @@ async function startStudio() {
   const environment = {
     ...process.env,
     LOCAL_STUDIO_TOKEN: studioToken,
+    LOCAL_STUDIO_PORT: String(studioPort),
     LOCAL_STUDIO_DATA: dataRoot,
     LOCAL_STUDIO_WORKSPACE: workspace,
     LOCAL_STUDIO_ALLOWED_ORIGINS: process.env.GROK_CREW_RENDERER_URL ?? 'http://127.0.0.1:3000',

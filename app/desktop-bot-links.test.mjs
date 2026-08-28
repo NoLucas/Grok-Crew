@@ -13,6 +13,7 @@ const {
   linkedBySeat,
   makePairCode,
   markRemoteCopied,
+  studioPortFromApiBase,
   parseConnectReply,
   readBotLinks,
   remoteConnectPaste,
@@ -67,11 +68,21 @@ describe('remote bot links', () => {
       assert.match(text, /heartbeat/);
       assert.match(text, /grok-crew-planner/);
       assert.match(text, /grok-crew-edit-plan/);
+      assert.match(text, /7214가 없다|没有 7214|7214 がない|7214 is missing/);
+      assert.match(text, /GROK_CREW_OK 한 줄만|只发 GROK_CREW_OK|GROK_CREW_OK の一行だけ|only the GROK_CREW_OK line/);
+      assert.match(text, /디스크에서 스크립트를 찾지 마세요|不要在磁盘上找脚本|ディスクでスクリプトを探さない|Do not search the disk for the script/);
+      assert.doesNotMatch(text, /스크립트를 찾는 중|searching for the script/);
       assert.doesNotMatch(text, /Claude/);
       assert.doesNotMatch(text, /Cursor/);
       assert.doesNotMatch(text, /git clone/);
       assert.doesNotMatch(text, /DESKTOP-LJFJI0U/);
     }
+    const fallback = remoteConnectPaste('grok', '7K2M9Q', 'ko', 'planner', 8123);
+    assert.match(fallback, /127\.0\.0\.1:8123\/api\/bot-entry/);
+    assert.match(fallback, /8123가 없다/);
+    assert.doesNotMatch(fallback, /127\.0\.0\.1:7214/);
+    assert.equal(studioPortFromApiBase('http://127.0.0.1:8123'), 8123);
+    assert.equal(studioPortFromApiBase('https://evil.example:7214'), 7214);
     const agent = remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper');
     assert.match(agent, /Agent 스크래핑/);
     assert.match(agent, /grok-crew-scraper/);

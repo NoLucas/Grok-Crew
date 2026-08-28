@@ -12,6 +12,7 @@ import {
   remoteConnectPaste,
   removeLinkedBot,
   seatIsConnected,
+  studioPortFromApiBase,
   writeBotLinks,
 } from './desktop-bot-links';
 import { useLanguage } from './language';
@@ -95,12 +96,15 @@ export function DesktopBotPanel({
   const local = connectedBot(roster);
   const liveLink = links.bots.find((item) => item.status === 'connected');
   const connected = Boolean(local) || Boolean(liveLink);
+  const studioPort = studioPortFromApiBase(
+    typeof window !== 'undefined' ? window.grokCrew?.apiBase : undefined,
+  );
 
   const connectText = useMemo(
-    () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role),
-    [language, links.pairCode, openSeat.kind, openSeat.role],
+    () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role, studioPort),
+    [language, links.pairCode, openSeat.kind, openSeat.role, studioPort],
   );
-  const localText = useMemo(() => connectPaste(language), [language]);
+  const localText = useMemo(() => connectPaste(language, studioPort), [language, studioPort]);
 
   const markCopied = (seat: OtherSeat) => {
     const next = markRemoteCopied(links, { kind: seat.kind, role: seat.role, language });
@@ -117,7 +121,7 @@ export function DesktopBotPanel({
       setError(t('연결 코드가 아직 없습니다. 잠시 후 다시 눌러 주세요.', 'The connect code is not ready yet. Try again in a moment.', '连接代码还没好。请稍后再按。', '接続コードがまだありません。少ししてから押してください。'));
       return;
     }
-    const text = remoteConnectPaste(seat.kind, links.pairCode, language, seat.role);
+    const text = remoteConnectPaste(seat.kind, links.pairCode, language, seat.role, studioPort);
     try {
       if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
       await navigator.clipboard.writeText(text);
@@ -200,6 +204,11 @@ export function DesktopBotPanel({
           ))}
         </div>
         {links.pairCode ? <p className="desktop-spec-meta">{t(`연결 코드 ${links.pairCode}`, `Code ${links.pairCode}`, `连接代码 ${links.pairCode}`, `接続コード ${links.pairCode}`)}</p> : null}
+        <p className="desktop-spec-meta">{
+          studioPort === 7214
+            ? t('이 창의 체크인 주소는 127.0.0.1:7214입니다.', 'This window check-in address is 127.0.0.1:7214.', '这个窗口的签到地址是 127.0.0.1:7214。', 'この窓のチェックイン住所は 127.0.0.1:7214 です。')
+            : t(`이 창은 7214가 아니라 127.0.0.1:${studioPort}를 엽니다. 연결 글은 그 주소를 씁니다.`, `This window opened 127.0.0.1:${studioPort}, not 7214. The connect text uses that address.`, `这个窗口开的是 127.0.0.1:${studioPort}，不是 7214。连接文字用这个地址。`, `この窓は 7214 ではなく 127.0.0.1:${studioPort} を開いています。接続文はその住所を使います。`)
+        }</p>
         {OTHER_FAMILIES.filter((family) => family.id === familyId).map((family) => (
           <div key={family.id} className="desktop-bot-family">
             <h3>{t(family.ko, family.en, family.zh, family.ja)}</h3>

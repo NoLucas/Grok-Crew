@@ -256,6 +256,67 @@ def test_v2_launch_and_publish_receipts_are_readable(live_server):
     assert receipts["receipts"] == []
 
 
+def post_status(base_url, path, body, headers=None):
+    request = Request(
+        f"{base_url}{path}",
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json", **(headers or {})},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=10) as response:
+            return response.status, json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        return exc.code, json.loads(exc.read().decode("utf-8"))
+
+
+def test_loopback_bot_entry_and_heartbeat_skip_token_when_origin_is_missing(live_server, monkeypatch):
+    monkeypatch.setenv("LOCAL_STUDIO_TOKEN", "desk-token")
+    entry_status, entry = post_status(live_server, "/api/bot-entry", {
+        "bot_id": "grok-planner",
+        "display_name": "Grok Bot 기획자",
+        "purpose": "plan_edit",
+    })
+    assert entry_status == 201
+    assert entry["entry"]["bot_id"] == "grok-planner"
+    beat_status, beat = post_status(live_server, "/api/bots/heartbeat", {
+        "bot_id": "grok-planner",
+        "display_name": "Grok Bot 기획자",
+        "action": "still_here",
+    })
+    assert beat_status == 201
+    assert beat["bot"]["bot_id"] == "grok-planner"
+
+
+def test_browser_origin_bot_entry_still_needs_token(live_server, monkeypatch):
+    monkeypatch.setenv("LOCAL_STUDIO_TOKEN", "desk-token")
+    status, body = post_status(live_server, "/api/bot-entry", {
+        "bot_id": "grok-planner",
+        "display_name": "Grok Bot 기획자",
+        "purpose": "plan_edit",
+    }, {"Origin": "http://localhost:3000"})
+    assert status == 401
+    assert body["error"] == "Invalid local studio token."
+    ok_status, ok = post_status(live_server, "/api/bot-entry", {
+        "bot_id": "grok-planner",
+        "display_name": "Grok Bot 기획자",
+        "purpose": "plan_edit",
+    }, {"Origin": "http://localhost:3000", "Authorization": "Bearer desk-token"})
+    assert ok_status == 201
+    assert ok["entry"]["bot_id"] == "grok-planner"
+
+
+def test_render_still_needs_token_on_loopback(live_server, monkeypatch):
+    project = create_project(live_server)
+    monkeypatch.setenv("LOCAL_STUDIO_TOKEN", "desk-token")
+    status, body = post_status(live_server, f"/api/projects/{project['id']}/render", {
+        "approved": True,
+        "run_immediately": False,
+    })
+    assert status == 401
+    assert body["error"] == "Invalid local studio token."
+
+
 def test_v2_control_job_pause_and_resume_are_durable(live_server):
     project = create_project(live_server)
     created = post(live_server, f"/api/v2/projects/{project['id']}/control-jobs", {

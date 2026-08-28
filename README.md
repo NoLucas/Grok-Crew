@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.3** · with Grok Bot · free now
+**v1.0.4** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,11 +50,17 @@ If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
 ---
 
+## What changed in v1.0.4
+
+- The open desk now listens on `127.0.0.1:7214` when that port is free, in every language. Same-Windows PowerShell check-in no longer needs a chat token. If 7214 is missing, the bot stops in one line.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.4 notes](docs/RELEASE_NOTES.v1.0.4.md).
+
 ## What changed in v1.0.3
 
 - On Connect, Grok Bot checks in from the registered Windows after approval. If that does not land, paste the bot `GROK_CREW_OK` line here. Copying alone does not connect.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.3 notes](docs/RELEASE_NOTES.v1.0.3.md).
+The 1.0.3 list is in [the 1.0.3 notes](docs/RELEASE_NOTES.v1.0.3.md).
 
 ## What changed in v1.0.2
 
