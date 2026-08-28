@@ -4,6 +4,18 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.8 - 2026-08-28
+
+Local 1.0.8. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.8` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.8) only. Guest notes: `docs/RELEASE_NOTES.v1.0.8.md`. Guest download stays the same Google Drive file. Already-installed 1.0.7 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- Hide vs quit: the quit dialog spells the difference. Title-bar 종료 stays visible on every desk width. Packaged 종료 confirms in the window then force-quits; the tray still uses the native warning. Window close still hides and keeps links.
+- Connect copies yesterday's three Grok seats in one clipboard. Auto wait can recopy the invite. The last market, recipe, and language are remembered; the token is not.
+- Connect shows the same crew board as Auto wait. It follows the current wait, or the latest activity spec if not waiting. Offline "next seat" text only appears when that seat has a ready handoff, and it no longer hides the real `detail.note`.
+- If 7214 is not bound, Connect shows an amber banner. SmartScreen help matches the after-More-info steps.
+- English, Chinese, and Japanese feature names were corrected. Lamp words stay 연결됨 / 연결되지않음.
+
 ## 1.0.7 - 2026-08-28
 
 Local 1.0.7. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.7` GitHub Release. Guest notes: `docs/RELEASE_NOTES.v1.0.7.md`. Guest download stays the same Google Drive file. Already-installed 1.0.6 desks check Grok-crew-test for this tag.

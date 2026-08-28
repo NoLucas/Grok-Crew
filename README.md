@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.7** · with Grok Bot · free now
+**v1.0.8** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,11 +50,17 @@ If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
 ---
 
+## What changed in v1.0.8
+
+- Hide and quit are different. Same-as-yesterday copies all three Grok seats. Connect shows the crew board. 7214 and SmartScreen help are clearer.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.8 notes](docs/RELEASE_NOTES.v1.0.8.md).
+
 ## What changed in v1.0.7
 
 - Quit now stops `grok-crew-studio.exe` and its child. 1.0.6 could leave that process in Task Manager.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.7 notes](docs/RELEASE_NOTES.v1.0.7.md).
+The 1.0.7 list is in [the 1.0.7 notes](docs/RELEASE_NOTES.v1.0.7.md).
 
 ## What changed in v1.0.6
 

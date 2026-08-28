@@ -9,14 +9,35 @@ on:
       tag:
         description: "Release tag to build and publish"
         required: true
-        default: "v1.0.7"
+        default: "v1.0.8"
 
 permissions:
   contents: write
 
 jobs:
+  notes:
+    name: Publish notes-only release
+    if: github.repository != 'NoLucas/Grok-crew-test'
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish GitHub Release notes
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: Grok Crew ${{ env.RELEASE_TAG }}
+          body_path: docs/RELEASE_NOTES.${{ env.RELEASE_TAG }}.md
+          draft: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   windows:
     name: Build GrokCrew-Windows.exe
+    if: github.repository == 'NoLucas/Grok-crew-test'
     runs-on: windows-latest
     timeout-minutes: 90
     env:
@@ -54,7 +75,7 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
           name: Grok Crew ${{ env.RELEASE_TAG }}
-          body_path: docs/RELEASE_NOTES.v1.0.7.md
+          body_path: docs/RELEASE_NOTES.${{ env.RELEASE_TAG }}.md
           files: |
             release/GrokCrew-Windows.exe
             release/GrokCrew-Windows.exe.blockmap
