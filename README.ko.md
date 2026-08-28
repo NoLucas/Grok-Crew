@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 로컬 영상 작업대" width="100%" />
 </p>
 
-**v1.0.6** · with Grok Bot · 지금 무료
+**v1.0.7** · with Grok Bot · 지금 무료
 
 쇼츠를 혼자 자르며 밤을 샐 필요 없습니다.
 쓰던 **Grok Bot**이나 Agent를 붙이면, 다듬은 파일이 **이 PC 폴더**에 남습니다.
@@ -49,6 +49,12 @@
 연결이 안 되면 **연결** 칸이 고치는 방법을 알려 줍니다. 자동 칸을 먼저 열지 마세요.
 
 ---
+
+## v1.0.7에서 달라진 것
+
+- **종료**를 누르면 `grok-crew-studio.exe`와 그 자식까지 끕니다. 1.0.6은 작업 관리자에 남을 수 있었습니다.
+
+자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.7 릴리스 노트](docs/RELEASE_NOTES.v1.0.7.md)입니다.
 
 ## v1.0.6에서 달라진 것
 

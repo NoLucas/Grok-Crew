@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — このPCの映像デスク" width="100%" />
 </p>
 
-**v1.0.6** · with Grok Bot · いま無料
+**v1.0.7** · with Grok Bot · いま無料
 
 Shorts を一人で切って夜を明かす必要はありません。
 使っている **Grok Bot** や Agent を付ければ、できたファイルは **このPCのフォルダ** に残ります。
@@ -49,6 +49,12 @@ Shorts を一人で切って夜を明かす必要はありません。
 付かなければ **接続** が直し方を書きます。先に自動を開かないでください。
 
 ---
+
+## v1.0.7 で変わったこと
+
+- **終了**すると `grok-crew-studio.exe` とその子も止まります。1.0.6 はタスク マネージャーに残ることがありました。
+
+一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.7 リリースノート](docs/RELEASE_NOTES.v1.0.7.md) です。
 
 ## v1.0.6 で変わったこと
 

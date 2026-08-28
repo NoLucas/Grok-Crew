@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.6** · with Grok Bot · 现在免费
+**v1.0.7** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -49,6 +49,12 @@
 接不上时，**连接** 会写怎么修。不要先开自动。
 
 ---
+
+## v1.0.7 改了什么
+
+- **退出**会关掉 `grok-crew-studio.exe` 和它的子进程。1.0.6 可能把它留在任务管理器里。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.7 发布说明](docs/RELEASE_NOTES.v1.0.7.md)。
 
 ## v1.0.6 改了什么
 

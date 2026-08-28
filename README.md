@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.6** · with Grok Bot · free now
+**v1.0.7** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -49,6 +49,12 @@ The source files live in [`public/bot-skills/`](public/bot-skills/). Copying the
 If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
 ---
+
+## What changed in v1.0.7
+
+- Quit now stops `grok-crew-studio.exe` and its child. 1.0.6 could leave that process in Task Manager.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.7 notes](docs/RELEASE_NOTES.v1.0.7.md).
 
 ## What changed in v1.0.6
 
