@@ -7044,6 +7044,7 @@ select {
 .desktop-side-head-actions button.active { border-color: var(--desktop-blue); color: var(--desktop-blue); }
 .desktop-side-head > span { color: var(--desktop-muted); font-size: 12px; }
 .desktop-create-card { display: grid; gap: 7px; margin-bottom: 12px; padding: 10px; border: 1px solid var(--desktop-line); border-radius: 10px; background: var(--desktop-panel); }
+.desktop-create-hint { margin: 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
 .desktop-create-card input,
 .desktop-create-card select { min-width: 0; padding: 8px; border: 1px solid var(--desktop-line); background: var(--desktop-input); color: var(--desktop-text); font-size: var(--desktop-fs); }
 .desktop-primary,
@@ -7429,6 +7430,10 @@ select {
   border: 1px solid var(--desktop-line);
   border-radius: 12px;
   background: var(--desktop-panel);
+}
+.desktop-recopy-card summary {
+  cursor: pointer;
+  font-weight: 650;
 }
 .desktop-recopy-card p,
 .desktop-wait-recopy p {

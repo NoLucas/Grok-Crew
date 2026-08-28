@@ -13,6 +13,7 @@ import {
   type BotLinkState,
   confirmRemoteReplies,
   familyIsConnected,
+  hasConnectedBot,
   linkedBySeat,
   markRemoteCopied,
   readLastConnectBundle,
@@ -111,8 +112,13 @@ export function DesktopBotPanel({
   const [lastBundle, setLastBundle] = useState(() => readLastConnectBundle());
   const [bundleText, setBundleText] = useState('');
   const local = connectedBot(roster);
-  const liveLink = links.bots.find((item) => item.status === 'connected');
-  const connected = Boolean(local) || Boolean(liveLink);
+  const localLabel = String(local?.display_name || '').includes('???')
+    ? String(local?.bot_id || '').trim()
+    : String(local?.display_name || local?.bot_id || '').trim();
+  const connected = hasConnectedBot(roster, links);
+  const anySeatOn = BOT_ROLES.some((role) => (
+    seatIsConnected('grok', role, links, roster) || seatIsConnected('custom', role, links, roster)
+  ));
   const studioPort = studioPortFromApiBase(
     typeof window !== 'undefined' ? window.grokCrew?.apiBase : undefined,
   );
@@ -286,14 +292,38 @@ export function DesktopBotPanel({
         </p>
       )}
 
+      {anySeatOn ? (
+        <details className="desktop-auto-help desktop-recopy-card">
+          <summary>{t('어제랑 같게 · 세 자리 다시 복사', 'Same as yesterday · copy the three seats again', '和昨天一样 · 再复制三个位子', '昨日と同じ · 三席をもう一度コピー')}</summary>
+          <p>{t(
+            `${lastMarketName} · ${recipeName} · 어제 쓰던 세 자리 연결 글입니다. 복사만으로는 연결되지 않습니다.`,
+            `${lastMarketName} · ${recipeName} · the three connect texts from yesterday. Copying is not a connection.`,
+            `${lastMarketName} · ${recipeName} · 昨天那三段连接文字。只复制不算已连接。`,
+            `${lastMarketName} · ${recipeName} · 昨日の三席の接続文です。コピーしただけでは接続されません。`,
+          )}</p>
+          <button
+            type="button"
+            className="desktop-primary desktop-recopy-btn"
+            disabled={!studioReady || !links.pairCode}
+            onClick={() => { void copyYesterday(); }}
+          >
+            {copied === 'yesterday'
+              ? t('복사했습니다. 나눠 붙이세요.', 'Copied. Split it into the three windows.', '已复制。请分开贴。', 'コピーしました。分けて貼ってください。')
+              : t('세 자리 다시 복사', 'Copy the three seats again', '再复制三个位子', '三席をもう一度コピー')}
+          </button>
+          {blockedKind === 'yesterday' ? (
+            <textarea className="desktop-bot-paste" value={bundleText || yesterdayText} readOnly rows={10} onFocus={(event) => event.currentTarget.select()} />
+          ) : null}
+        </details>
+      ) : (
       <section className="desktop-recopy-card">
         <div>
           <b>{t('어제랑 같게', 'Same as yesterday', '和昨天一样', '昨日と同じ')}</b>
           <p>{t(
-            `${lastMarketName} · ${recipeName} · Grok 자리 세 개. 자리 이름대로 나눠 붙이세요. 토큰은 없습니다.`,
-            `${lastMarketName} · ${recipeName} · the three Grok seats. Paste each block into that window. There is no token.`,
-            `${lastMarketName} · ${recipeName} · 三个 Grok 位子。按位子名分开贴。没有令牌。`,
-            `${lastMarketName} · ${recipeName} · Grok の三席。席の名前どおり分けて貼る。トークンはありません。`,
+            `${lastMarketName} · ${recipeName} · Grok 자리 세 개. 자리 이름대로 나눠 붙이세요. 복사만으로는 연결되지 않습니다.`,
+            `${lastMarketName} · ${recipeName} · the three Grok seats. Paste each block into that window. Copying is not a connection.`,
+            `${lastMarketName} · ${recipeName} · 三个 Grok 位子。按位子名分开贴。只复制不算已连接。`,
+            `${lastMarketName} · ${recipeName} · Grok の三席。席の名前どおり分けて貼る。コピーしただけでは接続されません。`,
           )}</p>
         </div>
         <button
@@ -310,6 +340,7 @@ export function DesktopBotPanel({
           <textarea className="desktop-bot-paste" value={bundleText || yesterdayText} readOnly rows={10} onFocus={(event) => event.currentTarget.select()} />
         ) : null}
       </section>
+      )}
 
       <section className="desktop-auto-composer-card">
         <h2>{t('봇 붙이기', 'Attach a bot', '接上机器人', 'ボットを付ける')}</h2>
@@ -419,7 +450,7 @@ export function DesktopBotPanel({
         <p>{t('같은 PC 봇은 체크인 글을 그 창에 붙이면 이름이 여기 뜹니다. 창을 끄지 마세요.', 'A bot on this PC pastes the check-in line and its name appears here. Do not close this window.', '这台电脑上的机器人贴签到文字后，名字会出现在这里。不要关掉窗口。', '同じ PC のボットはチェックイン文を貼ると名前が出ます。窓を閉じないでください。')}</p>
         <div className={`desktop-connect-row${local ? ' is-connected' : ''}`}>
           <div>
-            <b>{local ? (local.display_name || local.bot_id) : t('이 PC 봇', 'This PC bot', '这台电脑的机器人', 'この PC のボット')}</b>
+            <b>{local ? (localLabel || t('이 PC 봇', 'This PC bot', '这台电脑的机器人', 'この PC のボット')) : t('이 PC 봇', 'This PC bot', '这台电脑的机器人', 'この PC のボット')}</b>
             <Lamp on={Boolean(local)} label={lampText(Boolean(local), t)} />
           </div>
           {local ? null : (

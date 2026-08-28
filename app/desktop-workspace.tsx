@@ -230,15 +230,6 @@ type PublishReceipt = {
   created_at: string;
   updated_at: string;
 };
-type LaunchStatus = {
-  schema: string;
-  app_version: string;
-  sidecar: { token_required: boolean; moviepy_installed: boolean };
-  publishers: Record<string, { configured?: boolean }>;
-  local_gates: Record<string, boolean>;
-  external_gates: Record<string, { status: string; ready: boolean; detail: string }>;
-};
-
 const defaultMethod = {
   content_type: 'talking_head', target_length: 30, aspect_ratio: '9:16', broll_policy: 'auto',
   hook_strategy: 'payoff_first', pacing: 'tight', filler_policy: 'remove', caption_mode: 'burn_in',
@@ -336,7 +327,6 @@ export default function DesktopWorkspace() {
   const [githubToken, setGithubToken] = useState('');
   const [receipts, setReceipts] = useState<PublishReceipt[]>([]);
   const [confirmReceipt, setConfirmReceipt] = useState<PublishReceipt | null>(null);
-  const [launch, setLaunch] = useState<LaunchStatus | null>(null);
   const [update, setUpdate] = useState<UpdateStatus>({
     status: 'dev_fallback',
     currentVersion: '1.0.10',
@@ -565,7 +555,6 @@ export default function DesktopWorkspace() {
     void window.grokCrew.githubStatus().then(setGithub).catch(() => undefined);
   }, []);
   useEffect(() => {
-    void api('/api/v2/launch').then((value) => setLaunch(value as LaunchStatus)).catch(() => undefined);
     if (!window.grokCrew?.updateStatus) return;
     void window.grokCrew.updateStatus().then(setUpdate).catch(() => undefined);
   }, [api]);
@@ -910,7 +899,7 @@ export default function DesktopWorkspace() {
       if (!imported) return;
       await refreshWorkspace(true);
       setNewProject((current) => ({ ...current, source_path: imported }));
-      setMessage(t('원본을 앱의 로컬 작업 공간으로 가져왔습니다.', 'Imported the source into the app’s local workspace.', '已将素材导入应用的本地工作区。', '素材をアプリのローカルワークスペースに読み込みました。'));
+      setMessage(t('영상을 목록에 넣었습니다. 원본에서 고른 뒤 만들기를 누르세요.', 'The video is on the list. Pick it as the source, then press Create.', '视频已放入列表。请选为素材，再点创建。', '映像を一覧に入れました。素材で選んでから作成を押してください。'));
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Media import failed.'); } finally { setBusy(false); }
   };
 
@@ -1369,12 +1358,11 @@ export default function DesktopWorkspace() {
           {update.releaseUrl && window.grokCrew?.openRelease
             ? <button type="button" className={`desktop-chip ${update.status === 'up_to_date' || update.status === 'dev_fallback' ? 'ready' : 'wait'}`} title={update.message} onClick={() => void window.grokCrew?.openRelease?.(update.releaseUrl)}>{update.status === 'available_external' || update.status === 'available' ? t(`업데이트 ${update.latestVersion}`, `Update ${update.latestVersion}`, `更新 ${update.latestVersion}`, `更新 ${update.latestVersion}`) : t(`개발 ${update.currentVersion}`, `Dev ${update.currentVersion}`, `开发 ${update.currentVersion}`, `開発 ${update.currentVersion}`)}</button>
             : <span className={`desktop-chip ${update.status === 'up_to_date' || update.status === 'dev_fallback' ? 'ready' : 'wait'}`} title={update.message}>{t(`로컬 ${update.currentVersion}`, `Local ${update.currentVersion}`, `本地 ${update.currentVersion}`, `ローカル ${update.currentVersion}`)}</span>}
-          {showRemoteDesk && launch ? <span className={`desktop-chip ${Object.values(launch.local_gates).every(Boolean) ? 'ready' : 'wait'}`} title={Object.values(launch.external_gates).map((gate) => gate.detail).join(' ')}>{t('로컬 1.0 게이트', 'Local 1.0 gates', '本地 1.0 关卡', 'ローカル 1.0 ゲート')}</span> : null}
           <button type="button" className={`desktop-connection ${hasConnectedBot(workspace.crew_roster, botLinks) ? 'connected' : ''}`} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>
             ● {hasConnectedBot(workspace.crew_roster, botLinks) ? t('연결됨', 'Connected', '已连接', '接続済み') : t('연결되지않음', 'Not connected', '未连接', '未接続')}
           </button>
           <button type="button" className="desktop-chrome-btn desktop-projects-toggle" aria-expanded={drawer === 'projects'} onClick={() => setDrawer((value) => value === 'projects' ? 'none' : 'projects')}>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</button>
-          <button type="button" className="desktop-chrome-btn desktop-status-toggle" aria-expanded={drawer === 'status'} onClick={() => { setRemoteOpen(true); setDrawer((value) => value === 'status' ? 'none' : 'status'); }}>{t('상태', 'Status', '状态', '状態')}</button>
+          <button type="button" className="desktop-chrome-btn desktop-status-toggle" aria-expanded={drawer === 'status'} onClick={() => setDrawer((value) => value === 'status' ? 'none' : 'status')}>{t('상태', 'Status', '状态', '状態')}</button>
             </>
           )}
           {showLanguageGate ? null : <LanguageSwitcher />}
@@ -1466,7 +1454,7 @@ export default function DesktopWorkspace() {
       >
         <aside className={`desktop-sidebar ${drawer === 'projects' ? 'open' : ''}`}>
           <div className="desktop-side-head"><b>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</b><div className="desktop-side-head-actions"><button type="button" className={showAutoDesk || !project ? 'active' : ''} onClick={() => { setSpecDeskOpen(true); setAdvancedSpecOpen(false); setBotPanelOpen(false); setPeekAuto(true); setActivePanel('auto'); setDrawer('none'); }}>{t('새 규격', 'New brief', '新规格', '新しい仕様')}</button><button type="button" aria-label={t('새 프로젝트', 'New project', '新建项目', '新規プロジェクト')} onClick={() => setCreateOpen((value) => !value)}>＋</button></div></div>
-          {createOpen && <section className="desktop-create-card">{sampleAvailable ? <button type="button" className="desktop-primary" disabled={busy} onClick={() => void openSampleProject()}>{t('샘플로 시작', 'Start with the sample', '从示例开始', 'サンプルで始める')}</button> : null}<input value={newProject.title} onChange={(event) => setNewProject({ ...newProject, title: event.target.value })} placeholder={t('프로젝트 이름', 'Project name', '项目名称', 'プロジェクト名')} /><select value={newProject.source_path} onChange={(event) => setNewProject({ ...newProject, source_path: event.target.value })}><option value="">{t('원본 선택', 'Choose source', '选择素材', '素材を選択')}</option>{workspace.media.filter((item) => item.kind === 'video' && item.area === 'inputs').map((item) => <option value={item.path} key={item.path}>{item.name}</option>)}</select><button className="desktop-secondary" disabled={busy} onClick={() => void importMedia()}>{t('내 컴퓨터에서 가져오기', 'Import from computer', '从电脑导入', 'コンピュータから読み込む')}</button><input value={newProject.output_path} onChange={(event) => setNewProject({ ...newProject, output_path: event.target.value })} /><button className="desktop-primary" disabled={busy} onClick={() => void createProject()}>{t('만들기', 'Create', '创建', '作成')}</button></section>}
+          {createOpen && <section className="desktop-create-card">{sampleAvailable ? <button type="button" className="desktop-primary" disabled={busy} onClick={() => void openSampleProject()}>{t('샘플로 시작', 'Start with the sample', '从示例开始', 'サンプルで始める')}</button> : null}<p className="desktop-create-hint">{t('가져오기는 이 PC의 영상을 목록에 넣는 일입니다. 넣은 뒤 원본을 고르고 만들기를 누르면 편집이 열립니다. 봇에게 맡기려면 자동 탭에 제목만 적으세요.', 'Import puts a video from this PC on the list. Then pick that source and press Create to open Edit. To hand it to a bot, write the title on Auto.', '导入是把这台电脑的视频放进列表。再选素材并点创建，就会打开编辑。要交给机器人，请到自动页只写标题。', '読み込みはこの PC の映像を一覧に入れることです。素材を選んで作成を押すと編集が開きます。ボットに任せるなら自動でタイトルだけ書いてください。')}</p><input value={newProject.title} onChange={(event) => setNewProject({ ...newProject, title: event.target.value })} placeholder={t('프로젝트 이름', 'Project name', '项目名称', 'プロジェクト名')} /><select value={newProject.source_path} onChange={(event) => setNewProject({ ...newProject, source_path: event.target.value })}><option value="">{t('원본 선택', 'Choose source', '选择素材', '素材を選択')}</option>{workspace.media.filter((item) => item.kind === 'video' && item.area === 'inputs').map((item) => <option value={item.path} key={item.path}>{item.name}</option>)}</select><button className="desktop-secondary" disabled={busy} onClick={() => void importMedia()}>{t('내 컴퓨터에서 가져오기', 'Import from computer', '从电脑导入', 'コンピュータから読み込む')}</button><input value={newProject.output_path} onChange={(event) => setNewProject({ ...newProject, output_path: event.target.value })} placeholder={t('저장 파일 이름', 'Output file name', '输出文件名', '出力ファイル名')} /><button className="desktop-primary" disabled={busy} onClick={() => void createProject()}>{t('만들기', 'Create', '创建', '作成')}</button></section>}
           <DesktopProjectLibrary
             projects={workspace.projects}
             folders={workspace.project_folders ?? []}

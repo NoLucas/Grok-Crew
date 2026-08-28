@@ -11,6 +11,7 @@ const {
   crewBoardScope,
   crewPipeline,
   crewTalkLine,
+  crewNowLine,
   crewTalkMemo,
   crewTalkThread,
   handoffTargetName,
@@ -45,25 +46,21 @@ describe('crew board notes', () => {
     assert.equal(thread[0].note, '15초 훅');
     assert.equal(thread[0].toName, 'Grok Bot 스크래핑');
     assert.equal(thread[0].kind, 'work');
-    assert.equal(thread[1].kind, 'presence');
-    assert.equal(thread[1].count, 1);
-    assert.equal(thread[2].note, '카페 간판 두 장');
-    assert.equal(thread[2].toName, 'Grok Bot 편집자');
-    assert.doesNotMatch(JSON.stringify(thread), /plan_ready|collect_ready|still_here|hacked|\?\?\?/);
+    assert.equal(thread[1].note, '카페 간판 두 장');
+    assert.equal(thread[1].toName, 'Grok Bot 편집자');
+    assert.equal(thread.length, 3);
+    assert.doesNotMatch(JSON.stringify(thread), /plan_ready|collect_ready|still_here|hacked|\?\?\?|이 자리에 있음/);
     assert.match(crewTalkLine(thread[0], 'ko'), /기획자 → Grok Bot 스크래핑/);
   });
 
-  it('groups repeated seat checks instead of flooding the board', () => {
+  it('keeps seat-check ticks off the talk list', () => {
     const now = Date.now();
     const thread = crewTalkThread([
       { id: 'c', bot_id: 'grok-planner', action: 'still_here', created_at: new Date(now - 10_000).toISOString() },
-      { id: 'b', bot_id: 'grok-planner', action: 'still_here', created_at: new Date(now - 70_000).toISOString() },
+      { id: 'b', bot_id: 'grok-scraper', action: 'still_here', created_at: new Date(now - 70_000).toISOString() },
       { id: 'a', bot_id: 'grok-planner', action: 'still_here', created_at: new Date(now - 130_000).toISOString() },
     ], 'ko');
-    assert.equal(thread.length, 1);
-    assert.equal(thread[0].kind, 'presence');
-    assert.equal(thread[0].count, 3);
-    assert.match(crewTalkLine(thread[0], 'ko'), /3번 자리 확인/);
+    assert.equal(thread.length, 0);
   });
 
   it('puts the latest real note on the pipeline seat', () => {
@@ -83,7 +80,9 @@ describe('crew board notes', () => {
     assert.equal(pipe[0].note, '손과 간판');
     assert.equal(pipe[1].note, '');
     assert.match(pipe[0].actionLabel, /컷 계획 남김/);
-    assert.doesNotMatch(JSON.stringify(pipe), /plan_ready|collect_started/);
+    assert.match(pipe[1].actionLabel, /공개 자료 고르는 중/);
+    assert.match(crewNowLine(pipe, 'ko'), /기획자 · 컷 계획 남김|스크래핑 · 공개 자료 고르는 중/);
+    assert.doesNotMatch(JSON.stringify(pipe), /plan_ready|collect_started|할 일은 아직 안 적음/);
   });
 
   it('keeps one spec’s work lines and leaves yesterday out', () => {
@@ -134,6 +133,8 @@ describe('crew board notes', () => {
     ], 'ko');
     assert.equal(pipe[0].nextOfflineNote, '');
     assert.equal(pipe[0].note, '');
+    assert.equal(pipe[0].actionLabel, '');
+    assert.doesNotMatch(String(pipe[0].actionLabel), /할 일은 아직 안 적음|이 자리에 있음/);
   });
 
   it('matches the next offline seat in the same family, not the other bot kind', () => {

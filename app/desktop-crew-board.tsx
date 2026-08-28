@@ -6,6 +6,7 @@ import {
   activityForSpec,
   crewBoardEmptyCopy,
   crewBoardErrorCopy,
+  crewNowLine,
   crewPipeline,
   crewTalkLine,
   crewTalkMemo,
@@ -46,6 +47,7 @@ export function DesktopCrewBoard({
   const scoped = activityForSpec(activity, specId);
   const pipeline = crewPipeline(rows, scoped, language);
   const thread = crewTalkThread(scoped, language);
+  const nowLine = crewNowLine(pipeline, language);
   const workLines = thread.filter((entry) => entry.kind === 'work');
   const empty = crewBoardEmptyCopy(language);
   const failed = crewBoardErrorCopy(language);
@@ -78,11 +80,12 @@ export function DesktopCrewBoard({
           <b>{t('크루 보드', 'Crew board', '组员看板', 'クルーボード')}</b>
           {jobTitle ? <em>{jobTitle}</em> : null}
         </div>
+        <p>{nowLine}</p>
         <p>{t(
-          '누가 무엇을 했고, 다음 자리에 남긴 말만 봅니다. 읽었는지는 모릅니다.',
-          'Who did what, and the line left for the next seat. This window does not know if it was read.',
-          '谁做了什么，以及留给下一位子的话。不知道读没读。',
-          '誰が何をして、次の席に残した言葉だけ見ます。読んだかは分かりません。',
+          '남긴 말과 지금 단계만 봅니다. 자리 확인은 적지 않습니다. 읽었는지는 모릅니다.',
+          'Only the line they left and the current step. Seat checks are not listed. This window does not know if it was read.',
+          '只看留下的话和现在的步骤。位子确认不写。不知道读没读。',
+          '残した言葉と今の段階だけ見ます。席の確認は書きません。読んだかは分かりません。',
         )}</p>
       </header>
 
@@ -100,7 +103,7 @@ export function DesktopCrewBoard({
               {index > 0 ? <span className="desktop-crew-pipe-arrow" aria-hidden="true">→</span> : null}
               <div className="desktop-crew-pipe-card">
                 <span className="desktop-crew-pipe-name">{seat.name}</span>
-                <span className="desktop-crew-pipe-action">{seat.actionLabel}</span>
+                {seat.actionLabel ? <span className="desktop-crew-pipe-action">{seat.actionLabel}</span> : null}
                 {seat.nextOfflineNote ? <p className="desktop-crew-pipe-offline">{seat.nextOfflineNote}</p> : null}
                 {seat.note ? <q className="desktop-crew-pipe-note">{seat.note}</q> : null}
                 {seat.staleMinutes ? <small className="desktop-crew-pipe-stale">{presenceStaleCopy(seat.staleMinutes, language)}</small> : null}

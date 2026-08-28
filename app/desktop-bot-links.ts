@@ -278,9 +278,16 @@ export function rosterMatchesSeat(bot: Pick<CrewBot, 'bot_id' | 'display_name'>,
   return replyMatchesSeat(String(bot.display_name || ''), 'grok', role);
 }
 
-export function activeRosterSeat(roster?: CrewRoster | null, role?: BotRole): CrewBot | null {
+export function knownRosterSeat(roster?: CrewRoster | null, role?: BotRole): CrewBot | null {
   if (!role) return null;
-  return (roster?.bots ?? []).find((bot) => bot.presence === 'active' && rosterMatchesSeat(bot, role)) ?? null;
+  return (roster?.bots ?? []).find((bot) => rosterMatchesSeat(bot, role)) ?? null;
+}
+
+export function activeRosterSeat(roster?: CrewRoster | null, role?: BotRole): CrewBot | null {
+  const bot = knownRosterSeat(roster, role);
+  if (!bot || bot.presence !== 'active') return null;
+  if (String(bot.last_action || '').trim() === 'disconnected') return null;
+  return bot;
 }
 
 export function seatIsConnected(
@@ -289,8 +296,11 @@ export function seatIsConnected(
   links?: BotLinkState | null,
   roster?: CrewRoster | null,
 ): boolean {
-  if (linkedBySeat(links?.bots, kind, role)?.status === 'connected') return true;
-  return kind === 'grok' && Boolean(activeRosterSeat(roster, role));
+  if (kind === 'grok') {
+    const rosterBot = knownRosterSeat(roster, role);
+    if (rosterBot) return Boolean(activeRosterSeat(roster, role));
+  }
+  return linkedBySeat(links?.bots, kind, role)?.status === 'connected';
 }
 
 export function familyIsConnected(
@@ -298,14 +308,16 @@ export function familyIsConnected(
   links?: BotLinkState | null,
   roster?: CrewRoster | null,
 ): boolean {
-  if (links?.bots.some((item) => item.kind === kind && item.status === 'connected')) return true;
-  if (kind !== 'grok') return false;
-  return (['planner', 'scraper', 'editor'] as const).some((role) => Boolean(activeRosterSeat(roster, role)));
+  return BOT_ROLES.some((role) => seatIsConnected(kind, role, links, roster));
 }
 
 export function hasConnectedBot(roster?: CrewRoster | null, links?: BotLinkState | null): boolean {
-  if (connectedBot(roster)) return true;
-  return Boolean(links?.bots.some((item) => item.status === 'connected'));
+  if (BOT_ROLES.some((role) => (
+    seatIsConnected('grok', role, links, roster) || seatIsConnected('custom', role, links, roster)
+  ))) {
+    return true;
+  }
+  return Boolean(connectedBot(roster));
 }
 
 export function connectedRemoteNames(links?: BotLinkState | null, roster?: CrewRoster | null): string[] {

@@ -146,6 +146,30 @@ describe('remote bot links', () => {
     assert.equal(shouldPingLostSeat({ hidden: true, key: lost[0].key, pinged: true }), false);
   });
 
+  it('does not keep a pasted Grok seat green after the roster goes idle', () => {
+    const pasted = confirmRemoteReplies(
+      { pairCode: 'QDWAVN', bots: [] },
+      'GROK_CREW_OK QDWAVN Grok Bot 스크래핑',
+      'ko',
+    ).next;
+    assert.equal(seatIsConnected('grok', 'scraper', pasted, undefined), true);
+    assert.equal(hasConnectedBot(undefined, pasted), true);
+    const idle = {
+      bots: [{
+        bot_id: 'grok-scraper',
+        display_name: 'Grok Bot 스크래핑',
+        presence: 'idle',
+        last_action: 'disconnected',
+      }],
+    };
+    assert.equal(seatIsConnected('grok', 'scraper', pasted, idle), false);
+    assert.equal(hasConnectedBot(idle, pasted), false);
+    assert.equal(familyIsConnected('grok', pasted, idle), false);
+    assert.equal(seatIsConnected('grok', 'scraper', pasted, {
+      bots: [{ bot_id: 'grok-scraper', display_name: 'Grok Bot 스크래핑', presence: 'active', last_action: 'still_here' }],
+    }), true);
+  });
+
   it('turns a Grok seat green from an active same-PC check-in', () => {
     const empty = emptyBotLinks();
     const roster = {

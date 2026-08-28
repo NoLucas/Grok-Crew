@@ -786,9 +786,9 @@ export function droppedFilePath(file: File): string {
 /*
 Contract request
 - consumer: app/desktop-auto-desk
-- missing operation: a checked-in auto_local editor bot reads the waiting invite itself
-- input validation: same PC, token, door=editor, waiting_for_bot only
-- expected success: invite text or an already-read mark
+- missing operation: a checked-in auto_local bot (planner / scraper / editor) reads the waiting invite itself after the operator connects once
+- input validation: same PC, token, matching seat, waiting_for_bot only
+- expected success: invite text or an already-read mark; next seat can start without a second paste
 - stale/locked: a spec another bot already took must not be reused
 Do not draw “the bot is reading it” until this contract exists.
 */

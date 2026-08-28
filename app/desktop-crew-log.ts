@@ -261,10 +261,16 @@ export function crewPipeline(
       : '';
     const note = item ? activityHandoffNote(item.detail_json) : '';
     const when = item ? activityWhen(item, language) : '';
-    const kind = heartbeatActionKind(row.lastAction);
-    const actionLabel = kind === 'unknown'
-      ? row.detail
-      : heartbeatActionLabel(row.lastAction, language);
+    const workKind = item ? heartbeatActionKind(item.action) : 'unknown';
+    const lastKind = heartbeatActionKind(row.lastAction);
+    let actionLabel = '';
+    if (!row.connected) {
+      actionLabel = row.detail;
+    } else if (item && (workKind === 'started' || workKind === 'ready')) {
+      actionLabel = heartbeatActionLabel(item.action, language);
+    } else if (lastKind === 'started' || lastKind === 'ready') {
+      actionLabel = heartbeatActionLabel(row.lastAction, language);
+    }
     return {
       key: row.key,
       role: row.role,
@@ -294,45 +300,8 @@ export function crewTalkThread(
   const chronological = [...named].reverse();
   const thread: CrewTalkEntry[] = [];
 
-  const flushPresence = (pending: {
-    item: BotActivityItem;
-    name: string;
-    role: BotRole | '';
-    count: number;
-  } | null) => {
-    if (!pending) return;
-    thread.push({
-      id: String(pending.item.id || `${pending.item.bot_id}-${pending.item.created_at}`),
-      kind: 'presence',
-      role: pending.role,
-      name: pending.name,
-      actionLabel: heartbeatActionLabel(pending.item.action, language),
-      note: '',
-      toName: '',
-      when: activityWhen(pending.item, language),
-      count: pending.count,
-    });
-  };
-
-  let pending: { item: BotActivityItem; name: string; role: BotRole | ''; count: number } | null = null;
   for (const row of chronological) {
     const kind = heartbeatActionKind(row.item.action);
-    if (kind === 'idle') {
-      if (pending && pending.name === row.name) {
-        pending = {
-          item: row.item,
-          name: pending.name,
-          role: pending.role,
-          count: pending.count + 1,
-        };
-      } else {
-        flushPresence(pending);
-        pending = { item: row.item, name: row.name, role: row.role, count: 1 };
-      }
-      continue;
-    }
-    flushPresence(pending);
-    pending = null;
     if (kind !== 'started' && kind !== 'ready') continue;
     const ready = kind === 'ready';
     thread.push({
@@ -346,8 +315,22 @@ export function crewTalkThread(
       when: activityWhen(row.item, language),
     });
   }
-  flushPresence(pending);
   return thread;
+}
+
+export function crewNowLine(seats: CrewPipelineSeat[], language = 'ko'): string {
+  const current = seats.find((seat) => seat.current && seat.connected && seat.actionLabel)
+    || seats.find((seat) => seat.connected && seat.actionLabel);
+  if (!current?.actionLabel) {
+    return boardCopy(
+      language,
+      '할 일을 남긴 자리가 아직 없습니다',
+      'No seat has left a job yet',
+      '还没有位子留下要做的事',
+      '仕事を残した席はまだありません',
+    );
+  }
+  return `${current.name} · ${current.actionLabel}`;
 }
 
 export function crewBoardEmptyCopy(language = 'ko'): { title: string; body: string } {
@@ -355,10 +338,10 @@ export function crewBoardEmptyCopy(language = 'ko'): { title: string; body: stri
     title: boardCopy(language, '아직 남긴 말이 없습니다', 'No line has been left yet', '还没有留下话', 'まだ残した言葉はありません'),
     body: boardCopy(
       language,
-      '할 일이 바뀌면 그 자리가 heartbeat와 한 줄(note)을 남깁니다. 없는 말은 이 창이 만들지 않습니다.',
-      'When the job changes, that seat leaves a heartbeat and one note. This window does not invent a line.',
-      '事情一变，那个位子会留下 heartbeat 和一行 note。这个窗口不编造话。',
-      '仕事が変わると、その席が heartbeat と一行の note を残します。この窓は言葉を作りません。',
+      '자리 확인은 여기에 안 적습니다. 할 일이 바뀌면 그 자리가 한 줄만 남깁니다. 없는 말은 이 창이 만들지 않습니다.',
+      'Seat checks are not written here. When the job changes, that seat leaves one line. This window does not invent a line.',
+      '位子确认不写在这里。事情一变，那个位子只留一行。这个窗口不编造话。',
+      '席の確認はここには書きません。仕事が変わると、その席が一行だけ残します。この窓は言葉を作りません。',
     ),
   };
 }
