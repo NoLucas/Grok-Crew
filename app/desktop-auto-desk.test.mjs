@@ -533,7 +533,6 @@ describe('auto desk who and what', () => {
         bots: [
           { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'plan_started', seconds_since_checkin: 60 },
           { bot_id: 'grok-scraper', display_name: 'Grok Bot 스크래핑', presence: 'active', last_action: 'still_here', seconds_since_checkin: 10 },
-          { bot_id: 'grok-editor', display_name: 'Grok Bot 편집자', presence: 'idle' },
         ],
       },
       links: {

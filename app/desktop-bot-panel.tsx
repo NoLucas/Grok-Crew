@@ -12,13 +12,15 @@ import { activityForSpec, crewBoardScope, type CrewLoadState } from './desktop-c
 import {
   type BotLinkState,
   confirmRemoteReplies,
+  connectedRemoteNames,
   familyIsConnected,
   hasConnectedBot,
-  linkedBySeat,
   markRemoteCopied,
   readLastConnectBundle,
   remoteConnectPaste,
-  removeLinkedBot,
+  releaseHeldSeats,
+  releaseLinkedSeat,
+  clearAllReleased,
   seatIsConnected,
   studioPortFromApiBase,
   threeSeatConnectPaste,
@@ -111,6 +113,7 @@ export function DesktopBotPanel({
   const [activityState, setActivityState] = useState<CrewLoadState>('loading');
   const [lastBundle, setLastBundle] = useState(() => readLastConnectBundle());
   const [bundleText, setBundleText] = useState('');
+  const [releasedNote, setReleasedNote] = useState('');
   const local = connectedBot(roster);
   const localLabel = String(local?.display_name || '').includes('???')
     ? String(local?.bot_id || '').trim()
@@ -129,6 +132,7 @@ export function DesktopBotPanel({
   const recipeName = recipeFallbackLabel(recipeId, language);
   const lastMarketName = marketLabel(resolveCrewMarket(lastBundle?.market || market, language), language);
   const liveWait = wait !== undefined ? wait : readDeskWait();
+  const connectedNames = connectedRemoteNames(links, roster);
   const boardScope = crewBoardScope(liveWait, activity);
   const seatRows = autoSeatRows({
     roster,
@@ -207,6 +211,7 @@ export function DesktopBotPanel({
     }
     markCopied(seat);
     if (seat.kind === 'grok') rememberBundle();
+    setReleasedNote('');
     await onRefresh();
   };
 
@@ -235,6 +240,10 @@ export function DesktopBotPanel({
       setBlockedKind('yesterday');
       setBundleText(text);
     }
+    const next = clearAllReleased(links);
+    writeBotLinks(next);
+    onLinksChange(next);
+    setReleasedNote('');
     await onRefresh();
   };
 
@@ -249,13 +258,35 @@ export function DesktopBotPanel({
     } catch {
       setBlockedKind('same_pc');
     }
+    const next = clearAllReleased(links);
+    writeBotLinks(next);
+    onLinksChange(next);
+    setReleasedNote('');
     await onRefresh();
   };
 
-  const forget = (id: string) => {
-    const next = removeLinkedBot(links, id);
+  const disconnectSeat = (seat: OtherSeat) => {
+    const next = releaseLinkedSeat(links, seat.kind, seat.role);
     writeBotLinks(next);
     onLinksChange(next);
+    setReleasedNote(t(
+      '이 창에서 끊었습니다. 봇 창이 켜져 있으면 그 쪽은 그대로일 수 있습니다.',
+      'This window released the seat. The bot window may still be open.',
+      '这个窗口已断开。机器人窗口可能还开着。',
+      'この窓で外しました。ボットの窓は開いたままのことがあります。',
+    ));
+  };
+
+  const disconnectAll = () => {
+    const next = releaseHeldSeats(links, roster);
+    writeBotLinks(next);
+    onLinksChange(next);
+    setReleasedNote(t(
+      '이 창에서 모든 자리를 끊었습니다. 다시 쓰려면 연결 글을 붙이세요.',
+      'This window released every seat. Paste the connect text to use them again.',
+      '这个窗口已断开所有位子。要再用请贴连接文字。',
+      'この窓ですべての席を外しました。もう一度使うには接続文を貼ってください。',
+    ));
   };
 
   const attachReply = () => {
@@ -273,6 +304,7 @@ export function DesktopBotPanel({
     writeBotLinks(result.next);
     onLinksChange(result.next);
     setReplyText('');
+    setReleasedNote('');
   };
 
   const openFamily = OTHER_FAMILIES.find((family) => family.id === familyId) ?? OTHER_FAMILIES[0];
@@ -282,12 +314,26 @@ export function DesktopBotPanel({
     <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
       <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('연결 글을 복사해 봇 창에 붙이세요. Grok Bot은 등록된 Windows에서 승인 후 체크인하면 램프가 켜집니다. 안 되면 봇이 보낸 GROK_CREW_OK 한 줄을 여기 붙입니다. 복사만으로는 연결되지 않습니다.', 'Copy the connect text into the bot window. Grok Bot turns the lamp on after an approved check-in on the registered Windows. If that fails, paste the bot GROK_CREW_OK line here. Copying is not a connection.', '把连接文字贴到机器人窗口。Grok Bot 在已登记的 Windows 上批准签到后灯会亮。不行就把机器人回的 GROK_CREW_OK 贴到这里。只复制不算已连接。', '接続文をボット窓に貼る。Grok Bot は登録した Windows で承認してチェックインするとランプが付く。だめならボットの GROK_CREW_OK をここに貼る。コピーしただけでは接続されない。')}</p>
+        <p>{t('연결 글을 봇 창에 붙이세요. 램프가 켜지면 연결됨입니다. 끊기는 여기 버튼으로만 합니다.', 'Paste the connect text in the bot window. The lamp means connected. Only these buttons disconnect.', '把连接文字贴到机器人窗口。灯亮就是已连接。断开只用这里的按钮。', '接続文をボット窓に貼る。ランプが付けば接続済み。切断はこのボタンだけです。')}</p>
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">
-        <Lamp on={connected} label={lampText(connected, t)} />
+        <Lamp
+          on={connected}
+          label={connected && connectedNames.length
+            ? t(`연결됨 · ${connectedNames.join(' · ')}`, `Connected · ${connectedNames.join(' · ')}`, `已连接 · ${connectedNames.join(' · ')}`, `接続済み · ${connectedNames.join(' · ')}`)
+            : lampText(connected, t)}
+        />
+        <div className="desktop-connect-toolbar">
+          <button type="button" className="desktop-secondary" disabled={!studioReady} onClick={() => { void onRefresh(); }}>
+            {t('연결 새로고침', 'Refresh connection', '刷新连接', '接続を更新')}
+          </button>
+          <button type="button" className="desktop-secondary" disabled={!connected} onClick={disconnectAll}>
+            {t('연결 해제', 'Disconnect', '断开连接', '接続を外す')}
+          </button>
+        </div>
       </section>
+      {releasedNote ? <p className="desktop-spec-meta" role="status">{releasedNote}</p> : null}
 
       {studioPort === 7214 ? (
         <p className="desktop-spec-meta">{t('이 창의 체크인 주소는 127.0.0.1:7214입니다.', 'This window check-in address is 127.0.0.1:7214.', '这个窗口的签到地址是 127.0.0.1:7214。', 'この窓のチェックインアドレスは 127.0.0.1:7214 です。')}</p>
@@ -375,7 +421,6 @@ export function DesktopBotPanel({
             <ul className="desktop-bot-list">
               {BOT_ROLES.map((role) => {
                 const seat: OtherSeat = { kind: family.id, role };
-                const row = linkedBySeat(links.bots, seat.kind, seat.role);
                 const on = seatIsConnected(seat.kind, seat.role, links, roster);
                 const key = `${seat.kind}-${seat.role}`;
                 const label = seatName(seat.kind, seat.role, language);
@@ -387,9 +432,9 @@ export function DesktopBotPanel({
                       <Lamp on={on} label={lampText(on, t)} />
                     </div>
                     <div className="desktop-simple-copy-row">
-                      {on && row?.status === 'connected' ? (
-                        <button type="button" className="desktop-secondary" onClick={() => forget(row.id)}>{t('끊기', 'Remove', '断开', '外す')}</button>
-                      ) : on ? null : (
+                      {on ? (
+                        <button type="button" className="desktop-secondary" onClick={() => disconnectSeat(seat)}>{t('연결 해제', 'Disconnect', '断开连接', '接続を外す')}</button>
+                      ) : (
                         <button
                           type="button"
                           className="desktop-primary"

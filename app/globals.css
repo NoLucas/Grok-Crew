@@ -7523,6 +7523,26 @@ select {
 .desktop-auto-status.is-ready { border-color: #cfead8; background: #f3faf5; }
 .desktop-auto-status.is-ready p { color: var(--desktop-green); }
 .desktop-auto-connect .desktop-secondary { padding: 5px 10px; font-size: 12px; }
+.desktop-auto-connect:has(.desktop-connect-toolbar) {
+  border-radius: 14px;
+  align-items: flex-start;
+}
+.desktop-connect-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.desktop-crew-handoff { display: grid; gap: 8px; }
+.desktop-crew-handoff > b {
+  font-size: 11px;
+  letter-spacing: .04em;
+  color: var(--desktop-muted);
+}
+.desktop-crew-board.is-job .desktop-crew-talk-list q {
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 10px 12px;
+}
 .desktop-auto-jump,
 .desktop-auto-text {
   justify-self: start;

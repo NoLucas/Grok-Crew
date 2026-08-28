@@ -29,6 +29,9 @@ const {
   familyIsConnected,
   grokSeatBotId,
   seatIsConnected,
+  seatIsReleased,
+  releaseLinkedSeat,
+  releaseHeldSeats,
   seatPurpose,
   connectedRemoteNames,
   heartbeatWorkPair,
@@ -170,6 +173,27 @@ describe('remote bot links', () => {
     }), true);
   });
 
+  it('keeps a checked-in seat connected through idle ticks until the operator releases it', () => {
+    const empty = emptyBotLinks();
+    const idle = {
+      bots: [{
+        bot_id: 'grok-planner',
+        display_name: 'Grok Bot 기획자',
+        presence: 'idle',
+        last_action: 'still_here',
+      }],
+    };
+    assert.equal(seatIsConnected('grok', 'planner', empty, idle), true);
+    const released = releaseLinkedSeat(empty, 'grok', 'planner');
+    assert.equal(seatIsReleased(released, 'grok', 'planner'), true);
+    assert.equal(seatIsConnected('grok', 'planner', released, idle), false);
+    const copied = markRemoteCopied({ ...released, pairCode: 'QDWAVN' }, { kind: 'grok', role: 'planner', language: 'ko' });
+    assert.equal(seatIsReleased(copied, 'grok', 'planner'), false);
+    assert.equal(seatIsConnected('grok', 'planner', copied, idle), true);
+    const held = releaseHeldSeats(empty, idle);
+    assert.equal(seatIsConnected('grok', 'planner', held, idle), false);
+  });
+
   it('turns a Grok seat green from an active same-PC check-in', () => {
     const empty = emptyBotLinks();
     const roster = {
@@ -181,12 +205,12 @@ describe('remote bot links', () => {
     assert.equal(activeRosterSeat(roster, 'editor')?.bot_id, 'grok-editor');
     assert.equal(activeRosterSeat(roster, 'planner'), null);
     assert.equal(seatIsConnected('grok', 'editor', empty, roster), true);
-    assert.equal(seatIsConnected('grok', 'planner', empty, roster), false);
+    assert.equal(seatIsConnected('grok', 'planner', empty, roster), true);
     assert.equal(seatIsConnected('grok', 'scraper', empty, roster), false);
     assert.equal(seatIsConnected('custom', 'editor', empty, roster), false);
     assert.equal(familyIsConnected('grok', empty, roster), true);
     assert.equal(familyIsConnected('custom', empty, roster), false);
-    assert.deepEqual(connectedRemoteNames(empty, roster), ['Grok Bot 편집자']);
+    assert.deepEqual(connectedRemoteNames(empty, roster), ['Grok Bot 기획자', 'Grok Bot 편집자']);
     assert.equal(hasConnectedBot(roster, empty), true);
     const byName = { bots: [{ display_name: 'Grok Bot Planner', presence: 'active' }] };
     assert.equal(seatIsConnected('grok', 'planner', empty, byName), true);
@@ -339,7 +363,7 @@ describe('remote bot links', () => {
       }],
     }));
     const next = forgetBotLinksOnQuit();
-    assert.deepEqual(next, { pairCode: '', bots: [] });
+    assert.deepEqual(next, { pairCode: '', bots: [], released: [] });
     assert.equal(memory.get(BOT_LINKS_KEY), undefined);
     assert.equal(hasConnectedBot(undefined, next), false);
   });

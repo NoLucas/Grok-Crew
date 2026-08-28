@@ -34,6 +34,7 @@ export function DesktopCrewBoard({
   loadState,
   specId,
   jobTitle,
+  layout = 'full',
   onRetry,
 }: {
   rows: AutoSeatRow[];
@@ -41,6 +42,7 @@ export function DesktopCrewBoard({
   loadState: CrewLoadState;
   specId?: string;
   jobTitle?: string;
+  layout?: 'full' | 'job';
   onRetry?: () => void;
 }) {
   const { t, language } = useLanguage();
@@ -73,28 +75,12 @@ export function DesktopCrewBoard({
     window.setTimeout(() => setMemoState('idle'), 4000);
   };
 
-  return (
-    <section className="desktop-crew-board" aria-live="polite">
-      <header className="desktop-crew-board-lead">
-        <div className="desktop-crew-board-title">
-          <b>{t('크루 보드', 'Crew board', '组员看板', 'クルーボード')}</b>
-          {jobTitle ? <em>{jobTitle}</em> : null}
-        </div>
-        <p>{nowLine}</p>
-        <p>{t(
-          '남긴 말과 지금 단계만 봅니다. 자리 확인은 적지 않습니다. 읽었는지는 모릅니다.',
-          'Only the line they left and the current step. Seat checks are not listed. This window does not know if it was read.',
-          '只看留下的话和现在的步骤。位子确认不写。不知道读没读。',
-          '残した言葉と今の段階だけ見ます。席の確認は書きません。読んだかは分かりません。',
-        )}</p>
-      </header>
-
-      {!rows.length ? (
+  const pipe = !rows.length ? (
         <p className="desktop-crew-board-empty">{t(
-          '붙인 자리가 아직 없습니다. 연결 글을 복사하면 여기 줄이 생깁니다.',
-          'No seat is attached yet. A line appears here after you copy the connect text.',
-          '还没有接上的位子。复制连接文字后这里会出现一行。',
-          '付けた席はまだありません。接続文をコピーするとここに行が出ます。',
+          '붙인 자리가 아직 없습니다.',
+          'No seat is attached yet.',
+          '还没有接上的位子。',
+          '付けた席はまだありません。',
         )}</p>
       ) : pipeline.length ? (
         <ol className="desktop-crew-pipe">
@@ -119,11 +105,12 @@ export function DesktopCrewBoard({
           '还没读到位子。',
           '席をまだ読めません。',
         )}</p>
-      )}
+      );
 
+  const talk = (
       <section className="desktop-crew-talk">
         <div className="desktop-crew-talk-head">
-          <b>{t('주고받은 말', 'Lines they left', '他们留下的话', '残し合った言葉')}</b>
+          <b>{t('봇이 남긴 말', 'What the bots left', '机器人留下的话', 'ボットが残した言葉')}</b>
           {memo ? (
             <div className="desktop-crew-board-actions">
               <button type="button" className="desktop-secondary" onClick={() => { void copyMemo(); }}>
@@ -169,8 +156,7 @@ export function DesktopCrewBoard({
                 </div>
                 {entry.kind === 'work' ? (
                   <>
-                    <p className="desktop-crew-talk-action">{entry.actionLabel}</p>
-                    {entry.note ? <q>{entry.note}</q> : null}
+                    {entry.note ? <q>{entry.note}</q> : <p className="desktop-crew-talk-action">{entry.actionLabel}</p>}
                   </>
                 ) : null}
               </li>
@@ -181,6 +167,33 @@ export function DesktopCrewBoard({
           <textarea className="desktop-bot-paste" value={memo} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
         ) : null}
       </section>
+  );
+
+  return (
+    <section className={`desktop-crew-board${layout === 'job' ? ' is-job' : ''}`} aria-live="polite">
+      <header className="desktop-crew-board-lead">
+        <div className="desktop-crew-board-title">
+          <b>{layout === 'job'
+            ? t('자리 넘김', 'Seat handoff', '位子转交', '席の受け渡し')
+            : t('크루 보드', 'Crew board', '组员看板', 'クルーボード')}</b>
+          {jobTitle ? <em>{jobTitle}</em> : null}
+        </div>
+        <p>{nowLine}</p>
+      </header>
+      {layout === 'job' ? (
+        <>
+          {talk}
+          <div className="desktop-crew-handoff">
+            <b>{t('지금 자리', 'Seats now', '现在的位子', '今の席')}</b>
+            {pipe}
+          </div>
+        </>
+      ) : (
+        <>
+          {pipe}
+          {talk}
+        </>
+      )}
     </section>
   );
 }

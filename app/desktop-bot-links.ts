@@ -65,9 +65,15 @@ export type LinkedBot = {
   confirmedAt?: string;
 };
 
+export type ReleasedSeat = {
+  kind: 'grok' | 'custom';
+  role: BotRole;
+};
+
 export type BotLinkState = {
   pairCode: string;
   bots: LinkedBot[];
+  released?: ReleasedSeat[];
 };
 
 function storage(): Storage | null {
@@ -99,7 +105,74 @@ export function makePairCode(): string {
 }
 
 export function emptyBotLinks(): BotLinkState {
-  return { pairCode: '', bots: [] };
+  return { pairCode: '', bots: [], released: [] };
+}
+
+function normalizeReleased(value: unknown): ReleasedSeat[] {
+  if (!Array.isArray(value)) return [];
+  const out: ReleasedSeat[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as ReleasedSeat;
+    const kind = row.kind === 'custom' ? 'custom' : row.kind === 'grok' ? 'grok' : '';
+    if (!kind || !isBotRole(row.role)) continue;
+    const key = `${kind}:${row.role}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ kind, role: row.role });
+  }
+  return out;
+}
+
+export function seatIsReleased(
+  links: BotLinkState | null | undefined,
+  kind: 'grok' | 'custom',
+  role: BotRole,
+): boolean {
+  return Boolean((links?.released ?? []).some((item) => item.kind === kind && item.role === role));
+}
+
+export function clearReleasedSeat(
+  state: BotLinkState,
+  kind: 'grok' | 'custom',
+  role: BotRole,
+): BotLinkState {
+  return {
+    ...state,
+    released: (state.released ?? []).filter((item) => !(item.kind === kind && item.role === role)),
+  };
+}
+
+export function clearAllReleased(state: BotLinkState): BotLinkState {
+  return { ...state, released: [] };
+}
+
+export function releaseLinkedSeat(
+  state: BotLinkState,
+  kind: 'grok' | 'custom',
+  role: BotRole,
+): BotLinkState {
+  const released = normalizeReleased([...(state.released ?? []), { kind, role }]);
+  return {
+    ...state,
+    bots: state.bots.filter((item) => !(item.kind === kind && item.role === role)),
+    released,
+  };
+}
+
+export function releaseHeldSeats(
+  state: BotLinkState,
+  roster?: CrewRoster | null,
+): BotLinkState {
+  let next = state;
+  for (const kind of ['grok', 'custom'] as const) {
+    for (const role of BOT_ROLES) {
+      if (!seatIsConnected(kind, role, state, roster)) continue;
+      next = releaseLinkedSeat(next, kind, role);
+    }
+  }
+  return next;
 }
 
 function normalizeBots(value: unknown): LinkedBot[] {
@@ -122,7 +195,8 @@ export function readBotLinks(): BotLinkState {
     const parsed = JSON.parse(raw) as Partial<BotLinkState>;
     const pairCode = String(parsed.pairCode || '').trim().toUpperCase();
     const bots = normalizeBots(parsed.bots);
-    const next = honestRemoteLinks({ pairCode, bots });
+    const released = normalizeReleased(parsed.released);
+    const next = honestRemoteLinks({ pairCode, bots, released });
     if (bots.some((bot) => bot.place === 'other_pc' && bot.status === 'connected')) {
       writeBotLinks(next);
     }
@@ -138,14 +212,14 @@ export function writeBotLinks(state: BotLinkState): void {
 
 export function forgetBotLinksOnQuit(state?: BotLinkState | null): BotLinkState {
   const current = state ?? readBotLinks();
-  const next = { pairCode: current.pairCode, bots: [] };
+  const next = { pairCode: current.pairCode, bots: [], released: [] as ReleasedSeat[] };
   try {
     storage()?.removeItem(BOT_LINKS_KEY);
   } catch {
     writeBotLinks(next);
     return next;
   }
-  return { pairCode: '', bots: [] };
+  return emptyBotLinks();
 }
 
 export function ensureBotLinks(state?: BotLinkState | null): BotLinkState {
@@ -153,7 +227,11 @@ export function ensureBotLinks(state?: BotLinkState | null): BotLinkState {
   if (current.pairCode) return current;
   const stored = readBotLinks();
   if (stored.pairCode) return stored;
-  const next = { pairCode: makePairCode(), bots: stored.bots.length ? stored.bots : current.bots };
+  const next = {
+    pairCode: makePairCode(),
+    bots: stored.bots.length ? stored.bots : current.bots,
+    released: stored.released ?? current.released ?? [],
+  };
   writeBotLinks(next);
   return next;
 }
@@ -166,6 +244,7 @@ export function upsertLinkedBot(state: BotLinkState, bot: LinkedBot): BotLinkSta
 export function honestRemoteLinks(state: BotLinkState): BotLinkState {
   return {
     ...state,
+    released: normalizeReleased(state.released),
     bots: state.bots.map((bot) => (
       bot.place === 'other_pc' && bot.status === 'connected' && !bot.confirmedAt
         ? { ...bot, status: 'waiting', connectedAt: undefined }
@@ -180,10 +259,11 @@ export function markRemoteCopied(
 ): BotLinkState {
   if (!state.pairCode) return state;
   const family = seat.kind === 'grok' ? 'grok' : 'custom';
+  const cleared = clearReleasedSeat(state, family, seat.role);
   const id = seatId(family, seat.role, state.pairCode);
-  const existing = state.bots.find((item) => item.id === id);
-  if (existing?.status === 'connected' && existing.confirmedAt) return state;
-  return upsertLinkedBot(state, {
+  const existing = cleared.bots.find((item) => item.id === id);
+  if (existing?.status === 'connected' && existing.confirmedAt) return cleared;
+  return upsertLinkedBot(cleared, {
     id,
     name: seatName(family, seat.role, seat.language),
     kind: family,
@@ -254,7 +334,7 @@ export function confirmRemoteReplies(
       for (const role of ['planner', 'scraper', 'editor'] as const) {
         if (!replyMatchesSeat(parsed.name, kind, role)) continue;
         if (confirmed.some((item) => item.kind === kind && item.role === role)) continue;
-        next = upsertLinkedBot(next, {
+        next = clearReleasedSeat(upsertLinkedBot(next, {
           id: seatId(kind, role, state.pairCode),
           name: seatName(kind, role, lang === 'zh' || lang === 'ja' || lang === 'en' ? lang : 'ko'),
           kind,
@@ -264,7 +344,7 @@ export function confirmRemoteReplies(
           pairCode: state.pairCode,
           connectedAt: now,
           confirmedAt: now,
-        });
+        }), kind, role);
         confirmed.push({ kind, role });
       }
     }
@@ -290,15 +370,24 @@ export function activeRosterSeat(roster?: CrewRoster | null, role?: BotRole): Cr
   return bot;
 }
 
+/** Held until the operator releases it, or the seat writes disconnected. Idle ticks do not drop the lamp. */
+export function heldRosterSeat(roster?: CrewRoster | null, role?: BotRole): CrewBot | null {
+  const bot = knownRosterSeat(roster, role);
+  if (!bot) return null;
+  if (String(bot.last_action || '').trim() === 'disconnected') return null;
+  return bot;
+}
+
 export function seatIsConnected(
   kind: 'grok' | 'custom',
   role: BotRole,
   links?: BotLinkState | null,
   roster?: CrewRoster | null,
 ): boolean {
+  if (seatIsReleased(links, kind, role)) return false;
   if (kind === 'grok') {
     const rosterBot = knownRosterSeat(roster, role);
-    if (rosterBot) return Boolean(activeRosterSeat(roster, role));
+    if (rosterBot) return Boolean(heldRosterSeat(roster, role));
   }
   return linkedBySeat(links?.bots, kind, role)?.status === 'connected';
 }
@@ -323,7 +412,7 @@ export function hasConnectedBot(roster?: CrewRoster | null, links?: BotLinkState
 export function connectedRemoteNames(links?: BotLinkState | null, roster?: CrewRoster | null): string[] {
   const names = links?.bots.filter((item) => item.status === 'connected').map((item) => item.name) ?? [];
   for (const role of ['planner', 'scraper', 'editor'] as const) {
-    const name = String(activeRosterSeat(roster, role)?.display_name || '').trim();
+    const name = String(heldRosterSeat(roster, role)?.display_name || '').trim();
     if (name && !names.includes(name)) names.push(name);
   }
   return names;

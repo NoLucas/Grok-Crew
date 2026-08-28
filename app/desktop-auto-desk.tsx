@@ -662,12 +662,16 @@ export function AutoDesk({
         <b className={attached ? 'desktop-connect-lamp is-on' : 'desktop-connect-lamp'}>
           <i aria-hidden="true" />
           {attached
-            ? t('연결됨', 'Connected', '已连接', '接続済み')
+            ? attachedName
+              ? t(`연결됨 · ${attachedName}`, `Connected · ${attachedName}`, `已连接 · ${attachedName}`, `接続済み · ${attachedName}`)
+              : t('연결됨', 'Connected', '已连接', '接続済み')
             : t('연결되지않음', 'Not connected', '未连接', '未接続')}
         </b>
-        <button type="button" className="desktop-secondary" onClick={onOpenBots}>
-          {t('연결 열기', 'Open Connect', '打开连接', '接続を開く')}
-        </button>
+        {showComposer ? (
+          <button type="button" className="desktop-secondary" onClick={onOpenBots}>
+            {t('연결 열기', 'Open Connect', '打开连接', '接続を開く')}
+          </button>
+        ) : null}
       </section>
 
       {showComposer && wait ? (
@@ -1109,47 +1113,18 @@ export function AutoDesk({
       {showWaiting ? (
         <section className="desktop-auto-job" aria-live="polite">
           <header className="desktop-auto-lead">
-            <h1>{t('봇 창에 붙이세요', 'Paste it in the bot window', '请贴到机器人窗口', 'ボットの窓に貼ってください')}</h1>
-            <p>{t(`복사했습니다. ${pasteTarget} 창에 붙이면, 끝난 컷이 이 탭에 옵니다.`, `Copied. Paste it in the ${pasteTarget} window. The finished cut lands in this tab.`, `已复制。贴到 ${pasteTarget} 窗口后，完成片会出现在这个标签。`, `コピーしました。${pasteTarget} の窓に貼ると、終わったカットがこのタブに来ます。`)}</p>
+            <h1>{wait?.title || title || t('자리 넘김', 'Seat handoff', '位子转交', '席の受け渡し')}</h1>
+            <p>{t(`복사했습니다. ${pasteTarget} 창에 한 번 붙이세요.`, `Copied. Paste it once in the ${pasteTarget} window.`, `已复制。请在 ${pasteTarget} 窗口贴一次。`, `コピーしました。${pasteTarget} の窓に一度貼ってください。`)}</p>
             <div className="desktop-wait-recopy">
               <button type="button" className="desktop-primary desktop-recopy-btn" disabled={!inviteText.trim()} onClick={() => { void recopyInvite(); }}>
                 {copied
                   ? t('복사했습니다. 봇 창에 붙이세요.', 'Copied. Paste it in the bot window.', '已复制。请贴到机器人窗口。', 'コピーしました。ボットの窓に貼ってください。')
                   : t('다시 복사', 'Copy again', '再复制', 'もう一度コピー')}
               </button>
-              <p>{t('사람이 봇 창에 붙이는 손은 그대로입니다.', 'You still paste it into the bot window yourself.', '还是要由人贴到机器人窗口。', '人がボットの窓に貼る手はそのままです。')}</p>
             </div>
           </header>
-          <section className="desktop-auto-card">
-            <b>{t('아까 적은 말', 'What you asked', '刚才写的话', 'さっき書いた言葉')}</b>
-            <p>{wait?.title || title}</p>
-            {seatRows.length ? (
-              <div className="desktop-auto-now">
-                <b>{t('지금 이 일', 'This job now', '现在这件事', '今この仕事')}</b>
-                <ul>
-                  {seatRows.map((row) => (
-                    <li key={row.key} data-mark={row.mark}>
-                      <span className="desktop-auto-now-mark" aria-hidden="true">{row.mark === 'current' ? '●' : '○'}</span>
-                      <span className="desktop-auto-now-name">{row.name}</span>
-                      <span className="desktop-auto-now-detail">{row.detail}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <p>{attached
-                ? t('자리를 아직 읽지 못했습니다.', 'The seats have not loaded yet.', '还没读到位子。', '席をまだ読めません。')
-                : t('연결이 끊겼습니다. 연결 열기를 누르세요.', 'The bot is gone. Open Connect.', '连接断了。请打开连接。', '接続が切れています。接続を開いてください。')}</p>
-            )}
-          </section>
-          {waitingHandOff ? (
-            <section className={`desktop-simple-wait is-${pullStatus === 'failed' ? 'failed' : 'busy'}`} role="status">
-              <b>{waitHeadline.title}</b>
-              <p>{t('안 누르면 이 탭에 미리보기만 남습니다. 올리지는 않습니다.', 'If you do nothing, only the preview stays in this tab. It does not post.', '不点的话只有预览留在这个标签。不会发布。', '押さなければこのタブにプレビューだけ残ります。上げません。')}</p>
-              {waitHeadline.showUnknownRead ? (
-                <p>{t('이 창은 봇이 읽었는지 모릅니다. 그 자리 heartbeat가 아직 없습니다.', 'This window does not know if the bot read it. That seat has no heartbeat yet.', '这个窗口不知道机器人读没读。那个位子还没有 heartbeat。', 'この窓はボットが読んだか知りません。その席の heartbeat はまだありません。')}</p>
-              ) : null}
-            </section>
+          {waitingHandOff && waitHeadline.current ? (
+            <p className="desktop-spec-meta">{waitHeadline.title}</p>
           ) : null}
           <DesktopCrewBoard
             rows={seatRows}
@@ -1157,6 +1132,7 @@ export function AutoDesk({
             loadState={activityState}
             specId={wait?.specId}
             jobTitle={wait?.title}
+            layout="job"
             onRetry={() => {
               setActivityState('loading');
               void request('/api/bot-activity').then((data) => {
@@ -1166,15 +1142,18 @@ export function AutoDesk({
               }).catch(() => setActivityState('error'));
             }}
           />
-          <ol className="desktop-auto-stepper">
-            {phases.map((phase) => (
-              <li key={phase.id} className={`desktop-auto-stepper-item is-${lamps[phase.id]}`}>
-                <span className={`desktop-auto-lamp is-${lamps[phase.id]}`} aria-hidden="true" />
-                <b>{phase.label}</b>
-                {lamps[phase.id] !== 'off' ? <p>{phase.note}</p> : null}
-              </li>
-            ))}
-          </ol>
+          <details className="desktop-auto-help">
+            <summary>{t('단계', 'Steps', '步骤', '段階')}</summary>
+            <ol className="desktop-auto-stepper">
+              {phases.map((phase) => (
+                <li key={phase.id} className={`desktop-auto-stepper-item is-${lamps[phase.id]}`}>
+                  <span className={`desktop-auto-lamp is-${lamps[phase.id]}`} aria-hidden="true" />
+                  <b>{phase.label}</b>
+                  {lamps[phase.id] !== 'off' ? <p>{phase.note}</p> : null}
+                </li>
+              ))}
+            </ol>
+          </details>
           {showCutDrop ? (
             <section className="desktop-auto-drop">
               <input
@@ -1209,10 +1188,7 @@ export function AutoDesk({
             </section>
           ) : null}
           {waitingHandOff && !hasProject && pullStatus !== 'arrived' ? (
-            <section className="desktop-auto-empty" aria-live="polite">
-              <b>{t('컷이 오면 여기', 'The cut will land here', '成片会到这里', 'カットが来たらここ')}</b>
-              <p>{t('지금은 비어 있습니다. 기다리는 중입니다. 로딩 실패가 아닙니다.', 'It is empty because we are still waiting. This is not a failed load.', '现在是空的，因为还在等。不是加载失败。', '待っているので空です。読み込み失敗ではありません。')}</p>
-            </section>
+            <p className="desktop-spec-meta">{t('컷이 오면 이 탭에 남습니다.', 'The cut will land in this tab.', '成片会留在这个标签。', 'カットが来たらこのタブに残ります。')}</p>
           ) : null}
           <button type="button" className="desktop-auto-text" onClick={() => setStayOnCompose(true)}>
             {t('다시 적기', 'Write it again', '再写一次', 'もう一度書く')}
@@ -1253,6 +1229,7 @@ export function AutoDesk({
             loadState={activityState}
             specId={wait?.specId}
             jobTitle={wait?.title}
+            layout="job"
             onRetry={() => {
               setActivityState('loading');
               void request('/api/bot-activity').then((data) => {

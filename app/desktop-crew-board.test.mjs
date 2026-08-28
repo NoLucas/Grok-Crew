@@ -48,8 +48,8 @@ describe('crew board notes', () => {
     assert.equal(thread[0].kind, 'work');
     assert.equal(thread[1].note, '카페 간판 두 장');
     assert.equal(thread[1].toName, 'Grok Bot 편집자');
-    assert.equal(thread.length, 3);
-    assert.doesNotMatch(JSON.stringify(thread), /plan_ready|collect_ready|still_here|hacked|\?\?\?|이 자리에 있음/);
+    assert.equal(thread.length, 2);
+    assert.doesNotMatch(JSON.stringify(thread), /plan_ready|collect_ready|cut_started|still_here|hacked|\?\?\?|이 자리에 있음|자르는 중/);
     assert.match(crewTalkLine(thread[0], 'ko'), /기획자 → Grok Bot 스크래핑/);
   });
 
@@ -61,6 +61,17 @@ describe('crew board notes', () => {
       { id: 'a', bot_id: 'grok-planner', action: 'still_here', created_at: new Date(now - 130_000).toISOString() },
     ], 'ko');
     assert.equal(thread.length, 0);
+  });
+
+  it('keeps started ticks without a note off the talk list', () => {
+    const now = Date.now();
+    const thread = crewTalkThread([
+      { id: 's', bot_id: 'grok-planner', action: 'plan_started', created_at: new Date(now - 10_000).toISOString() },
+      { id: 'r', bot_id: 'grok-planner', action: 'plan_ready', created_at: new Date(now - 4_000).toISOString(), detail_json: { note: '손과 간판' } },
+    ], 'ko');
+    assert.equal(thread.length, 1);
+    assert.equal(thread[0].note, '손과 간판');
+    assert.match(crewTalkLine(thread[0], 'ko'), /기획자 → Grok Bot 스크래핑/);
   });
 
   it('puts the latest real note on the pipeline seat', () => {

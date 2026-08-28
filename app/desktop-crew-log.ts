@@ -303,6 +303,9 @@ export function crewTalkThread(
   for (const row of chronological) {
     const kind = heartbeatActionKind(row.item.action);
     if (kind !== 'started' && kind !== 'ready') continue;
+    const note = activityHandoffNote(row.item.detail_json);
+    // Started ticks without a handoff note are status, not talk.
+    if (kind === 'started' && !note) continue;
     const ready = kind === 'ready';
     thread.push({
       id: String(row.item.id || `${row.item.bot_id}-${row.item.action}-${row.item.created_at}`),
@@ -310,7 +313,7 @@ export function crewTalkThread(
       role: row.role,
       name: row.name,
       actionLabel: heartbeatActionLabel(row.item.action, language),
-      note: activityHandoffNote(row.item.detail_json),
+      note,
       toName: ready ? handoffTargetName(row.role, language) : '',
       when: activityWhen(row.item, language),
     });
@@ -335,13 +338,13 @@ export function crewNowLine(seats: CrewPipelineSeat[], language = 'ko'): string 
 
 export function crewBoardEmptyCopy(language = 'ko'): { title: string; body: string } {
   return {
-    title: boardCopy(language, '아직 남긴 말이 없습니다', 'No line has been left yet', '还没有留下话', 'まだ残した言葉はありません'),
+    title: boardCopy(language, '넘긴 말이 아직 없습니다', 'No handoff line yet', '还没有转交的话', '渡した言葉はまだありません'),
     body: boardCopy(
       language,
-      '자리 확인은 여기에 안 적습니다. 할 일이 바뀌면 그 자리가 한 줄만 남깁니다. 없는 말은 이 창이 만들지 않습니다.',
-      'Seat checks are not written here. When the job changes, that seat leaves one line. This window does not invent a line.',
-      '位子确认不写在这里。事情一变，那个位子只留一行。这个窗口不编造话。',
-      '席の確認はここには書きません。仕事が変わると、その席が一行だけ残します。この窓は言葉を作りません。',
+      '자리가 다음 자리로 넘긴 한 줄만 여깁니다. 자리 확인과 없는 말은 적지 않습니다.',
+      'Only the one line a seat left for the next seat. Seat checks and invented talk stay out.',
+      '只留下位子交给下一位子的那一行。位子确认和编造的话不写。',
+      '席が次の席へ渡した一行だけ残します。席の確認と作った話は書きません。',
     ),
   };
 }

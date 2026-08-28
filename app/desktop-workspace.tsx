@@ -608,6 +608,7 @@ export default function DesktopWorkspace() {
   const showVoiceWizard = !showLanguageGate && needsFirstVoiceSetup(voiceSetup, workspace.first_run?.voice_model);
   const firstOpen = showLanguageGate || showVoiceWizard;
   const deskReady = hasConnectedBot(workspace.crew_roster, botLinks) || Boolean(project);
+  const showWorkTabs = Boolean(project);
   const showBotRoom = botPanelOpen || (!deskReady && !peekAuto);
   const showAutoDesk = !showBotRoom && !advancedSpecOpen && (activePanel === 'auto' || !project);
   const projectJobs = workspace.control_jobs.filter((job) => job.project_id === selectedProjectId);
@@ -1343,7 +1344,7 @@ export default function DesktopWorkspace() {
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
           <button type="button" className={`${showBotRoom ? 'active' : ''}${hasConnectedBot(workspace.crew_roster, botLinks) ? ' is-connected' : ' needs-bot'}`} aria-current={showBotRoom ? 'page' : undefined} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>{t('연결', 'Connect', '连接', '接続')}</button>
           <button type="button" className={!showBotRoom && showAutoDesk ? 'active' : ''} aria-current={!showBotRoom && showAutoDesk ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(true); setAdvancedSpecOpen(false); setActivePanel('auto'); }}>{t('자동', 'Auto', '自动', '自動')}{autoDot !== 'off' ? <i className={`desktop-auto-nav-dot is-${autoDot}`} aria-hidden="true" /> : null}</button>
-          {deskReady ? (
+          {showWorkTabs ? (
             <>
               <button type="button" className={!showBotRoom && !showAutoDesk && activePanel === 'setup' ? 'active' : ''} aria-current={!showBotRoom && !showAutoDesk && activePanel === 'setup' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(false); setSpecDeskOpen(false); setAdvancedSpecOpen(false); setActivePanel('setup'); }}>{t('설정', 'Setup', '设置', '設定')}</button>
               <button type="button" className={!showBotRoom && !showAutoDesk && activePanel === 'edit' ? 'active' : ''} aria-current={!showBotRoom && !showAutoDesk && activePanel === 'edit' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(false); setSpecDeskOpen(false); setAdvancedSpecOpen(false); setActivePanel('edit'); }}>{t('편집', 'Edit', '编辑', '編集')}</button>
