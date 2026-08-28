@@ -24,6 +24,9 @@ const {
   canStartAuto,
   collectQueryIsUrlList,
   collectUrlLines,
+  isAbsoluteOwnedPath,
+  resolveOwnedPath,
+  resolveOwnedPaths,
   formatElapsed,
   formatSince,
   readAutoPrefs,
@@ -166,6 +169,22 @@ describe('auto desk job payload', () => {
       ownedPaths: ['/tmp/talk.mp4'],
       collectQuery: 'https://example.com/sign.mp4',
     }).source_mode, 'own_and_collect');
+    assert.deepEqual(autoJobPayload({
+      title: '상대 경로',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useOwn: true,
+      ownedPaths: ['inputs\\hero.png'],
+      workspaceDir: 'C:\\Users\\a\\Videos\\Grok Crew',
+    }).owned_paths, ['C:\\Users\\a\\Videos\\Grok Crew\\inputs\\hero.png']);
+    assert.equal(isAbsoluteOwnedPath('inputs\\hero.png'), false);
+    assert.equal(isAbsoluteOwnedPath('C:\\Users\\a\\Pictures\\hero.png'), true);
+    assert.equal(resolveOwnedPath('inputs/hero.png', '/tmp/Grok Crew'), '/tmp/Grok Crew/inputs/hero.png');
+    assert.equal(resolveOwnedPath('inputs/../secret.png', '/tmp/Grok Crew'), 'inputs/../secret.png');
+    assert.deepEqual(resolveOwnedPaths(['/tmp/talk.mp4', 'inputs/sign.png'], '/tmp/Grok Crew'), [
+      '/tmp/talk.mp4',
+      '/tmp/Grok Crew/inputs/sign.png',
+    ]);
     assert.equal(autoJobPayload({
       title: '자막 켬',
       recipeId: 'instagram_reel',

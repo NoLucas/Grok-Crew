@@ -3,7 +3,7 @@
   "default": "kokoro-82m",
   "workspaceFolder": "Grok Crew",
   "hfResolve": "https://huggingface.co/{repo}/resolve/main/{name}",
-  "userAgent": "GrokCrew-Desktop/1.0.10",
+  "userAgent": "GrokCrew-Desktop/1.0.11",
   "models": {
     "kokoro-82m": {
       "id": "kokoro-82m",

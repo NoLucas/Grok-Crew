@@ -4,11 +4,16 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.11 - 2026-08-28
+
+Local 1.0.11. This cut is a desk zip for the operator, not a GitHub Release and not a Drive overwrite. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. Already-installed desks still check Grok-crew-test for the last published tag (1.0.10).
+
 ### Desk
 
 - Auto collect is a direct file URL list only. A search phrase no longer starts a job, and the prompt is not reused as `collect_query`.
 - The invite names this job’s Windows materials absolute path. Collector: curl, then CopyFromBox. Editor: that folder only. No new `/api/v2` field.
 - Built-in planner / scraper / editor skills follow that file pipe (`SendToAgent`, `curl`, `CopyFromBox`, `missing: dest_path`).
+- Picking a file on Auto no longer dies on `inputs\hero.png`. The desk copies that file into the Videos workspace and now resolves that relative path against the workspace before the sidecar copies it into the materials box.
 
 ## 1.0.10 - 2026-08-28
 

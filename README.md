@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.10** · with Grok Bot · free now
+**v1.0.11** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,11 +50,18 @@ If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
 ---
 
+## What changed in v1.0.11
+
+- Auto collect is a direct file URL list only. A search phrase does not start a job.
+- Picking a file on Auto no longer fails on the workspace-relative `inputs\...` path the desk already stored.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.11 notes](docs/RELEASE_NOTES.v1.0.11.md). Guest Drive download is still the last published 1.0.10 exe until a tag is cut.
+
 ## What changed in v1.0.10
 
 - If the chosen TTS is already on this PC, the installer skips it and continues. A failed voice download no longer stops the program install.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.10 notes](docs/RELEASE_NOTES.v1.0.10.md).
+The 1.0.10 list is in [the 1.0.10 notes](docs/RELEASE_NOTES.v1.0.10.md).
 
 ## What changed in v1.0.9
 

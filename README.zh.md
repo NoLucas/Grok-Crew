@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.10** · with Grok Bot · 现在免费
+**v1.0.11** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,11 +50,18 @@
 
 ---
 
+## v1.0.11 改了什么
+
+- 自动收集只收公开文件地址。搜索词不会开工。
+- 选自己的文件时，不再因为工作区相对路径 `inputs\...` 报错。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.11 发布说明](docs/RELEASE_NOTES.v1.0.11.md)。在打标签之前，客人用的网盘文件仍是 1.0.10。
+
 ## v1.0.10 改了什么
 
 - 这台电脑已经有选中的 TTS 时，安装程序跳过下载并继续。声音下载失败也不会停住程序安装。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.10 发布说明](docs/RELEASE_NOTES.v1.0.10.md)。
+1.0.10 列表见 [1.0.10 发布说明](docs/RELEASE_NOTES.v1.0.10.md)。
 
 ## v1.0.9 改了什么
 

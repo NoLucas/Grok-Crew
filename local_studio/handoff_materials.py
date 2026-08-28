@@ -182,6 +182,39 @@ def apply_materials_folder(folder: Path, spec_id: str | None = None) -> dict[str
     }
 
 
+def resolve_owned_source(raw: str) -> Path:
+    """Resolve a desk-picked path. selectMedia stores files as workspace-relative inputs/<name>."""
+    text = str(raw or "").strip()
+    if not text:
+        raise ValueError("owned file not found: ")
+    given = Path(text).expanduser()
+    name = Path(text.replace("\\", "/")).name
+    candidates: list[Path] = [given]
+    if not given.is_absolute():
+        posix = text.replace("\\", "/")
+        if ".." not in Path(posix).parts:
+            candidates.extend(
+                [
+                    config.WORKSPACE_DIR / posix,
+                    config.WORKSPACE_DIR / "inputs" / name,
+                    Path.cwd() / posix,
+                ]
+            )
+    seen: set[str] = set()
+    for item in candidates:
+        try:
+            resolved = item.expanduser()
+            key = str(resolved)
+            if key in seen:
+                continue
+            seen.add(key)
+            if resolved.is_file():
+                return resolved
+        except OSError:
+            continue
+    raise ValueError(f"owned file not found: {given}")
+
+
 def write_owned_materials(spec_id: str, paths: list[Any] | tuple[Any, ...] | str) -> dict[str, Any]:
     record = get_spec(spec_id)
     if not record:
@@ -207,9 +240,7 @@ def write_owned_materials(spec_id: str, paths: list[Any] | tuple[Any, ...] | str
     copied: list[str] = []
     known = {str(item.get("file") or "") for item in clips}
     for raw in items:
-        source = Path(raw).expanduser()
-        if not source.is_file():
-            raise ValueError(f"owned file not found: {source}")
+        source = resolve_owned_source(raw)
         if source.suffix.lower() not in ALLOWED_MEDIA_EXTENSIONS:
             raise ValueError(f"unsupported clip extension on '{source.name}'")
         if source.stat().st_size > MAX_MEDIA_BYTES:

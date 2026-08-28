@@ -145,6 +145,25 @@ def test_collector_omitted_license_is_unknown(studio, tmp_path):
     assert status["unknown_license_count"] >= 1
 
 
+def test_own_files_resolve_workspace_relative_inputs(studio):
+    clip = config.WORKSPACE_DIR / "inputs" / "hero.png"
+    clip.parent.mkdir(parents=True, exist_ok=True)
+    clip.write_bytes(b"owned-hero")
+    record = create_spec({
+        "title": "Hero still",
+        "goal": "Use the desk copy",
+        "language": "en",
+        "recipe_id": "instagram_reel",
+        "source_mode": "own",
+        "owned_paths": ["inputs\\hero.png"],
+    })
+    folder = config.WORKSPACE_DIR / "handoff-materials" / record["id"]
+    payload = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
+    assert (folder / "hero.png").read_bytes() == b"owned-hero"
+    assert payload["clips"][0]["origin"] == "owned"
+    assert payload["clips"][0]["file"] == "hero.png"
+
+
 def test_own_files_rejected_on_collect_only_spec(studio, tmp_path):
     record = create_spec({
         "title": "Collect only",

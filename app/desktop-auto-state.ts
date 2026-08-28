@@ -88,7 +88,31 @@ export type AutoJobInput = {
   voiceGender?: VoiceGender;
   voiceFeel?: VoiceFeel;
   voiceAccent?: VoiceAccent;
+  workspaceDir?: string;
 };
+
+export function isAbsoluteOwnedPath(value: string): boolean {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  if (text.startsWith('/') || text.startsWith('\\\\')) return true;
+  return /^[A-Za-z]:[\\/]/.test(text);
+}
+
+export function resolveOwnedPath(raw: string, workspaceDir = ''): string {
+  const text = String(raw || '').trim();
+  if (!text) return '';
+  if (isAbsoluteOwnedPath(text)) return text;
+  const root = String(workspaceDir || '').trim().replace(/[\\/]+$/, '');
+  if (!root) return text;
+  const rel = text.replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!rel || rel.split('/').includes('..')) return text;
+  const sep = /\\/.test(root) && !root.startsWith('/') ? '\\' : '/';
+  return `${root}${sep}${rel.split('/').join(sep)}`;
+}
+
+export function resolveOwnedPaths(paths: unknown, workspaceDir = ''): string[] {
+  return cleanOwnedPaths(paths).map((path) => resolveOwnedPath(path, workspaceDir));
+}
 
 export function titleFromPrompt(title: string, goal = ''): string {
   const heading = String(title || '').trim();
@@ -143,7 +167,7 @@ export function autoSourceMode(input: { useOwn?: boolean; useScrape?: boolean })
 export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
   const prompt = String(input.goal || '').trim();
   const heading = titleFromPrompt(input.title, prompt);
-  const ownedPaths = cleanOwnedPaths(input.ownedPaths);
+  const ownedPaths = resolveOwnedPaths(input.ownedPaths, input.workspaceDir);
   const useOwn = Boolean(input.useOwn && ownedPaths.length);
   const useScrape = Boolean(input.useScrape);
   const sourceMode = autoSourceMode({ useOwn, useScrape }) || 'own';

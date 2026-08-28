@@ -20,6 +20,8 @@ import {
   type BotActivityItem,
   canStartAuto,
   droppedFilePath,
+  isAbsoluteOwnedPath,
+  resolveOwnedPaths,
   titleFromPrompt,
   formatElapsed,
   readAutoPrefs,
@@ -366,6 +368,16 @@ export function AutoDesk({
     setSendFailed(false);
     setClipboardBlocked(false);
     try {
+      let readyOwned = ownedPaths;
+      if (useOwn && ownedPaths.some((path) => !isAbsoluteOwnedPath(path))) {
+        try {
+          const health = await request('/health');
+          const workspace = typeof health.workspace === 'string' ? health.workspace : '';
+          readyOwned = resolveOwnedPaths(ownedPaths, workspace);
+        } catch {
+          /* sidecar also resolves inputs/<name> against the workspace */
+        }
+      }
       const created = await request('/api/v2/edit-specs', {
         method: 'POST',
         body: JSON.stringify(autoJobPayload({
@@ -375,7 +387,7 @@ export function AutoDesk({
           language,
           useOwn,
           useScrape,
-          ownedPaths,
+          ownedPaths: readyOwned,
           collectQuery,
           wantCaptions,
           wantDubbing,
