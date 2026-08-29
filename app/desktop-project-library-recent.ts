@@ -1,5 +1,6 @@
 import {
   findRecentFolder,
+  isRecentFolderTitle,
   recentFolderTitle,
   readRememberedRecentId,
   unfiledProjectIds,
@@ -54,6 +55,19 @@ export async function ensureRecentFolder({
         body: JSON.stringify({ folder_id: resolved.folder.id }),
       });
       migrated.push(id);
+    }
+    for (const extra of folders.filter((item) => item.id !== resolved.folder.id && isRecentFolderTitle(item.title))) {
+      for (const project of projects.filter((item) => item.folder_id === extra.id)) {
+        await request(`/api/v2/projects/${project.id}/move`, {
+          method: 'POST',
+          body: JSON.stringify({ folder_id: resolved.folder.id }),
+        });
+        migrated.push(project.id);
+      }
+      await request(`/api/v2/project-folders/${extra.id}/delete`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
     }
   }
   return { ...resolved, migrated };

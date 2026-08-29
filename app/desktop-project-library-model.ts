@@ -106,12 +106,21 @@ export function groupLibraryProjects(
     else unfiled.push(project);
   }
   const recent = recentId ? folders.find((folder) => folder.id === recentId) : undefined;
+  const extras = recent
+    ? folders.filter((folder) => folder.id !== recent.id && isRecentFolderTitle(folder.title))
+    : [];
   if (recent) {
     const bucket = buckets.get(recent.id);
-    if (bucket) bucket.push(...unfiled);
+    if (bucket) {
+      bucket.push(...unfiled);
+      for (const extra of extras) {
+        const extraBucket = buckets.get(extra.id);
+        if (extraBucket) bucket.push(...extraBucket);
+      }
+    }
   }
   const ordered = recent
-    ? [recent, ...folders.filter((folder) => folder.id !== recent.id)]
+    ? [recent, ...folders.filter((folder) => folder.id !== recent.id && !isRecentFolderTitle(folder.title))]
     : folders;
   return {
     folders: ordered.map((folder) => ({ folder, projects: buckets.get(folder.id) ?? [] })),

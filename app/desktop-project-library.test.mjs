@@ -66,6 +66,24 @@ test("pins recent and parks unfiled projects inside it", () => {
   assert.equal(grouped.folders[1].projects[0].id, "a");
 });
 
+test("hides extra recent-titled folders and pours their projects into the remembered one", () => {
+  const grouped = groupLibraryProjects(
+    [
+      { id: "a", title: "In remembered", folder_id: "fld_recent", updated_at: "2026-08-01" },
+      { id: "b", title: "In extra", folder_id: "fld_extra", updated_at: "2026-08-02" },
+      { id: "c", title: "In reels", folder_id: "fld_1", updated_at: "2026-08-03" },
+    ],
+    [
+      { id: "fld_1", title: "릴스" },
+      { id: "fld_extra", title: "Recent" },
+      { id: "fld_recent", title: "최근기록" },
+    ],
+    "fld_recent",
+  );
+  assert.deepEqual(grouped.folders.map((item) => item.folder.id), ["fld_recent", "fld_1"]);
+  assert.deepEqual(grouped.folders[0].projects.map((item) => item.id), ["a", "b"]);
+});
+
 test("keeps recent-owned projects when parking unfiled ones", () => {
   const grouped = groupLibraryProjects(
     [
@@ -169,6 +187,32 @@ test("reuses the session folder when the workspace snapshot is still empty", asy
   assert.equal(result.folder.id, "fld_remembered");
   assert.equal(result.created, false);
   assert.deepEqual(calls, []);
+});
+
+test("moves projects out of extra recent folders and deletes those extras", async () => {
+  resetEnsureRecentFolderForTests();
+  const calls = [];
+  const result = await ensureRecentFolder({
+    folders: [
+      { id: "fld_keep", title: "최근기록" },
+      { id: "fld_extra", title: "Recent" },
+    ],
+    projects: [
+      { id: "p1", title: "Keep", folder_id: "fld_keep", updated_at: "2026-08-01" },
+      { id: "p2", title: "Extra", folder_id: "fld_extra", updated_at: "2026-08-02" },
+    ],
+    storage: memoryStorage({ "grok-crew-recent-folder-id": "fld_keep" }),
+    migrate: true,
+    request: async (path) => {
+      calls.push(path);
+      return {};
+    },
+  });
+  assert.equal(result.folder.id, "fld_keep");
+  assert.deepEqual(result.migrated, ["p2"]);
+  assert.equal(calls.includes("/api/v2/projects/p2/move"), true);
+  assert.equal(calls.includes("/api/v2/project-folders/fld_extra/delete"), true);
+  assert.equal(calls.includes("/api/v2/projects/p1/move"), false);
 });
 
 test("creates the recent folder only once when two callers race", async () => {
