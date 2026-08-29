@@ -397,6 +397,24 @@ def test_simple_path_spec_is_one_bot(studio):
     assert "missing: dest_path" in invite["text"]
 
 
+def test_invite_drops_leftover_ime_title(studio):
+    from edit_spec import leftover_job_title, spec_invite
+
+    assert leftover_job_title("ㅇ") is True
+    assert leftover_job_title("타르코프 게임 영상을 만들어줘") is False
+    record = create_spec({
+        "title": "ㅇ",
+        "goal": "타르코프 게임 영상을 만들어줘",
+        "language": "ko",
+        "source_mode": "bot",
+    })
+    assert record["title"] == "타르코프 게임 영상을 만들어줘"
+    korean = spec_invite(record["id"], "ko")
+    assert "제목: 타르코프 게임 영상을 만들어줘" in korean["text"]
+    assert "제목: ㅇ\n" not in korean["text"]
+    assert "목표: 타르코프 게임 영상을 만들어줘" in korean["text"]
+
+
 def test_bot_invite_uses_operator_find_query_not_recipe_default(studio):
     found = create_spec({
         "title": "Cafe open",

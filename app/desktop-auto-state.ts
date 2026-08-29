@@ -115,11 +115,22 @@ export function resolveOwnedPaths(paths: unknown, workspaceDir = ''): string[] {
   return cleanOwnedPaths(paths).map((path) => resolveOwnedPath(path, workspaceDir));
 }
 
+/** IME crumbs and leftover one-key titles such as ㅇ must not become the job title. */
+export function leftoverJobTitle(title: string): boolean {
+  const text = String(title || '').trim();
+  if (!text) return true;
+  if (text.length <= 1) return true;
+  if (/^[\u3131-\u318E]+$/.test(text)) return true;
+  if (/^[.·…\-\s]+$/.test(text)) return true;
+  return false;
+}
+
 export function titleFromPrompt(title: string, goal = ''): string {
   const heading = String(title || '').trim();
-  if (heading) return heading;
+  if (heading && !leftoverJobTitle(heading)) return heading;
   const first = String(goal || '').trim().split(/\r?\n/).find((line) => line.trim());
-  return first ? first.trim().slice(0, 80) : '';
+  const line = first ? first.trim().slice(0, 80) : '';
+  return leftoverJobTitle(line) ? '' : line;
 }
 
 export function cleanOwnedPaths(value: unknown): string[] {
@@ -183,6 +194,22 @@ export function localFilePreviewUrl(path: string): string {
   if (!unix || unix.split('/').includes('..')) return '';
   if (/[\u0000-\u001f\u007f?#%]/.test(unix)) return '';
   if (ownedMediaKind(unix) !== 'image') return '';
+  if (/^[A-Za-z]:\//.test(unix)) return `file:///${unix}`;
+  if (unix.startsWith('/') && !unix.startsWith('//')) return `file://${unix}`;
+  return '';
+}
+
+/** Studio media URL first. Local file:// for images and videos when the sidecar path is empty. */
+export function libraryPreviewUrl(path: string, studioUrl = ''): string {
+  const viaStudio = String(studioUrl || '').trim();
+  if (viaStudio) return viaStudio;
+  const text = String(path || '').trim();
+  if (!text) return '';
+  const unix = text.replace(/\\/g, '/');
+  if (!unix || unix.split('/').includes('..')) return '';
+  if (/[\u0000-\u001f\u007f?#%]/.test(unix)) return '';
+  const kind = ownedMediaKind(unix);
+  if (kind !== 'image' && kind !== 'video') return '';
   if (/^[A-Za-z]:\//.test(unix)) return `file:///${unix}`;
   if (unix.startsWith('/') && !unix.startsWith('//')) return `file://${unix}`;
   return '';
@@ -742,14 +769,17 @@ export function alwaysCrewSeats(input: {
   });
 }
 
-/** First seat that has not left a ready handoff. After plan_ready this is the scraper, not the planner. */
+/** First seat that still needs the invite. After collect_ready the planner reviews, then the editor cuts. */
 export function pasteTargetRole(rows: AutoSeatRow[]): BotRole {
-  for (const role of BOT_ROLES) {
-    const row = rows.find((item) => item.role === role);
-    if (!row) continue;
-    if (heartbeatActionKind(row.lastAction) === 'ready') continue;
-    return role;
-  }
+  const planner = rows.find((item) => item.role === 'planner');
+  const scraper = rows.find((item) => item.role === 'scraper');
+  const editor = rows.find((item) => item.role === 'editor');
+  const planKind = heartbeatActionKind(planner?.lastAction);
+  const scrapKind = heartbeatActionKind(scraper?.lastAction);
+  const cutKind = heartbeatActionKind(editor?.lastAction);
+  if (planKind !== 'ready') return 'planner';
+  if (scrapKind !== 'ready') return 'scraper';
+  if (cutKind !== 'started' && cutKind !== 'ready') return 'planner';
   return 'editor';
 }
 

@@ -53,6 +53,8 @@ describe('built-in bot skills', () => {
     assert.match(planner, /자동 스위치/);
     assert.match(planner, /봇이 돌아가는 리눅스/);
     assert.match(planner, /직접 파일 URL/);
+    assert.match(planner, /어떤 종류의 클립/);
+    assert.match(planner, /파일을 보고/);
     assert.match(planner, /SendToAgent/);
     assert.doesNotMatch(planner, /미국 버릇|중국 버릇|일본 버릇/);
     assert.doesNotMatch(planner, /中文\(zh\)/);
@@ -68,7 +70,7 @@ describe('built-in bot skills', () => {
     assert.match(scraper, /CopyFromBox/);
     assert.match(scraper, /missing: dest_path/);
     assert.doesNotMatch(scraper, /Vimeo 공개, 공개 뉴스/);
-    assert.match(editor, /기획자가 정한 방법/);
+    assert.match(editor, /기획자가 자료를 본 뒤/);
     assert.match(editor, /grok-crew-cut-to-plan/);
     assert.match(editor, /첫 1–2초/);
     assert.match(editor, /자막 크게/);
@@ -124,6 +126,8 @@ describe('built-in bot skills', () => {
     assert.match(text, /이 앱은 긁지 않는다/);
     assert.match(text, /CopyFromBox/);
     assert.match(text, /직접 파일 URL/);
+    assert.match(text, /어떤 종류의 클립/);
+    assert.match(text, /자료를 보고/);
     assert.match(text, /보낼 나라: 한국/);
     assert.match(text, /\/bot-skills\/planner\.md/);
     assert.match(text, /\/bot-skills\/edit-plan\.md/);

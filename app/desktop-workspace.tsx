@@ -37,6 +37,7 @@ import { DesktopReviseCard } from './desktop-revise-card';
 import {
   autoHeaderDot,
   importedEditSpecId,
+  ownedFileName,
   safeWorkspaceRel,
   shouldAutoPullInbox,
   shouldClearWaitForImport,
@@ -278,10 +279,18 @@ function handoffSenderLabel(
   return t('이 PC', 'This PC', '本机', 'このPC');
 }
 
-function mediaUrl(path: string) {
+function mediaUrl(path: string, catalog: MediaItem[] = []) {
   const rel = safeWorkspaceRel(path) || safeWorkspaceRel(relativeWorkspacePath(path));
-  if (!rel) return '';
-  return `${studioBase()}/media/${rel.split('/').map(encodeURIComponent).join('/')}`;
+  if (rel) return `${studioBase()}/media/${rel.split('/').map(encodeURIComponent).join('/')}`;
+  const name = ownedFileName(path).toLowerCase();
+  if (name && catalog.length) {
+    const hit = catalog.find((item) => ownedFileName(item.path).toLowerCase() === name);
+    if (hit) {
+      const via = safeWorkspaceRel(hit.path) || safeWorkspaceRel(relativeWorkspacePath(hit.path));
+      if (via) return `${studioBase()}/media/${via.split('/').map(encodeURIComponent).join('/')}`;
+    }
+  }
+  return '';
 }
 
 function analysisSceneUrl(projectId: string, sceneId: string, updatedAt: string) {
@@ -1499,20 +1508,28 @@ export default function DesktopWorkspace() {
             folders={workspace.project_folders ?? []}
             trash={workspace.trash?.items ?? []}
             selectedId={selectedProjectId}
-            specDeskOpen={specDeskOpen}
             studioState={studioState}
             senderLabel={(item) => handoffSenderLabel(item, t)}
             request={api}
-            filePreviewUrl={(path) => mediaUrl(path)}
+            filePreviewUrl={(path) => mediaUrl(path, workspace.media)}
             onSelect={(projectId) => {
+              setSelectedProjectId(projectId);
+            }}
+            onEdit={(projectId) => {
               if (!projectId) {
                 setSelectedProjectId('');
                 setSpecDeskOpen(true);
+                setActivePanel('auto');
                 return;
               }
+              setBotPanelOpen(false);
+              setPeekAuto(false);
               setSpecDeskOpen(false);
+              setAdvancedSpecOpen(false);
               setSelectedProjectId(projectId);
+              setActivePanel('edit');
               setDrawer('none');
+              void refreshProject(projectId);
             }}
             onRefresh={() => refreshWorkspace(true)}
             onMessage={setMessage}

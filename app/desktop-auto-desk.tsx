@@ -45,8 +45,8 @@ import {
   type AutoPhaseId,
 } from './desktop-auto-state';
 import { DesktopCrewBoard } from './desktop-crew-board';
-import { activityForSpec, type CrewLoadState } from './desktop-crew-log';
-import { seatShortLabel, withCrewInvite } from './bot-skills';
+import { activityForSpec, crewStagePipeline, crewStageShortLabel, type CrewLoadState } from './desktop-crew-log';
+import { withCrewInvite } from './bot-skills';
 import { CREW_MARKETS, marketFromLanguage, marketLabel, resolveCrewMarket, type CrewMarket } from './crew-market';
 import { DesktopNewsCard } from './desktop-news-card';
 import { confirmVoiceChoice, resolveVoiceAccentForModel, voiceAccentsForModel, voiceModelLabel, type VoiceModelId } from './desktop-voice-models';
@@ -262,6 +262,7 @@ export function AutoDesk({
     lastCheckedLabel: formatCheckTime(lastCheckedAt, language),
     activity: scopedActivity,
   });
+  const stageRows = crewStagePipeline(seatRows, scopedActivity, language);
   const waitHeadline = autoWaitHeadline(seatRows, language);
   const pasteTarget = pasteTargetForSeats(seatRows, language) || wait?.pasteTarget || '';
   const samePcPull = samePcInviteReady(seatRows, roster);
@@ -1303,13 +1304,16 @@ export function AutoDesk({
               <p className="desktop-auto-run-kicker">{elapsedLabel
                 ? t(`${elapsedLabel}째`, `${elapsedLabel}`, `${elapsedLabel}`, `${elapsedLabel}`)
                 : t('방금 보냄', 'Just sent', '刚刚发送', 'たった今送った')}</p>
-              <h1>{wait?.title || title || t('자리 넘김', 'Seat handoff', '位子转交', '席の受け渡し')}</h1>
+              <h1>{titleFromPrompt(wait?.title || title, goal) || t('자리 넘김', 'Seat handoff', '位子转交', '席の受け渡し')}</h1>
               <p>{waitHeadline.title}</p>
             </div>
+            <button type="button" className="desktop-auto-text desktop-auto-new" onClick={writeAnother}>
+              {t('새로 만들기', 'Create new', '新建', '新規作成')}
+            </button>
           </header>
-          <ol className="desktop-auto-run-rail" aria-label={t('지금 자리', 'Seats now', '现在的位子', '今の席')}>
-            {seatRows.map((seat, index) => (
-              <li key={seat.key} data-mark={seat.mark} data-role={seat.role}>
+          <ol className="desktop-auto-run-rail" aria-label={t('자리', 'Seats', '位子', '席')}>
+            {stageRows.map((seat, index) => (
+              <li key={seat.key} data-mark={seat.mark} data-role={seat.role} data-stage={seat.stage}>
                 {index > 0 ? <span className="desktop-auto-run-arrow" aria-hidden="true">→</span> : null}
                 <button
                   type="button"
@@ -1317,7 +1321,7 @@ export function AutoDesk({
                   onClick={onOpenBots}
                 >
                   <i aria-hidden="true" />
-                  <b>{seatShortLabel(seat.role, language)}</b>
+                  <b>{crewStageShortLabel(seat.stage || (seat.role === 'planner' ? 'plan' : seat.role === 'scraper' ? 'collect' : 'cut'), language)}</b>
                   <span>{seat.connected
                     ? t('연결됨', 'Connected', '已连接', '接続済み')
                     : t('연결되지않음', 'Not connected', '未连接', '未接続')}</span>
@@ -1340,7 +1344,7 @@ export function AutoDesk({
             activity={activity}
             loadState={activityState}
             specId={wait?.specId}
-            jobTitle={wait?.title}
+            jobTitle={titleFromPrompt(wait?.title || title, goal)}
             layout="job"
             onRetry={() => {
               setActivityState('loading');
@@ -1391,17 +1395,10 @@ export function AutoDesk({
               >
                 <b>{cutOver
                   ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
-                  : t('끝난 파일을 직접 놓기', 'Drop the finished file yourself', '自己放下完成文件', '終わったファイルを自分で置く')}</b>
-                <span>{t('어제 인박스에 혼자 남은 컷은 자동으로 열지 않습니다. 고르면 이 탭에 엽니다.', 'A leftover inbox cut does not open by itself. Pick it here to open it in this tab.', '收件箱里昨天剩下的成片不会自己打开。在这里选才会在这个标签打开。', '受信箱に昨日残ったカットは自動では開きません。ここで選べばこのタブで開きます。')}</span>
+                  : t('완성되면 여기에 영상이 올라옵니다', 'The video will appear here when it is finished', '完成后视频会出现在这里', '完成すると、ここに映像が上がります')}</b>
               </button>
             </section>
           ) : null}
-          {waitingHandOff && !hasProject && pullStatus !== 'arrived' ? (
-            <p className="desktop-spec-meta">{t('컷이 오면 이 탭 가운데에 남습니다. 퍼센트는 없습니다.', 'The cut will land in the middle of this tab. There is no percent.', '成片会留在这个标签中间。没有百分比。', 'カットが来たらこのタブの真ん中に残ります。パーセントはありません。')}</p>
-          ) : null}
-          <button type="button" className="desktop-auto-text" onClick={writeAnother}>
-            {t('새로 만들기', 'Create new', '新建', '新規作成')}
-          </button>
         </section>
       ) : null}
 
@@ -1410,7 +1407,7 @@ export function AutoDesk({
           <header className="desktop-auto-lead desktop-auto-lead-inline">
             <div>
               <p className="desktop-auto-run-kicker">{t('도착', 'Arrived', '已到', '到着')}</p>
-              <h1>{projectTitle || wait?.title || t('도착한 컷', 'Arrived cut', '已到达的成片', '届いたカット')}</h1>
+              <h1>{projectTitle || titleFromPrompt(wait?.title || title, goal) || t('도착한 컷', 'Arrived cut', '已到达的成片', '届いたカット')}</h1>
               <p className="desktop-auto-preview-note">
                 {outputReady
                   ? t('이 PC에 두었음. 자동은 올리지 않았습니다.', 'Saved on this PC. Auto did not post it.', '已留在这台电脑。自动没有发布。', 'この PC に残しました。自動では上げていません。')
@@ -1447,7 +1444,7 @@ export function AutoDesk({
             activity={activity}
             loadState={activityState}
             specId={wait?.specId}
-            jobTitle={wait?.title}
+            jobTitle={titleFromPrompt(wait?.title || title, goal)}
             layout="job"
             onRetry={() => {
               setActivityState('loading');

@@ -43,6 +43,8 @@ const {
   shouldAskReplaceCut,
   shouldPingCut,
   suggestRecipeId,
+  leftoverJobTitle,
+  libraryPreviewUrl,
   titleFromPrompt,
   waitElapsedSeconds,
   writeAutoPrefs,
@@ -103,6 +105,11 @@ describe('auto desk start rules', () => {
       ownedPaths: ['/tmp/sign.png'],
     }), { ok: true });
     assert.equal(titleFromPrompt('', '카페 오픈 15초\n손과 간판'), '카페 오픈 15초');
+    assert.equal(leftoverJobTitle('ㅇ'), true);
+    assert.equal(leftoverJobTitle('ㅇㅇ'), true);
+    assert.equal(leftoverJobTitle('타르코프 게임 영상을 만들어줘'), false);
+    assert.equal(titleFromPrompt('ㅇ', '타르코프 게임 영상을 만들어줘'), '타르코프 게임 영상을 만들어줘');
+    assert.equal(titleFromPrompt('타르코프', '다른 말'), '타르코프');
     assert.deepEqual(canStartAuto({
       title: '',
       goal: 'https://example.com/open',
@@ -585,6 +592,8 @@ describe('auto desk prefs and names', () => {
     assert.equal(localFilePreviewUrl('C:\\Users\\a\\Pictures\\sign.png'), 'file:///C:/Users/a/Pictures/sign.png');
     assert.equal(localFilePreviewUrl('file:///etc/passwd'), '');
     assert.equal(localFilePreviewUrl('C:\\Users\\a\\Videos\\talk.mp4'), '');
+    assert.equal(libraryPreviewUrl('C:\\Users\\a\\Videos\\talk.mp4'), 'file:///C:/Users/a/Videos/talk.mp4');
+    assert.equal(libraryPreviewUrl('inputs/sign.png', 'http://127.0.0.1:7214/media/inputs/sign.png'), 'http://127.0.0.1:7214/media/inputs/sign.png');
     assert.equal(localFilePreviewUrl('/tmp/../etc/passwd.png'), '');
     assert.equal(localFilePreviewUrl('/tmp/%2e%2e/etc/passwd.png'), '');
     assert.equal(localFilePreviewUrl('C:/Users/a/Pictures/sign.png?x=1'), '');
@@ -885,6 +894,17 @@ describe('auto desk seats and inbox guards', () => {
     assert.equal(pasteTargetForSeats(afterPlan, 'ko'), 'Grok Bot 스크래핑');
     assert.equal(pasteTargetRole(idle), 'planner');
     assert.equal(pasteTargetRole(afterPlan), 'scraper');
+    const afterCollect = alwaysCrewSeats({
+      roster: {
+        bots: [
+          { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'plan_ready' },
+          { bot_id: 'grok-scraper', display_name: 'Grok Bot 스크래핑', presence: 'active', last_action: 'collect_ready' },
+        ],
+      },
+      language: 'ko',
+    });
+    assert.equal(pasteTargetRole(afterCollect), 'planner');
+    assert.equal(pasteTargetForSeats(afterCollect, 'ko'), 'Grok Bot 기획자');
   });
 
   it('hides the human paste when the current Grok seat is checked in on this PC', () => {
@@ -894,6 +914,12 @@ describe('auto desk seats and inbox guards', () => {
     const rows = alwaysCrewSeats({ roster, language: 'ko' });
     assert.equal(samePcInviteReady(rows, roster), true);
     const auto = readFileSync(new URL('./desktop-auto-desk.tsx', import.meta.url), 'utf8');
+    assert.match(auto, /완성되면 여기에 영상이 올라옵니다/);
+    assert.match(auto, /jobTitle=\{titleFromPrompt\(wait\?\.title \|\| title, goal\)\}/);
+    assert.equal(auto.includes('끝난 파일을 직접 놓기'), false);
+    assert.equal(auto.includes('어제 인박스에 혼자 남은 컷'), false);
+    assert.equal(auto.includes('퍼센트는 없습니다'), false);
+    assert.match(auto, /desktop-auto-new/);
     assert.match(auto, /samePcInviteReady/);
     assert.match(auto, /samePcPull \? null/);
     assert.match(auto, /다시 복사 · \$\{pasteTarget\}/);

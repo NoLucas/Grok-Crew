@@ -8047,7 +8047,16 @@ select {
   letter-spacing: .06em;
   text-transform: uppercase;
 }
-.desktop-auto-run-head { display: grid; gap: 4px; }
+.desktop-auto-run-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+.desktop-auto-new {
+  margin-top: 2px;
+  white-space: nowrap;
+}
 .desktop-auto-run-head h1 {
   margin: 0;
   font-size: 1.35rem;
@@ -8062,7 +8071,7 @@ select {
 }
 .desktop-auto-run-rail {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
@@ -8737,7 +8746,7 @@ select {
 }
 .desktop-crew-pipe {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
@@ -8768,6 +8777,7 @@ select {
 .desktop-crew-pipe li[data-role="planner"] .desktop-crew-pipe-card { border-left-color: var(--desktop-blue); }
 .desktop-crew-pipe li[data-role="scraper"] .desktop-crew-pipe-card { border-left-color: var(--desktop-amber); }
 .desktop-crew-pipe li[data-role="editor"] .desktop-crew-pipe-card { border-left-color: var(--desktop-green); }
+.desktop-crew-pipe li[data-stage="review"] .desktop-crew-pipe-card { border-left-color: var(--desktop-purple); }
 .desktop-crew-pipe li[data-mark="current"] .desktop-crew-pipe-card {
   background: color-mix(in srgb, var(--desktop-blue) 8%, var(--desktop-panel));
 }

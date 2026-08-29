@@ -260,11 +260,17 @@ def normalize_spec(body: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(body, dict):
         raise ValueError("Edit spec must be a JSON object.")
     filled, recipe = apply_recipe_defaults(body)
-    title = str(filled.get("title") or "").strip()[:120]
-    goal = str(filled.get("goal") or "").strip()[:2000]
-    if not title:
+    raw_title = str(filled.get("title") or "").strip()[:120]
+    raw_goal = str(filled.get("goal") or "").strip()[:2000]
+    if not raw_title:
         raise ValueError("title is required.")
-    if not goal:
+    if not raw_goal:
+        raise ValueError("goal is required.")
+    title = usable_invite_title(raw_title, raw_goal)[:120] or raw_title
+    if leftover_job_title(title):
+        raise ValueError("title is required.")
+    goal = raw_goal if not leftover_job_title(raw_goal) else title
+    if leftover_job_title(goal):
         raise ValueError("goal is required.")
     platform = str(filled.get("platform") or "reels_tiktok_shorts").strip()
     if platform not in PLATFORMS:
@@ -966,6 +972,30 @@ def _invite_find_block(spec: dict[str, Any], language: str) -> str:
     return "You make the source and the first cut. The operator will not attach footage.\n"
 
 
+_HANGUL_JAMO = re.compile(r"^[\u3131-\u318E]+$")
+
+
+def leftover_job_title(title: str) -> bool:
+    """IME crumbs such as ㅇ must not become the invite title."""
+    text = str(title or "").strip()
+    if not text or len(text) <= 1:
+        return True
+    if _HANGUL_JAMO.fullmatch(text):
+        return True
+    if re.fullmatch(r"[.·…\-\s]+", text):
+        return True
+    return False
+
+
+def usable_invite_title(title: str, goal: str) -> str:
+    heading = str(title or "").strip()
+    if heading and not leftover_job_title(heading):
+        return heading
+    first = next((line.strip() for line in str(goal or "").splitlines() if line.strip()), "")
+    line = first[:80]
+    return "" if leftover_job_title(line) else line
+
+
 def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
     """Short paste for one bot. No git clone path. The person only copies."""
     record = get_spec(spec_id)
@@ -976,11 +1006,13 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
     from style_recipes import RECIPES
 
     inbox = str(door_inbox_dir(EDITOR_DOOR))
-    title = str(spec.get("title") or record.get("title") or "").strip()
+    raw_title = str(spec.get("title") or record.get("title") or "").strip()
+    raw_goal = str(spec.get("goal") or raw_title).strip()
+    title = usable_invite_title(raw_title, raw_goal)
     recipe_id = str(spec.get("recipe_id") or "instagram_reel")
     recipe_name = recipe_label(RECIPES.get(recipe_id) or {"id": recipe_id, "name": {}}, language)
     lang = (language or "ko").strip().lower()
-    goal = str(spec.get("goal") or title).strip()
+    goal = raw_goal if not leftover_job_title(raw_goal) else title
     find_text = _invite_find_block(spec, lang)
     materials_text = _invite_materials_block(record["id"], lang)
     ratio = _invite_ratio(spec, lang)

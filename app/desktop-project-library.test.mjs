@@ -53,6 +53,14 @@ test("library chrome drops the unfiled bucket and the add-folder toolbar", () =>
   assert.match(text, /폴더 만들기/);
   assert.match(text, /desktop-library-file-play/);
   assert.match(text, /이 영상 재생/);
+  assert.match(text, /편집/);
+  assert.match(text, /onEdit/);
+  assert.match(text, /libraryPreviewUrl/);
+  assert.match(text, /useLocalPreview/);
+  assert.match(text, /item\.id === selectedId \? 'desktop-library-file is-active'/);
+  const workspace = readFileSync(new URL('./desktop-workspace.tsx', import.meta.url), 'utf8');
+  assert.match(workspace, /onEdit=\{\(projectId\) => \{[\s\S]*setActivePanel\('edit'\)/);
+  assert.match(workspace, /onSelect=\{\(projectId\) => \{\s*setSelectedProjectId\(projectId\);\s*\}\}/);
   assert.match(text, /controls=\{videoPlaying\}/);
   assert.match(text, /playLibraryVideo/);
   assert.match(text, /card\.label/);

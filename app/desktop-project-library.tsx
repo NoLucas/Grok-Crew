@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type DragEvent, type FormEvent, type MouseEvent } from 'react';
+import { libraryPreviewUrl } from './desktop-auto-state';
 import {
   findRecentFolder,
   groupLibraryProjects,
@@ -68,12 +69,12 @@ type Props = {
   folders: LibraryFolder[];
   trash: TrashItem[];
   selectedId: string;
-  specDeskOpen: boolean;
   studioState: 'loading' | 'ready' | 'error';
   senderLabel: (project: LibraryProject) => string;
   request: StudioRequest;
   filePreviewUrl?: (path: string) => string;
   onSelect: (projectId: string) => void;
+  onEdit: (projectId: string) => void;
   onRefresh: () => Promise<void> | void;
   onMessage: (text: string) => void;
 };
@@ -83,12 +84,12 @@ export function DesktopProjectLibrary({
   folders,
   trash,
   selectedId,
-  specDeskOpen,
   studioState,
   senderLabel,
   request,
   filePreviewUrl,
   onSelect,
+  onEdit,
   onRefresh,
   onMessage,
 }: Props) {
@@ -255,7 +256,10 @@ export function DesktopProjectLibrary({
         ? t('휴지통으로 보냈고, 진행 중이던 작업은 멈췄습니다.', 'Moved to the trash and stopped work still in flight.', '已移到废纸篓，并停止了进行中的工作。', 'ゴミ箱へ移し、進行中の作業を止めました。')
         : t('프로젝트를 휴지통으로 보냈습니다.', 'Moved the project to the trash.', '已将项目移到废纸篓。', 'プロジェクトをゴミ箱へ移しました。'),
     );
-    if (selectedId === id) onSelect('');
+    if (selectedId === id) {
+      onSelect('');
+      onEdit('');
+    }
   };
 
   const undoFolder = async () => {
@@ -354,12 +358,18 @@ export function DesktopProjectLibrary({
   const renderProject = (item: LibraryProject) => {
     const renamingThis = renaming?.kind === 'project' && renaming.id === item.id;
     const card = libraryFileCard(item);
-    const preview = card.path && filePreviewUrl ? filePreviewUrl(card.path) : '';
+    const studioPreview = card.path && filePreviewUrl ? filePreviewUrl(card.path) : '';
+    const preview = libraryPreviewUrl(card.path, studioPreview);
+    const localPreview = libraryPreviewUrl(card.path);
+    const useLocalPreview = (current: string) => {
+      if (!localPreview || current === localPreview) return '';
+      return localPreview;
+    };
     const videoPlaying = card.kind === 'video' && Boolean(preview) && playingId === item.id;
     return (
       <div
         key={item.id}
-        className={!specDeskOpen && item.id === selectedId ? 'desktop-library-file is-active' : 'desktop-library-file'}
+        className={item.id === selectedId ? 'desktop-library-file is-active' : 'desktop-library-file'}
         draggable={!renamingThis}
         onDragStart={onDragStart(item.id)}
         onContextMenu={(event) => openProjectMenu(event, item.id)}
@@ -376,6 +386,10 @@ export function DesktopProjectLibrary({
               onClick={(event) => event.stopPropagation()}
               onPlay={() => playLibraryVideo(item.id)}
               onEnded={() => setPlayingId((current) => (current === item.id ? null : current))}
+              onError={(event) => {
+                const next = useLocalPreview(event.currentTarget.currentSrc || event.currentTarget.src);
+                if (next) event.currentTarget.src = next;
+              }}
               onLoadedMetadata={(event) => {
                 const video = event.currentTarget;
                 if (video.currentTime < 0.05) video.currentTime = 0.1;
@@ -401,6 +415,7 @@ export function DesktopProjectLibrary({
           type="button"
           className="desktop-library-file-open"
           onClick={() => onSelect(item.id)}
+          onDoubleClick={() => onEdit(item.id)}
           onContextMenu={(event) => openProjectMenu(event, item.id)}
           title={`${card.name}${senderLabel(item) ? ` · ${senderLabel(item)}` : ''}`}
         >
@@ -409,7 +424,19 @@ export function DesktopProjectLibrary({
             {card.kind === 'image' && preview ? (
               // Local workspace thumbs are served by the loopback sidecar.
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview} alt="" />
+              <img
+                src={preview}
+                alt=""
+                onError={(event) => {
+                  const img = event.currentTarget;
+                  const next = useLocalPreview(img.currentSrc || img.src);
+                  if (next) {
+                    img.src = next;
+                    return;
+                  }
+                  img.style.display = 'none';
+                }}
+              />
             ) : (
               <ClipGlyph />
             )}
@@ -633,6 +660,7 @@ export function DesktopProjectLibrary({
                 setRenaming({ kind: 'project', id: menu.id, value: project?.title ?? '' });
                 setMenu(null);
               }}>{t('이름 변경', 'Rename', '重命名', '名前を変更')}</button>
+              <button type="button" role="menuitem" onClick={() => { onEdit(menu.id); setMenu(null); }}>{t('편집', 'Edit', '编辑', '編集')}</button>
               <button type="button" role="menuitem" onClick={() => setMenu({ ...menu, moveOpen: !menu.moveOpen })}>
                 {t('폴더로 이동', 'Move to folder', '移到文件夹', 'フォルダへ移動')}
               </button>

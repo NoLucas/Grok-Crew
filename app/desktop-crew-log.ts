@@ -1,4 +1,4 @@
-import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
+import { BOT_ROLES, seatName, seatShortLabel, type BotRole } from './bot-skills';
 import {
   activitySeatName,
   formatSince,
@@ -10,6 +10,8 @@ import {
 
 export type CrewTalkKind = 'work' | 'presence';
 export type CrewLoadState = 'loading' | 'ready' | 'error';
+
+export type CrewStageId = 'plan' | 'collect' | 'review' | 'cut';
 
 export type CrewPipelineSeat = {
   key: string;
@@ -23,7 +25,17 @@ export type CrewPipelineSeat = {
   when: string;
   nextOfflineNote: string;
   staleMinutes: number | null;
+  stage?: CrewStageId;
 };
+
+export function crewStageShortLabel(stage: CrewStageId, language = 'ko'): string {
+  if (stage === 'review') {
+    return boardCopy(language, '다시 기획', 'Review', '再策划', '再企画');
+  }
+  if (stage === 'plan') return seatShortLabel('planner', language);
+  if (stage === 'collect') return seatShortLabel('scraper', language);
+  return seatShortLabel('editor', language);
+}
 
 export type CrewTalkEntry = {
   id: string;
@@ -85,7 +97,7 @@ export function latestActivitySpecId(activity: BotActivityItem[] | undefined): s
   return '';
 }
 
-/** One job only. Presence ticks stay. Work lines without this id do not mix in. */
+/** One job only. Presence ticks stay. Work without a spec id stays on the live wait. */
 export function activityForSpec(
   activity: BotActivityItem[] | undefined,
   specId?: string,
@@ -101,7 +113,9 @@ export function activityForSpec(
   return items.filter((item) => {
     const kind = heartbeatActionKind(item.action);
     if (kind === 'idle') return true;
-    return activitySpecId(item.detail_json) === want;
+    const id = activitySpecId(item.detail_json);
+    if (!id) return true;
+    return id === want;
   });
 }
 
@@ -197,7 +211,7 @@ export function familyFromBotId(botId: string): AutoSeatRow['kind'] | '' {
 
 export function nextHandoffRole(role: BotRole | ''): BotRole | 'desk' | '' {
   if (role === 'planner') return 'scraper';
-  if (role === 'scraper') return 'editor';
+  if (role === 'scraper') return 'planner';
   if (role === 'editor') return 'desk';
   return '';
 }
@@ -206,12 +220,16 @@ export function handoffTargetName(
   role: BotRole | '',
   language = 'ko',
   family: AutoSeatRow['kind'] = 'grok',
+  afterCollect = false,
 ): string {
-  const next = nextHandoffRole(role);
   const kind = family === 'custom' ? 'custom' : 'grok';
-  if (next === 'scraper') return seatName(kind, 'scraper', language);
-  if (next === 'editor') return seatName(kind, 'editor', language);
-  if (next === 'desk') {
+  if (role === 'planner') {
+    return afterCollect
+      ? seatName(kind, 'editor', language)
+      : seatName(kind, 'scraper', language);
+  }
+  if (role === 'scraper') return seatName(kind, 'planner', language);
+  if (role === 'editor') {
     return boardCopy(language, '이 창', 'this window', '这个窗口', 'この窓');
   }
   return '';
@@ -304,6 +322,7 @@ export function crewTalkThread(
     .filter((row) => row.name);
   const chronological = [...named].reverse();
   const thread: CrewTalkEntry[] = [];
+  let collectSeen = false;
 
   for (const row of chronological) {
     const kind = heartbeatActionKind(row.item.action);
@@ -311,6 +330,7 @@ export function crewTalkThread(
     const note = activityHandoffNote(row.item.detail_json);
     if (!note) continue;
     const ready = kind === 'ready';
+    const afterCollect = row.role === 'planner' && collectSeen;
     thread.push({
       id: String(row.item.id || `${row.item.bot_id}-${row.item.action}-${row.item.created_at}`),
       kind: 'work',
@@ -318,11 +338,66 @@ export function crewTalkThread(
       name: row.name,
       actionLabel: heartbeatActionLabel(row.item.action, language),
       note,
-      toName: ready ? handoffTargetName(row.role, language, familyFromBotId(String(row.item.bot_id || '')) || 'grok') : '',
+      toName: ready ? handoffTargetName(row.role, language, familyFromBotId(String(row.item.bot_id || '')) || 'grok', afterCollect) : '',
       when: activityWhen(row.item, language),
     });
+    if (row.role === 'scraper' && ready) collectSeen = true;
   }
   return thread;
+}
+
+export function crewStagePipeline(
+  rows: AutoSeatRow[],
+  activity: BotActivityItem[],
+  language = 'ko',
+): CrewPipelineSeat[] {
+  const pipe = crewPipeline(rows, activity, language);
+  const planner = pipe.find((seat) => seat.role === 'planner');
+  const scraper = pipe.find((seat) => seat.role === 'scraper');
+  const editor = pipe.find((seat) => seat.role === 'editor');
+  const planRow = rows.find((row) => row.role === 'planner');
+  const scrapRow = rows.find((row) => row.role === 'scraper');
+  const cutRow = rows.find((row) => row.role === 'editor');
+  const planKind = heartbeatActionKind(planRow?.lastAction);
+  const scrapKind = heartbeatActionKind(scrapRow?.lastAction);
+  const cutKind = heartbeatActionKind(cutRow?.lastAction);
+  let currentStage: CrewStageId = 'plan';
+  if (cutKind === 'started' || cutKind === 'ready') currentStage = 'cut';
+  else if (scrapKind === 'ready') currentStage = 'review';
+  else if (planKind === 'ready' || scrapKind === 'started') currentStage = 'collect';
+
+  const missing = (stage: CrewStageId, role: BotRole): CrewPipelineSeat => ({
+    key: `missing:${stage}`,
+    role,
+    name: seatName('grok', role, language),
+    connected: false,
+    current: false,
+    mark: 'off',
+    actionLabel: '',
+    note: '',
+    when: '',
+    nextOfflineNote: '',
+    staleMinutes: null,
+    stage,
+  });
+
+  const stageOf = (stage: CrewStageId, seat: CrewPipelineSeat | undefined, role: BotRole): CrewPipelineSeat => {
+    const base = seat || missing(stage, role);
+    return {
+      ...base,
+      key: `${base.key}:${stage}`,
+      current: currentStage === stage,
+      mark: currentStage === stage ? 'current' : (base.connected ? 'idle' : 'off'),
+      stage,
+    };
+  };
+
+  return [
+    stageOf('plan', planner, 'planner'),
+    stageOf('collect', scraper, 'scraper'),
+    stageOf('review', planner, 'planner'),
+    stageOf('cut', editor, 'editor'),
+  ];
 }
 
 export function crewNowLine(seats: CrewPipelineSeat[], language = 'ko'): string {

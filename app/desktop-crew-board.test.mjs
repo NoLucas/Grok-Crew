@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
 import { describe, it } from 'node:test';
 
@@ -11,6 +12,8 @@ const {
   crewBoardEmptyCopy,
   crewBoardScope,
   crewPipeline,
+  crewStagePipeline,
+  crewStageShortLabel,
   crewTalkLine,
   crewNowLine,
   crewTalkMemo,
@@ -31,6 +34,8 @@ describe('crew board notes', () => {
     assert.equal(activityHandoffNote('{"note":"15초 훅"}'), '15초 훅');
     assert.deepEqual(parseActivityDetail('not-json'), {});
     assert.equal(handoffTargetName('planner', 'ko'), 'Grok Bot 스크래핑');
+    assert.equal(handoffTargetName('planner', 'ko', 'grok', true), 'Grok Bot 편집자');
+    assert.equal(handoffTargetName('scraper', 'ko'), 'Grok Bot 기획자');
     assert.equal(handoffTargetName('editor', 'en'), 'this window');
   });
 
@@ -48,7 +53,7 @@ describe('crew board notes', () => {
     assert.equal(thread[0].toName, 'Grok Bot 스크래핑');
     assert.equal(thread[0].kind, 'work');
     assert.equal(thread[1].note, '카페 간판 두 장');
-    assert.equal(thread[1].toName, 'Grok Bot 편집자');
+    assert.equal(thread[1].toName, 'Grok Bot 기획자');
     assert.equal(thread.length, 2);
     assert.doesNotMatch(JSON.stringify(thread), /plan_ready|collect_ready|cut_started|still_here|hacked|\?\?\?|이 자리에 있음|자르는 중/);
     assert.match(crewTalkLine(thread[0], 'ko'), /기획자 → Grok Bot 스크래핑/);
@@ -119,6 +124,13 @@ describe('crew board notes', () => {
     assert.equal(scoped.filter((item) => item.action === 'plan_ready').length, 1);
     assert.equal(activityHandoffNote(scoped.find((item) => item.action === 'plan_ready')?.detail_json), '오늘');
     assert.equal(scoped.some((item) => item.action === 'still_here'), true);
+    const live = activityForSpec([
+      { id: '2', bot_id: 'grok-planner', action: 'plan_ready', detail_json: { note: '오늘', edit_spec_id: 'spec-today' } },
+      { id: 'n', bot_id: 'grok-scraper', action: 'collect_ready', detail_json: { note: '자료함 세 개' } },
+      { id: '1', bot_id: 'grok-planner', action: 'plan_ready', detail_json: { note: '어제', edit_spec_id: 'spec-old' } },
+    ], 'spec-today');
+    assert.equal(activityHandoffNote(live.find((item) => item.id === 'n')?.detail_json), '자료함 세 개');
+    assert.equal(live.some((item) => item.id === '1'), false);
   });
 
   it('keeps the real note and only marks the next seat offline after a ready handoff', () => {
@@ -206,6 +218,32 @@ describe('crew board notes', () => {
       specId: 'spec-new',
       jobTitle: '방금',
     });
+  });
+
+  it('adds a review seat after collect and keeps leftover talk on the live job', () => {
+    const rows = autoSeatRows({
+      roster: {
+        bots: [
+          { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'plan_ready' },
+          { bot_id: 'grok-scraper', display_name: 'Grok Bot 스크래핑', presence: 'active', last_action: 'collect_ready' },
+          { bot_id: 'grok-editor', display_name: 'Grok Bot 편집자', presence: 'active', last_action: 'still_here' },
+        ],
+      },
+      language: 'ko',
+    });
+    const stages = crewStagePipeline(rows, [
+      { id: '1', bot_id: 'grok-planner', action: 'plan_ready', created_at: new Date().toISOString(), detail_json: { note: '종류만 남김' } },
+      { id: '2', bot_id: 'grok-scraper', action: 'collect_ready', created_at: new Date().toISOString(), detail_json: { note: '자료함 세 개' } },
+    ], 'ko');
+    assert.deepEqual(stages.map((seat) => seat.stage), ['plan', 'collect', 'review', 'cut']);
+    assert.equal(crewStageShortLabel('review', 'ko'), '다시 기획');
+    assert.equal(stages.find((seat) => seat.stage === 'review')?.current, true);
+    assert.equal(stages.find((seat) => seat.stage === 'review')?.connected, true);
+    const board = readFileSync(new URL('./desktop-crew-board.tsx', import.meta.url), 'utf8');
+    assert.equal(board.includes('지금 자리'), false);
+    assert.equal(board.includes('이 PC에 저장'), false);
+    assert.match(board, /data-stage=\{seat.stage\}/);
+    assert.match(board, /대화/);
   });
 
   it('copies the thread as a local memo without inventing a line', () => {
