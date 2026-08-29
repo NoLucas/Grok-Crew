@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { connectPaste, connectedBot, type CrewRoster } from './desktop-bot-connect';
 import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
 import { marketLabel, resolveCrewMarket } from './crew-market';
-import { autoSeatRows, readAutoPrefs, recipeFallbackLabel, writeAutoPrefs, type BotActivityItem } from './desktop-auto-state';
+import { autoSeatRows, readAutoPrefs, type BotActivityItem } from './desktop-auto-state';
 import { DesktopCrewBoard } from './desktop-crew-board';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { readDeskWait, type DeskWaitState } from './desktop-wait-state';
@@ -24,7 +24,6 @@ import {
   clearAllReleased,
   seatIsConnected,
   studioPortFromApiBase,
-  threeSeatConnectPaste,
   writeBotLinks,
   writeLastConnectBundle,
 } from './desktop-bot-links';
@@ -113,16 +112,12 @@ export function DesktopBotPanel({
   const [activity, setActivity] = useState<BotActivityItem[]>([]);
   const [activityState, setActivityState] = useState<CrewLoadState>('loading');
   const [lastBundle, setLastBundle] = useState(() => readLastConnectBundle());
-  const [bundleText, setBundleText] = useState('');
   const [releasedNote, setReleasedNote] = useState('');
   const local = connectedBot(roster);
   const localLabel = String(local?.display_name || '').includes('???')
     ? String(local?.bot_id || '').trim()
     : String(local?.display_name || local?.bot_id || '').trim();
   const connected = hasConnectedBot(roster, links);
-  const anySeatOn = BOT_ROLES.some((role) => (
-    seatIsConnected('grok', role, links, roster) || seatIsConnected('custom', role, links, roster)
-  ));
   const studioPort = studioPortFromApiBase(
     typeof window !== 'undefined' ? window.grokCrew?.apiBase : undefined,
   );
@@ -130,8 +125,6 @@ export function DesktopBotPanel({
   const market = resolveCrewMarket(prefs.market, language);
   const destName = marketLabel(market, language);
   const recipeId = lastBundle?.recipeId || prefs.recipeId || 'instagram_reel';
-  const recipeName = recipeFallbackLabel(recipeId, language);
-  const lastMarketName = marketLabel(resolveCrewMarket(lastBundle?.market || market, language), language);
   const liveWait = wait !== undefined ? wait : readDeskWait();
   const connectedNames = connectedRemoteNames(links, roster);
   const boardScope = crewBoardScope(liveWait, activity);
@@ -147,10 +140,6 @@ export function DesktopBotPanel({
     [language, links.pairCode, market, openSeat.kind, openSeat.role, studioPort],
   );
   const localText = useMemo(() => connectPaste(language, studioPort), [language, studioPort]);
-  const yesterdayText = useMemo(
-    () => threeSeatConnectPaste(links.pairCode, language, studioPort, lastBundle?.market || market),
-    [language, lastBundle?.market, links.pairCode, market, studioPort],
-  );
 
   useEffect(() => {
     if (!request) {
@@ -212,38 +201,6 @@ export function DesktopBotPanel({
     }
     markCopied(seat);
     if (seat.kind === 'grok') rememberBundle();
-    setReleasedNote('');
-    await onRefresh();
-  };
-
-  const copyYesterday = async () => {
-    setError('');
-    setBlockedKind('');
-    if (!links.pairCode) {
-      setError(t('연결 코드가 아직 없습니다. 잠시 후 다시 눌러 주세요.', 'The connect code is not ready yet. Try again in a moment.', '连接代码还没好。请稍后再按。', '接続コードがまだありません。少ししてから押してください。'));
-      return;
-    }
-    const dest = resolveCrewMarket(lastBundle?.market || market, language);
-    const text = threeSeatConnectPaste(links.pairCode, language, studioPort, dest);
-    writeAutoPrefs({
-      market: dest,
-      marketTouched: true,
-      recipeId,
-    });
-    rememberBundle(dest, recipeId);
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
-      await navigator.clipboard.writeText(text);
-      setCopied('yesterday');
-      setBundleText('');
-      window.setTimeout(() => setCopied(''), 4000);
-    } catch {
-      setBlockedKind('yesterday');
-      setBundleText(text);
-    }
-    const next = clearAllReleased(links);
-    writeBotLinks(next);
-    onLinksChange(next, 'copy');
     setReleasedNote('');
     await onRefresh();
   };
@@ -315,7 +272,7 @@ export function DesktopBotPanel({
     <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
       <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('연결 글을 봇 창에 붙이세요. 복사만으로는 연결되지 않고, 이 탭에 머뭅니다. 세 자리 글을 다 복사한 뒤 자동으로 가세요. 램프가 켜지면 연결됨입니다.', 'Paste the connect text in the bot window. Copying is not a connection, and this tab stays open. Copy all three seats, then go to Auto. The lamp means connected.', '把连接文字贴到机器人窗口。只复制不算已连接，也不会离开这个页。三个位子都复制后再去自动。灯亮就是已连接。', '接続文をボット窓に貼る。コピーしただけでは接続されず、このタブに留まります。三席をコピーしてから自動へ。ランプが付けば接続済み。')}</p>
+        <p>{t('연결 글을 봇 창에 붙이세요. 복사만으로는 연결되지 않고, 이 탭에 머뭅니다. 자리마다 연결 글을 복사한 뒤 자동으로 가세요. 램프가 켜지면 연결됨입니다.', 'Paste the connect text in the bot window. Copying is not a connection, and this tab stays open. Copy each seat, then go to Auto. The lamp means connected.', '把连接文字贴到机器人窗口。只复制不算已连接，也不会离开这个页。每个位子复制后再去自动。灯亮就是已连接。', '接続文をボット窓に貼る。コピーしただけでは接続されず、このタブに留まります。席ごとにコピーしてから自動へ。ランプが付けば接続済み。')}</p>
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">
@@ -342,56 +299,6 @@ export function DesktopBotPanel({
         <p className="desktop-port-banner" role="status">
           {t(`이 창은 7214가 아니라 127.0.0.1:${studioPort}를 엽니다. 연결 글은 그 주소를 씁니다.`, `This window opened 127.0.0.1:${studioPort}, not 7214. The connect text uses that address.`, `这个窗口开的是 127.0.0.1:${studioPort}，不是 7214。连接文字用这个地址。`, `この窓は 7214 ではなく 127.0.0.1:${studioPort} を開いています。接続文はそのアドレスを使います。`)}
         </p>
-      )}
-
-      {anySeatOn ? (
-        <details className="desktop-auto-help desktop-recopy-card">
-          <summary>{t('어제랑 같게 · 세 자리 다시 복사', 'Same as yesterday · copy the three seats again', '和昨天一样 · 再复制三个位子', '昨日と同じ · 三席をもう一度コピー')}</summary>
-          <p>{t(
-            `${lastMarketName} · ${recipeName} · 어제 쓰던 세 자리 연결 글입니다. 복사만으로는 연결되지 않습니다.`,
-            `${lastMarketName} · ${recipeName} · the three connect texts from yesterday. Copying is not a connection.`,
-            `${lastMarketName} · ${recipeName} · 昨天那三段连接文字。只复制不算已连接。`,
-            `${lastMarketName} · ${recipeName} · 昨日の三席の接続文です。コピーしただけでは接続されません。`,
-          )}</p>
-          <button
-            type="button"
-            className="desktop-primary desktop-recopy-btn"
-            disabled={!studioReady || !links.pairCode}
-            onClick={() => { void copyYesterday(); }}
-          >
-            {copied === 'yesterday'
-              ? t('복사했습니다. 나눠 붙이세요.', 'Copied. Split it into the three windows.', '已复制。请分开贴。', 'コピーしました。分けて貼ってください。')
-              : t('세 자리 다시 복사', 'Copy the three seats again', '再复制三个位子', '三席をもう一度コピー')}
-          </button>
-          {blockedKind === 'yesterday' ? (
-            <textarea className="desktop-bot-paste" value={bundleText || yesterdayText} readOnly rows={10} onFocus={(event) => event.currentTarget.select()} />
-          ) : null}
-        </details>
-      ) : (
-      <section className="desktop-recopy-card">
-        <div>
-          <b>{t('어제랑 같게', 'Same as yesterday', '和昨天一样', '昨日と同じ')}</b>
-          <p>{t(
-            `${lastMarketName} · ${recipeName} · Grok 자리 세 개. 자리 이름대로 나눠 붙이세요. 복사만으로는 연결되지 않습니다.`,
-            `${lastMarketName} · ${recipeName} · the three Grok seats. Paste each block into that window. Copying is not a connection.`,
-            `${lastMarketName} · ${recipeName} · 三个 Grok 位子。按位子名分开贴。只复制不算已连接。`,
-            `${lastMarketName} · ${recipeName} · Grok の三席。席の名前どおり分けて貼る。コピーしただけでは接続されません。`,
-          )}</p>
-        </div>
-        <button
-          type="button"
-          className="desktop-primary desktop-recopy-btn"
-          disabled={!studioReady || !links.pairCode}
-          onClick={() => { void copyYesterday(); }}
-        >
-          {copied === 'yesterday'
-            ? t('복사했습니다. 나눠 붙이세요.', 'Copied. Split it into the three windows.', '已复制。请分开贴。', 'コピーしました。分けて貼ってください。')
-            : t('세 자리 다시 복사', 'Copy the three seats again', '再复制三个位子', '三席をもう一度コピー')}
-        </button>
-        {blockedKind === 'yesterday' ? (
-          <textarea className="desktop-bot-paste" value={bundleText || yesterdayText} readOnly rows={10} onFocus={(event) => event.currentTarget.select()} />
-        ) : null}
-      </section>
       )}
 
       <section className="desktop-auto-composer-card">
@@ -474,7 +381,7 @@ export function DesktopBotPanel({
             ) : null}
           </div>
         ))}
-        {blockedKind && blockedKind !== 'same_pc' && blockedKind !== 'yesterday' ? (
+        {blockedKind && blockedKind !== 'same_pc' ? (
           <textarea className="desktop-bot-paste" value={connectText} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
         ) : null}
         {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
