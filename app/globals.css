@@ -6943,36 +6943,40 @@ select {
 }
 .desktop-connection.connected { color: var(--desktop-green); }
 .desktop-seat-follow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 14px 10px;
-  border-bottom: 1px solid var(--desktop-line);
-  background: var(--desktop-titlebar-bg);
-  position: sticky;
-  top: 0;
-  z-index: 18;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  align-self: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 .desktop-seat-follow button {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 32px;
+  align-self: center;
+  flex: 0 0 auto;
+  gap: 4px;
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
   border: 1px solid var(--desktop-line);
   border-radius: 999px;
-  padding: 4px 10px 4px 8px;
+  padding: 0 7px 0 6px;
   background: var(--desktop-panel);
   color: var(--desktop-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1;
   cursor: pointer;
 }
 .desktop-seat-follow button i {
-  width: 9px;
-  height: 9px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #c4c0b6;
-  box-shadow: 0 0 0 3px rgba(40, 32, 24, 0.06);
+  box-shadow: none;
 }
 .desktop-seat-follow button.is-on {
   color: var(--desktop-text);
@@ -6981,11 +6985,10 @@ select {
 }
 .desktop-seat-follow button.is-on i {
   background: var(--desktop-green);
-  box-shadow: 0 0 0 3px #dff3e9;
+  box-shadow: none;
 }
 .desktop-seat-follow button.is-off i { background: #c4c0b6; }
 .desktop-seat-follow b { font-weight: 700; letter-spacing: -.02em; }
-.desktop-seat-follow span { color: inherit; }
 .desktop-shell[data-theme="dark"] .desktop-seat-follow button.is-on,
 .desktop-shell[data-theme="low-dark"] .desktop-seat-follow button.is-on {
   border-color: rgba(78, 203, 141, 0.35);

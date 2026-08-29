@@ -146,10 +146,12 @@ export function installedVoiceModelId(installed?: VoiceInstallHint | null): Voic
   return isVoiceModelId(active) ? active : '';
 }
 
-export function needsFirstVoiceSetup(setup?: VoiceSetup | null, installed?: VoiceInstallHint | null): boolean {
-  if (setup?.done) return false;
-  if (installedVoiceModelId(installed)) return false;
-  return true;
+/** EXE already ships Kokoro-82M. Never block the desk on a download page. */
+export function needsFirstVoiceSetup(
+  _setup?: VoiceSetup | null,
+  _installed?: VoiceInstallHint | null,
+): boolean {
+  return false;
 }
 
 export function readVoiceSetup(): VoiceSetup {

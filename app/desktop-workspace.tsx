@@ -48,7 +48,6 @@ import {
   installedVoiceModelId,
   needsFirstVoiceSetup,
   readVoiceSetup,
-  VOICE_WIZARD_BODY_CLASS,
   writeVoiceSetup,
   type VoiceModelId,
 } from './desktop-voice-models';
@@ -372,6 +371,10 @@ export default function DesktopWorkspace() {
     setToolsDayTheme(false);
   }, []);
   useEffect(() => {
+    if (voiceSetup.done) return;
+    setVoiceSetup(writeVoiceSetup({ done: true, modelId: confirmVoiceChoice(voiceSetup.modelId) }));
+  }, [voiceSetup.done, voiceSetup.modelId]);
+  useEffect(() => {
     const stored = readDeskWait();
     deskWaitRef.current = stored;
     setDeskWait(stored);
@@ -638,8 +641,7 @@ export default function DesktopWorkspace() {
     () => false,
   );
   const showLanguageGate = !langPicked && gatePending;
-  const showVoiceWizard = !showLanguageGate && needsFirstVoiceSetup(voiceSetup, workspace.first_run?.voice_model);
-  const firstOpen = showLanguageGate || showVoiceWizard;
+  const firstOpen = showLanguageGate || needsFirstVoiceSetup(voiceSetup, workspace.first_run?.voice_model);
   const deskReady = hasConnectedBot(workspace.crew_roster, botLinks) || Boolean(project);
   const showWorkTabs = Boolean(project);
   const showBotRoom = botPanelOpen || (!deskReady && !peekAuto);
@@ -1367,23 +1369,21 @@ export default function DesktopWorkspace() {
       <header className="desktop-titlebar">
         {showLanguageGate ? <span className="desktop-appearance-menu" aria-hidden="true" /> : (
         <DesktopAppearanceControls appearance={appearance} onChange={updateAppearance} variant="gear">
-          {showVoiceWizard ? null : (
-            <div className="desktop-gear-voice">
-              <p className="desktop-appearance-pop-kicker">{t('이 PC의 TTS', 'TTS on this PC', '这台电脑的 TTS', 'この PC の TTS')}</p>
-              <DesktopVoiceSetup
-                variant="panel"
-                selected={voiceDraft}
-                studioReady={studioState === 'ready'}
-                busy={voiceBusy}
-                download={workspace.first_run?.voice_model?.download}
-                onSelect={setVoiceDraft}
-                onConfirm={() => { void confirmVoiceModel(voiceDraft); }}
-              />
-            </div>
-          )}
+          <div className="desktop-gear-voice">
+            <p className="desktop-appearance-pop-kicker">{t('이 PC의 TTS', 'TTS on this PC', '这台电脑的 TTS', 'この PC の TTS')}</p>
+            <DesktopVoiceSetup
+              variant="panel"
+              selected={voiceDraft}
+              studioReady={studioState === 'ready'}
+              busy={voiceBusy}
+              download={workspace.first_run?.voice_model?.download}
+              onSelect={setVoiceDraft}
+              onConfirm={() => { void confirmVoiceModel(voiceDraft); }}
+            />
+          </div>
         </DesktopAppearanceControls>
         )}
-        <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{showLanguageGate ? t('첫 설치 · 언어', 'First install · Language', '首次安装 · 语言', '初回インストール · 言語') : showVoiceWizard ? t('첫 설치 · TTS', 'First install · TTS', '首次安装 · TTS', '初回インストール · TTS') : t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
+        <div className="desktop-brand"><span className="desktop-logo"><DesktopLogoMark /></span><div><b>Grok Crew</b><small>{showLanguageGate ? t('첫 설치 · 언어', 'First install · Language', '首次安装 · 语言', '初回インストール · 言語') : t('로컬 숏폼', 'Desktop Production', '本地短视频', 'ローカルショート')}</small></div></div>
         {firstOpen ? null : (
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
           <button type="button" className={`${showBotRoom ? 'active' : ''}${hasConnectedBot(workspace.crew_roster, botLinks) ? ' is-connected' : ' needs-bot'}`} aria-current={showBotRoom ? 'page' : undefined} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>{t('연결', 'Connect', '连接', '接続')}</button>
@@ -1400,12 +1400,29 @@ export default function DesktopWorkspace() {
         <div className="desktop-title-actions">
           {firstOpen ? null : (
             <>
+          <div className="desktop-seat-follow" role="status" aria-label={t('자리 연결', 'Seat connection', '位子连接', '席の接続')}>
+            {seatLampRows(workspace.crew_roster, botLinks).map((seat) => {
+              const on = seat.connected;
+              const status = on ? t('연결됨', 'Connected', '已连接', '接続済み') : t('연결되지않음', 'Not connected', '未连接', '未接続');
+              const label = seatShortLabel(seat.role, language);
+              return (
+                <button
+                  key={seat.role}
+                  type="button"
+                  className={on ? 'is-on' : 'is-off'}
+                  title={`${label} · ${status}`}
+                  aria-label={`${label} · ${status}`}
+                  onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}
+                >
+                  <i aria-hidden="true" />
+                  <b>{label}</b>
+                </button>
+              );
+            })}
+          </div>
           {update.releaseUrl && window.grokCrew?.openRelease
             ? <button type="button" className={`desktop-chip ${update.status === 'up_to_date' || update.status === 'dev_fallback' ? 'ready' : 'wait'}`} title={update.message} onClick={() => void window.grokCrew?.openRelease?.(update.releaseUrl)}>{update.status === 'available_external' || update.status === 'available' ? t(`업데이트 ${update.latestVersion}`, `Update ${update.latestVersion}`, `更新 ${update.latestVersion}`, `更新 ${update.latestVersion}`) : t(`개발 ${update.currentVersion}`, `Dev ${update.currentVersion}`, `开发 ${update.currentVersion}`, `開発 ${update.currentVersion}`)}</button>
             : <span className={`desktop-chip ${update.status === 'up_to_date' || update.status === 'dev_fallback' ? 'ready' : 'wait'}`} title={update.message}>{t(`로컬 ${update.currentVersion}`, `Local ${update.currentVersion}`, `本地 ${update.currentVersion}`, `ローカル ${update.currentVersion}`)}</span>}
-          <button type="button" className={`desktop-connection ${hasConnectedBot(workspace.crew_roster, botLinks) ? 'connected' : ''}`} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>
-            ● {hasConnectedBot(workspace.crew_roster, botLinks) ? t('연결됨', 'Connected', '已连接', '接続済み') : t('연결되지않음', 'Not connected', '未连接', '未接続')}
-          </button>
           <button type="button" className="desktop-chrome-btn desktop-projects-toggle" aria-expanded={drawer === 'projects'} onClick={() => setDrawer((value) => value === 'projects' ? 'none' : 'projects')}>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</button>
           <button type="button" className="desktop-chrome-btn desktop-status-toggle" aria-expanded={drawer === 'status'} onClick={() => setDrawer((value) => value === 'status' ? 'none' : 'status')}>{t('상태', 'Status', '状态', '状態')}</button>
             </>
@@ -1421,22 +1438,6 @@ export default function DesktopWorkspace() {
           </button>
         </div>
       </header>
-      {firstOpen ? null : (
-        <div className="desktop-seat-follow" role="status" aria-label={t('자리 연결', 'Seat connection', '位子连接', '席の接続')}>
-          {seatLampRows(workspace.crew_roster, botLinks).map((seat) => (
-            <button
-              key={seat.role}
-              type="button"
-              className={seat.connected ? 'is-on' : 'is-off'}
-              onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}
-            >
-              <i aria-hidden="true" />
-              <b>{seatShortLabel(seat.role, language)}</b>
-              <span>{seat.connected ? t('연결됨', 'Connected', '已连接', '接続済み') : t('연결되지않음', 'Not connected', '未连接', '未接続')}</span>
-            </button>
-          ))}
-        </div>
-      )}
       {quitAsk ? (
         <div className="desktop-quit-ask" role="alertdialog" aria-modal="true" aria-labelledby="desktop-quit-title">
           <div className="desktop-quit-ask-card">
@@ -1493,18 +1494,6 @@ export default function DesktopWorkspace() {
             writeAutoPrefs({ market: marketFromLanguage(next) });
             setLangPicked(true);
           }}
-        />
-      </div>
-      ) : showVoiceWizard ? (
-      <div className={VOICE_WIZARD_BODY_CLASS}>
-        <DesktopVoiceSetup
-          variant="wizard"
-          selected={voiceDraft}
-          studioReady={studioState === 'ready'}
-          busy={voiceBusy}
-          download={workspace.first_run?.voice_model?.download}
-          onSelect={setVoiceDraft}
-          onConfirm={() => { void confirmVoiceModel(voiceDraft); }}
         />
       </div>
       ) : (
@@ -1623,9 +1612,8 @@ export default function DesktopWorkspace() {
               </div>
             </div>
           ) : null}
-          {studioState === 'error' && project ? <div className="desktop-banner error" role="alert"><div><b>{t('Local Studio에 연결하지 못했습니다', 'Could not reach Local Studio', '无法连接 Local Studio', 'Local Studio に接続できません')}</b><p>{t('사이드카가 꺼져 있으면 프로젝트와 렌더를 읽을 수 없습니다.', 'The sidecar is offline, so projects and renders cannot load.', '侧车离线时无法读取项目和渲染。', 'サイドカーが停止しているとプロジェクトとレンダーを読めません。')}</p></div><button type="button" className="desktop-secondary" onClick={() => void refreshWorkspace()}>{t('다시 연결', 'Reconnect', '重新连接', '再接続')}</button></div> : null}
+          {studioState === 'error' ? <div className="desktop-banner error" role="alert"><div><b>{t('Local Studio에 연결하지 못했습니다', 'Could not reach Local Studio', '无法连接 Local Studio', 'Local Studio に接続できません')}</b><p>{t('사이드카가 꺼져 있으면 프로젝트와 렌더를 읽을 수 없습니다.', 'The sidecar is offline, so projects and renders cannot load.', '侧车离线时无法读取项目和渲染。', 'サイドカーが停止しているとプロジェクトとレンダーを読めません。')}</p></div><button type="button" className="desktop-secondary" onClick={() => void refreshWorkspace()}>{t('다시 연결', 'Reconnect', '重新连接', '再接続')}</button></div> : null}
           {studioState === 'loading' && !project ? <div className="desktop-empty" aria-busy="true"><span className="desktop-spinner" /><h1>{t('작업 공간을 불러오는 중', 'Loading the workspace', '正在加载工作区', 'ワークスペースを読み込み中')}</h1><p>{t('Local Studio의 프로젝트와 게시 영수증을 확인합니다.', 'Checking Local Studio projects and publish receipts.', '正在检查本地工作室项目和发布回执。', 'Local Studio のプロジェクトと公開レシートを確認しています。')}</p></div>
-          : studioState === 'error' && !project ? <div className="desktop-empty"><span>!</span><h1>{t('데스크톱이 로컬 서비스에 닿지 않습니다', 'The desktop cannot reach the local service', '桌面无法连接本地服务', 'デスクトップがローカルサービスに届きません')}</h1><p>{t('npm run local 또는 데스크톱 앱을 실행한 뒤 다시 연결하세요.', 'Start npm run local or the desktop app, then reconnect.', '请先运行 npm run local 或桌面应用，然后重试。', 'npm run local かデスクトップアプリを起動してから再接続してください。')}</p><button type="button" className="desktop-primary" onClick={() => void refreshWorkspace()}>{t('다시 시도', 'Try again', '重试', '再試行')}</button></div>
           : showBotRoom || showAutoDesk || advancedSpecOpen || !project ? (
             advancedSpecOpen ? (
               <div className="desktop-simple-wrap">
