@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.13** · with Grok Bot · 现在免费
+**v1.0.14** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,12 +50,20 @@
 
 ---
 
+## v1.0.14 改了什么
+
+- 只要机器人已连接并且写了要做的片子，就可以开始。只有打开的选项才会检查素材。
+- 左侧是文件夹和文件预览。下面的说明和不用的命令条已经去掉。
+- 收集地址也会拒绝 IPv6 套出来的内网。书桌只跟随本机回环工作室地址。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.14 发布说明](docs/RELEASE_NOTES.v1.0.14.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.14。
+
 ## v1.0.13 改了什么
 
 - TTS 试听只用目录里的说话人，也不再返回这台电脑的绝对路径。
 - 收集地址只收公开文件网址。`/media` 只给预览文件。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.13 发布说明](docs/RELEASE_NOTES.v1.0.13.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.13。
+1.0.13 列表见 [1.0.13 发布说明](docs/RELEASE_NOTES.v1.0.13.md)。
 
 ## v1.0.12 改了什么
 

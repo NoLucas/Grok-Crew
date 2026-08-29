@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.13** · with Grok Bot · free now
+**v1.0.14** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,12 +50,20 @@ If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
 ---
 
+## What changed in v1.0.14
+
+- Start runs from a connected bot and a prompt. Material chips are checked only when they are on.
+- The sidebar is folders plus a file gallery. Helper copy and the unused command bar are gone.
+- Collect URLs also reject IPv6-mapped private hosts. The desk only follows a loopback studio origin.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.14 notes](docs/RELEASE_NOTES.v1.0.14.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.14.
+
 ## What changed in v1.0.13
 
 - TTS preview uses catalog speakers only and no longer returns a workspace path.
 - Collect URLs must be public http(s) files. `/media` serves preview media only.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.13 notes](docs/RELEASE_NOTES.v1.0.13.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.13.
+The 1.0.13 list is in [the 1.0.13 notes](docs/RELEASE_NOTES.v1.0.13.md).
 
 ## What changed in v1.0.12
 

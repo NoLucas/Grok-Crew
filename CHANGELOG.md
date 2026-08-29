@@ -4,6 +4,18 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.14 - 2026-08-29
+
+Local 1.0.14. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.14` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.14) only. Guest notes: `docs/RELEASE_NOTES.v1.0.14.md`. Guest Drive download stays the last published file. Already-installed 1.0.13 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- Start runs from a connected bot and a prompt. Materials chips are checked only when they are turned on.
+- The Start prompt placeholder is a short enter-message hint. Helper subtitle, seat-lamp banner, and the unused command bar are gone.
+- The sidebar is folders plus a file gallery. File cards show a thumb or a short MP4 name, not version or date chrome.
+- Connected seats use numbered display names. Settings and Export stay centered, without on-screen v2 badges.
+- Collect URL lists now also reject IPv6-mapped private hosts and integer IPs. The desk origin only follows a loopback sidecar address.
+
 ## 1.0.13 - 2026-08-29
 
 Local 1.0.13. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.13` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.13) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.13). Guest notes: `docs/RELEASE_NOTES.v1.0.13.md`. Guest Drive download stays the last published file. Already-installed 1.0.12 desks check Grok-crew-test for this tag.

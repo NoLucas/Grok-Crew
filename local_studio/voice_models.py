@@ -181,7 +181,7 @@ def _stream_to_path(url: str, dest: Path, fetch: Callable[[str], bytes] | None) 
         return len(data)
     if not huggingface_url_allowed(url):
         raise URLError("Voice model download must stay on Hugging Face HTTPS.")
-    request = Request(url, headers={"User-Agent": "GrokCrew-Desktop/1.0.13"})
+    request = Request(url, headers={"User-Agent": "GrokCrew-Desktop/1.0.14"})
     opener = build_opener(_HuggingFaceRedirectHandler)
     with opener.open(request, timeout=120) as response:
         total = int(response.headers.get("Content-Length") or 0)
