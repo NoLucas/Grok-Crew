@@ -39,6 +39,7 @@ describe('desk composer restage', () => {
     assert.match(auto, /어떤 영상을 만들까요\?/);
     assert.match(auto, /desktop-auto-composer-drop/);
     assert.match(auto, /제작 시작/);
+    assert.equal(auto.includes('내 파일을 넣거나, 받을 공개 파일 주소를 적으세요'), false);
     assert.match(auto, /새로 만들기/);
     assert.equal(auto.includes('이걸로 만들기'), false);
     assert.equal(auto.includes('다른 영상 적기'), false);

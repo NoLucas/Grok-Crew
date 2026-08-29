@@ -65,7 +65,8 @@ describe('auto desk start rules', () => {
     assert.deepEqual(canStartAuto({ title: '', attached: true }), { ok: false, reason: 'title' });
     assert.deepEqual(canStartAuto({ title: '   ', attached: true }), { ok: false, reason: 'title' });
     assert.deepEqual(canStartAuto({ title: '15초 훅 릴', attached: false }), { ok: false, reason: 'connect' });
-    assert.deepEqual(canStartAuto({ title: '15초 훅 릴', attached: true }), { ok: false, reason: 'materials' });
+    assert.deepEqual(canStartAuto({ title: '15초 훅 릴', attached: true }), { ok: true });
+    assert.deepEqual(canStartAuto({ title: '', goal: '카페 오픈 15초', attached: true }), { ok: true });
     assert.deepEqual(canStartAuto({
       title: '15초 훅 릴',
       attached: true,
@@ -119,6 +120,12 @@ describe('auto desk start rules', () => {
 describe('auto desk job payload', () => {
   it('records own files, the scrape list, or both on the existing spec fields', () => {
     assert.equal(autoSourceMode({ useOwn: true, useScrape: true }), 'own_and_collect');
+    assert.equal(autoJobPayload({
+      title: '',
+      goal: '카페 오픈 15초, 손과 간판',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+    }).source_mode, 'bot');
     assert.deepEqual(autoJobPayload({
       title: '카페 오픈',
       goal: '손과 간판',

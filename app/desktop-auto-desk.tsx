@@ -402,11 +402,9 @@ export function AutoDesk({
       setError(check.reason === 'title'
         ? t('만들고 싶은 영상을 적어 주세요. 주소여도 됩니다.', 'Write the video you want. A URL is fine.', '请写下想做的视频。网址也可以。', '作りたい映像を書いてください。URL でもよいです。')
         : check.reason === 'materials'
-          ? !useOwn && !useScrape
-            ? t('내 파일을 넣거나, 받을 공개 파일 주소를 적으세요. 검색어는 안 됩니다.', 'Add your files, or write the public file URLs to fetch. Not a search phrase.', '放入自己的文件，或写下要收的公开文件地址。不要写搜索词。', '自分のファイルを入れるか、受け取る公開ファイルの住所を書く。検索語はだめです。')
-            : readyUseOwn && !readyOwned.length
-              ? t('영상이나 사진을 넣으세요.', 'Put in a video or an image.', '请放入视频或图片。', '映像か写真を入れてください。')
-              : t('한 줄에 공개 파일 주소 하나만 적으세요. http로 시작하는 직접 주소여야 합니다.', 'Write one public file URL per line. It must be a direct http address.', '每行只写一个公开文件地址。必须是以 http 开头的直接地址。', '一行に公開ファイルの住所一つ。http で始まる直接の住所にしてください。')
+          ? readyUseOwn && !readyOwned.length
+            ? t('영상이나 사진을 넣으세요.', 'Put in a video or an image.', '请放入视频或图片。', '映像か写真を入れてください。')
+            : t('한 줄에 공개 파일 주소 하나만 적으세요. http로 시작하는 직접 주소여야 합니다.', 'Write one public file URL per line. It must be a direct http address.', '每行只写一个公开文件地址。必须是以 http 开头的直接地址。', '一行に公開ファイルの住所一つ。http で始まる直接の住所にしてください。')
         : t('먼저 연결하세요.', 'Connect first.', '请先连接。', '先に接続してください。'));
       return;
     }

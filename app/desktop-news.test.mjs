@@ -54,7 +54,7 @@ describe('news card stays off the start door', () => {
       useOwn: true,
       ownedPaths: ['/tmp/a.mp4'],
     }), { ok: true });
-    assert.deepEqual(canStartAuto({ title: '오늘 릴', attached: true }), { ok: false, reason: 'materials' });
+    assert.deepEqual(canStartAuto({ title: '오늘 릴', attached: true }), { ok: true });
   });
 
   it('keeps the form URL empty until the operator sets one', () => {

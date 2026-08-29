@@ -236,7 +236,7 @@ export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
   const ownedPaths = resolveOwnedPaths(input.ownedPaths, input.workspaceDir);
   const useOwn = Boolean(input.useOwn && ownedPaths.length);
   const useScrape = Boolean(input.useScrape);
-  const sourceMode = autoSourceMode({ useOwn, useScrape }) || 'own';
+  const sourceMode = autoSourceMode({ useOwn, useScrape }) || 'bot';
   const body: Record<string, unknown> = {
     title: heading,
     goal: prompt || heading,
@@ -817,7 +817,6 @@ export function canStartAuto(input: {
   const ownedPaths = cleanOwnedPaths(input.ownedPaths);
   const useOwn = Boolean(input.useOwn);
   const useScrape = Boolean(input.useScrape);
-  if (!useOwn && !useScrape) return { ok: false, reason: 'materials' };
   if (useOwn && !ownedPaths.length) return { ok: false, reason: 'materials' };
   if (useScrape && !collectQueryIsUrlList(String(input.collectQuery || ''))) return { ok: false, reason: 'materials' };
   return { ok: true };
