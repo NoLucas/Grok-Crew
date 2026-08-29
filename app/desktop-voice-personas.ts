@@ -17,7 +17,7 @@ export type VoicePersona = {
 
 export const DEFAULT_VOICE_GENDER: VoiceGender = 'female';
 export const DEFAULT_VOICE_FEEL: VoiceFeel = 'warm';
-export const DEFAULT_VOICE_ACCENT: VoiceAccent = 'ko';
+export const DEFAULT_VOICE_ACCENT: VoiceAccent = 'en-us';
 export const DEFAULT_VOICE_SPEAKER_ID = 'af_heart';
 
 const SPEAKERS: Record<string, string> = {
@@ -83,18 +83,26 @@ export function resolveVoiceFeel(value?: unknown): VoiceFeel {
   return isVoiceFeel(value) ? value : DEFAULT_VOICE_FEEL;
 }
 
-export function resolveVoiceAccent(value?: unknown): VoiceAccent {
-  return isVoiceAccent(value) ? value : DEFAULT_VOICE_ACCENT;
+export function resolveVoiceAccent(
+  value?: unknown,
+  allowed?: readonly VoiceAccent[],
+): VoiceAccent {
+  const raw = isVoiceAccent(value) ? value : DEFAULT_VOICE_ACCENT;
+  if (!allowed || allowed.length === 0) return raw;
+  if (allowed.includes(raw)) return raw;
+  if (allowed.includes(DEFAULT_VOICE_ACCENT)) return DEFAULT_VOICE_ACCENT;
+  return allowed[0];
 }
 
 export function resolveVoicePersona(input: {
   gender?: unknown;
   feel?: unknown;
   accent?: unknown;
+  allowedAccents?: readonly VoiceAccent[];
 } = {}): VoicePersona {
   const gender = resolveVoiceGender(input.gender);
   const feel = resolveVoiceFeel(input.feel);
-  const accent = resolveVoiceAccent(input.accent);
+  const accent = resolveVoiceAccent(input.accent, input.allowedAccents);
   const speakerId = SPEAKERS[`${gender}:${feel}:${accent}`] || DEFAULT_VOICE_SPEAKER_ID;
   return { gender, feel, accent, speakerId };
 }

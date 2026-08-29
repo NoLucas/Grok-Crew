@@ -41,21 +41,37 @@ def test_preview_maps_match_desk_personas():
     assert preview_lang_code("ko") == "a"
     assert preview_phrase("ko").startswith("안녕하세요")
     assert preview_filename("female", "warm", "ko") == "female__warm__ko.wav"
+    assert voice_preview.resolve_accent("ko") == "en-us"
+    assert voice_preview.resolve_accent("ko", "kokoro-82m") == "en-us"
+    assert voice_preview.resolve_accent("ja", "kokoro-82m") == "ja"
 
 
 def test_preview_copies_bundled_kokoro_wav(studio, tmp_path, monkeypatch):
     assets = tmp_path / "bundled"
     assets.mkdir()
-    write_pcm16_wav(assets / "female__warm__ko.wav", [0.1, -0.1] * 400)
+    write_pcm16_wav(assets / "female__warm__en-us.wav", [0.1, -0.1] * 400)
     monkeypatch.setattr(voice_preview, "bundled_preview_dir", lambda: assets)
-    payload = make_voice_preview({"gender": "female", "feel": "warm", "accent": "ko"})
+    payload = make_voice_preview({"gender": "female", "feel": "warm", "accent": "en-us"})
     assert payload["schema"] == "grok-crew.voice-preview/v1"
     assert payload["engine"] == ENGINE
     assert payload["speaker_id"] == "af_heart"
-    assert payload["text"].startswith("안녕하세요")
+    assert payload["text"].startswith("Hello")
     assert payload["source"] == "bundled"
-    assert payload["url"] == "/media/voice-previews/female__warm__ko.wav"
+    assert payload["url"] == "/media/voice-previews/female__warm__en-us.wav"
     assert Path(payload["path"]).is_file()
+
+
+def test_preview_clamps_korean_when_kokoro_has_no_pack(studio, tmp_path, monkeypatch):
+    assets = tmp_path / "bundled"
+    assets.mkdir()
+    write_pcm16_wav(assets / "female__warm__en-us.wav", [0.1, -0.1] * 400)
+    write_pcm16_wav(assets / "female__warm__ko.wav", [0.2, -0.2] * 400)
+    monkeypatch.setattr(voice_preview, "bundled_preview_dir", lambda: assets)
+    payload = make_voice_preview({"gender": "female", "feel": "warm", "accent": "ko"})
+    assert payload["accent"] == "en-us"
+    assert payload["text"].startswith("Hello")
+    assert payload["url"] == "/media/voice-previews/female__warm__en-us.wav"
+    assert Path(payload["path"]).name == "female__warm__en-us.wav"
 
 
 def test_preview_uses_injected_kokoro_synthesizer(studio, tmp_path, monkeypatch):

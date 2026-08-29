@@ -1,6 +1,6 @@
 'use client';
 
-import { downloadPercent, type VoiceDownloadStatus, type VoiceModelId, VOICE_MODELS } from './desktop-voice-models';
+import { downloadPercent, type VoiceDownloadStatus, type VoiceModelId, VOICE_MODELS, voiceModelLanguageLine } from './desktop-voice-models';
 import { useLanguage } from './language';
 
 type VoiceSetupProps = {
@@ -95,7 +95,7 @@ export function DesktopVoiceSetup({
                 {model.recommended ? <em>{t('기본', 'Default', '默认', '初期値')}</em> : null}
               </div>
               <span>{copyOf(model.summary, language)}</span>
-              <small>{copyOf(model.languages, language)} · {model.license}</small>
+              <small>{voiceModelLanguageLine(model.id, language)} · {model.license}</small>
               <p className="desktop-voice-warn" role="note">
                 {t('사양 주의', 'Hardware warning', '配置提醒', '仕様の注意')}
                 {': '}

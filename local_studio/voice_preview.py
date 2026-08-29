@@ -27,7 +27,7 @@ ACCENTS = ("ko", "en-us", "en-gb", "zh", "ja")
 
 DEFAULT_GENDER = "female"
 DEFAULT_FEEL = "warm"
-DEFAULT_ACCENT = "ko"
+DEFAULT_ACCENT = "en-us"
 DEFAULT_SPEAKER_ID = "af_heart"
 
 PHRASES: dict[str, str] = {
@@ -110,9 +110,16 @@ def resolve_feel(value: Any = None) -> str:
     return raw if raw in FEELS else DEFAULT_FEEL
 
 
-def resolve_accent(value: Any = None) -> str:
+def resolve_accent(value: Any = None, model_id: Any = None) -> str:
+    from voice_models import accents_for_model
+
+    allowed = tuple(accent for accent in accents_for_model(model_id) if accent in ACCENTS)
     raw = str(value or "").strip().lower()
-    return raw if raw in ACCENTS else DEFAULT_ACCENT
+    if raw in allowed:
+        return raw
+    if DEFAULT_ACCENT in allowed:
+        return DEFAULT_ACCENT
+    return allowed[0] if allowed else DEFAULT_ACCENT
 
 
 def resolve_speaker_id(gender: str, feel: str, accent: str) -> str:
@@ -132,7 +139,9 @@ def preview_speed(feel: str) -> float:
 
 
 def preview_filename(gender: str, feel: str, accent: str) -> str:
-    return f"{resolve_gender(gender)}__{resolve_feel(feel)}__{resolve_accent(accent)}.wav"
+    raw = str(accent or "").strip().lower()
+    token = raw if raw in ACCENTS else DEFAULT_ACCENT
+    return f"{resolve_gender(gender)}__{resolve_feel(feel)}__{token}.wav"
 
 
 def preview_workspace_dir() -> Path:
@@ -242,9 +251,12 @@ def make_voice_preview(
     synthesize: SynthesizeFn | None = None,
 ) -> dict[str, Any]:
     payload = body if isinstance(body, dict) else {}
+    from voice_models import resolve_model_id
+
+    model_id = resolve_model_id(payload.get("model_id") or payload.get("voiceModelId"))
     gender = resolve_gender(payload.get("gender"))
     feel = resolve_feel(payload.get("feel"))
-    accent = resolve_accent(payload.get("accent"))
+    accent = resolve_accent(payload.get("accent"), model_id)
     speaker_id = str(payload.get("speaker_id") or payload.get("speakerId") or "").strip()
     if not speaker_id:
         speaker_id = resolve_speaker_id(gender, feel, accent)

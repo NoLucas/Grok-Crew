@@ -42,6 +42,9 @@ describe('desk composer restage', () => {
     assert.match(auto, /tts생성/);
     assert.match(auto, /미리듣기/);
     assert.match(auto, /Kokoro-82M/);
+    assert.match(auto, /allowedAccents\.map/);
+    assert.equal(auto.includes('VOICE_ACCENTS.map'), false);
+    assert.match(auto, /한국어 언어팩이 없습니다/);
     assert.equal(auto.includes('speechSynthesis'), false);
     assert.equal(auto.includes('미리듣기는 이 창에서 재생하지 않습니다'), false);
     assert.equal(auto.includes('목소리 만들기'), false);

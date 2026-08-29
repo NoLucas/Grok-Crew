@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 
 register('./timeline/ts-resolver.helper.mjs', import.meta.url);
 
-const { DEFAULT_VOICE_MODEL_ID, VOICE_MODEL_IDS } = await import('./desktop-voice-models.ts');
+const { DEFAULT_VOICE_MODEL_ID, VOICE_MODEL_IDS, voiceAccentsForModel } = await import('./desktop-voice-models.ts');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -47,5 +47,10 @@ describe('installer voice pick', () => {
     assert.equal(catalog.models['kokoro-82m'].repo, 'hexgrad/Kokoro-82M');
     assert.deepEqual(catalog.models['kokoro-82m'].weight_files, ['kokoro-v1_0.pth']);
     assert.deepEqual(catalog.models['kokoro-82m'].fallbacks, ['kokoro-v1.0.pth']);
+    assert.deepEqual(catalog.models['kokoro-82m'].accents, ['en-us', 'en-gb', 'zh', 'ja']);
+    assert.equal(catalog.models['kokoro-82m'].accents.includes('ko'), false);
+    for (const id of VOICE_MODEL_IDS) {
+      assert.deepEqual(catalog.models[id].accents, voiceAccentsForModel(id));
+    }
   });
 });

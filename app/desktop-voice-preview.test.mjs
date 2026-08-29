@@ -28,6 +28,7 @@ describe('voice preview lines', () => {
     assert.equal(voicePreviewLang('ja'), 'ja-JP');
     assert.equal(voicePreviewRate('bright') > voicePreviewRate('calm'), true);
     assert.equal(voicePreviewFileName({ gender: 'female', feel: 'warm', accent: 'ko' }), 'female__warm__ko.wav');
+    assert.equal(voicePreviewFileName({ gender: 'female', feel: 'warm', accent: 'en-us' }), 'female__warm__en-us.wav');
     assert.equal(VOICE_PREVIEW_ENGINE, 'kokoro-82m');
   });
 
@@ -37,17 +38,18 @@ describe('voice preview lines', () => {
       assert.equal(path, '/api/v2/first-run/voice-preview');
       assert.equal(init.method, 'POST');
       const body = JSON.parse(init.body);
-      assert.equal(body.accent, 'ko');
+      assert.equal(body.accent, 'en-us');
+      assert.equal(body.model_id, 'kokoro-82m');
       assert.equal(body.speaker_id, 'af_heart');
       return {
         engine: 'kokoro-82m',
         speaker_id: 'af_heart',
-        text: voicePreviewPhrase('ko'),
-        url: '/media/voice-previews/female__warm__ko.wav',
+        text: voicePreviewPhrase('en-us'),
+        url: '/media/voice-previews/female__warm__en-us.wav',
       };
     };
     return playVoicePreview(
-      { accent: 'ko', gender: 'female', feel: 'warm' },
+      { accent: 'en-us', gender: 'female', feel: 'warm', modelId: 'kokoro-82m' },
       {
         request,
         studioOrigin: 'http://127.0.0.1:7214',
@@ -55,8 +57,27 @@ describe('voice preview lines', () => {
       },
     ).then(async (status) => {
       assert.equal(status, 'playing');
-      assert.equal(played[0], 'http://127.0.0.1:7214/media/voice-previews/female__warm__ko.wav');
+      assert.equal(played[0], 'http://127.0.0.1:7214/media/voice-previews/female__warm__en-us.wav');
       assert.equal(voicePreviewMediaUrl({ accent: 'ja', gender: 'female', feel: 'warm' }, 'http://127.0.0.1:7214'), 'http://127.0.0.1:7214/media/voice-previews/female__warm__ja.wav');
+      const clamped = [];
+      const clampedStatus = await playVoicePreview(
+        { accent: 'ko', gender: 'female', feel: 'warm', modelId: 'kokoro-82m' },
+        {
+          request: async (_path, init) => {
+            const body = JSON.parse(init.body);
+            assert.equal(body.accent, 'en-us');
+            assert.equal(body.model_id, 'kokoro-82m');
+            return {
+              engine: 'kokoro-82m',
+              url: '/media/voice-previews/female__warm__en-us.wav',
+            };
+          },
+          studioOrigin: 'http://127.0.0.1:7214',
+          play: async (url) => { clamped.push(url); },
+        },
+      );
+      assert.equal(clampedStatus, 'playing');
+      assert.equal(clamped[0], 'http://127.0.0.1:7214/media/voice-previews/female__warm__en-us.wav');
       const missing = await playVoicePreview(
         { accent: 'zh' },
         { request: async () => { throw new Error('Kokoro-82M is not installed on this PC.'); } },

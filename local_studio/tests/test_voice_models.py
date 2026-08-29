@@ -3,6 +3,7 @@ import voice_models
 from tests.test_api import get_status, post
 from voice_models import (
     DEFAULT_MODEL_ID,
+    accents_for_model,
     reset_voice_models,
     resolve_model_id,
     select_voice_model,
@@ -18,6 +19,20 @@ def test_kokoro_catalog_uses_huggingface_weight_name():
     item = voice_models.CATALOG["kokoro-82m"]
     assert item["weight_files"] == ("kokoro-v1_0.pth",)
     assert "kokoro-v1.0.pth" in item["fallbacks"]
+
+
+def test_shipped_models_have_no_korean_pack():
+    reset_voice_models()
+    for model_id in voice_models.MODEL_IDS:
+        accents = accents_for_model(model_id)
+        assert "ko" not in accents
+        assert "en-us" in accents
+        assert accents == ("en-us", "en-gb", "zh", "ja")
+    payload = status()
+    assert "ko" not in payload["accents"]
+    kokoro = next(item for item in payload["models"] if item["id"] == "kokoro-82m")
+    assert "ko" not in kokoro["accents"]
+    assert kokoro["accents"] == ["en-us", "en-gb", "zh", "ja"]
 
 
 def test_next_defaults_to_kokoro_and_keeps_one_model(studio, monkeypatch):

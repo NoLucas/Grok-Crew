@@ -1,3 +1,4 @@
+import { resolveVoiceAccentForModel, voiceAccentsForModel } from './desktop-voice-models';
 import {
   resolveVoicePersona,
   type VoiceAccent,
@@ -99,7 +100,7 @@ async function playHtmlAudio(url: string): Promise<void> {
 }
 
 export async function playVoicePreview(
-  input: { accent: VoiceAccent; gender?: VoiceGender; feel?: VoiceFeel },
+  input: { accent: VoiceAccent; gender?: VoiceGender; feel?: VoiceFeel; modelId?: string },
   deps?: {
     request?: PreviewRequest;
     studioOrigin?: string;
@@ -107,7 +108,12 @@ export async function playVoicePreview(
   },
 ): Promise<VoicePreviewStatus> {
   stopVoicePreview();
-  const persona = resolveVoicePersona(input);
+  const accent = resolveVoiceAccentForModel(input.accent, input.modelId);
+  const persona = resolveVoicePersona({
+    ...input,
+    accent,
+    allowedAccents: voiceAccentsForModel(input.modelId),
+  });
   const studioOrigin = deps?.studioOrigin || '';
   let url = '';
   let missing = false;
@@ -120,6 +126,7 @@ export async function playVoicePreview(
           feel: persona.feel,
           accent: persona.accent,
           speaker_id: persona.speakerId,
+          model_id: input.modelId,
         }),
       });
       if (data.engine != null && !isKokoroEngine(data.engine)) return 'blocked';

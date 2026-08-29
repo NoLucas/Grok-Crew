@@ -7,12 +7,11 @@ import {
 } from './desktop-bot-links';
 import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
 import { resolveCrewMarket, type CrewMarket } from './crew-market';
-import { DEFAULT_VOICE_MODEL_ID, resolveVoiceModelId, voiceMustKeep, type VoiceModelId } from './desktop-voice-models';
+import { DEFAULT_VOICE_MODEL_ID, resolveVoiceAccentForModel, resolveVoiceModelId, voiceAccentsForModel, voiceMustKeep, type VoiceModelId } from './desktop-voice-models';
 import {
   DEFAULT_VOICE_ACCENT,
   DEFAULT_VOICE_FEEL,
   DEFAULT_VOICE_GENDER,
-  resolveVoiceAccent,
   resolveVoiceFeel,
   resolveVoiceGender,
   resolveVoicePersona,
@@ -188,7 +187,8 @@ export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
     ? resolveVoicePersona({
       gender: input.voiceGender,
       feel: input.voiceFeel,
-      accent: input.voiceAccent,
+      accent: resolveVoiceAccentForModel(input.voiceAccent, input.voiceModelId, input.language),
+      allowedAccents: voiceAccentsForModel(input.voiceModelId),
     })
     : undefined;
   const keep = voiceMustKeep({
@@ -274,7 +274,7 @@ export function readAutoPrefs(): AutoPrefs {
       voiceModelId: resolveVoiceModelId(parsed.voiceModelId),
       voiceGender: resolveVoiceGender(parsed.voiceGender),
       voiceFeel: resolveVoiceFeel(parsed.voiceFeel),
-      voiceAccent: resolveVoiceAccent(parsed.voiceAccent),
+      voiceAccent: resolveVoiceAccentForModel(parsed.voiceAccent, parsed.voiceModelId),
       voiceSaved: Boolean(parsed.voiceSaved),
       market: parsed.market ? resolveCrewMarket(parsed.market) : undefined,
       marketTouched: Boolean(parsed.marketTouched),
@@ -298,7 +298,7 @@ export function writeAutoPrefs(prefs: Partial<AutoPrefs>): AutoPrefs {
     voiceModelId: resolveVoiceModelId(prefs.voiceModelId ?? current.voiceModelId),
     voiceGender: resolveVoiceGender(prefs.voiceGender ?? current.voiceGender),
     voiceFeel: resolveVoiceFeel(prefs.voiceFeel ?? current.voiceFeel),
-    voiceAccent: resolveVoiceAccent(prefs.voiceAccent ?? current.voiceAccent),
+    voiceAccent: resolveVoiceAccentForModel(prefs.voiceAccent ?? current.voiceAccent, prefs.voiceModelId ?? current.voiceModelId),
     voiceSaved: prefs.voiceSaved !== undefined ? Boolean(prefs.voiceSaved) : Boolean(current.voiceSaved),
     market: prefs.market !== undefined
       ? resolveCrewMarket(prefs.market)

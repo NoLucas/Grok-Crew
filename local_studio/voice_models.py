@@ -26,6 +26,7 @@ CATALOG: dict[str, dict[str, Any]] = {
         "files": ("config.json",),
         "weight_files": ("kokoro-v1_0.pth",),
         "fallbacks": ("kokoro-v1.0.pth",),
+        "accents": ("en-us", "en-gb", "zh", "ja"),
     },
     "step-audio-editx": {
         "label": "Step Audio EditX",
@@ -34,6 +35,7 @@ CATALOG: dict[str, dict[str, Any]] = {
         "files": ("README.md",),
         "weight_files": (),
         "fallbacks": ("config.json",),
+        "accents": ("en-us", "en-gb", "zh", "ja"),
     },
     "zonos-v0.1": {
         "label": "Zonos-v0.1",
@@ -42,6 +44,7 @@ CATALOG: dict[str, dict[str, Any]] = {
         "files": ("config.json",),
         "weight_files": ("model.safetensors",),
         "fallbacks": ("README.md",),
+        "accents": ("en-us", "en-gb", "zh", "ja"),
     },
 }
 
@@ -85,6 +88,13 @@ def model_dir(model_id: str) -> Path:
 def resolve_model_id(value: Any = None) -> str:
     raw = str(value or "").strip().lower()
     return raw if raw in MODEL_IDS else DEFAULT_MODEL_ID
+
+
+def accents_for_model(value: Any = None) -> tuple[str, ...]:
+    """Languages the installed/chosen model can actually speak. Set in the exe catalog."""
+    item = CATALOG[resolve_model_id(value)]
+    raw = item.get("accents") or CATALOG[DEFAULT_MODEL_ID]["accents"]
+    return tuple(str(accent) for accent in raw)
 
 
 def _want_weights() -> bool:
@@ -277,17 +287,20 @@ def status() -> dict[str, Any]:
                 "label": item["label"],
                 "repo": item["repo"],
                 "license": item["license"],
+                "accents": list(accents_for_model(model_id)),
                 "installed": installed,
                 "active": active == model_id,
                 "bytes": _dir_bytes(folder) if folder.is_dir() else 0,
             }
         )
+    chosen_id = active or DEFAULT_MODEL_ID
     return {
         "schema": SCHEMA,
         "default": DEFAULT_MODEL_ID,
         "active": active,
         "chosen": bool(stored.get("chosen") or active),
         "one_active": True,
+        "accents": list(accents_for_model(chosen_id)),
         "error": str(stored.get("error") or download.get("error") or ""),
         "download": download,
         "models": models,

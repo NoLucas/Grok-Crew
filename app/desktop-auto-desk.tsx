@@ -43,12 +43,10 @@ import { activityForSpec, type CrewLoadState } from './desktop-crew-log';
 import { seatShortLabel, withCrewInvite } from './bot-skills';
 import { CREW_MARKETS, marketFromLanguage, marketLabel, resolveCrewMarket, type CrewMarket } from './crew-market';
 import { DesktopNewsCard } from './desktop-news-card';
-import { confirmVoiceChoice, type VoiceModelId } from './desktop-voice-models';
+import { confirmVoiceChoice, resolveVoiceAccentForModel, voiceAccentsForModel, voiceModelLabel, type VoiceModelId } from './desktop-voice-models';
 import {
-  VOICE_ACCENTS,
   VOICE_FEELS,
   VOICE_GENDERS,
-  resolveVoiceAccent,
   resolveVoiceFeel,
   resolveVoiceGender,
   resolveVoicePersona,
@@ -152,10 +150,13 @@ export function AutoDesk({
   const [collectQuery, setCollectQuery] = useState('');
   const [wantCaptions, setWantCaptions] = useState(Boolean(prefs.wantCaptions));
   const [wantTts, setWantTts] = useState(Boolean(prefs.wantTts));
-  const [voiceModelId] = useState<VoiceModelId>(() => confirmVoiceChoice(prefs.voiceModelId));
+  const voiceModelId = confirmVoiceChoice(prefs.voiceModelId);
+  const allowedAccents = voiceAccentsForModel(voiceModelId);
   const [voiceGender, setVoiceGender] = useState<VoiceGender>(() => resolveVoiceGender(prefs.voiceGender));
   const [voiceFeel, setVoiceFeel] = useState<VoiceFeel>(() => resolveVoiceFeel(prefs.voiceFeel));
-  const [voiceAccent, setVoiceAccent] = useState<VoiceAccent>(() => resolveVoiceAccent(prefs.voiceAccent));
+  const [voiceAccent, setVoiceAccent] = useState<VoiceAccent>(() => (
+    resolveVoiceAccentForModel(prefs.voiceAccent, prefs.voiceModelId, language)
+  ));
   const [voiceSaved, setVoiceSaved] = useState(Boolean(prefs.voiceSaved));
   const [voicePreview, setVoicePreview] = useState<'idle' | 'loading' | 'playing' | 'blocked' | 'missing'>('idle');
   const [pickedMarket, setPickedMarket] = useState<CrewMarket | null>(() => (
@@ -164,7 +165,12 @@ export function AutoDesk({
   const market = pickedMarket ?? marketFromLanguage(language);
   const marketTouched = pickedMarket !== null;
   const [marketNeedsRecopy, setMarketNeedsRecopy] = useState(false);
-  const voicePersona = resolveVoicePersona({ gender: voiceGender, feel: voiceFeel, accent: voiceAccent });
+  const voicePersona = resolveVoicePersona({
+    gender: voiceGender,
+    feel: voiceFeel,
+    accent: voiceAccent,
+    allowedAccents,
+  });
   const [ownOver, setOwnOver] = useState(false);
   const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
   const [recipeTouched, setRecipeTouched] = useState(false);
@@ -274,7 +280,7 @@ export function AutoDesk({
     const accent = next?.accent ?? voiceAccent;
     setVoicePreview('loading');
     void playVoicePreview(
-      { accent, gender, feel },
+      { accent, gender, feel, modelId: voiceModelId },
       { request, studioOrigin: studioDownloadBase() },
     ).then((result) => {
       setVoicePreview(result);
@@ -303,6 +309,14 @@ export function AutoDesk({
   }, [wait?.inviteText]);
 
   useEffect(() => () => stopVoicePreview(), []);
+
+  useEffect(() => {
+    const next = resolveVoiceAccentForModel(voiceAccent, voiceModelId, language);
+    if (next === voiceAccent) return;
+    setVoiceAccent(next);
+    setVoiceSaved(false);
+    setPrefs(writeAutoPrefs({ voiceAccent: next, voiceModelId }));
+  }, [voiceAccent, voiceModelId, language]);
 
   useEffect(() => {
     if (!waitingHandOff) return;
@@ -1017,7 +1031,7 @@ export function AutoDesk({
                     <div className="desktop-auto-voice-pick">
                       <section className="desktop-voice-persona" aria-label={t('어떤 목소리', 'Which voice', '哪种声音', 'どんな声')}>
                         <b>{t('어떤 목소리로 시작할까요', 'How should the voice start', '用哪种声音开始', 'どんな声で始めますか')}</b>
-                        <p>{t('성별, 느낌, 말투를 고릅니다. 사람을 복제하지 않습니다. 마음에 들면 저장하세요. 다음에도 그 목소리입니다.', 'Pick gender, feel, and how it sounds. It does not clone a person. Save the one you like. Next time it stays.', '选性别、感觉、听起来像哪国话。不克隆人。喜欢就保存。下次还是这个。', '性別・感じ・話し方を選ぶ。人の声は複製しない。気に入ったら保存。次もその声。')}</p>
+                        <p>{t(`성별, 느낌, 말투를 고릅니다. 말투는 이 PC의 ${voiceModelLabel(voiceModelId)}이 받은 언어만 보입니다. 사람을 복제하지 않습니다. 마음에 들면 저장하세요.`, `Pick gender, feel, and how it sounds. Only languages ${voiceModelLabel(voiceModelId)} kept on this PC can speak. It does not clone a person. Save the one you like.`, `选性别、感觉、听起来像哪国话。语种只显示这台电脑收下的 ${voiceModelLabel(voiceModelId)} 会说的。不克隆人。喜欢就保存。`, `性別・感じ・話し方を選ぶ。話し方はこの PC の ${voiceModelLabel(voiceModelId)} が受けた言語だけ。人の声は複製しない。気に入ったら保存。`)}</p>
                         <div className="desktop-auto-filter">
                           <span>{t('성별', 'Gender', '性别', '性別')}</span>
                           <div className="desktop-auto-chips" role="radiogroup" aria-label={t('성별', 'Gender', '性别', '性別')}>
@@ -1055,7 +1069,7 @@ export function AutoDesk({
                         <div className="desktop-auto-filter">
                           <span>{t('말투', 'How it sounds', '听起来', '話し方')}</span>
                           <div className="desktop-auto-chips" role="radiogroup" aria-label={t('말투', 'How it sounds', '听起来', '話し方')}>
-                            {VOICE_ACCENTS.map((item) => (
+                            {allowedAccents.map((item) => (
                               <button
                                 key={item}
                                 type="button"
@@ -1069,6 +1083,16 @@ export function AutoDesk({
                             ))}
                           </div>
                         </div>
+                        {!allowedAccents.includes('ko') ? (
+                          <p className="desktop-spec-meta">
+                            {t(
+                              '이 모델은 한국어 언어팩이 없습니다. 받은 언어의 말투만 고릅니다.',
+                              'This model has no Korean language pack. Only languages it kept are shown.',
+                              '这个模型没有韩语语言包。只显示它收下的语种。',
+                              'このモデルに韓国語の言語パックはありません。受けた言語の話し方だけ出ます。',
+                            )}
+                          </p>
+                        ) : null}
                         <div className={`desktop-voice-saved${voiceSaved ? ' is-saved' : ''}`}>
                           <p>
                             {t(
@@ -1115,10 +1139,10 @@ export function AutoDesk({
                             : voicePreview === 'blocked'
                               ? t('이 창에서 Kokoro-82M 미리듣기를 재생하지 못했습니다. 말투를 다시 누르거나 미리듣기를 누르세요.', 'This window could not play the Kokoro-82M preview. Tap a language or Preview again.', '这个窗口没能播放 Kokoro-82M 试听。请再点语种或试听。', 'この窓では Kokoro-82M の試し聞きできませんでした。話し方か試し聞きを押してください。')
                               : t(
-                                `미리듣기는 이 PC의 Kokoro-82M이 「${voicePreviewPhrase(voiceAccent)}」를 말한 소리입니다.`,
-                                `Preview is this PC’s Kokoro-82M saying “${voicePreviewPhrase(voiceAccent)}”.`,
-                                `试听是这台电脑的 Kokoro-82M 说「${voicePreviewPhrase(voiceAccent)}」。`,
-                                `試し聞きはこの PC の Kokoro-82M が「${voicePreviewPhrase(voiceAccent)}」と言った音です。`,
+                                `미리듣기는 이 PC의 ${voiceModelLabel(voiceModelId)}이 「${voicePreviewPhrase(voiceAccent)}」를 말한 소리입니다.`,
+                                `Preview is this PC’s ${voiceModelLabel(voiceModelId)} saying “${voicePreviewPhrase(voiceAccent)}”.`,
+                                `试听是这台电脑的 ${voiceModelLabel(voiceModelId)} 说「${voicePreviewPhrase(voiceAccent)}」。`,
+                                `試し聞きはこの PC の ${voiceModelLabel(voiceModelId)} が「${voicePreviewPhrase(voiceAccent)}」と言った音です。`,
                               )}
                         </p>
                         <p className="desktop-spec-meta">

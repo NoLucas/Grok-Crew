@@ -231,6 +231,23 @@ describe('auto desk job payload', () => {
       useScrape: true,
       collectQuery: 'https://example.com/a.mp4',
       wantTts: true,
+    }).must_keep), /따뜻한 여자 · 미국 영어/);
+    assert.doesNotMatch(String(autoJobPayload({
+      title: 'TTS 켬',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useScrape: true,
+      collectQuery: 'https://example.com/a.mp4',
+      wantTts: true,
+      voiceAccent: 'ko',
+    }).must_keep), /한국어/);
+    assert.match(String(autoJobPayload({
+      title: 'TTS 켬',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      useScrape: true,
+      collectQuery: 'https://example.com/a.mp4',
+      wantTts: true,
       voiceGender: 'male',
       voiceFeel: 'calm',
       voiceAccent: 'en-gb',
@@ -483,6 +500,12 @@ describe('auto desk prefs and names', () => {
     writeAutoPrefs({ market: 'cn', marketTouched: true });
     assert.equal(readAutoPrefs().market, 'cn');
     assert.equal(readAutoPrefs().marketTouched, true);
+    memory.set(AUTO_PREFS_KEY, JSON.stringify({
+      voiceModelId: 'kokoro-82m',
+      voiceAccent: 'ko',
+    }));
+    assert.equal(readAutoPrefs().voiceAccent, 'en-us');
+    assert.equal(readAutoPrefs().voiceModelId, 'kokoro-82m');
   });
 
   it('names connected seats, never a mystery active bot', () => {

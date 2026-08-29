@@ -12,7 +12,8 @@
       "license": "Apache-2.0",
       "files": ["config.json"],
       "weight_files": ["kokoro-v1_0.pth"],
-      "fallbacks": ["kokoro-v1.0.pth"]
+      "fallbacks": ["kokoro-v1.0.pth"],
+      "accents": ["en-us", "en-gb", "zh", "ja"]
     },
     "step-audio-editx": {
       "id": "step-audio-editx",
@@ -21,7 +22,8 @@
       "license": "Apache-2.0",
       "files": ["README.md"],
       "weight_files": [],
-      "fallbacks": ["config.json"]
+      "fallbacks": ["config.json"],
+      "accents": ["en-us", "en-gb", "zh", "ja"]
     },
     "zonos-v0.1": {
       "id": "zonos-v0.1",
@@ -30,7 +32,8 @@
       "license": "Apache-2.0",
       "files": ["config.json"],
       "weight_files": ["model.safetensors"],
-      "fallbacks": ["README.md"]
+      "fallbacks": ["README.md"],
+      "accents": ["en-us", "en-gb", "zh", "ja"]
     }
   }
 }

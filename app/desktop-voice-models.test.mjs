@@ -12,6 +12,9 @@ const {
   confirmVoiceChoice,
   dubbingMustKeep,
   operatorDubMustKeep,
+  resolveVoiceAccentForModel,
+  voiceAccentsForModel,
+  voiceModelLanguageLine,
   voiceMustKeep,
   downloadPercent,
   emptyVoiceSetup,
@@ -47,7 +50,16 @@ describe('voice model picker', () => {
     assert.match(VOICE_MODELS.find((item) => item.id === 'kokoro-82m').warning.ko, /4GB/);
     assert.match(VOICE_MODELS.find((item) => item.id === 'step-audio-editx').warning.ko, /12GB/);
     assert.match(VOICE_MODELS.find((item) => item.id === 'zonos-v0.1').warning.ko, /6GB/);
-    assert.match(VOICE_MODELS.find((item) => item.id === 'zonos-v0.1').warning.ko, /한국어/);
+    assert.match(VOICE_MODELS.find((item) => item.id === 'zonos-v0.1').warning.ko, /한국어 언어팩/);
+    assert.deepEqual(voiceAccentsForModel('kokoro-82m'), ['en-us', 'en-gb', 'zh', 'ja']);
+    assert.equal(voiceAccentsForModel('kokoro-82m').includes('ko'), false);
+    assert.equal(voiceAccentsForModel('step-audio-editx').includes('ko'), false);
+    assert.equal(voiceAccentsForModel('zonos-v0.1').includes('ko'), false);
+    assert.equal(resolveVoiceAccentForModel('ko', 'kokoro-82m', 'ko'), 'en-us');
+    assert.equal(resolveVoiceAccentForModel(undefined, 'kokoro-82m', 'zh'), 'zh');
+    assert.match(voiceModelLanguageLine('kokoro-82m', 'ko'), /미국 영어 · 영국 영어 · 중국어 · 일본어/);
+    assert.doesNotMatch(voiceModelLanguageLine('kokoro-82m', 'ko'), /한국어/);
+    assert.match(VOICE_MODELS.find((item) => item.id === 'kokoro-82m').warning.ko, /한국어 언어팩은 없습니다/);
   });
 
   it('persists one chosen model after Next', () => {

@@ -1,7 +1,7 @@
 /** Built-in role skills. Bots read these on connect. This app does not scrape. */
 
 import { marketFromLanguage, marketLabel, marketPlanCode, resolveCrewMarket, type CrewMarket } from './crew-market';
-import { resolveVoiceModelId, voiceModelLabel } from './desktop-voice-models';
+import { resolveVoiceModelId, voiceAccentsForModel, voiceModelLabel } from './desktop-voice-models';
 import { resolveVoicePersona, voicePersonaLabel } from './desktop-voice-personas';
 
 export const BOT_ROLES = ['planner', 'scraper', 'editor'] as const;
@@ -1279,11 +1279,13 @@ function dubbingInviteLine(language: string, dubbing: boolean): string {
 
 function ttsInviteLine(language: string, voice: VoiceInvite): string {
   const tts = Boolean(voice.tts);
-  const label = voiceModelLabel(resolveVoiceModelId(voice.voiceModelId));
+  const modelId = resolveVoiceModelId(voice.voiceModelId);
+  const label = voiceModelLabel(modelId);
   const persona = resolveVoicePersona({
     gender: voice.voiceGender,
     feel: voice.voiceFeel,
     accent: voice.voiceAccent,
+    allowedAccents: voiceAccentsForModel(modelId),
   });
   const who = voicePersonaLabel(persona, language);
   const lang = langOf(language);

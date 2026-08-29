@@ -1,3 +1,10 @@
+import {
+  isVoiceAccent,
+  resolveVoiceAccent,
+  voiceAccentLabel,
+  type VoiceAccent,
+} from './desktop-voice-personas';
+
 export const VOICE_SETUP_KEY = 'grok-crew-voice-setup';
 export const DEFAULT_VOICE_MODEL_ID = 'kokoro-82m';
 export const VOICE_MODEL_IDS = ['kokoro-82m', 'step-audio-editx', 'zonos-v0.1'] as const;
@@ -15,7 +22,7 @@ export type VoiceModelInfo = {
   license: string;
   recommended?: boolean;
   summary: VoiceCopy;
-  languages: VoiceCopy;
+  accents: VoiceAccent[];
   warning: VoiceCopy;
 };
 
@@ -46,17 +53,12 @@ export const VOICE_MODELS: VoiceModelInfo[] = [
       zh: '默认。轻量配音。只按下一步就下载这个。',
       ja: '初期値。軽い吹き替え。次へだけ押せばこれを受け取る。',
     },
-    languages: {
-      ko: '한국어 · 영어 · 중국어 · 일본어',
-      en: 'Korean · English · Chinese · Japanese',
-      zh: '韩语 · 英语 · 中文 · 日语',
-      ja: '韓国語 · 英語 · 中国語 · 日本語',
-    },
+    accents: ['en-us', 'en-gb', 'zh', 'ja'],
     warning: {
-      ko: '메모리 4GB면 됩니다. CPU만으로도 됩니다. 외장 그래픽이 없어도 됩니다. 목소리는 복제하지 않습니다.',
-      en: 'About 4GB RAM. CPU is enough. A discrete GPU is not required. It does not clone a voice.',
-      zh: '大约 4GB 内存。只用 CPU 即可。不需要独立显卡。不会克隆声音。',
-      ja: 'メモリ 4GB あれば足ります。CPU だけで動きます。外付け GPU は不要。声の複製はしません。',
+      ko: '메모리 4GB면 됩니다. CPU만으로도 됩니다. 외장 그래픽이 없어도 됩니다. 목소리는 복제하지 않습니다. 한국어 언어팩은 없습니다.',
+      en: 'About 4GB RAM. CPU is enough. A discrete GPU is not required. It does not clone a voice. There is no Korean language pack.',
+      zh: '大约 4GB 内存。只用 CPU 即可。不需要独立显卡。不会克隆声音。没有韩语语言包。',
+      ja: 'メモリ 4GB あれば足ります。CPU だけで動きます。外付け GPU は不要。声の複製はしません。韓国語の言語パックはありません。',
     },
   },
   {
@@ -70,17 +72,12 @@ export const VOICE_MODELS: VoiceModelInfo[] = [
       zh: '更重的配音。短片段。需要 NVIDIA 显卡。',
       ja: '重い吹き替え。短いクリップ向け。NVIDIA GPU が必要。',
     },
-    languages: {
-      ko: '한국어 · 영어 · 중국어 · 일본어',
-      en: 'Korean · English · Chinese · Japanese',
-      zh: '韩语 · 英语 · 中文 · 日语',
-      ja: '韓国語 · 英語 · 中国語 · 日本語',
-    },
+    accents: ['en-us', 'en-gb', 'zh', 'ja'],
     warning: {
-      ko: '그래픽 메모리 12GB가 바닥입니다. 16GB가 더 안전합니다. NVIDIA + CUDA가 필요합니다. 내장 그래픽·일반 노트북에서는 받지 마세요. 한 번에 대략 30초 클립입니다. 받기도 큽니다.',
-      en: '12GB VRAM is the floor; 16GB is safer. Needs NVIDIA + CUDA. Skip this on integrated graphics or a typical laptop. Clips are about 30 seconds. The download is large.',
-      zh: '显存 12GB 是下限，16GB 更稳。需要 NVIDIA + CUDA。核显或普通笔记本不要下。片段大约 30 秒。下载也很大。',
-      ja: 'VRAM 12GB が下限、16GB の方が安全。NVIDIA + CUDA が必要。内蔵 GPU や普通のノートでは受けないでください。クリップはおよそ 30 秒。ダウンロードも大きいです。',
+      ko: '그래픽 메모리 12GB가 바닥입니다. 16GB가 더 안전합니다. NVIDIA + CUDA가 필요합니다. 내장 그래픽·일반 노트북에서는 받지 마세요. 한 번에 대략 30초 클립입니다. 받기도 큽니다. 한국어 언어팩은 없습니다.',
+      en: '12GB VRAM is the floor; 16GB is safer. Needs NVIDIA + CUDA. Skip this on integrated graphics or a typical laptop. Clips are about 30 seconds. The download is large. There is no Korean language pack.',
+      zh: '显存 12GB 是下限，16GB 更稳。需要 NVIDIA + CUDA。核显或普通笔记本不要下。片段大约 30 秒。下载也很大。没有韩语语言包。',
+      ja: 'VRAM 12GB が下限、16GB の方が安全。NVIDIA + CUDA が必要。内蔵 GPU や普通のノートでは受けないでください。クリップはおよそ 30 秒。ダウンロードも大きいです。韓国語の言語パックはありません。',
     },
   },
   {
@@ -89,22 +86,17 @@ export const VOICE_MODELS: VoiceModelInfo[] = [
     repo: 'Zyphra/Zonos-v0.1-transformer',
     license: 'Apache-2.0',
     summary: {
-      ko: '44kHz 더빙. 영어·일본어·중국어는 됩니다. 한국어는 약합니다.',
-      en: '44kHz dubbing. English, Japanese, and Chinese are fine. Korean is weak.',
-      zh: '44kHz 配音。英日中可以。韩语偏弱。',
-      ja: '44kHz の吹き替え。英・日・中は使える。韓国語は弱い。',
+      ko: '44kHz 더빙. 영어·일본어·중국어는 됩니다. 한국어 언어팩은 없습니다.',
+      en: '44kHz dubbing. English, Japanese, and Chinese are fine. There is no Korean language pack.',
+      zh: '44kHz 配音。英日中可以。没有韩语语言包。',
+      ja: '44kHz の吹き替え。英・日・中は使える。韓国語の言語パックはありません。',
     },
-    languages: {
-      ko: '영어 · 일본어 · 중국어 (한국어 약함)',
-      en: 'English · Japanese · Chinese (Korean is weak)',
-      zh: '英语 · 日语 · 中文（韩语弱）',
-      ja: '英語 · 日本語 · 中国語（韓国語は弱い）',
-    },
+    accents: ['en-us', 'en-gb', 'zh', 'ja'],
     warning: {
-      ko: '그래픽 메모리 약 6GB가 필요합니다. 한국 더빙이면 Kokoro-82M을 쓰세요. 이 모델을 고르면 한국어가 흐릴 수 있습니다.',
-      en: 'Needs about 6GB VRAM. For Korean dubbing, use Kokoro-82M. Korean on this model can sound thin.',
-      zh: '大约需要 6GB 显存。韩语配音请用 Kokoro-82M。这个模型的韩语可能发虚。',
-      ja: 'VRAM およそ 6GB が必要。韓国語の吹き替えなら Kokoro-82M。このモデルの韓国語は弱く聞こえることがあります。',
+      ko: '그래픽 메모리 약 6GB가 필요합니다. 한국어 언어팩은 없습니다.',
+      en: 'Needs about 6GB VRAM. There is no Korean language pack.',
+      zh: '大约需要 6GB 显存。没有韩语语言包。',
+      ja: 'VRAM およそ 6GB が必要。韓国語の言語パックはありません。',
     },
   },
 ];
@@ -130,6 +122,32 @@ export function resolveVoiceModelId(value?: unknown): VoiceModelId {
 export function voiceModelInfo(value?: unknown): VoiceModelInfo {
   const id = resolveVoiceModelId(value);
   return VOICE_MODELS.find((item) => item.id === id) ?? VOICE_MODELS[0];
+}
+
+export function voiceAccentsForModel(value?: unknown): VoiceAccent[] {
+  return [...voiceModelInfo(value).accents];
+}
+
+export function preferredVoiceAccent(language?: string): VoiceAccent {
+  const lang = String(language || '').slice(0, 2);
+  if (lang === 'zh') return 'zh';
+  if (lang === 'ja') return 'ja';
+  if (lang === 'en') return 'en-us';
+  return 'ko';
+}
+
+export function resolveVoiceAccentForModel(
+  value?: unknown,
+  modelId?: unknown,
+  language?: string,
+): VoiceAccent {
+  const allowed = voiceAccentsForModel(modelId);
+  const picked = isVoiceAccent(value) ? value : preferredVoiceAccent(language);
+  return resolveVoiceAccent(picked, allowed);
+}
+
+export function voiceModelLanguageLine(value?: unknown, language = 'ko'): string {
+  return voiceAccentsForModel(value).map((accent) => voiceAccentLabel(accent, language)).join(' · ');
 }
 
 export function emptyVoiceSetup(): VoiceSetup {
