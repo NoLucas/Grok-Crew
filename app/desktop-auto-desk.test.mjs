@@ -913,6 +913,21 @@ describe('auto desk seats and inbox guards', () => {
     };
     const rows = alwaysCrewSeats({ roster, language: 'ko' });
     assert.equal(samePcInviteReady(rows, roster), true);
+    const deskEntered = {
+      pairCode: 'QDWAVN',
+      bots: [{
+        id: 'p1',
+        name: 'Grok Bot 기획자',
+        kind: 'grok',
+        role: 'planner',
+        place: 'other_pc',
+        status: 'connected',
+        pairCode: 'QDWAVN',
+        confirmedAt: '2026-08-29T16:00:00.000Z',
+        confirmedFrom: 'ok-reply',
+      }],
+    };
+    assert.equal(samePcInviteReady(rows, roster, deskEntered), false);
     const auto = readFileSync(new URL('./desktop-auto-desk.tsx', import.meta.url), 'utf8');
     assert.match(auto, /완성되면 여기에 영상이 올라옵니다/);
     assert.match(auto, /jobTitle=\{titleFromPrompt\(wait\?\.title \|\| title, goal\)\}/);

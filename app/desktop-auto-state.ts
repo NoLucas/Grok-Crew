@@ -798,10 +798,13 @@ export function pasteTargetForSeats(rows: AutoSeatRow[], language = 'ko'): strin
 export function samePcInviteReady(
   rows: AutoSeatRow[],
   roster?: CrewRoster | null,
+  links?: BotLinkState | null,
 ): boolean {
   const role = pasteTargetRole(rows);
   const row = rows.find((item) => item.role === role);
   if (!row || row.kind !== 'grok' || !row.connected) return false;
+  const linked = (links?.bots ?? []).find((item) => item.kind === 'grok' && item.role === role);
+  if (linked?.place === 'other_pc') return false;
   return Boolean(heldRosterSeat(roster, role));
 }
 

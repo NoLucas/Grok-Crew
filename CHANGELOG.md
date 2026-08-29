@@ -4,6 +4,13 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+### Desk
+
+- Copying connect text no longer marks the seat connected or posts `bot-entry`. That fake lamp also hid the Start invite, so Linux Grok only sent `GROK_CREW_OK` and never got the job.
+- A short bot `GROK_CREW_OK` line can still enter the seat. The connect essay is not a reply. Leftover copy-confirms from 1.0.18 go back to waiting.
+- Connect text tells the bot not to stop after `GROK_CREW_OK`. The next Start invite in that chat is the job.
+- `other_pc` seats always get the Start invite on the clipboard. Desk-side `still_here` is not same-PC invite pull.
+
 ## 1.0.18 - 2026-08-29
 
 Local 1.0.18. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.18` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.18) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.18). Guest notes: `docs/RELEASE_NOTES.v1.0.18.md`. Guest Drive download stays the last published file. Already-installed 1.0.17 desks check Grok-crew-test for this tag.

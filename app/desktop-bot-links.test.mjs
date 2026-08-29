@@ -24,7 +24,7 @@ const {
   replyMatchesSeat,
   suggestedConnectReply,
   confirmRemoteReplies,
-  confirmCopiedSeat,
+  isBareConnectReply,
   upsertLinkedBot,
   activeRosterSeat,
   familyIsConnected,
@@ -116,11 +116,13 @@ describe('remote bot links', () => {
       assert.match(text, /7214가 없다|没有 7214|7214 がない|7214 is missing/);
       assert.match(text, /이 대화가 그 Windows가 아니면|If this conversation is not that Windows|若这段对话不是那台 Windows|この会話がその Windows でなければ/);
       assert.match(text, /창이 없다고 하지 마세요|Do not say the window is missing|不要说没有窗口|窓がないと言わないでください/);
-      assert.match(text, /첫 답은 아래 한 줄|第一句回复是下面这一行|最初の返事は次の一行|The first reply is this one line/);
-      assert.match(text, /위 역할대로|按上面的角色|上の役割どおり|using the role above/);
+      assert.match(text, /GROK_CREW_OK만 보내고 일을 끝내지 마세요|不要只发 GROK_CREW_OK 就结束|GROK_CREW_OK だけ送って仕事を終わらせない|Do not send only GROK_CREW_OK and stop/);
+      assert.match(text, /시작 글이 할 일|开始文字才是工作|開始の文が仕事|Start invite the operator pastes is the job/);
+      assert.match(text, /위 역할대로|按上面的角色|上の役割どおり|with the role above/);
       assert.doesNotMatch(text, /연결에 그 줄을 붙이면|pastes that line on Connect|贴到连接后|接続にその行を貼ると/);
       assert.doesNotMatch(text, /한 줄만 보내고 멈추세요|Send only the GROK_CREW_OK line and stop|只发 GROK_CREW_OK 那一行然后停下|一行だけ送って止まってください/);
-      assert.match(text, /사람이 다시 붙이지 않습니다|will not paste the invite again|不会再粘贴邀请|もう一度貼ることはありません/);
+      assert.doesNotMatch(text, /첫 답은 아래 한 줄|第一句回复是下面这一行|最初の返事は次の一行|The first reply is this one line/);
+      assert.doesNotMatch(text, /사람이 다시 붙이지 않습니다|will not paste the invite again|不会再粘贴邀请|もう一度貼ることはありません/);
       assert.match(text, /디스크에서 스크립트를 찾지 마세요|不要在磁盘上找脚本|ディスクでスクリプトを探さない|Do not search the disk for the script/);
       assert.doesNotMatch(text, /스크립트를 찾는 중|searching for the script/);
       assert.doesNotMatch(text, /Claude/);
@@ -349,15 +351,56 @@ describe('remote bot links', () => {
     }), true);
   });
 
-  it('enters a seat from the copied connect message', () => {
-    const empty = { pairCode: 'QDWAVN', bots: [] };
-    const planner = confirmCopiedSeat(empty, 'grok', 'planner', 'ko');
-    assert.equal(linkedBySeat(planner.bots, 'grok', 'planner')?.status, 'connected');
-    assert.ok(linkedBySeat(planner.bots, 'grok', 'planner')?.confirmedAt);
-    assert.equal(hasConnectedBot(undefined, planner), true);
-    const agent = confirmCopiedSeat(empty, 'custom', 'scraper', 'ko');
-    assert.equal(linkedBySeat(agent.bots, 'custom', 'scraper')?.status, 'connected');
-    assert.equal(seatIsConnected('custom', 'scraper', agent, undefined), true);
+  it('treats only a short bot OK line as a reply, not the connect essay', () => {
+    const essay = remoteConnectPaste('grok', 'QDWAVN', 'ko', 'planner');
+    assert.equal(isBareConnectReply(essay, 'QDWAVN'), false);
+    assert.equal(isBareConnectReply('GROK_CREW_OK QDWAVN Grok Bot 기획자', 'QDWAVN'), true);
+    assert.equal(isBareConnectReply('GROK_CREW_OK AAAAAA Grok Bot 기획자', 'QDWAVN'), false);
+    assert.equal(isBareConnectReply('', 'QDWAVN'), false);
+  });
+
+  it('does not light an other-pc copy from leftover desk still_here', () => {
+    const copied = markRemoteCopied({ pairCode: 'QDWAVN', bots: [] }, { kind: 'grok', role: 'planner', language: 'ko' });
+    const leftover = {
+      bots: [{
+        bot_id: 'grok-planner',
+        display_name: 'Grok Bot 기획자',
+        presence: 'active',
+        last_action: 'still_here',
+      }],
+    };
+    assert.equal(seatIsConnected('grok', 'planner', copied, leftover), false);
+    assert.equal(hasConnectedBot(leftover, copied), false);
+    const working = {
+      bots: [{
+        bot_id: 'grok-planner',
+        display_name: 'Grok Bot 기획자',
+        presence: 'active',
+        last_action: 'plan_started',
+      }],
+    };
+    assert.equal(seatIsConnected('grok', 'planner', copied, working), true);
+  });
+
+  it('drops a copied fake confirm that never came from a bot OK line', () => {
+    memory.set(BOT_LINKS_KEY, JSON.stringify({
+      pairCode: 'QDWAVN',
+      bots: [{
+        id: 'grok-planner-QDWAVN',
+        name: 'Grok Bot 기획자',
+        kind: 'grok',
+        role: 'planner',
+        place: 'other_pc',
+        status: 'connected',
+        pairCode: 'QDWAVN',
+        connectedAt: '2026-08-29T16:00:00.000Z',
+        confirmedAt: '2026-08-29T16:00:00.000Z',
+      }],
+    }));
+    const next = readBotLinks();
+    assert.equal(next.bots[0].status, 'waiting');
+    assert.equal(next.bots[0].confirmedAt, undefined);
+    assert.equal(hasConnectedBot(undefined, next), false);
   });
 
   it('attaches a seat when the operator pastes the bot GROK_CREW_OK line', () => {
@@ -372,6 +415,7 @@ describe('remote bot links', () => {
     assert.deepEqual(hit.confirmed, [{ kind: 'grok', role: 'editor' }]);
     assert.equal(hit.next.bots[0].status, 'connected');
     assert.ok(hit.next.bots[0].confirmedAt);
+    assert.equal(hit.next.bots[0].confirmedFrom, 'ok-reply');
     assert.equal(hasConnectedBot(undefined, hit.next), true);
     assert.equal(replyMatchesSeat('Grok Bot 편집자', 'grok', 'editor'), true);
     assert.equal(replyMatchesSeat('Grok Bot 편집자', 'grok', 'planner'), false);
@@ -429,7 +473,7 @@ describe('remote bot links', () => {
       pairCode: '7K2M9Q',
     });
     assert.equal(hasConnectedBot(undefined, waiting), false);
-    const next = upsertLinkedBot(empty, {
+    const fake = upsertLinkedBot(empty, {
       id: 'b1',
       name: 'Grok',
       kind: 'grok',
@@ -438,6 +482,12 @@ describe('remote bot links', () => {
       pairCode: empty.pairCode || '7K2M9Q',
       connectedAt: '2026-08-27T06:00:00.000Z',
     });
+    assert.equal(hasConnectedBot(undefined, fake), false);
+    const next = confirmRemoteReplies(
+      { pairCode: '7K2M9Q', bots: [] },
+      'GROK_CREW_OK 7K2M9Q Grok Bot 기획자',
+      'ko',
+    ).next;
     assert.equal(hasConnectedBot(undefined, next), true);
     assert.equal(hasConnectedBot({ bots: [{ display_name: 'Cursor', presence: 'active' }] }, empty), false);
     assert.deepEqual(seatLampRows({

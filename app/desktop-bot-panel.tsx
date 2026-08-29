@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { type CrewRoster } from './desktop-bot-connect';
 import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
 import { marketLabel, resolveCrewMarket } from './crew-market';
@@ -8,12 +8,14 @@ import { readAutoPrefs } from './desktop-auto-state';
 import {
   type BotLinkState,
   type LinkChangeCause,
-  confirmCopiedSeat,
+  confirmRemoteReplies,
   connectedRemoteNames,
   disconnectHeartbeatBody,
   familyIsConnected,
   grokSeatsToDisconnect,
   hasConnectedBot,
+  isBareConnectReply,
+  markRemoteCopied,
   readLastConnectBundle,
   remoteConnectPaste,
   releaseHeldSeats,
@@ -128,6 +130,51 @@ export function DesktopBotPanel({
     if (saved) setLastBundle(saved);
   };
 
+  const linksRef = useRef(links);
+  linksRef.current = links;
+  const languageRef = useRef(language);
+  languageRef.current = language;
+
+  const attachBareOk = async (text: string) => {
+    const current = linksRef.current;
+    if (!current.pairCode || !isBareConnectReply(text, current.pairCode)) return false;
+    const { next, confirmed } = confirmRemoteReplies(current, text, languageRef.current);
+    const fresh = confirmed.filter((item) => {
+      const bot = current.bots.find((row) => row.kind === item.kind && row.role === item.role);
+      return !(bot?.status === 'connected' && bot.confirmedFrom === 'ok-reply');
+    });
+    if (!fresh.length) return false;
+    writeBotLinks(next);
+    onLinksChange(next, 'attach');
+    const grokRoles = fresh.filter((item) => item.kind === 'grok').map((item) => item.role);
+    if (grokRoles.length && onEnterConfirmedGrok) {
+      setAttaching(true);
+      try {
+        await onEnterConfirmedGrok(grokRoles);
+        setReleasedNote(t(
+          `${fresh.map((item) => seatName(item.kind, item.role, languageRef.current)).join(' · ')} 자리를 이 책상에 입장했습니다.`,
+          `Entered ${fresh.map((item) => seatName(item.kind, item.role, languageRef.current)).join(' · ')} on this desk.`,
+          `已让 ${fresh.map((item) => seatName(item.kind, item.role, languageRef.current)).join(' · ')} 在这张书桌签到。`,
+          `${fresh.map((item) => seatName(item.kind, item.role, languageRef.current)).join(' · ')} をこの机に入場しました。`,
+        ));
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : t(
+          '이 책상에서 입장하지 못했습니다.',
+          'This desk could not enter that seat.',
+          '这张书桌没能签到。',
+          'この机で入場できませんでした。',
+        ));
+      } finally {
+        setAttaching(false);
+      }
+    }
+    await onRefresh();
+    return true;
+  };
+
+  const attachBareOkRef = useRef(attachBareOk);
+  attachBareOkRef.current = attachBareOk;
+
   const copyRemote = async (seat: OtherSeat) => {
     setError('');
     setBlockedKind('');
@@ -146,34 +193,47 @@ export function DesktopBotPanel({
     } catch {
       setBlockedKind(`${seat.kind}-${seat.role}`);
     }
-    const next = confirmCopiedSeat(links, seat.kind, seat.role, language);
+    const next = markRemoteCopied(links, { kind: seat.kind, role: seat.role, language });
     writeBotLinks(next);
     onLinksChange(next, 'copy');
     if (seat.kind === 'grok') rememberBundle();
-    setReleasedNote('');
-    if (seat.kind === 'grok' && onEnterConfirmedGrok) {
-      setAttaching(true);
-      try {
-        await onEnterConfirmedGrok([seat.role]);
-        setReleasedNote(t(
-          `${seatName(seat.kind, seat.role, language)} 자리를 이 책상에 입장했습니다.`,
-          `Entered ${seatName(seat.kind, seat.role, language)} on this desk.`,
-          `已让 ${seatName(seat.kind, seat.role, language)} 在这张书桌签到。`,
-          `${seatName(seat.kind, seat.role, language)} をこの机に入場しました。`,
-        ));
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : t(
-          '이 책상에서 입장하지 못했습니다.',
-          'This desk could not enter that seat.',
-          '这张书桌没能签到。',
-          'この机で入場できませんでした。',
-        ));
-      } finally {
-        setAttaching(false);
-      }
-    }
+    setReleasedNote(t(
+      '복사했습니다. 그 글을 봇 창에 붙이세요. 복사만으로는 연결되지 않습니다.',
+      'Copied. Paste that text in the bot window. Copying is not a connection.',
+      '已复制。请贴到机器人窗口。只复制不算已连接。',
+      'コピーしました。その文をボット窓に貼ってください。コピーしただけでは接続されません。',
+    ));
     await onRefresh();
   };
+
+  useEffect(() => {
+    if (!studioReady || !links.pairCode) return;
+    let cancelled = false;
+    let busy = false;
+    const tick = async () => {
+      if (cancelled || busy || !navigator.clipboard?.readText) return;
+      let text = '';
+      try {
+        text = await navigator.clipboard.readText();
+      } catch {
+        return;
+      }
+      busy = true;
+      try {
+        await attachBareOkRef.current(text);
+      } finally {
+        busy = false;
+      }
+    };
+    const id = window.setInterval(() => { void tick(); }, 2000);
+    const onFocus = () => { void tick(); };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [studioReady, links.pairCode]);
 
   const refreshNow = async () => {
     if (refreshing) return;
@@ -253,7 +313,7 @@ export function DesktopBotPanel({
     <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
       <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('연결 글을 봇 창에 붙이세요. 그 글을 복사하면 이 책상이 그 자리로 입장합니다. 봇의 첫 답은 GROK_CREW_OK 한 줄이고, 그다음부터 그 자리 일만 합니다. 채팅에 루틴·keep을 만들지 마세요.', 'Paste the connect text in the bot window. Copying that message enters the seat on this desk. The bot’s first reply is one GROK_CREW_OK line, then it does that seat’s job. Do not make a Routine or keep in chat.', '把连接文字贴到机器人窗口。复制那段文字后，这张书桌会为那个位子签到。机器人第一句是 GROK_CREW_OK 一行，之后只做那个位子的工作。不要在聊天里做 Routine 或 keep。', '接続文をボット窓に貼る。その文をコピーすると、この机がその席に入場します。ボットの最初の返事は GROK_CREW_OK の一行で、そのあとその席の仕事だけします。チャットにルーチンや keep を作らないでください。')}</p>
+        <p>{t('연결 글을 봇 창에 붙이세요. 복사만으로는 연결되지 않습니다. 봇이 GROK_CREW_OK를 보낸 뒤, 시작에서 나온 글을 그 창에 붙이면 그 자리 일을 합니다. 채팅에 루틴·keep을 만들지 마세요.', 'Paste the connect text in the bot window. Copying is not a connection. After the bot sends GROK_CREW_OK, paste the Start invite in that window so it does the seat’s job. Do not make a Routine or keep in chat.', '把连接文字贴到机器人窗口。只复制不算已连接。机器人发出 GROK_CREW_OK 后，把开始里的文字贴到那个窗口，它才会做那个位子的工作。不要在聊天里做 Routine 或 keep。', '接続文をボット窓に貼る。コピーしただけでは接続されません。ボットが GROK_CREW_OK を送ったあと、開始の文をその窓に貼るとその席の仕事をします。チャットにルーチンや keep を作らないでください。')}</p>
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">
@@ -355,13 +415,10 @@ export function DesktopBotPanel({
                         <button
                           type="button"
                           className="desktop-primary"
-                          disabled={!studioReady || !links.pairCode || attaching || Boolean(disconnecting)}
-                          aria-busy={attaching && openSeat.kind === seat.kind && openSeat.role === seat.role}
+                          disabled={!studioReady || !links.pairCode || Boolean(disconnecting)}
                           onClick={() => { void copyRemote(seat); }}
                         >
-                          {attaching && openSeat.kind === seat.kind && openSeat.role === seat.role
-                            ? t('입장하는 중', 'Entering', '正在签到', '入場中')
-                            : copied === key ? t('복사했습니다', 'Copied', '已复制', 'コピーしました') : t('연결 글 복사', 'Copy the connect text', '复制连接文字', '接続文をコピー')}
+                          {copied === key ? t('복사했습니다', 'Copied', '已复制', 'コピーしました') : t('연결 글 복사', 'Copy the connect text', '复制连接文字', '接続文をコピー')}
                         </button>
                       )}
                     </div>

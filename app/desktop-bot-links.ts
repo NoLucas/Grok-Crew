@@ -68,6 +68,8 @@ export type LinkedBot = {
   pairCode: string;
   connectedAt?: string;
   confirmedAt?: string;
+  /** Only a short GROK_CREW_OK reply from the bot. Copying connect text is not this. */
+  confirmedFrom?: 'ok-reply';
 };
 
 export type ReleasedSeat = {
@@ -273,8 +275,8 @@ export function honestRemoteLinks(state: BotLinkState): BotLinkState {
     ...state,
     released: normalizeReleased(state.released),
     bots: state.bots.map((bot) => (
-      bot.place === 'other_pc' && bot.status === 'connected' && !bot.confirmedAt
-        ? { ...bot, status: 'waiting', connectedAt: undefined }
+      bot.place === 'other_pc' && bot.status === 'connected' && (bot.confirmedFrom !== 'ok-reply' || !bot.confirmedAt)
+        ? { ...bot, status: 'waiting', connectedAt: undefined, confirmedAt: undefined, confirmedFrom: undefined }
         : bot
     )),
   };
@@ -371,6 +373,7 @@ export function confirmRemoteReplies(
           pairCode: state.pairCode,
           connectedAt: now,
           confirmedAt: now,
+          confirmedFrom: 'ok-reply',
         }), kind, role);
         confirmed.push({ kind, role });
       }
@@ -379,19 +382,14 @@ export function confirmRemoteReplies(
   return { next, confirmed };
 }
 
-/** Copying the connect message is the handshake. No second paste of GROK_CREW_OK. */
-export function confirmCopiedSeat(
-  state: BotLinkState,
-  kind: 'grok' | 'custom',
-  role: BotRole,
-  language = 'ko',
-): BotLinkState {
-  if (!state.pairCode) return state;
-  return confirmRemoteReplies(
-    state,
-    suggestedConnectReply(kind, state.pairCode, role),
-    language,
-  ).next;
+/** A short bot reply. The connect essay also contains GROK_CREW_OK — that is not a reply. */
+export function isBareConnectReply(text: string, pairCode: string): boolean {
+  const raw = String(text || '').replace(/[“”"'`]/g, ' ').trim();
+  if (!raw || raw.length > 160) return false;
+  if (/grok-crew-|Invoke-RestMethod|역할은 |Your role is |역할 스킬|bot_id|purpose는|purpose is/i.test(raw)) {
+    return false;
+  }
+  return extractConnectReplies(raw, pairCode).length > 0;
 }
 
 export function rosterMatchesSeat(bot: Pick<CrewBot, 'bot_id' | 'display_name'>, role: BotRole): boolean {
@@ -420,6 +418,11 @@ export function heldRosterSeat(roster?: CrewRoster | null, role?: BotRole): Crew
   return bot;
 }
 
+function isGrokWorkAction(action: string): boolean {
+  const raw = String(action || '').trim();
+  return /_started$|_ready$/.test(raw);
+}
+
 export function seatIsConnected(
   kind: 'grok' | 'custom',
   role: BotRole,
@@ -430,7 +433,11 @@ export function seatIsConnected(
     return kind === 'grok' && Boolean(activeRosterSeat(roster, role));
   }
   if (kind === 'grok') {
+    const linked = linkedBySeat(links?.bots, kind, role);
     const rosterBot = knownRosterSeat(roster, role);
+    if (linked?.place === 'other_pc' && linked.confirmedFrom !== 'ok-reply') {
+      if (!rosterBot || !isGrokWorkAction(String(rosterBot.last_action || ''))) return false;
+    }
     if (rosterBot) return Boolean(heldRosterSeat(roster, role));
   }
   return linkedBySeat(links?.bots, kind, role)?.status === 'connected';
@@ -648,7 +655,7 @@ export function grokKeepBeatBody(
 export function confirmedGrokRoles(links?: BotLinkState | null): BotRole[] {
   return BOT_ROLES.filter((role) => {
     const bot = linkedBySeat(links?.bots, 'grok', role);
-    return bot?.status === 'connected' && Boolean(bot.confirmedAt);
+    return bot?.status === 'connected' && bot.confirmedFrom === 'ok-reply' && Boolean(bot.confirmedAt);
   });
 }
 
@@ -706,7 +713,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       '그 Windows에서만, Grok Crew 창이 꺼져 있으면 멈추고 "창이 없다"고 하세요. 이 대화가 그 Windows가 아니면 창이 없다고 하지 마세요.',
       `이 자리 bot_id는 ${id}입니다. purpose는 ${purpose}입니다. keep·루틴·예약 작업을 이 채팅에서 실행하지 마세요. 입장과 자리 확인은 이 Windows 책상이 합니다.`,
       '연결에서 연결 해제를 누르면 책상이 disconnected를 보냅니다. 채팅에서 keep이나 루틴을 켜지 마세요.',
-      '초대문은 사람이 다시 붙이지 않습니다. 글을 받으면 그 일만 합니다. 채팅에 토큰을 넣지 마세요.',
+      '시작에서 나온 글을 이 창에 붙이면 그 일만 합니다. 채팅에 토큰을 넣지 마세요.',
       `할 일이 바뀌면 그 Windows에서만 heartbeat를 바로 한 번 보냅니다. 루틴으로 보내지 마세요. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 시작과 넘김 모두 detail.note에 다음 자리에게 말하는 한 줄을 넣습니다. 그 두 줄이 크루 보드 대화입니다. 없는 말은 만들지 마세요. 채팅에는 토큰을 넣지 마세요.`,
       startBeat,
       readyBeat,
@@ -724,7 +731,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       '只在那台 Windows 上，若 Grok Crew 窗口是关的，停下来并写“没有窗口”。若这段对话不是那台 Windows，不要说没有窗口。',
       `这个位子 bot_id 是 ${id}。purpose 是 ${purpose}。不要在这个聊天里跑 keep、Routine 或预约作业。签到和位子确认由这台 Windows 书桌来做。`,
       '连接里按下断开后书桌会发 disconnected。不要从聊天再开 keep 或 Routine。',
-      '操作员不会再粘贴邀请。读到文字后只做那件事。不要把令牌写进聊天。',
+      '操作员把开始里的文字贴到这个窗口后，只做那件事。不要把令牌写进聊天。',
       `事情一变就只在那台 Windows 上立刻发一次 heartbeat。不要用 Routine 发。action 先用 ${work.start}，做完改成 ${work.ready}。开工和转交都要在 detail.note 写给下一位子的一行。这两行就是组员看板对话。不要编造没有的话。不要把令牌写进聊天。`,
       startBeat,
       readyBeat,
@@ -742,7 +749,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       'その Windows だけで、Grok Crew の窓が消えていたら止まって「窓がない」と書いてください。この会話がその Windows でなければ窓がないと言わないでください。',
       `この席の bot_id は ${id} です。purpose は ${purpose} です。このチャットで keep・ルーチン・予約作業を実行しないでください。入場と席確認はこの Windows の机がします。`,
       '接続で接続を外すと机が disconnected を送ります。チャットから keep やルーチンを再起動しないでください。',
-      '人が招待文をもう一度貼ることはありません。文を受け取ったらその仕事だけします。トークンをチャットに書かないでください。',
+      '開始で出た文をこの窓に貼ったら、その仕事だけします。トークンをチャットに書かないでください。',
       `仕事が変わったらその Windows だけですぐ heartbeat を一度送ります。ルーチンで送らないでください。action は ${work.start} で始め、終わったら ${work.ready} です。開始と受け渡しの両方で detail.note に次の席への一言を入れてください。その二行がクルーボードの会話です。ない言葉は作らないでください。トークンをチャットに書かないでください。`,
       startBeat,
       readyBeat,
@@ -759,7 +766,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     'On that Windows only, if Grok Crew is not open, stop and say the window is missing. If this conversation is not that Windows, do not say the window is missing.',
     `This seat bot_id is ${id}. purpose is ${purpose}. Do not run keep, a Routine, or a scheduled job from this chat. Entry and the seat check happen on that Windows desk.`,
     'If Connect sends disconnected, do not start keep or a Routine from chat.',
-    'The operator will not paste the invite again. When you get the text, do only that job. Do not put the token in chat.',
+    'When the operator pastes the Start invite in this chat, do only that job. Do not put the token in chat.',
     `When the job changes, send one heartbeat on that Windows only, at once. Do not send it as a Routine. Start with action ${work.start}, then ${work.ready} when done. On start and on handoff, put one spoken line to the next seat in detail.note. Those two lines are the crew board chat. Do not invent a line. Do not put the token in chat.`,
     startBeat,
     readyBeat,
@@ -793,9 +800,9 @@ export function remoteConnectPaste(
       '',
       ...(windows.length ? windows : ['다른 컴퓨터에서는 127.0.0.1에 붙지 마세요. 이 창을 열 수 없습니다.']),
       `연결 코드: ${pairCode}`,
+      `이 자리 표시: ${line}`,
       '',
-      '첫 답은 아래 한 줄입니다. 그다음부터 운영자가 주는 일을 위 역할대로 합니다.',
-      line,
+      'GROK_CREW_OK만 보내고 일을 끝내지 마세요. 이 글은 역할입니다. 운영자가 다음에 붙이는 시작 글이 할 일입니다. 그 글을 받으면 위 역할대로 바로 하세요. 이 글 안에 이미 할 일이 있으면 지금 하세요.',
       '',
       '끝난 컷은 운영자가 이 Windows 창에 놓습니다.',
     ].join('\n');
@@ -810,9 +817,9 @@ export function remoteConnectPaste(
       '',
       ...(windows.length ? windows : ['另一台电脑不要连接 127.0.0.1。打不开这个窗口。']),
       `连接代码：${pairCode}`,
+      `这个位子的标记：${line}`,
       '',
-      '第一句回复是下面这一行。之后按上面的角色做操作员给的工作。',
-      line,
+      '不要只发 GROK_CREW_OK 就结束。这段文字是角色。操作员接下来贴的开始文字才是工作。收到后立刻按上面的角色做。如果这段文字里已经有工作，现在就做。',
       '',
       '完成的成片由操作员放到这个 Windows 窗口。',
     ].join('\n');
@@ -827,9 +834,9 @@ export function remoteConnectPaste(
       '',
       ...(windows.length ? windows : ['別のコンピュータから 127.0.0.1 に接続しないでください。この窓は開けません。']),
       `接続コード: ${pairCode}`,
+      `この席の印: ${line}`,
       '',
-      '最初の返事は次の一行です。そのあとは上の役割どおり、運営者が渡す仕事をします。',
-      line,
+      'GROK_CREW_OK だけ送って仕事を終わらせないでください。この文は役割です。運営者が次に貼る開始の文が仕事です。それを受けたら上の役割どおりすぐやってください。この文の中にすでに仕事があれば今やってください。',
       '',
       '終わったカットは運営者がこの Windows の窓に置きます。',
     ].join('\n');
@@ -843,9 +850,9 @@ export function remoteConnectPaste(
     '',
     ...(windows.length ? windows : ['Do not connect to 127.0.0.1 from another computer.']),
     `Connection code: ${pairCode}`,
+    `This seat mark: ${line}`,
     '',
-    'The first reply is this one line. After that, do the operator work using the role above.',
-    line,
+    'Do not send only GROK_CREW_OK and stop. This text is the role. The next Start invite the operator pastes is the job. When you get it, do that job with the role above. If this text already has a job, do it now.',
     '',
     'The operator drops the finished cut on this Windows window.',
   ].join('\n');

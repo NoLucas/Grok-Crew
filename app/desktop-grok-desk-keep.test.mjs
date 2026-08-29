@@ -47,6 +47,7 @@ describe('desk-side Grok enter after the connect message is copied', () => {
           status: 'connected',
           pairCode: 'YZ3WCB',
           confirmedAt: '2026-08-29T00:00:00.000Z',
+          confirmedFrom: 'ok-reply',
         },
         {
           id: 'grok-scraper-YZ3WCB',

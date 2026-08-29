@@ -265,7 +265,7 @@ export function AutoDesk({
   const stageRows = crewStagePipeline(seatRows, scopedActivity, language);
   const waitHeadline = autoWaitHeadline(seatRows, language);
   const pasteTarget = pasteTargetForSeats(seatRows, language) || wait?.pasteTarget || '';
-  const samePcPull = samePcInviteReady(seatRows, roster);
+  const samePcPull = samePcInviteReady(seatRows, roster, links);
   const recentTitles = prefs.recentTitles.filter((item) => item !== title.trim());
   const waitingHandOff = mode === 'hand_off' && Boolean(wait) && machine === 'waiting';
   const showCutDrop = mode === 'hand_off' && (Boolean(wait) || machine === 'waiting');
@@ -492,7 +492,7 @@ export function AutoDesk({
         inviteText: text,
       };
       try {
-        if (samePcInviteReady(seatRows, roster)) {
+        if (samePcInviteReady(seatRows, roster, links)) {
           setClipboardBlocked(false);
           onCopied(nextWait);
         } else {
