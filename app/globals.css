@@ -8830,15 +8830,9 @@ select {
   gap: 10px;
   padding: 4px 2px 2px;
 }
-.desktop-crew-talk-list li {
+.desktop-crew-talk-list.desktop-crew-chat li {
   display: grid;
   gap: 4px;
-  padding: 8px 10px;
-  border: 1px solid var(--desktop-line-soft);
-  border-radius: 10px;
-  background: var(--desktop-wash);
-}
-.desktop-crew-talk-list.desktop-crew-chat li {
   max-width: min(78%, 36rem);
   padding: 0;
   border: 0;
@@ -8852,16 +8846,6 @@ select {
 .desktop-crew-talk-list.desktop-crew-chat li[data-side="out"] .desktop-crew-talk-meta {
   flex-direction: row-reverse;
 }
-.desktop-crew-talk-list li[data-kind="presence"] {
-  padding: 6px 10px;
-  background: transparent;
-  border-style: dashed;
-  opacity: .86;
-}
-.desktop-crew-talk-list li[data-role="planner"] { border-left: 3px solid var(--desktop-blue); }
-.desktop-crew-talk-list li[data-role="scraper"] { border-left: 3px solid var(--desktop-amber); }
-.desktop-crew-talk-list li[data-role="editor"] { border-left: 3px solid var(--desktop-green); }
-.desktop-crew-talk-list.desktop-crew-chat li[data-role] { border-left: 0; }
 .desktop-crew-talk-meta {
   display: flex;
   justify-content: space-between;
@@ -8886,7 +8870,6 @@ select {
   background: color-mix(in srgb, var(--desktop-green) 16%, var(--desktop-panel));
   border-radius: 14px 14px 14px 4px;
 }
-.desktop-crew-talk-action { margin: 0; color: var(--desktop-muted); font-size: 12px; }
 .desktop-crew-board-empty-card,
 .desktop-crew-board-error {
   display: grid;

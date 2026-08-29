@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.15** · with Grok Bot · free now
+**v1.0.16** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,13 +50,20 @@ If attach fails, **Connect** says how to fix it. Do not open Start first.
 
 ---
 
+## What changed in v1.0.16
+
+- The minute seat check is Windows `keep`, not a chat scheduled job. **Disconnect** sends `disconnected` so `keep` stops.
+- Crew **Talk** stacks each seat’s real start and handoff line as a chat. Seat-check ticks stay off the board.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.16 notes](docs/RELEASE_NOTES.v1.0.16.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.16.
+
 ## What changed in v1.0.15
 
 - Same-PC checked-in Grok seats read the waiting invite after Start production. Copy again is hidden for those seats.
 - Left-sidebar video cards can play in place. The file name still opens the project.
 - English, Chinese, and Japanese connect commands and TTS keep lines stay in that language. Homepage copy uses Start, not Auto.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.15 notes](docs/RELEASE_NOTES.v1.0.15.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.15.
+The 1.0.15 list is in [the 1.0.15 notes](docs/RELEASE_NOTES.v1.0.15.md).
 
 ## What changed in v1.0.14
 

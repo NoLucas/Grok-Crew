@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.15** · with Grok Bot · 现在免费
+**v1.0.16** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,13 +50,20 @@
 
 ---
 
+## v1.0.16 改了什么
+
+- 每分钟位子确认由 Windows 上的 `keep` 来做，不是聊天预约。**断开连接**会发送 `disconnected`，`keep` 看到后停下。
+- **组员看板**对话按位子把开工和转交的一行堆成聊天。占位确认不进对话。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.16 发布说明](docs/RELEASE_NOTES.v1.0.16.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.16。
+
 ## v1.0.15 改了什么
 
 - 同一台电脑已签到的 Grok 位子会在开始制作后读取待办邀请。那些位子不再显示再复制。
 - 左侧预览里的视频可以直接播放。点名字仍会打开该作业。
 - 英语、中文、日语的连接文字和 TTS 保留句保持该语言。首页也改成开始，不再写自动。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.15 发布说明](docs/RELEASE_NOTES.v1.0.15.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.15。
+1.0.15 列表见 [1.0.15 发布说明](docs/RELEASE_NOTES.v1.0.15.md)。
 
 ## v1.0.14 改了什么
 

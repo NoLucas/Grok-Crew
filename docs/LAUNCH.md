@@ -26,6 +26,7 @@ Use this before the first public GitHub release.
 - [x] Write `v1.0.13` notes in `docs/RELEASE_NOTES.v1.0.13.md` and `CHANGELOG.md`. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. The update feed tag and the Windows installer are [NoLucas/Grok-crew-test v1.0.13](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.13). The same installer files are also attached on [Grok-Crew v1.0.13](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.13).
 - [x] Write `v1.0.14` notes in `docs/RELEASE_NOTES.v1.0.14.md` and `CHANGELOG.md`. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. The update feed tag and the Windows installer are [NoLucas/Grok-crew-test v1.0.14](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.14). Grok-Crew gets the same notes, without the exe.
 - [x] Write `v1.0.15` notes in `docs/RELEASE_NOTES.v1.0.15.md` and `CHANGELOG.md`. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. The update feed tag and the Windows installer are [NoLucas/Grok-crew-test v1.0.15](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.15). Grok-Crew gets the same notes.
+- [x] Write `v1.0.16` notes in `docs/RELEASE_NOTES.v1.0.16.md` and `CHANGELOG.md`. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. The update feed tag and the Windows installer are [NoLucas/Grok-crew-test v1.0.16](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.16). The same installer files are also attached on [Grok-Crew v1.0.16](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.16).
 - [x] Review `npm audit` before release. Do not use a forced dependency upgrade without rebuilding and testing the workspace. (2026-08-26: `npm audit` and `npm audit --omit=dev` report 0 vulnerabilities. `vinext` is installed and locked at `1.0.0-beta.8`, which is the latest published `1.0.0-beta.*`. The 2026-08-24 note about 13 findings and a deferred beta.3→beta.8 jump is stale. Do not run `npm audit fix --force`. Do not bump wrangler/miniflare or a future vinext 1.0.0 stable in this pass.)
 
 ## First experience
@@ -37,7 +38,7 @@ Use this before the first public GitHub release.
 
 ## Announcement
 
-This repository does not post social copy for you. Guest facts live in `README.md` and `docs/RELEASE_NOTES.v1.0.15.md`.
+This repository does not post social copy for you. Guest facts live in `README.md` and `docs/RELEASE_NOTES.v1.0.16.md`.
 
 - [ ] Publish a short note on the channel you actually use (social, Discord, HN, or a GitHub Release note).
 

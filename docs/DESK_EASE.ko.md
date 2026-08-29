@@ -18,7 +18,7 @@
 | 나라·올릴 곳 기억 | `AUTO_PREFS_KEY`에 `market`, `recipeId`가 남는다. 자리 세 개 글을 **한 번에** 다시 복사하는 버튼은 없다. 자리는 하나씩. |
 | 만들기 직후 복사 | 자동이 초대문을 클립보드에 넣는다. 대기 화면에 **다시 복사** 큰 버튼은 없다. 클립보드가 막히면 textarea. |
 | SmartScreen 세 장 | `DesktopInstallHelp` SVG가 자동·짧은 책상 **접힌 도움** 안에 있다. 연결 탭에는 없다. 첫 설치가 여기서 멈춘다. |
-| 크루 보드 | 자동 **대기·도착**에만 있다. `GET /api/bot-activity` + `detail.note`. 규격 id로 안 가른다. 읽었는지는 안 쓴다. |
+| 크루 보드 | 자동 대기·도착과 **연결**에 있다. `GET /api/bot-activity` + 시작·넘김 `detail.note`만 대화로 쌓는다. 자리 확인은 올리지 않는다. 없는 말은 만들지 않는다. |
 | 램프 | 연결됨 / 연결되지않음만. `seconds_since_checkin`은 roster에 이미 있다. |
 | 업데이트 칩 | 새 버전이면 GitHub Release를 **연다**. exe를 받아 갈아끼우지는 않는다. `signed: false`면 `available_external`. |
 | 같은 PC 봇이 초대문을 읽기 | `docs/AUTO_TAB.ko.md` 3판. 계약 전에 화면에 넣지 않는다. |

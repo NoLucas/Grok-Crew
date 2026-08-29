@@ -9,7 +9,7 @@ import {
   type BotActivityItem,
 } from './desktop-auto-state';
 
-export type CrewTalkKind = 'work' | 'presence';
+export type CrewTalkKind = 'work';
 export type CrewLoadState = 'loading' | 'ready' | 'error';
 
 export type CrewStageId = 'plan' | 'collect' | 'review' | 'cut';
@@ -47,7 +47,6 @@ export type CrewTalkEntry = {
   note: string;
   toName: string;
   when: string;
-  count?: number;
 };
 
 function boardCopy(language: string, ko: string, en: string, zh: string, ja: string): string {
@@ -183,10 +182,6 @@ export function crewTalkMemo(
   if (heading) lines.push(heading, '');
   for (const entry of thread) {
     const when = entry.when ? ` · ${entry.when}` : '';
-    if (entry.kind === 'presence') {
-      lines.push(`${crewTalkLine(entry, language)}${when}`);
-      continue;
-    }
     lines.push(`${crewTalkLine(entry, language)}${when}`);
     if (entry.actionLabel) lines.push(entry.actionLabel);
     if (entry.note) lines.push(entry.note);
@@ -447,12 +442,6 @@ export function crewBoardErrorCopy(language = 'ko'): { title: string; body: stri
 }
 
 export function crewTalkLine(entry: CrewTalkEntry, language = 'ko'): string {
-  if (entry.kind === 'presence') {
-    const times = entry.count && entry.count > 1
-      ? boardCopy(language, `${entry.count}번 자리 확인`, `${entry.count} seat checks`, `确认位子 ${entry.count} 次`, `席の確認 ${entry.count} 回`)
-      : entry.actionLabel;
-    return `${entry.name} · ${times}`;
-  }
   if (entry.note && entry.toName) return `${entry.name} → ${entry.toName}`;
   if (entry.toName) return `${entry.name} → ${entry.toName}`;
   return entry.name;
