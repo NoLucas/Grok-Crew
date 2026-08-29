@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — このPCの映像デスク" width="100%" />
 </p>
 
-**v1.0.16** · with Grok Bot · いま無料
+**v1.0.17** · with Grok Bot · いま無料
 
 Shorts を一人で切って夜を明かす必要はありません。
 使っている **Grok Bot** や Agent を付ければ、できたファイルは **このPCのフォルダ** に残ります。
@@ -50,12 +50,19 @@ Shorts を一人で切って夜を明かす必要はありません。
 
 ---
 
+## v1.0.17 で変わったこと
+
+- ボットは `GROK_CREW_OK` だけ送って止まります。チャットにルーチンや `keep` を作らないでください。その行を接続に貼ると、この机が入場します。
+- Linux の Grok は窓がない・7214 がないと言いません。
+
+一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.17 リリースノート](docs/RELEASE_NOTES.v1.0.17.md) です。ゲスト用ドライブのファイルはそのままです。すでに入れた机は Grok-crew-test の v1.0.17 を見ます。
+
 ## v1.0.16 で変わったこと
 
 - 1分ごとの席確認は Windows の `keep` が行い、チャット予約は作りません。**接続を外す**は `disconnected` を送り、`keep` は止まります。
 - **クルーボード**の会話は、席ごとの開始・受け渡しの一行がチャットのように溜まります。席確認の行は出しません。
 
-一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.16 リリースノート](docs/RELEASE_NOTES.v1.0.16.md) です。ゲスト用ドライブのファイルはそのままです。すでに入れた机は Grok-crew-test の v1.0.16 を見ます。
+1.0.16 の一覧は [1.0.16 リリースノート](docs/RELEASE_NOTES.v1.0.16.md) です。
 
 ## v1.0.15 で変わったこと
 

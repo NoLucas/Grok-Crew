@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.16** · with Grok Bot · 现在免费
+**v1.0.17** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,12 +50,19 @@
 
 ---
 
+## v1.0.17 改了什么
+
+- 机器人只发 `GROK_CREW_OK` 然后停下。不要在聊天里做 Routine 或 `keep`。把那一行贴到连接，这张书桌会签到。
+- Linux 上的 Grok 不要说没有窗口或没有 7214。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.17 发布说明](docs/RELEASE_NOTES.v1.0.17.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.17。
+
 ## v1.0.16 改了什么
 
 - 每分钟位子确认由 Windows 上的 `keep` 来做，不是聊天预约。**断开连接**会发送 `disconnected`，`keep` 看到后停下。
 - **组员看板**对话按位子把开工和转交的一行堆成聊天。占位确认不进对话。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.16 发布说明](docs/RELEASE_NOTES.v1.0.16.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.16。
+1.0.16 列表见 [1.0.16 发布说明](docs/RELEASE_NOTES.v1.0.16.md)。
 
 ## v1.0.15 改了什么
 

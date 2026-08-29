@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 로컬 영상 작업대" width="100%" />
 </p>
 
-**v1.0.16** · with Grok Bot · 지금 무료
+**v1.0.17** · with Grok Bot · 지금 무료
 
 쇼츠를 혼자 자르며 밤을 샐 필요 없습니다.
 쓰던 **Grok Bot**이나 Agent를 붙이면, 다듬은 파일이 **이 PC 폴더**에 남습니다.
@@ -50,12 +50,19 @@
 
 ---
 
+## v1.0.17에서 달라진 것
+
+- 봇은 `GROK_CREW_OK`만 보내고 멈춥니다. 채팅에 루틴·`keep`을 만들지 않습니다. 그 줄을 **연결**에 붙이면 이 책상이 입장합니다.
+- Linux Grok은 창이 없다·7214가 없다고 하지 않습니다.
+
+자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.17 릴리스 노트](docs/RELEASE_NOTES.v1.0.17.md)입니다. 손님용 드라이브 파일은 그대로입니다. 이미 설치한 책상은 Grok-crew-test의 v1.0.17을 봅니다.
+
 ## v1.0.16에서 달라진 것
 
 - 1분마다 자리 확인은 Windows `keep`이 합니다. 채팅 예약은 만들지 않습니다. **연결 해제**는 `disconnected`를 보내 `keep`을 멈춥니다.
 - 크루 보드 **대화**는 자리마다 남긴 시작·넘김 한 줄이 채팅처럼 쌓입니다. 자리 확인 줄은 올리지 않습니다.
 
-자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.16 릴리스 노트](docs/RELEASE_NOTES.v1.0.16.md)입니다. 손님용 드라이브 파일은 그대로입니다. 이미 설치한 책상은 Grok-crew-test의 v1.0.16을 봅니다.
+1.0.16 목록은 [1.0.16 릴리스 노트](docs/RELEASE_NOTES.v1.0.16.md)입니다.
 
 ## v1.0.15에서 달라진 것
 
