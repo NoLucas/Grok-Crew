@@ -67,10 +67,32 @@ function isKokoroEngine(value: unknown): boolean {
   return String(value || '').trim().toLowerCase() === VOICE_PREVIEW_ENGINE;
 }
 
-function absolutePreviewUrl(url: string, studioOrigin = ''): string {
-  if (/^https?:\/\//i.test(url)) return url;
+const PREVIEW_MEDIA_PATH = /^\/media\/voice-previews\/[a-z]+__[a-z]+__(?:ko|en-us|en-gb|zh|ja)\.wav$/;
+
+function loopbackOrigin(origin: string): boolean {
+  try {
+    const host = new URL(origin).hostname.toLowerCase();
+    return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+  } catch {
+    return false;
+  }
+}
+
+function trustedPreviewUrl(returned: string, expectedPath: string, studioOrigin = ''): string {
   const base = studioOrigin.replace(/\/$/, '');
-  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+  const fallback = base ? `${base}${expectedPath}` : expectedPath;
+  const raw = String(returned || '').trim();
+  if (!raw || !PREVIEW_MEDIA_PATH.test(expectedPath)) return fallback;
+  if (raw === expectedPath) return fallback;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return fallback;
+    if (!loopbackOrigin(parsed.origin)) return fallback;
+    if (parsed.pathname !== expectedPath) return fallback;
+    return parsed.toString();
+  } catch {
+    return fallback;
+  }
 }
 
 export function stopVoicePreview(audio: PreviewAudio | null = currentAudio) {
@@ -130,8 +152,9 @@ export async function playVoicePreview(
         }),
       });
       if (data.engine != null && !isKokoroEngine(data.engine)) return 'blocked';
+      const expectedPath = `/media/voice-previews/${voicePreviewFileName(persona)}`;
       const returned = String(data.url || '').trim();
-      if (returned) url = absolutePreviewUrl(returned, studioOrigin);
+      if (returned) url = trustedPreviewUrl(returned, expectedPath, studioOrigin);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error || '');
       missing = /not on this PC|voice_missing|Kokoro-82M is not installed/i.test(message);

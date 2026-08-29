@@ -157,6 +157,8 @@ class StudioHandler(BaseHTTPRequestHandler):
             path.relative_to(root)
         except ValueError as exc:
             raise ValueError("Media path leaves the local workspace.") from exc
+        if path.suffix.lower() not in config.MEDIA_GET_SUFFIXES:
+            self._json(404, {"error": "Media file not found"}); return
         if not path.is_file():
             self._json(404, {"error": "Media file not found"}); return
         size = path.stat().st_size

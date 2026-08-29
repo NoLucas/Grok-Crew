@@ -4,6 +4,7 @@ from tests.test_api import get_status, post
 from voice_models import (
     DEFAULT_MODEL_ID,
     accents_for_model,
+    huggingface_url_allowed,
     reset_voice_models,
     resolve_model_id,
     select_voice_model,
@@ -13,6 +14,16 @@ from voice_models import (
 
 def fake_fetch(_url: str) -> bytes:
     return b"voice-weight"
+
+
+def test_voice_download_stays_on_huggingface_https():
+    assert huggingface_url_allowed("https://huggingface.co/hexgrad/Kokoro-82M/resolve/main/config.json")
+    assert huggingface_url_allowed("https://cdn-lfs.huggingface.co/repos/xx")
+    assert huggingface_url_allowed("https://cas-bridge.xethub.hf.co/x")
+    assert huggingface_url_allowed("https://huggingface.co.evil.example/x") is False
+    assert huggingface_url_allowed("http://huggingface.co/x") is False
+    assert huggingface_url_allowed("https://evil.example/x") is False
+    assert huggingface_url_allowed("file:///tmp/weights.pth") is False
 
 
 def test_kokoro_catalog_uses_huggingface_weight_name():

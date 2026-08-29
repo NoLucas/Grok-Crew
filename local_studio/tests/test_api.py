@@ -174,6 +174,18 @@ def test_health_hides_paths_without_token(live_server, monkeypatch):
     assert "workspace" in full
 
 
+def test_media_refuses_model_weights_and_other_non_preview_files(live_server, studio):
+    secret = config.WORKSPACE_DIR / "voice-models" / "kokoro-82m" / "kokoro-v1_0.pth"
+    secret.parent.mkdir(parents=True, exist_ok=True)
+    secret.write_bytes(b"not-a-preview")
+    request = Request(f"{live_server}/media/voice-models/kokoro-82m/kokoro-v1_0.pth")
+    try:
+        urlopen(request, timeout=10)
+        assert False, "expected 404 for a model weight under /media"
+    except HTTPError as exc:
+        assert exc.code == 404
+
+
 def test_malformed_media_range_returns_416(live_server, studio):
     media = config.WORKSPACE_DIR / "inputs" / "range-source.mp4"
     media.parent.mkdir(parents=True, exist_ok=True)

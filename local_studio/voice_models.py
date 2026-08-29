@@ -9,7 +9,8 @@ import threading
 from pathlib import Path
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.parse import urlparse
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 import config
 
@@ -17,6 +18,25 @@ SCHEMA = "grok-crew.voice-model/v1"
 DEFAULT_MODEL_ID = "kokoro-82m"
 MODEL_IDS = ("kokoro-82m", "step-audio-editx", "zonos-v0.1")
 HF_RESOLVE = "https://huggingface.co/{repo}/resolve/main/{name}"
+_HF_HOST_SUFFIXES = ("huggingface.co", "hf.co")
+
+
+def huggingface_url_allowed(url: str) -> bool:
+    parsed = urlparse(str(url or "").strip())
+    if parsed.scheme != "https":
+        return False
+    host = (parsed.hostname or "").lower().rstrip(".")
+    if not host:
+        return False
+    return any(host == suffix or host.endswith(f".{suffix}") for suffix in _HF_HOST_SUFFIXES)
+
+
+class _HuggingFaceRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: N802
+        if not huggingface_url_allowed(newurl):
+            raise URLError("Voice model download refused a redirect off Hugging Face.")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
 
 CATALOG: dict[str, dict[str, Any]] = {
     "kokoro-82m": {
@@ -159,8 +179,11 @@ def _stream_to_path(url: str, dest: Path, fetch: Callable[[str], bytes] | None) 
         dest.write_bytes(data)
         _set_progress(received_bytes=len(data), total_bytes=len(data), file=dest.name)
         return len(data)
-    request = Request(url, headers={"User-Agent": "GrokCrew-Desktop/1.0"})
-    with urlopen(request, timeout=120) as response:
+    if not huggingface_url_allowed(url):
+        raise URLError("Voice model download must stay on Hugging Face HTTPS.")
+    request = Request(url, headers={"User-Agent": "GrokCrew-Desktop/1.0.12"})
+    opener = build_opener(_HuggingFaceRedirectHandler)
+    with opener.open(request, timeout=120) as response:
         total = int(response.headers.get("Content-Length") or 0)
         received = 0
         tmp = dest.with_suffix(dest.suffix + ".part")

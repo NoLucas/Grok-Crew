@@ -7,6 +7,7 @@ is available. This module never invents a second engine.
 
 from __future__ import annotations
 
+import re
 import shutil
 import sys
 import wave
@@ -29,6 +30,7 @@ DEFAULT_GENDER = "female"
 DEFAULT_FEEL = "warm"
 DEFAULT_ACCENT = "en-us"
 DEFAULT_SPEAKER_ID = "af_heart"
+_SPEAKER_TOKEN = re.compile(r"^[a-z]{2}_[a-z0-9]+$")
 
 PHRASES: dict[str, str] = {
     "ko": "안녕하세요 Grok Crew 입니다 잘부탁드려요",
@@ -122,8 +124,20 @@ def resolve_accent(value: Any = None, model_id: Any = None) -> str:
     return allowed[0] if allowed else DEFAULT_ACCENT
 
 
+def known_speaker_ids() -> frozenset[str]:
+    return frozenset(SPEAKERS.values()) | {DEFAULT_SPEAKER_ID}
+
+
 def resolve_speaker_id(gender: str, feel: str, accent: str) -> str:
     return SPEAKERS.get(f"{gender}:{feel}:{accent}", DEFAULT_SPEAKER_ID)
+
+
+def resolve_requested_speaker_id(value: Any, gender: str, feel: str, accent: str) -> str:
+    """Kokoro can load a voice from a file path. Only catalog speaker ids are accepted."""
+    raw = str(value or "").strip()
+    if raw in known_speaker_ids() and _SPEAKER_TOKEN.fullmatch(raw):
+        return raw
+    return resolve_speaker_id(gender, feel, accent)
 
 
 def preview_phrase(accent: str) -> str:
@@ -257,9 +271,12 @@ def make_voice_preview(
     gender = resolve_gender(payload.get("gender"))
     feel = resolve_feel(payload.get("feel"))
     accent = resolve_accent(payload.get("accent"), model_id)
-    speaker_id = str(payload.get("speaker_id") or payload.get("speakerId") or "").strip()
-    if not speaker_id:
-        speaker_id = resolve_speaker_id(gender, feel, accent)
+    speaker_id = resolve_requested_speaker_id(
+        payload.get("speaker_id") or payload.get("speakerId"),
+        gender,
+        feel,
+        accent,
+    )
     text = preview_phrase(accent)
     lang_code = preview_lang_code(accent)
     speed = preview_speed(feel)
@@ -296,6 +313,5 @@ def make_voice_preview(
         "text": text,
         "sample_rate": SAMPLE_RATE,
         "source": source,
-        "path": str(dest),
         "url": f"/media/voice-previews/{name}",
     }

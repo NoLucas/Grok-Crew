@@ -141,11 +141,32 @@ export function ownedFileName(path: string): string {
 
 const DIRECT_FILE_URL = /^https?:\/\/[^\s]+$/i;
 
+function publicCollectUrl(value: string): boolean {
+  if (!DIRECT_FILE_URL.test(value)) return false;
+  try {
+    const parsed = new URL(value);
+    if (parsed.username || parsed.password) return false;
+    const host = parsed.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    if (!host || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
+      return false;
+    }
+    if (host === '0.0.0.0' || host === '::' || host === '::1') return false;
+    if (/^(127|10|0)\./.test(host)) return false;
+    if (/^192\.168\./.test(host)) return false;
+    if (/^169\.254\./.test(host)) return false;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return false;
+    if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)) return false;
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export function collectUrlLines(value: string): string[] {
   return String(value || '')
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => DIRECT_FILE_URL.test(line));
+    .filter((line) => publicCollectUrl(line));
 }
 
 export function collectQueryIsUrlList(value: string): boolean {
@@ -153,7 +174,7 @@ export function collectQueryIsUrlList(value: string): boolean {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  return lines.length > 0 && lines.every((line) => DIRECT_FILE_URL.test(line));
+  return lines.length > 0 && lines.every((line) => publicCollectUrl(line));
 }
 
 export function autoSourceMode(input: { useOwn?: boolean; useScrape?: boolean }): AutoSourceMode | '' {

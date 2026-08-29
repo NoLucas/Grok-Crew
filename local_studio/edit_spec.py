@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urlparse
 
 import config
 from config import utc_now
@@ -36,6 +39,15 @@ OWN_AND_COLLECT_RULE = (
     "The operator put owned clips in handoff-materials. "
     "The collector adds matching clips. The editor cuts both."
 )
+_DIRECT_FILE_URL = re.compile(r"^https?://[^\s]+$", re.IGNORECASE)
+_BLOCKED_COLLECT_HOSTS = {
+    "localhost",
+    "localhost.localdomain",
+    "metadata.google.internal",
+    "metadata.goog",
+}
+_CGNAT = ipaddress.ip_network("100.64.0.0/10")
+
 EDITOR_DOOR = "editor"
 COLLECTOR_DOOR = "collector"
 DOORS = (EDITOR_DOOR, COLLECTOR_DOOR)
@@ -162,6 +174,80 @@ def _clip_count_range(value: Any, default: dict[str, int] | None = None) -> dict
     return {"min": low, "max": high}
 
 
+def _collect_line_looks_like_url(line: str) -> bool:
+    text = str(line or "").strip()
+    lowered = text.lower()
+    return "://" in text or lowered.startswith(
+        ("//", "http:", "https:", "file:", "ftp:", "data:", "javascript:", "vbscript:")
+    )
+
+
+def _collect_host_blocked(host: str) -> bool:
+    raw = str(host or "").strip().lower().rstrip(".")
+    if raw.startswith("[") and raw.endswith("]"):
+        raw = raw[1:-1]
+    if not raw or raw in _BLOCKED_COLLECT_HOSTS or raw.endswith(".localhost"):
+        return True
+    if raw.endswith(".internal") or raw.endswith(".local"):
+        return True
+    try:
+        addr = ipaddress.ip_address(raw)
+    except ValueError:
+        return False
+    if (
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_link_local
+        or addr.is_reserved
+        or addr.is_multicast
+        or addr.is_unspecified
+    ):
+        return True
+    if isinstance(addr, ipaddress.IPv4Address) and addr in _CGNAT:
+        return True
+    return False
+
+
+def collect_http_url(line: str) -> str | None:
+    """Keep a public http(s) file URL. Sidecar never fetches this; collector bots may curl it."""
+    text = str(line or "").strip()
+    if not _DIRECT_FILE_URL.fullmatch(text):
+        return None
+    parsed = urlparse(text)
+    if parsed.scheme not in {"http", "https"}:
+        return None
+    if parsed.username or parsed.password:
+        return None
+    if _collect_host_blocked(parsed.hostname or ""):
+        return None
+    return text
+
+
+def sanitize_collect_query(value: Any, source_mode: str = "") -> str:
+    """Keep recipe wording. URL-looking lines must be public http(s) file URLs."""
+    raw = str(value or "").strip()[:400]
+    if not raw:
+        return ""
+    lines = [line.strip() for line in raw.splitlines() if line.strip()]
+    url_lines = [line for line in lines if _collect_line_looks_like_url(line)]
+    if not url_lines:
+        return raw
+    kept: list[str] = []
+    unsafe = False
+    for line in lines:
+        if _collect_line_looks_like_url(line):
+            safe = collect_http_url(line)
+            if safe:
+                kept.append(safe)
+            else:
+                unsafe = True
+        elif source_mode not in {"collect", "own_and_collect"}:
+            kept.append(line)
+    if unsafe:
+        raise ValueError("collect_query may only use public http(s) file URLs.")
+    return "\n".join(kept)[:400]
+
+
 def source_mode_of(spec: dict[str, Any] | None) -> str:
     payload = spec if isinstance(spec, dict) else {}
     raw = payload.get("source_mode")
@@ -191,7 +277,7 @@ def normalize_spec(body: dict[str, Any]) -> dict[str, Any]:
     source_mode = normalize_source_mode(filled.get("source_mode"), crew=crew_requested, has_owned=owned_hint)
     crew = needs_collector(source_mode)
     collect_default = ((recipe or {}).get("collect") or {}).get("clip_count")
-    collect_query = str(filled.get("collect_query") or "").strip()[:400]
+    collect_query = sanitize_collect_query(filled.get("collect_query"), source_mode)
     collect_clip_count = _clip_count_range(filled.get("collect_clip_count"), collect_default) if crew else None
     common = {
         "schema": SCHEMA,

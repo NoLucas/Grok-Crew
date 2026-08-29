@@ -11,7 +11,9 @@ from voice_preview import (
     preview_filename,
     preview_lang_code,
     preview_phrase,
+    preview_workspace_dir,
     provision_preview_audio,
+    resolve_requested_speaker_id,
     resolve_speaker_id,
     write_pcm16_wav,
 )
@@ -58,7 +60,8 @@ def test_preview_copies_bundled_kokoro_wav(studio, tmp_path, monkeypatch):
     assert payload["text"].startswith("Hello")
     assert payload["source"] == "bundled"
     assert payload["url"] == "/media/voice-previews/female__warm__en-us.wav"
-    assert Path(payload["path"]).is_file()
+    assert "path" not in payload
+    assert (preview_workspace_dir() / "female__warm__en-us.wav").is_file()
 
 
 def test_preview_clamps_korean_when_kokoro_has_no_pack(studio, tmp_path, monkeypatch):
@@ -71,7 +74,31 @@ def test_preview_clamps_korean_when_kokoro_has_no_pack(studio, tmp_path, monkeyp
     assert payload["accent"] == "en-us"
     assert payload["text"].startswith("Hello")
     assert payload["url"] == "/media/voice-previews/female__warm__en-us.wav"
-    assert Path(payload["path"]).name == "female__warm__en-us.wav"
+    assert "path" not in payload
+    assert (preview_workspace_dir() / "female__warm__en-us.wav").is_file()
+
+
+def test_preview_ignores_unknown_speaker_id(studio, tmp_path, monkeypatch):
+    monkeypatch.setattr(voice_preview, "bundled_preview_dir", lambda: tmp_path / "missing")
+    seen = {}
+
+    def synth(*, text, speaker_id, lang_code, speed):
+        seen["speaker_id"] = speaker_id
+        return [0.2, -0.2] * 240
+
+    payload = make_voice_preview(
+        {
+            "accent": "en-us",
+            "gender": "female",
+            "feel": "warm",
+            "speaker_id": "../../secret.pt",
+        },
+        synthesize=synth,
+    )
+    assert payload["speaker_id"] == "af_heart"
+    assert seen["speaker_id"] == "af_heart"
+    assert resolve_requested_speaker_id("am_liam", "female", "warm", "en-us") == "am_liam"
+    assert resolve_requested_speaker_id("af_bella", "female", "warm", "en-us") == "af_heart"
 
 
 def test_preview_uses_injected_kokoro_synthesizer(studio, tmp_path, monkeypatch):
@@ -80,7 +107,8 @@ def test_preview_uses_injected_kokoro_synthesizer(studio, tmp_path, monkeypatch)
     assert payload["engine"] == ENGINE
     assert payload["source"] == "synthesized"
     assert payload["speaker_id"] == "af_nova"
-    assert Path(payload["path"]).stat().st_size > 44
+    assert "path" not in payload
+    assert (preview_workspace_dir() / "female__bright__en-us.wav").stat().st_size > 44
 
 
 def test_preview_errors_when_kokoro_audio_is_missing(studio, tmp_path, monkeypatch):
@@ -117,6 +145,7 @@ def test_http_voice_preview_serves_kokoro_wav(live_server, tmp_path, monkeypatch
     payload = post(live_server, "/api/v2/first-run/voice-preview", {"accent": "ja"})
     assert payload["engine"] == "kokoro-82m"
     assert payload["speaker_id"] == "jf_alpha"
+    assert "path" not in payload
     with urlopen(Request(f"{live_server}{payload['url']}"), timeout=10) as response:
         raw = response.read()
     assert response.status == 200

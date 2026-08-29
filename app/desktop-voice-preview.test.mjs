@@ -88,6 +88,20 @@ describe('voice preview lines', () => {
         { request: async () => ({ engine: 'speechSynthesis', url: '/nope.wav' }), play: async () => {} },
       );
       assert.equal(otherEngine, 'blocked');
+      const hijack = [];
+      const hijackStatus = await playVoicePreview(
+        { accent: 'en-us', gender: 'female', feel: 'warm', modelId: 'kokoro-82m' },
+        {
+          request: async () => ({
+            engine: 'kokoro-82m',
+            url: 'https://evil.example/voice-previews/female__warm__en-us.wav',
+          }),
+          studioOrigin: 'http://127.0.0.1:7214',
+          play: async (url) => { hijack.push(url); },
+        },
+      );
+      assert.equal(hijackStatus, 'playing');
+      assert.equal(hijack[0], 'http://127.0.0.1:7214/media/voice-previews/female__warm__en-us.wav');
     });
   });
 });

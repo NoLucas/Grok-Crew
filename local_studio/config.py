@@ -70,6 +70,10 @@ SITE_BASE_URL = "http://localhost:3000"
 BROWSER_PAGE_PATHS = {"/", "/tools", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy"}
 PUBLIC_GET_PATHS = frozenset({"/health", "/api/terminal-contract", "/api/bot-guide", "/api/bot-entry", "/api/v2/tools", "/downloads/grok-crew.py", "/downloads/grok-crew-bot.zip"})
 PUBLIC_POST_PATHS = frozenset({"/api/bot-entry", "/api/bots/heartbeat"})
+MEDIA_GET_SUFFIXES = frozenset({
+    ".wav", ".mp3", ".m4a", ".aac", ".mp4", ".m4v", ".webm", ".mov", ".mkv", ".avi",
+    ".jpg", ".jpeg", ".png", ".webp", ".gif", ".vtt", ".srt",
+})
 
 
 def studio_api_base_url() -> str:

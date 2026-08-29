@@ -119,12 +119,24 @@ function Write-Active([string]$activeId, [string]$ErrorText) {
   Set-Content -LiteralPath $activePath -Value ($payload + "`n") -Encoding UTF8
 }
 
+function SafeFileName([string]$Name) {
+  return [System.IO.Path]::GetFileName($Name)
+}
+
+function HuggingFaceHttps([string]$Url) {
+  return $Url -match '^https://(([A-Za-z0-9-]+\.)*(huggingface\.co|hf\.co))/'
+}
+
 function CandidateUrls([string]$Url) {
+  if (-not (HuggingFaceHttps $Url)) { return @() }
   if ($Url -match "\?") { return @($Url) }
   return @(($Url + "?download=true"), $Url)
 }
 
 function Download-File([string]$Url, [string]$Dest) {
+  if (-not (HuggingFaceHttps $Url)) {
+    throw "Voice download must stay on huggingface.co or hf.co HTTPS."
+  }
   $parent = Split-Path -Parent $Dest
   New-Item -ItemType Directory -Force -Path $parent | Out-Null
   $part = "$Dest.part"
@@ -135,7 +147,7 @@ function Download-File([string]$Url, [string]$Dest) {
     $curl = Join-Path $env:SystemRoot "System32\curl.exe"
     try {
       if (Test-Path -LiteralPath $curl) {
-        & $curl -L --fail --retry 2 --connect-timeout 30 --max-time 7200 --user-agent $ua -o $part $tryUrl
+        & $curl -L --fail --proto "=https" --retry 2 --connect-timeout 30 --max-time 7200 --user-agent $ua -o $part $tryUrl
         if ($LASTEXITCODE -ne 0) {
           if (Test-Path -LiteralPath $part) { Remove-Item -LiteralPath $part -Force -ErrorAction SilentlyContinue }
           throw "curl failed for $tryUrl"
@@ -148,6 +160,9 @@ function Download-File([string]$Url, [string]$Dest) {
         $request.ReadWriteTimeout = 7200000
         $response = $request.GetResponse()
         try {
+          if (-not (HuggingFaceHttps ([string]$response.ResponseUri))) {
+            throw "Voice download refused a redirect off Hugging Face."
+          }
           $input = $response.GetResponseStream()
           $output = [System.IO.File]::Open($part, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
           try {
@@ -184,8 +199,9 @@ foreach ($name in @($item.files)) { if ($name) { $required += [string]$name } }
 foreach ($name in @($item.weight_files)) { if ($name) { $required += [string]$name } }
 $hf = [string]$catalog.hfResolve
 foreach ($name in $required) {
-  $url = $hf.Replace("{repo}", [string]$item.repo).Replace("{name}", $name)
-  $dest = Join-Path $modelDir $name
+  $safeName = SafeFileName $name
+  $url = $hf.Replace("{repo}", [string]$item.repo).Replace("{name}", $safeName)
+  $dest = Join-Path $modelDir $safeName
   if (Test-Path -LiteralPath $dest) { continue }
   try {
     Write-Host "Downloading $name"
@@ -201,9 +217,10 @@ foreach ($name in $required) {
 if (-not (VoiceAlreadyKept $modelDir $item)) {
   foreach ($name in @($item.fallbacks)) {
     if (-not $name) { continue }
-    $dest = Join-Path $modelDir ([string]$name)
+    $safeName = SafeFileName ([string]$name)
+    $dest = Join-Path $modelDir $safeName
     if (Test-Path -LiteralPath $dest) { break }
-    $url = $hf.Replace("{repo}", [string]$item.repo).Replace("{name}", [string]$name)
+    $url = $hf.Replace("{repo}", [string]$item.repo).Replace("{name}", $safeName)
     try {
       Write-Host "Downloading fallback $name"
       Download-File $url $dest

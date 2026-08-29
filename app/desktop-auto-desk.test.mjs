@@ -104,6 +104,10 @@ describe('auto desk start rules', () => {
       'https://example.com/a.mp4',
       'https://example.com/b.jpg',
     ]);
+    assert.deepEqual(collectUrlLines('file:///etc/passwd\nhttp://127.0.0.1/secret.mp4\nhttps://example.com/ok.mp4'), [
+      'https://example.com/ok.mp4',
+    ]);
+    assert.equal(collectQueryIsUrlList('http://169.254.169.254/latest/meta-data'), false);
   });
 });
 

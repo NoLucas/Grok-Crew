@@ -44,6 +44,9 @@ describe('installer voice pick', () => {
     assert.match(ps1, /chosen\.json/);
     assert.match(ps1, /active\.json/);
     assert.match(ps1, /voice-error\.txt/);
+    assert.match(ps1, /SafeFileName/);
+    assert.match(ps1, /HuggingFaceHttps/);
+    assert.match(ps1, /--proto "=https"/);
     assert.equal(catalog.models['kokoro-82m'].repo, 'hexgrad/Kokoro-82M');
     assert.deepEqual(catalog.models['kokoro-82m'].weight_files, ['kokoro-v1_0.pth']);
     assert.deepEqual(catalog.models['kokoro-82m'].fallbacks, ['kokoro-v1.0.pth']);

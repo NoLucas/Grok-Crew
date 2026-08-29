@@ -6,9 +6,46 @@ from urllib.request import Request, urlopen
 import pytest
 
 import config
-from edit_spec import create_spec, normalize_agent, resolve_sender, spec_brief, spec_invite
+from edit_spec import create_spec, normalize_agent, resolve_sender, sanitize_collect_query, spec_brief, spec_invite
 from handoff_inbox import apply_package_local, media_relpaths, pull_handoff, write_demo_package
 import first_run
+
+
+def test_collect_query_rejects_private_and_file_urls():
+    assert sanitize_collect_query("카페 오픈 공개 클립", "bot") == "카페 오픈 공개 클립"
+    assert sanitize_collect_query(
+        "https://images-assets.nasa.gov/image/as11-40-5874/as11-40-5874~small.jpg",
+        "collect",
+    ).startswith("https://")
+    with pytest.raises(ValueError, match="http"):
+        sanitize_collect_query("file:///etc/passwd", "collect")
+    with pytest.raises(ValueError, match="http"):
+        sanitize_collect_query("http://127.0.0.1/secret.mp4", "collect")
+    with pytest.raises(ValueError, match="http"):
+        sanitize_collect_query("http://169.254.169.254/latest/meta-data", "own_and_collect")
+    with pytest.raises(ValueError, match="http"):
+        sanitize_collect_query(
+            "https://example.com/ok.mp4\nfile:///tmp/x.mp4",
+            "collect",
+        )
+
+
+def test_collect_spec_keeps_recipe_wording_and_rejects_file_urls(studio):
+    with pytest.raises(ValueError, match="http"):
+        create_spec({
+            "title": "Bad list",
+            "goal": "Clip",
+            "source_mode": "collect",
+            "collect_query": "file:///etc/passwd",
+        })
+    recipe = create_spec({
+        "title": "Recipe",
+        "goal": "Clip",
+        "source_mode": "collect",
+        "recipe_id": "instagram_reel",
+    })
+    assert recipe["collect_query"]
+    assert "://" not in recipe["collect_query"]
 
 
 def test_spec_requires_title_and_goal(studio):
