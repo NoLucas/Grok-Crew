@@ -7124,7 +7124,8 @@ select {
 .desktop-library { display: grid; gap: 8px; }
 .desktop-library-toolbar { display: flex; justify-content: flex-end; padding: 0 8px; }
 .desktop-library-toolbar .desktop-secondary { padding: 5px 8px; font-size: 12px; }
-.desktop-library-add { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; padding: 0 8px; align-items: center; }
+.desktop-library-add { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 0 8px; align-items: center; }
+.desktop-library-add input { grid-column: 1 / -1; }
 .desktop-library-add input,
 .desktop-library-item input,
 .desktop-library-folder summary input {
