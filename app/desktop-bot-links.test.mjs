@@ -81,7 +81,13 @@ describe('remote bot links', () => {
       assert.match(text, /grok-planner/);
       assert.match(text, /plan_edit/);
       assert.match(text, /heartbeat/);
+      assert.match(text, /grok-crew.py keep/);
       assert.match(text, /1분마다|每 1 分钟|1 分ごと|every minute/);
+      assert.match(text, /예약 작업을 만들지 마세요|Do not create a chat scheduled|不要在聊天里做 still_here|予約作業を作らない/);
+      assert.match(text, /그 Windows가 아니|cannot be verified|不是那台 Windows|その Windows ではない/);
+      assert.match(text, /keep가 돌아가면|keep 在跑时|keep が動いている|While keep is running/);
+      assert.doesNotMatch(text, /1분마다 같은 Windows에서 still_here heartbeat를 남기세요/);
+      assert.doesNotMatch(text, /Leave a still_here heartbeat on the same Windows every minute so this desk knows the window is open/);
       assert.doesNotMatch(text, /5분마다|每 5 分钟|5 分ごと|every five minutes/);
       assert.match(text, /plan_started/);
       assert.match(text, /plan_ready/);

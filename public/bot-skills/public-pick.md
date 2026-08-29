@@ -29,4 +29,4 @@ description: Choose only usable public clips named in the plan.
 - 목록에 없는 “비슷한 것”, 다른 나라 유행으로 바꾼 것.
 
 ## 넘기는 법
-CopyFromBox로 초대문의 Windows 자료함에 둡니다. 경로가 없으면 missing: dest_path. 127.0.0.1을 열지 않습니다. 자르지 않습니다. 봇이 돌아가는 리눅스나 다른 컴퓨터에서 127.0.0.1을 열지 않습니다. 그 주소는 이 책상이 아닙니다. Windows 체크인은 초대문 겉문장만 따릅니다.
+CopyFromBox로 초대문의 Windows 자료함에 둡니다. 경로가 없으면 missing: dest_path. 127.0.0.1을 열지 않습니다. 자르지 않습니다. 봇이 돌아가는 리눅스나 다른 컴퓨터에서 127.0.0.1을 열지 않습니다. 그 주소는 이 책상이 아닙니다. Windows 체크인은 초대문 겉문장만 따릅니다. 채팅에서 1분마다 자리 확인 예약 작업을 만들지 않습니다.

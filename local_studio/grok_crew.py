@@ -114,6 +114,38 @@ def require_human_approval(args: argparse.Namespace) -> None:
         raise ValueError("This command requires --human-approved after a person has recorded approval.")
 
 
+def keep_seat(
+    client: LocalStudioClient,
+    bot_id: str,
+    display_name: str,
+    purpose: str,
+    interval: float = 60,
+    once: bool = False,
+) -> None:
+    """Enter once, then leave still_here and read next-invite on this same PC.
+
+    The chat agent must not schedule a new computer command every minute.
+    """
+    print_json(client.request("/api/bot-entry", {
+        "bot_id": bot_id,
+        "display_name": display_name,
+        "purpose": purpose,
+    }))
+    while True:
+        print_json(client.request("/api/bots/heartbeat", {
+            "bot_id": bot_id,
+            "display_name": display_name,
+            "action": "still_here",
+        }))
+        try:
+            print_json(client.request("/api/bots/next-invite", {"bot_id": bot_id}))
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+        if once:
+            return
+        time.sleep(max(1.0, float(interval)))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Use every Local Video Studio capability from a same-PC terminal.")
     parser.add_argument("--server", default=os.getenv("GROK_CREW_SERVER", "http://127.0.0.1:7214"), help="Local Studio URL; loopback only.")
@@ -150,6 +182,13 @@ def build_parser() -> argparse.ArgumentParser:
     next_invite = commands.add_parser("next-invite", help="Read this same-PC seat's waiting invite. The operator does not paste it again.")
     next_invite.add_argument("--bot-id", required=True)
     next_invite.add_argument("--display-name", default="")
+
+    keep = commands.add_parser("keep", help="Enter once, then leave still_here and read the waiting invite on this same PC. Do not schedule this from chat every minute.")
+    keep.add_argument("--bot-id", required=True)
+    keep.add_argument("--display-name", required=True)
+    keep.add_argument("--purpose", default="edit_video")
+    keep.add_argument("--interval", type=float, default=60, help="Seconds between still_here beats. Default 60.")
+    keep.add_argument("--once", action="store_true", help="Enter, beat, and read once, then exit.")
 
     bots = commands.add_parser("bots", help="Read verified local bot presence and activity.")
     bots_sub = bots.add_subparsers(dest="command", required=True)
@@ -273,6 +312,12 @@ def main() -> None:
         if args.display_name:
             payload["display_name"] = args.display_name
         print_json(client.request("/api/bots/next-invite", payload)); return
+    if args.group == "keep":
+        try:
+            keep_seat(client, args.bot_id, args.display_name, args.purpose, args.interval, args.once)
+        except KeyboardInterrupt:
+            return
+        return
     if args.group == "bots":
         paths = {"list": "/api/bots", "activity": "/api/bot-activity", "entries": "/api/bot-entries"}
         print_json(client.request(paths[args.command])); return

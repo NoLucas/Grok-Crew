@@ -87,6 +87,7 @@ describe('built-in bot skills', () => {
     assert.deepEqual(ROLE_EXTRA_SKILLS.editor, ['cut-to-plan']);
     for (const text of [planner, scraper, editor, extraSkillText('planner'), extraSkillText('scraper'), extraSkillText('editor')]) {
       assert.match(text, /127\.0\.0\.1/);
+      assert.match(text, /1분마다 자리 확인 예약/);
       assert.doesNotMatch(text, /git clone/);
     }
   });

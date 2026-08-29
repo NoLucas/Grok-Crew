@@ -78,10 +78,10 @@ export function seatShortLabel(role: BotRole, language = 'ko'): string {
 }
 
 const LOOPBACK: L4 = {
-  ko: '봇이 돌아가는 리눅스나 다른 컴퓨터에서 127.0.0.1을 열지 않습니다. 그 주소는 이 책상이 아닙니다. Windows 체크인은 초대문 겉문장만 따릅니다.',
-  en: 'Do not open 127.0.0.1 from the bot Linux or another computer. That address is not this desk. Windows check-in is only in the connect wrapper.',
-  zh: '不要从机器人所在的 Linux 或另一台电脑打开 127.0.0.1。那个地址不是这张桌子。Windows 签到只写在连接信封里。',
-  ja: 'ボットの Linux や別のコンピュータから 127.0.0.1 を開かないでください。その住所はこの机ではありません。Windows のチェックインは接続文の外側だけです。',
+  ko: '봇이 돌아가는 리눅스나 다른 컴퓨터에서 127.0.0.1을 열지 않습니다. 그 주소는 이 책상이 아닙니다. Windows 체크인은 초대문 겉문장만 따릅니다. 채팅에서 1분마다 자리 확인 예약 작업을 만들지 않습니다.',
+  en: 'Do not open 127.0.0.1 from the bot Linux or another computer. That address is not this desk. Windows check-in is only in the connect wrapper. Do not create a chat job that checks the seat every minute.',
+  zh: '不要从机器人所在的 Linux 或另一台电脑打开 127.0.0.1。那个地址不是这张桌子。Windows 签到只写在连接信封里。不要在聊天里做每分钟占位预约。',
+  ja: 'ボットの Linux や別のコンピュータから 127.0.0.1 を開かないでください。その住所はこの机ではありません。Windows のチェックインは接続文の外側だけです。チャットに1分ごとの席確認の予約作業を作らないでください。',
 };
 
 const LOGIN_WALL: L4 = {
