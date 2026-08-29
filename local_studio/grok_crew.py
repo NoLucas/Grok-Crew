@@ -147,6 +147,10 @@ def build_parser() -> argparse.ArgumentParser:
     heartbeat.add_argument("--bot-id", required=True); heartbeat.add_argument("--display-name", required=True)
     heartbeat.add_argument("--action", required=True); heartbeat.add_argument("--detail-file")
 
+    next_invite = commands.add_parser("next-invite", help="Read this same-PC seat's waiting invite. The operator does not paste it again.")
+    next_invite.add_argument("--bot-id", required=True)
+    next_invite.add_argument("--display-name", default="")
+
     bots = commands.add_parser("bots", help="Read verified local bot presence and activity.")
     bots_sub = bots.add_subparsers(dest="command", required=True)
     bots_sub.add_parser("list", help="List bot presence.")
@@ -264,6 +268,11 @@ def main() -> None:
     if args.group == "heartbeat":
         detail = read_json_file(args.detail_file) if args.detail_file else {}
         print_json(client.request("/api/bots/heartbeat", {"bot_id": args.bot_id, "display_name": args.display_name, "action": args.action, "detail": detail})); return
+    if args.group == "next-invite":
+        payload = {"bot_id": args.bot_id}
+        if args.display_name:
+            payload["display_name"] = args.display_name
+        print_json(client.request("/api/bots/next-invite", payload)); return
     if args.group == "bots":
         paths = {"list": "/api/bots", "activity": "/api/bot-activity", "entries": "/api/bot-entries"}
         print_json(client.request(paths[args.command])); return

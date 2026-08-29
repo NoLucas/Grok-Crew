@@ -96,6 +96,9 @@ describe('remote bot links', () => {
         assert.doesNotMatch(text, /네이버 TV/);
       }
       assert.match(text, /7214가 없다|没有 7214|7214 がない|7214 is missing/);
+      assert.match(text, /api\/bots\/next-invite/);
+      assert.match(text, /next-invite/);
+      assert.match(text, /사람이 초대문을 다시 붙이지 않습니다|操作员不会再粘贴一次|人が招待文をもう一度貼ることはありません|will not paste the invite again/);
       assert.match(text, /GROK_CREW_OK 한 줄만|只发 GROK_CREW_OK|GROK_CREW_OK の一行だけ|only the GROK_CREW_OK line/);
       assert.match(text, /디스크에서 스크립트를 찾지 마세요|不要在磁盘上找脚本|ディスクでスクリプトを探さない|Do not search the disk for the script/);
       assert.doesNotMatch(text, /스크립트를 찾는 중|searching for the script/);
@@ -116,6 +119,7 @@ describe('remote bot links', () => {
     assert.match(agent, /grok-crew-public-pick/);
     assert.doesNotMatch(agent, /bot-entry/);
     assert.doesNotMatch(agent, /Invoke-RestMethod/);
+    assert.doesNotMatch(agent, /next-invite/);
     assert.doesNotMatch(agent, /plan_started|collect_started|still_here/);
     const scraper = remoteConnectPaste('grok', '7K2M9Q', 'ko', 'scraper');
     assert.match(scraper, /collect_started/);

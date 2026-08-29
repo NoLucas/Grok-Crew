@@ -17,6 +17,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 import config
 from analysis import analyze_project, get_analysis
 from config import (
+    client_host_is_loopback,
     origin_is_allowed,
     BROWSER_PAGE_PATHS,
     CAPTION_LAYOUT_PRESETS,
@@ -76,7 +77,7 @@ from first_run import first_run_status, open_sample_project
 from voice_models import select_voice_model
 from voice_preview import make_voice_preview
 from bot_pack import bot_pack_bytes
-from edit_spec import create_spec, get_spec, list_specs, spec_brief, spec_invite
+from edit_spec import NextInviteError, create_spec, get_spec, list_specs, next_invite_for_bot, spec_brief, spec_invite
 from handoff_folders import delete_handoff_file, reveal_handoff_file, workspace_handoff_folders
 from project_library import (
     create_project_folder,
@@ -602,6 +603,11 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(201, import_project_bundle(body))
             elif path == "/api/bots/heartbeat":
                 self._json(201, {"bot": record_bot_heartbeat(body)})
+            elif path == "/api/bots/next-invite":
+                if not client_host_is_loopback(self.client_address[0]):
+                    self._json(403, {"error": "This invite is only for the same PC."})
+                    return
+                self._json(200, next_invite_for_bot(body))
             elif path == "/api/bots/execution-policy":
                 self._json(200, {"execution_policy": set_execution_policy(body)})
             elif path == "/api/bot-entry":
@@ -660,6 +666,8 @@ class StudioHandler(BaseHTTPRequestHandler):
                 self._json(404, {"error": "Not found"})
         except TimelinePatchError as exc:
             self._json(exc.status, exc.payload())
+        except NextInviteError as exc:
+            self._json(exc.status, {"error": str(exc)})
         except ValueError as exc:
             self._json(400, {"error": str(exc)})
         except Exception as exc:  # noqa: BLE001

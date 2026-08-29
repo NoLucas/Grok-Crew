@@ -133,6 +133,22 @@ def test_studio_api_base_url_uses_local_studio_port(monkeypatch):
     assert config.studio_api_base_url() == "http://127.0.0.1:7214"
 
 
+def test_public_post_paths_include_same_pc_next_invite():
+    assert "/api/bots/next-invite" in config.PUBLIC_POST_PATHS
+    assert "/api/bots/heartbeat" in config.PUBLIC_POST_PATHS
+
+
+def test_client_host_is_loopback_rejects_remote_and_mapped_public():
+    assert config.client_host_is_loopback("127.0.0.1") is True
+    assert config.client_host_is_loopback("::1") is True
+    assert config.client_host_is_loopback("localhost") is True
+    assert config.client_host_is_loopback("8.8.8.8") is False
+    assert config.client_host_is_loopback("10.0.0.2") is False
+    assert config.client_host_is_loopback("::ffff:8.8.8.8") is False
+    assert config.client_host_is_loopback("") is False
+    assert config.client_host_is_loopback(None) is False
+
+
 def test_loopback_preview_ports_are_allowed_without_env_override():
     defaults = config.parse_allowed_origins("")
     assert config.origin_is_allowed("http://127.0.0.1:43123", defaults) is True

@@ -282,6 +282,60 @@ def post_status(base_url, path, body, headers=None):
         return exc.code, json.loads(exc.read().decode("utf-8"))
 
 
+def _check_in_http(base_url, bot_id, name, purpose):
+    post(base_url, "/api/bot-entry", {
+        "bot_id": bot_id,
+        "display_name": name,
+        "purpose": purpose,
+    })
+
+
+def test_next_invite_same_pc_seats_and_auth(live_server, monkeypatch):
+    from edit_spec import create_spec, set_spec_status
+
+    monkeypatch.setenv("LOCAL_STUDIO_TOKEN", "desk-token")
+    _check_in_http(live_server, "grok-planner", "Grok Bot 기획자", "plan_edit")
+    _check_in_http(live_server, "grok-scraper", "Grok Bot 스크래핑", "collect")
+    _check_in_http(live_server, "grok-editor", "Grok Bot 편집자", "edit_video")
+    planner = create_spec({"title": "기획", "goal": "타르코프 게임 영상 만들어줘", "language": "ko", "source_mode": "bot"})
+    scraper = create_spec({"title": "수집", "goal": "주소만", "language": "ko", "source_mode": "bot", "door": "collector"})
+    editor = create_spec({"title": "편집", "goal": "내 컷", "language": "ko", "source_mode": "own"})
+    set_spec_status(editor["id"], "waiting_for_bot")
+
+    status, denied = post_status(live_server, "/api/bots/next-invite", {
+        "bot_id": "grok-planner",
+    }, {"Origin": "http://localhost:3000"})
+    assert status == 401
+    assert denied["error"] == "Invalid local studio token."
+
+    status, remote = post_status(live_server, "/api/bots/next-invite", {
+        "bot_id": "grok-planner",
+    }, {"Origin": "https://evil.example"})
+    assert status == 403
+
+    status, plan = post_status(live_server, "/api/bots/next-invite", {"bot_id": "grok-planner"})
+    assert status == 200
+    assert plan["edit_spec_id"] == planner["id"]
+    assert "타르코프 게임 영상 만들어줘" in plan["text"]
+    assert "LOCAL_STUDIO_TOKEN" not in plan["text"]
+    assert plan["already_read"] is False
+
+    status, scrap = post_status(live_server, "/api/bots/next-invite", {"bot_id": "grok-scraper"})
+    assert status == 200
+    assert scrap["edit_spec_id"] == scraper["id"]
+
+    status, cut = post_status(live_server, "/api/bots/next-invite", {"bot_id": "grok-editor"})
+    assert status == 200
+    assert cut["edit_spec_id"] == editor["id"]
+
+    status, again = post_status(live_server, "/api/bots/next-invite", {"bot_id": "grok-planner"})
+    assert status == 200
+    assert again["already_read"] is True
+
+    status, empty = post_status(live_server, "/api/bots/next-invite", {"bot_id": "desk-bot"})
+    assert status == 403
+
+
 def test_loopback_bot_entry_and_heartbeat_skip_token_when_origin_is_missing(live_server, monkeypatch):
     monkeypatch.setenv("LOCAL_STUDIO_TOKEN", "desk-token")
     entry_status, entry = post_status(live_server, "/api/bot-entry", {

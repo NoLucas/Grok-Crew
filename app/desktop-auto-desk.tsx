@@ -16,6 +16,7 @@ import {
   autoWaitHeadline,
   autoWorkingNote,
   pasteTargetForSeats,
+  samePcInviteReady,
   type AutoOptionPane,
   type BotActivityItem,
   canStartAuto,
@@ -263,6 +264,7 @@ export function AutoDesk({
   });
   const waitHeadline = autoWaitHeadline(seatRows, language);
   const pasteTarget = pasteTargetForSeats(seatRows, language) || wait?.pasteTarget || '';
+  const samePcPull = samePcInviteReady(seatRows, roster);
   const recentTitles = prefs.recentTitles.filter((item) => item !== title.trim());
   const waitingHandOff = mode === 'hand_off' && Boolean(wait) && machine === 'waiting';
   const showCutDrop = mode === 'hand_off' && (Boolean(wait) || machine === 'waiting');
@@ -489,11 +491,16 @@ export function AutoDesk({
         inviteText: text,
       };
       try {
-        if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 4000);
-        onCopied(nextWait);
+        if (samePcInviteReady(seatRows, roster)) {
+          setClipboardBlocked(false);
+          onCopied(nextWait);
+        } else {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(text);
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 4000);
+          onCopied(nextWait);
+        }
       } catch {
         setClipboardBlocked(true);
         onCopied(nextWait);
@@ -717,7 +724,9 @@ export function AutoDesk({
       note: sendFailed
         ? t('일을 저장하지 못했습니다', 'Could not save the job', '无法保存任务', '仕事を保存できませんでした')
         : wait
-          ? t(`복사함 · ${pasteTarget} 창에 붙이면 됩니다`, `Copied · paste it in the ${pasteTarget} window`, `已复制 · 请贴到 ${pasteTarget} 窗口`, `コピー済み · ${pasteTarget} の窓に貼ってください`)
+          ? samePcPull
+            ? t('보냄 · 창을 끄지 마세요', 'Sent · do not close this window', '已发送 · 不要关掉这个窗口', '送った · この窓を閉じないでください')
+            : t(`복사함 · ${pasteTarget} 창에 붙이면 됩니다`, `Copied · paste it in the ${pasteTarget} window`, `已复制 · 请贴到 ${pasteTarget} 窗口`, `コピー済み · ${pasteTarget} の窓に貼ってください`)
           : clipboardBlocked
             ? t('아래 글을 직접 복사하세요', 'Copy the text below yourself', '请手动复制下面的文字', '下の文を自分でコピー')
             : t('아직', 'Not yet', '还没有', 'まだ'),
@@ -1316,6 +1325,7 @@ export function AutoDesk({
               </li>
             ))}
           </ol>
+          {samePcPull ? null : (
           <div className="desktop-auto-interrupt">
             <p>{t(`사람 손길 · ${pasteTarget} 창에 한 번 붙이세요.`, `Your step · paste it once in the ${pasteTarget} window.`, `人手 · 请在 ${pasteTarget} 窗口贴一次。`, `人の手 · ${pasteTarget} の窓に一度貼ってください。`)}</p>
             <button type="button" className="desktop-primary desktop-recopy-btn" disabled={!inviteText.trim()} onClick={() => { void recopyInvite(); }}>
@@ -1324,6 +1334,7 @@ export function AutoDesk({
                 : t(`다시 복사 · ${pasteTarget}`, `Copy again · ${pasteTarget}`, `再复制 · ${pasteTarget}`, `もう一度コピー · ${pasteTarget}`)}
             </button>
           </div>
+          )}
           <DesktopCrewBoard
             rows={seatRows}
             activity={activity}
@@ -1490,7 +1501,7 @@ export function AutoDesk({
         </section>
       ) : null}
 
-      {clipboardBlocked ? (
+      {clipboardBlocked && !samePcPull ? (
         <details className="desktop-spec-advanced desktop-simple-invite" open>
           <summary>{t('봇이 읽을 글 보기', 'Show the text the bot reads', '查看机器人要读的文字', 'ボットが読む文を見る')}</summary>
           <p className="desktop-spec-error">{t('아래 글을 직접 복사하세요. 클립보드를 쓰지 못했습니다.', 'Copy the text below. The clipboard was blocked.', '请手动复制下面的文字。无法使用剪贴板。', '下の文を自分でコピーしてください。クリップボードを使えませんでした。')}</p>

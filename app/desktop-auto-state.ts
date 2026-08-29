@@ -2,6 +2,7 @@ import type { CrewRoster } from './desktop-bot-connect';
 import {
   GROK_SEAT_BOT_IDS,
   connectedRemoteNames,
+  heldRosterSeat,
   rosterMatchesSeat,
   seatIsConnected,
   type BotLinkState,
@@ -741,15 +742,33 @@ export function alwaysCrewSeats(input: {
 }
 
 /** First seat that has not left a ready handoff. After plan_ready this is the scraper, not the planner. */
-export function pasteTargetForSeats(rows: AutoSeatRow[], language = 'ko'): string {
+export function pasteTargetRole(rows: AutoSeatRow[]): BotRole {
   for (const role of BOT_ROLES) {
     const row = rows.find((item) => item.role === role);
     if (!row) continue;
     if (heartbeatActionKind(row.lastAction) === 'ready') continue;
-    return row.name;
+    return role;
   }
+  return 'editor';
+}
+
+export function pasteTargetForSeats(rows: AutoSeatRow[], language = 'ko'): string {
+  const role = pasteTargetRole(rows);
+  const row = rows.find((item) => item.role === role);
+  if (row?.name) return row.name;
   const last = rows.find((item) => item.role === 'editor') ?? rows[rows.length - 1];
   return last?.name || seatName('grok', 'planner', language);
+}
+
+/** Same-PC Grok check-in can POST /api/bots/next-invite. Paste-only and Agent seats cannot. */
+export function samePcInviteReady(
+  rows: AutoSeatRow[],
+  roster?: CrewRoster | null,
+): boolean {
+  const role = pasteTargetRole(rows);
+  const row = rows.find((item) => item.role === role);
+  if (!row || row.kind !== 'grok' || !row.connected) return false;
+  return Boolean(heldRosterSeat(roster, role));
 }
 
 export function shouldAutoPullInbox(input: {

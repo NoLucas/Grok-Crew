@@ -6,7 +6,19 @@ from urllib.request import Request, urlopen
 import pytest
 
 import config
-from edit_spec import create_spec, normalize_agent, resolve_sender, sanitize_collect_query, spec_brief, spec_invite
+from edit_spec import (
+    NextInviteError,
+    create_spec,
+    next_invite_for_bot,
+    normalize_agent,
+    resolve_sender,
+    sanitize_collect_query,
+    set_spec_status,
+    spec_brief,
+    spec_invite,
+    waiting_seat_bot_id,
+)
+from studio_server import enter_bot_workspace
 from handoff_inbox import apply_package_local, media_relpaths, pull_handoff, write_demo_package
 import first_run
 
@@ -488,3 +500,92 @@ def test_http_invite_and_bot_pack(live_server):
     names = zipfile.ZipFile(io.BytesIO(packed)).namelist()
     assert "지금_이렇게_하세요.txt" in names
     assert "grok_crew.py" in names
+
+
+def _check_in(bot_id, name, purpose):
+    enter_bot_workspace({"bot_id": bot_id, "display_name": name, "purpose": purpose})
+
+
+def test_waiting_seat_bot_id_splits_planner_scraper_editor(studio):
+    planner = create_spec({"title": "기획", "goal": "타르코프 게임 영상 만들어줘", "language": "ko", "source_mode": "bot"})
+    scraper = create_spec({"title": "수집", "goal": "주소만", "language": "ko", "source_mode": "bot", "door": "collector"})
+    editor = create_spec({"title": "편집", "goal": "내 컷", "language": "ko", "source_mode": "own"})
+    editor = set_spec_status(editor["id"], "waiting_for_bot")
+    assert waiting_seat_bot_id(planner) == "grok-planner"
+    assert waiting_seat_bot_id(scraper) == "grok-scraper"
+    assert waiting_seat_bot_id(editor) == "grok-editor"
+
+
+def test_next_invite_returns_each_seat_wait_and_rejects_mismatch(studio):
+    _check_in("grok-planner", "Grok Bot 기획자", "plan_edit")
+    _check_in("grok-scraper", "Grok Bot 스크래핑", "collect")
+    _check_in("grok-editor", "Grok Bot 편집자", "edit_video")
+    planner = create_spec({"title": "기획", "goal": "타르코프 게임 영상 만들어줘", "language": "ko", "source_mode": "bot"})
+    scraper = create_spec({"title": "수집", "goal": "주소만", "language": "ko", "source_mode": "bot", "door": "collector"})
+    editor = create_spec({"title": "편집", "goal": "내 컷", "language": "ko", "source_mode": "own"})
+    set_spec_status(editor["id"], "waiting_for_bot")
+    plan = next_invite_for_bot({"bot_id": "grok-planner"})
+    scrap = next_invite_for_bot({"bot_id": "grok-scraper"})
+    cut = next_invite_for_bot({"bot_id": "grok-editor"})
+    assert plan["edit_spec_id"] == planner["id"]
+    assert scrap["edit_spec_id"] == scraper["id"]
+    assert cut["edit_spec_id"] == editor["id"]
+    assert "타르코프 게임 영상 만들어줘" in plan["text"]
+    assert "LOCAL_STUDIO_TOKEN" not in plan["text"]
+    assert plan["already_read"] is False
+    again = next_invite_for_bot({"bot_id": "grok-planner"})
+    assert again["already_read"] is True
+    assert again["edit_spec_id"] == planner["id"]
+    with pytest.raises(NextInviteError) as forbidden:
+        next_invite_for_bot({"bot_id": "desk-bot"})
+    assert forbidden.value.status == 403
+
+
+def test_next_invite_403_when_wait_is_for_another_seat(studio):
+    _check_in("grok-scraper", "Grok Bot 스크래핑", "collect")
+    create_spec({"title": "기획만", "goal": "기획자 일", "language": "ko", "source_mode": "bot"})
+    with pytest.raises(NextInviteError) as mismatch:
+        next_invite_for_bot({"bot_id": "grok-scraper"})
+    assert mismatch.value.status == 403
+
+
+def test_next_invite_404_when_nothing_is_waiting(studio):
+    _check_in("grok-planner", "Grok Bot 기획자", "plan_edit")
+    with pytest.raises(NextInviteError) as missing:
+        next_invite_for_bot({"bot_id": "grok-planner"})
+    assert missing.value.status == 404
+
+
+def test_next_invite_skips_yesterday_when_newer_wait_exists(studio):
+    from db import db
+
+    _check_in("grok-planner", "Grok Bot 기획자", "plan_edit")
+    leftover = create_spec({"title": "어제", "goal": "어제 일", "language": "ko", "source_mode": "bot"})
+    today = create_spec({"title": "오늘", "goal": "오늘 일", "language": "ko", "source_mode": "bot"})
+    with db() as conn:
+        conn.execute(
+            "UPDATE edit_specs SET created_at = ?, updated_at = ? WHERE id = ?",
+            ("2026-08-27T00:00:00+00:00", "2026-08-27T00:00:00+00:00", leftover["id"]),
+        )
+    pulled = next_invite_for_bot({"bot_id": "grok-planner"})
+    assert pulled["edit_spec_id"] == today["id"]
+    assert "오늘 일" in pulled["text"]
+
+
+def test_next_invite_409_when_another_bot_already_claimed(studio):
+    import json
+    from db import db
+
+    _check_in("grok-planner", "Grok Bot 기획자", "plan_edit")
+    record = create_spec({"title": "선점", "goal": "이미 가져감", "language": "ko", "source_mode": "bot"})
+    with db() as conn:
+        row = conn.execute("SELECT spec_json FROM edit_specs WHERE id = ?", (record["id"],)).fetchone()
+        spec = json.loads(row["spec_json"])
+        spec["invite_claim"] = {"bot_id": "other-planner", "claimed_at": "2026-08-29T00:00:00+00:00"}
+        conn.execute(
+            "UPDATE edit_specs SET spec_json = ? WHERE id = ?",
+            (json.dumps(spec, ensure_ascii=False), record["id"]),
+        )
+    with pytest.raises(NextInviteError) as taken:
+        next_invite_for_bot({"bot_id": "grok-planner"})
+    assert taken.value.status == 409

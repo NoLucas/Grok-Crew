@@ -619,6 +619,8 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
         ? 'one line left for the next seat'
         : '다음 자리에 남긴 한 줄';
   const readyBeat = `Invoke-RestMethod -Uri ${origin}/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","action":"${work.ready}","detail":{"note":"${noteHint}"}}'`;
+  const pull = `Invoke-RestMethod -Uri ${origin}/api/bots/next-invite -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}"}'`;
+  const pullPy = `python grok-crew.py next-invite --server ${origin} --bot-id ${id}`;
   if (lang === 'ko') {
     return [
       '명령을 실행할 컴퓨터는 운영자가 등록한 Windows Computer만입니다. 이름을 지어내지 마세요.',
@@ -631,6 +633,9 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       `(스크립트는 그 Windows에서 ${origin}/downloads/grok-crew.py)`,
       '1분마다 같은 Windows에서 still_here heartbeat를 남기세요. 창이 켜져 있는지 이 책상이 알게 합니다.',
       beat,
+      'still_here를 보낸 뒤 같은 Windows에서 아래를 반복해 자기 자리의 대기 초대문을 읽으세요. 사람이 초대문을 다시 붙이지 않습니다. 404면 할 일이 아직 없습니다. 글을 받으면 그 일만 합니다. 409면 다른 봇이 가져간 것입니다. 채팅에 토큰을 넣지 마세요.',
+      pull,
+      pullPy,
       `할 일이 바뀌면 같은 주소에 heartbeat를 바로 보냅니다. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 끝나면 detail.note에 다음 자리에 남긴 말을 한 줄만 넣습니다. 없는 말은 만들지 마세요. 채팅에는 토큰을 넣지 마세요.`,
       readyBeat,
       `${port}가 안 열리면 멈추고 "${port}가 없다"고 하세요. 디스크에서 스크립트를 찾지 마세요.`,
@@ -649,6 +654,9 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       `(脚本在那台 Windows 上：${origin}/downloads/grok-crew.py)`,
       '每 1 分钟在同一台 Windows 上留下 still_here heartbeat，好让这张书桌知道窗口还开着。',
       beat,
+      '发送 still_here 后，在同一台 Windows 上重复读取自己位子的待办邀请。操作员不会再粘贴一次。404 表示还没有工作。读到文字后只做那件事。409 表示别的机器人已经拿走。不要把令牌写进聊天。',
+      pull,
+      pullPy,
       `事情一变就立刻往同一地址发 heartbeat。action 先用 ${work.start}，做完改成 ${work.ready}。做完时只在 detail.note 写留给下一位子的一行。不要编造没有的话。不要把令牌写进聊天。`,
       readyBeat,
       `若 ${port} 没开，停下来只写“没有 ${port}”。不要在磁盘上找脚本。`,
@@ -667,6 +675,9 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       `(スクリプトはその Windows で ${origin}/downloads/grok-crew.py)`,
       '1 分ごとに同じ Windows で still_here heartbeat を残してください。窓が開いていることをこのデスクが分かります。',
       beat,
+      'still_here のあと、同じ Windows で自分の席の待ち招待文を繰り返し読んでください。人が招待文をもう一度貼ることはありません。404 なら仕事はまだありません。文を受け取ったらその仕事だけします。409 なら他のボットが取りました。トークンをチャットに書かないでください。',
+      pull,
+      pullPy,
       `仕事が変わったら同じ住所にすぐ heartbeat を送ります。action は ${work.start} で始め、終わったら ${work.ready} です。終わったら detail.note に次の席へ残した一行だけ。ない言葉は作らないでください。トークンをチャットに書かないでください。`,
       readyBeat,
       `${port} が開いていなければ止まって「${port} がない」と書いてください。ディスクでスクリプトを探さないでください。`,
@@ -684,6 +695,9 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     `(script on that Windows: ${origin}/downloads/grok-crew.py)`,
     'Leave a still_here heartbeat on the same Windows every minute so this desk knows the window is open.',
     beat,
+    'After still_here, keep reading this seat\'s waiting invite on the same Windows. The operator will not paste the invite again. 404 means no job yet. When you get the text, do only that job. 409 means another bot already took it. Do not put the token in chat.',
+    pull,
+    pullPy,
     `When the job changes, send a heartbeat to the same address at once. Start with action ${work.start}, then ${work.ready} when done. On ${work.ready}, put only one line in detail.note for the next seat. Do not invent a line. Do not put the token in chat.`,
     readyBeat,
     `If ${port} is not open, stop and say ${port} is missing. Do not search the disk for the script.`,

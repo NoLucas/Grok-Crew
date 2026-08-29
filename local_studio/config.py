@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -65,11 +66,26 @@ def origin_is_allowed(origin: str | None, allowed: frozenset[str] | None = None)
     return origin in allowlist or bool(_LOOPBACK_ORIGIN.fullmatch(origin))
 
 
+def client_host_is_loopback(host: str | None) -> bool:
+    """True only for a loopback TCP peer. Remote and mapped-public hosts stay out."""
+    text = str(host or "").strip().lower()
+    if not text:
+        return False
+    if text.startswith("[") and text.endswith("]"):
+        text = text[1:-1]
+    if "%" in text:
+        text = text.split("%", 1)[0]
+    try:
+        return bool(ipaddress.ip_address(text).is_loopback)
+    except ValueError:
+        return text in {"localhost"}
+
+
 ALLOWED_ORIGINS = parse_allowed_origins(os.getenv("LOCAL_STUDIO_ALLOWED_ORIGINS", ""))
 SITE_BASE_URL = "http://localhost:3000"
 BROWSER_PAGE_PATHS = {"/", "/tools", "/edit", "/cut", "/production", "/operations", "/bots", "/bot-guide", "/terminal", "/library", "/agent", "/connect", "/packet", "/gates", "/export", "/privacy"}
 PUBLIC_GET_PATHS = frozenset({"/health", "/api/terminal-contract", "/api/bot-guide", "/api/bot-entry", "/api/v2/tools", "/downloads/grok-crew.py", "/downloads/grok-crew-bot.zip"})
-PUBLIC_POST_PATHS = frozenset({"/api/bot-entry", "/api/bots/heartbeat"})
+PUBLIC_POST_PATHS = frozenset({"/api/bot-entry", "/api/bots/heartbeat", "/api/bots/next-invite"})
 MEDIA_GET_SUFFIXES = frozenset({
     ".wav", ".mp3", ".m4a", ".aac", ".mp4", ".m4v", ".webm", ".mov", ".mkv", ".avi",
     ".jpg", ".jpeg", ".png", ".webp", ".gif", ".vtt", ".srt",

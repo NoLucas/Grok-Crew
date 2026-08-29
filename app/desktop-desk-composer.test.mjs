@@ -107,6 +107,14 @@ describe('desk composer restage', () => {
     assert.equal(text.includes('startGrok'), false);
   });
 
+  it('centers the first-run language gate on a single column', () => {
+    const css = src('globals.css');
+    const gate = src('desktop-language-gate.tsx');
+    assert.match(gate, /desktop-body desktop-language-first/);
+    assert.match(css, /\.desktop-body\.desktop-language-first\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+    assert.match(css, /\.desktop-body\.desktop-language-first\s*\{[^}]*place-items:\s*center/);
+  });
+
   it('Advanced spec starts with a composer and folds doors', () => {
     const text = src('desktop-spec-desk.tsx');
     assert.match(text, /is-composer/);

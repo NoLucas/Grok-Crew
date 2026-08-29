@@ -16,6 +16,8 @@ const {
   autoSourceMode,
   importedEditSpecId,
   pasteTargetForSeats,
+  pasteTargetRole,
+  samePcInviteReady,
   preferredSeatFamily,
   shouldAutoPullInbox,
   shouldClearWaitForImport,
@@ -865,6 +867,54 @@ describe('auto desk seats and inbox guards', () => {
       language: 'ko',
     });
     assert.equal(pasteTargetForSeats(afterPlan, 'ko'), 'Grok Bot 스크래핑');
+    assert.equal(pasteTargetRole(idle), 'planner');
+    assert.equal(pasteTargetRole(afterPlan), 'scraper');
+  });
+
+  it('hides the human paste when the current Grok seat is checked in on this PC', () => {
+    const roster = {
+      bots: [{ bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'still_here' }],
+    };
+    const rows = alwaysCrewSeats({ roster, language: 'ko' });
+    assert.equal(samePcInviteReady(rows, roster), true);
+    const auto = readFileSync(new URL('./desktop-auto-desk.tsx', import.meta.url), 'utf8');
+    assert.match(auto, /samePcInviteReady/);
+    assert.match(auto, /samePcPull \? null/);
+    assert.match(auto, /다시 복사 · \$\{pasteTarget\}/);
+    assert.match(auto, /사람 손길/);
+    assert.doesNotMatch(auto, /봇이 읽는 중/);
+    const pasted = alwaysCrewSeats({
+      links: {
+        pairCode: 'QDWAVN',
+        bots: [{
+          id: 'p1',
+          name: 'Grok Bot 기획자',
+          kind: 'grok',
+          role: 'planner',
+          place: 'other_pc',
+          status: 'connected',
+          pairCode: 'QDWAVN',
+        }],
+      },
+      language: 'ko',
+    });
+    assert.equal(samePcInviteReady(pasted, undefined), false);
+    const agent = alwaysCrewSeats({
+      links: {
+        pairCode: 'QDWAVN',
+        bots: [{
+          id: 'c1',
+          name: 'Agent 기획자',
+          kind: 'custom',
+          role: 'planner',
+          place: 'other_pc',
+          status: 'connected',
+          pairCode: 'QDWAVN',
+        }],
+      },
+      language: 'ko',
+    });
+    assert.equal(samePcInviteReady(agent, undefined), false);
   });
 
   it('does not auto-pull leftover inbox files or close a wait for a wrap_loose cut', () => {

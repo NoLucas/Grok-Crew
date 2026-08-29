@@ -8272,7 +8272,11 @@ select {
 }
 .desktop-body.desktop-language-first {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
+  justify-items: center;
+  width: 100%;
   min-height: 0;
   padding: 36px 20px 40px;
   overflow: auto;
@@ -10093,6 +10097,7 @@ select {
 @media (max-width: 1050px) {
   .desktop-body { grid-template-columns: var(--desktop-sidebar-w) var(--desktop-col-handle) minmax(460px, 1fr); }
   .desktop-body.local-first { grid-template-columns: var(--desktop-sidebar-w) var(--desktop-col-handle) minmax(460px, 1fr); }
+  .desktop-body.desktop-language-first { grid-template-columns: minmax(0, 1fr); place-items: center; }
   .desktop-column-handle-inspector { display: none; }
   .desktop-inspector { display: none; }
   .desktop-body.local-first .desktop-inspector.open,
@@ -10117,6 +10122,7 @@ select {
   .desktop-titlebar { grid-template-columns: 36px 1fr auto; grid-template-rows: auto auto; }
   .desktop-connection { display: none; }
   .desktop-body { grid-template-columns: 1fr; }
+  .desktop-body.desktop-language-first { grid-template-columns: minmax(0, 1fr); place-items: center; }
   .desktop-column-handle { display: none; }
   .desktop-sidebar { display: none; }
   .desktop-sidebar.open {

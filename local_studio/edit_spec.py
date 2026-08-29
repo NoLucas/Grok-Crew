@@ -1024,3 +1024,136 @@ def spec_invite(spec_id: str, language: str = "ko") -> dict[str, Any]:
         "inbox_dir": inbox,
         "language": lang[:2],
     }
+
+
+GROK_INVITE_SEATS = {
+    "grok-planner": {"purpose": "plan_edit"},
+    "grok-scraper": {"purpose": "collect"},
+    "grok-editor": {"purpose": "edit_video"},
+}
+
+
+class NextInviteError(Exception):
+    """Seat invite pull: 403 wrong seat, 404 none waiting, 409 already taken."""
+
+    def __init__(self, status: int, message: str) -> None:
+        super().__init__(message)
+        self.status = status
+
+
+def _invite_bot_id(value: Any) -> str:
+    bot_id = str(value or "").strip()[:80]
+    if not bot_id or not all(character.isalnum() or character in "-_." for character in bot_id):
+        raise ValueError("bot_id must use letters, numbers, hyphen, underscore, or period.")
+    return bot_id
+
+
+def waiting_seat_bot_id(record: dict[str, Any] | None) -> str | None:
+    """Which same-PC Grok seat may pull this waiting spec. Planner has no door."""
+    if not record or str(record.get("status") or "") != "waiting_for_bot":
+        return None
+    door = str(record.get("door") or "")
+    source_mode = str(record.get("source_mode") or "bot")
+    if door == COLLECTOR_DOOR:
+        return "grok-scraper"
+    if source_mode == "own":
+        return "grok-editor"
+    return "grok-planner"
+
+
+def _invite_claim(spec: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(spec, dict):
+        return None
+    claim = spec.get("invite_claim")
+    if not isinstance(claim, dict):
+        return None
+    bot_id = str(claim.get("bot_id") or "").strip()
+    if not bot_id:
+        return None
+    return claim
+
+
+def _waiting_bot_records() -> list[dict[str, Any]]:
+    with db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM edit_specs WHERE status = ? ORDER BY created_at DESC, id DESC",
+            ("waiting_for_bot",),
+        ).fetchall()
+    return [item for item in (_record(row_dict(row)) for row in rows) if item]
+
+
+def _checked_in_purpose(bot_id: str) -> str | None:
+    with db() as conn:
+        entry = conn.execute(
+            "SELECT purpose FROM bot_entries WHERE bot_id = ? ORDER BY joined_at DESC LIMIT 1",
+            (bot_id,),
+        ).fetchone()
+        session = conn.execute(
+            "SELECT bot_id FROM bot_sessions WHERE bot_id = ?",
+            (bot_id,),
+        ).fetchone()
+    if entry:
+        return str(entry["purpose"] or "")
+    if session:
+        return ""
+    return None
+
+
+def _claim_waiting_invite(spec_id: str, bot_id: str) -> tuple[str, dict[str, Any]]:
+    now = utc_now()
+    with db() as conn:
+        row = conn.execute("SELECT * FROM edit_specs WHERE id = ?", (spec_id,)).fetchone()
+        record = _record(row_dict(row))
+        if not record or record.get("status") != "waiting_for_bot":
+            raise NextInviteError(404, "No waiting invite.")
+        spec = record.get("spec") if isinstance(record.get("spec"), dict) else {}
+        claim = _invite_claim(spec)
+        claimed_by = str((claim or {}).get("bot_id") or "").strip()
+        if claimed_by and claimed_by != bot_id:
+            raise NextInviteError(409, "Another bot already took this invite.")
+        if claimed_by == bot_id:
+            return "already_read", record
+        spec = dict(spec)
+        spec["invite_claim"] = {"bot_id": bot_id, "claimed_at": now}
+        conn.execute(
+            "UPDATE edit_specs SET spec_json = ?, updated_at = ? WHERE id = ? AND status = ?",
+            (json.dumps(spec, ensure_ascii=False), now, spec_id, "waiting_for_bot"),
+        )
+    refreshed = get_spec(spec_id) or record
+    return "claimed", refreshed
+
+
+def next_invite_for_bot(body: dict[str, Any] | None) -> dict[str, Any]:
+    """Same-PC checked-in seat pulls the newest waiting invite for that seat only."""
+    payload = body if isinstance(body, dict) else {}
+    bot_id = _invite_bot_id(payload.get("bot_id"))
+    seat = GROK_INVITE_SEATS.get(bot_id)
+    if not seat:
+        raise NextInviteError(403, "This seat does not match that wait.")
+    purpose = _checked_in_purpose(bot_id)
+    if purpose is None:
+        raise NextInviteError(403, "This seat is not checked in.")
+    expected = str(seat["purpose"])
+    if purpose and purpose != expected:
+        raise NextInviteError(403, "This seat does not match that wait.")
+    waiting = _waiting_bot_records()
+    if not waiting:
+        raise NextInviteError(404, "No waiting invite.")
+    mine = [record for record in waiting if waiting_seat_bot_id(record) == bot_id]
+    if not mine:
+        raise NextInviteError(403, "This seat does not match that wait.")
+    newest = mine[0]
+    state, record = _claim_waiting_invite(str(newest["id"]), bot_id)
+    spec = record.get("spec") if isinstance(record.get("spec"), dict) else {}
+    language = str(spec.get("language") or "ko")
+    invite = spec_invite(str(record["id"]), language=language)
+    text = str(invite.get("text") or "")
+    if "LOCAL_STUDIO_TOKEN" in text or "Bearer " in text:
+        raise ValueError("Invite text must not include a token.")
+    return {
+        "schema": "grok-crew.next-invite/v1",
+        "edit_spec_id": record["id"],
+        "already_read": state == "already_read",
+        "text": text,
+        "language": str(invite.get("language") or language)[:2],
+    }
