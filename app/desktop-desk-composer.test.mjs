@@ -19,6 +19,12 @@ describe('desk composer restage', () => {
     assert.match(text, /이 창의 다른 연결/);
     assert.match(text, /자리 확인은 이 책상이 합니다/);
     assert.match(text, /채팅에 루틴·매 분 예약 작업을 만들지 마세요/);
+    assert.match(text, /그 글을 복사하면 이 책상이 그 자리로 입장합니다/);
+    assert.equal(text.includes('봇이 보낸 한 줄'), false);
+    assert.equal(text.includes('desktop-bot-confirm'), false);
+    assert.equal(text.includes('복사만으로는 연결되지 않습니다'), false);
+    assert.match(text, /confirmCopiedSeat/);
+    assert.equal(text.includes('confirmRemoteReplies'), false);
     assert.match(text, /This desk does the seat check/);
     assert.match(text, /desktop-spinner-inline/);
     assert.match(text, /확인 중/);

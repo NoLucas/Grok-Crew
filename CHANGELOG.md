@@ -4,6 +4,11 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+### Desk
+
+- Connect no longer has a paste box for the bot `GROK_CREW_OK` line. Copying the connect message enters that seat on this Windows desk and holds `still_here` here.
+- Connect text puts the role skill first. The first chat reply is still `GROK_CREW_OK`; after that each seat does its own job. The shared “send OK and stop” script is gone so planner, scraper, and editor no longer behave the same.
+
 ## 1.0.17 - 2026-08-29
 
 Local 1.0.17. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.17` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.17) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.17). Guest notes: `docs/RELEASE_NOTES.v1.0.17.md`. Guest Drive download stays the last published file. Already-installed 1.0.16 desks check Grok-crew-test for this tag.

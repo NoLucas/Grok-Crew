@@ -15,7 +15,7 @@ const {
   grokSeatEntryBody,
 } = await import('./desktop-bot-links.ts');
 
-describe('desk-side Grok enter after GROK_CREW_OK', () => {
+describe('desk-side Grok enter after the connect message is copied', () => {
   it('builds the same bot-entry the Windows keep uses', () => {
     assert.deepEqual(grokSeatEntryBody('planner', 'ko'), {
       bot_id: 'grok-planner',

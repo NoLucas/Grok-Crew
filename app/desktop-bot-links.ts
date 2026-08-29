@@ -379,6 +379,21 @@ export function confirmRemoteReplies(
   return { next, confirmed };
 }
 
+/** Copying the connect message is the handshake. No second paste of GROK_CREW_OK. */
+export function confirmCopiedSeat(
+  state: BotLinkState,
+  kind: 'grok' | 'custom',
+  role: BotRole,
+  language = 'ko',
+): BotLinkState {
+  if (!state.pairCode) return state;
+  return confirmRemoteReplies(
+    state,
+    suggestedConnectReply(kind, state.pairCode, role),
+    language,
+  ).next;
+}
+
 export function rosterMatchesSeat(bot: Pick<CrewBot, 'bot_id' | 'display_name'>, role: BotRole): boolean {
   const id = String(bot.bot_id || '').trim().toLowerCase();
   if (id === GROK_SEAT_BOT_IDS[role]) return true;
@@ -460,7 +475,7 @@ export function grokSeatLampRows(
 
 export type LinkChangeCause = 'copy' | 'release' | 'attach' | 'other';
 
-/** Copying connect text is not a connection. Stay on Connect while that tab is open. */
+/** Stay on Connect while that tab is open, even after a copy that enters the seat. */
 export function shouldLandAutoAfterLinkChange(input: {
   previousConnected: boolean;
   nextConnected: boolean;
@@ -684,75 +699,71 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     return [
       '명령을 실행할 컴퓨터는 운영자가 등록한 Windows Computer만입니다. 이름을 지어내지 마세요.',
       '봇 쪽 Linux·공유 컴퓨터에서 127.0.0.1을 열지 마세요. 그 주소는 이 책상이 아닙니다.',
-      `이 대화가 그 Windows가 아니면(Linux·공유·클라우드) 창과 ${port}를 확인하지 마세요. 창이 없다고 하지 마세요. ${port}가 없다고 하지 마세요. GROK_CREW_OK 한 줄만 보내고 멈추세요. 운영자가 연결에 그 줄을 붙이면 그 Windows 책상이 입장합니다.`,
+      `이 대화가 그 Windows가 아니면(Linux·공유·클라우드) 창과 ${port}를 확인하지 마세요. 창이 없다고 하지 마세요. ${port}가 없다고 하지 마세요.`,
       '루틴을 만들지 마세요. Grok exe를 찾지 마세요. 채팅 쪽에 still_here·매 분·1분마다 예약 작업을 만들지 마세요. 승인 창이 다시 뜹니다.',
-      '승인 글에 그 Windows가 아니라고 하거나 실행 면이 Linux·공유면 허용하지 마세요. GROK_CREW_OK 한 줄만 보내고 멈추세요.',
+      '승인 글에 그 Windows가 아니라고 하거나 실행 면이 Linux·공유면 허용하지 마세요.',
       '그 Windows가 맞고 승인이 한 번 뜨면 한 번만 받으세요. 거부되면 멈추고 한 줄로만 알리세요.',
       '그 Windows에서만, Grok Crew 창이 꺼져 있으면 멈추고 "창이 없다"고 하세요. 이 대화가 그 Windows가 아니면 창이 없다고 하지 마세요.',
-      `이 자리 bot_id는 ${id}입니다. purpose는 ${purpose}입니다. keep·루틴·예약 작업을 이 채팅에서 실행하지 마세요. 입장과 자리 확인은 운영자가 연결에 GROK_CREW_OK를 붙이면 그 Windows 책상이 합니다.`,
+      `이 자리 bot_id는 ${id}입니다. purpose는 ${purpose}입니다. keep·루틴·예약 작업을 이 채팅에서 실행하지 마세요. 입장과 자리 확인은 이 Windows 책상이 합니다.`,
       '연결에서 연결 해제를 누르면 책상이 disconnected를 보냅니다. 채팅에서 keep이나 루틴을 켜지 마세요.',
       '초대문은 사람이 다시 붙이지 않습니다. 글을 받으면 그 일만 합니다. 채팅에 토큰을 넣지 마세요.',
       `할 일이 바뀌면 그 Windows에서만 heartbeat를 바로 한 번 보냅니다. 루틴으로 보내지 마세요. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 시작과 넘김 모두 detail.note에 다음 자리에게 말하는 한 줄을 넣습니다. 그 두 줄이 크루 보드 대화입니다. 없는 말은 만들지 마세요. 채팅에는 토큰을 넣지 마세요.`,
       startBeat,
       readyBeat,
       `그 Windows에서만, ${port}가 안 열리면 멈추고 "${port}가 없다"고 하세요. 이 대화가 그 Windows가 아니면 ${port}가 없다고 하지 마세요. 디스크에서 스크립트를 찾지 마세요.`,
-      '그래도 안 되면 GROK_CREW_OK 한 줄만 보내고 멈추세요.',
     ];
   }
   if (lang === 'zh') {
     return [
       '只在操作员已登记的 Windows Computer 上执行命令。不要编造主机名。',
       '不要在机器人那边的 Linux 或共享电脑上打开 127.0.0.1。那个地址不是这张书桌。',
-      `若这段对话不是那台 Windows（Linux、共享、云），不要检查窗口和 ${port}。不要说没有窗口。不要说没有 ${port}。只发 GROK_CREW_OK 那一行然后停下。操作员把那一行贴到连接后，那台 Windows 书桌会签到。`,
+      `若这段对话不是那台 Windows（Linux、共享、云），不要检查窗口和 ${port}。不要说没有窗口。不要说没有 ${port}。`,
       '不要做 Routine。不要找 Grok exe。不要在聊天里做 still_here、每分钟、每 1 分钟预约作业。批准窗会再跳出来。',
-      '若批准文说不是那台 Windows，或执行面是 Linux/共享，不要允许。只发 GROK_CREW_OK 那一行然后停下。',
+      '若批准文说不是那台 Windows，或执行面是 Linux/共享，不要允许。',
       '若就是那台 Windows 且批准只出现一次，接受一次。若拒绝，停下来只回一行。',
       '只在那台 Windows 上，若 Grok Crew 窗口是关的，停下来并写“没有窗口”。若这段对话不是那台 Windows，不要说没有窗口。',
-      `这个位子 bot_id 是 ${id}。purpose 是 ${purpose}。不要在这个聊天里跑 keep、Routine 或预约作业。签到和位子确认由操作员把 GROK_CREW_OK 贴到连接后，那台 Windows 书桌来做。`,
+      `这个位子 bot_id 是 ${id}。purpose 是 ${purpose}。不要在这个聊天里跑 keep、Routine 或预约作业。签到和位子确认由这台 Windows 书桌来做。`,
       '连接里按下断开后书桌会发 disconnected。不要从聊天再开 keep 或 Routine。',
       '操作员不会再粘贴邀请。读到文字后只做那件事。不要把令牌写进聊天。',
       `事情一变就只在那台 Windows 上立刻发一次 heartbeat。不要用 Routine 发。action 先用 ${work.start}，做完改成 ${work.ready}。开工和转交都要在 detail.note 写给下一位子的一行。这两行就是组员看板对话。不要编造没有的话。不要把令牌写进聊天。`,
       startBeat,
       readyBeat,
       `只在那台 Windows 上，若 ${port} 没开，停下来只写“没有 ${port}”。若这段对话不是那台 Windows，不要说没有 ${port}。不要在磁盘上找脚本。`,
-      '还不行就只发 GROK_CREW_OK 那一行然后停下。',
     ];
   }
   if (lang === 'ja') {
     return [
       'コマンドを実行するコンピュータは、運営者が登録した Windows Computer だけです。名前を作らないでください。',
       'ボット側の Linux や共有コンピュータで 127.0.0.1 を開かないでください。その住所はこのデスクではありません。',
-      `この会話がその Windows でなければ（Linux・共有・クラウド）、窓と ${port} を確認しないでください。窓がないと言わないでください。${port} がないと言わないでください。GROK_CREW_OK の一行だけ送って止まってください。運営者が接続にその行を貼ると、その Windows の机が入場します。`,
+      `この会話がその Windows でなければ（Linux・共有・クラウド）、窓と ${port} を確認しないでください。窓がないと言わないでください。${port} がないと言わないでください。`,
       'ルーチンを作らないでください。Grok exe を探さないでください。チャット側に still_here・毎分・1 分ごとの予約作業を作らないでください。承認窓がまた出ます。',
-      '承認文がその Windows ではない、または実行面が Linux・共有なら許可しないでください。GROK_CREW_OK の一行だけ送って止まってください。',
+      '承認文がその Windows ではない、または実行面が Linux・共有なら許可しないでください。',
       'その Windows が正しく、承認が一度だけ出たら一度だけ受けてください。拒まれたら止まって一行だけ知らせてください。',
       'その Windows だけで、Grok Crew の窓が消えていたら止まって「窓がない」と書いてください。この会話がその Windows でなければ窓がないと言わないでください。',
-      `この席の bot_id は ${id} です。purpose は ${purpose} です。このチャットで keep・ルーチン・予約作業を実行しないでください。入場と席確認は、運営者が接続に GROK_CREW_OK を貼るとその Windows の机がします。`,
+      `この席の bot_id は ${id} です。purpose は ${purpose} です。このチャットで keep・ルーチン・予約作業を実行しないでください。入場と席確認はこの Windows の机がします。`,
       '接続で接続を外すと机が disconnected を送ります。チャットから keep やルーチンを再起動しないでください。',
       '人が招待文をもう一度貼ることはありません。文を受け取ったらその仕事だけします。トークンをチャットに書かないでください。',
       `仕事が変わったらその Windows だけですぐ heartbeat を一度送ります。ルーチンで送らないでください。action は ${work.start} で始め、終わったら ${work.ready} です。開始と受け渡しの両方で detail.note に次の席への一言を入れてください。その二行がクルーボードの会話です。ない言葉は作らないでください。トークンをチャットに書かないでください。`,
       startBeat,
       readyBeat,
       `その Windows だけで、${port} が開いていなければ止まって「${port} がない」と書いてください。この会話がその Windows でなければ ${port} がないと言わないでください。ディスクでスクリプトを探さないでください。`,
-      'それでもだめなら GROK_CREW_OK の一行だけ送って止まってください。',
     ];
   }
   return [
     'Run commands only on the operator registered Windows Computer. Do not invent a host name.',
     'Do not open 127.0.0.1 from the bot Linux or shared computer. That address is not this desk.',
-    `If this conversation is not that Windows (Linux, shared, or cloud), do not check the window or ${port}. Do not say the window is missing. Do not say ${port} is missing. Send only the GROK_CREW_OK line and stop. When the operator pastes that line on Connect, that Windows desk enters the seat.`,
+    `If this conversation is not that Windows (Linux, shared, or cloud), do not check the window or ${port}. Do not say the window is missing. Do not say ${port} is missing.`,
     'Do not create a Grok Routine. Do not search for a Grok exe. Do not create a chat scheduled job named still_here, every minute, or 매 분. That approval window will return.',
-    'If the approval text says the surface cannot be verified as that Windows machine, or it is Linux or shared, do not allow. Send only the GROK_CREW_OK line and stop.',
+    'If the approval text says the surface cannot be verified as that Windows machine, or it is Linux or shared, do not allow.',
     'If it is that Windows and approval appears once, accept it once. If it is denied, stop and say so in one line.',
     'On that Windows only, if Grok Crew is not open, stop and say the window is missing. If this conversation is not that Windows, do not say the window is missing.',
-    `This seat bot_id is ${id}. purpose is ${purpose}. Do not run keep, a Routine, or a scheduled job from this chat. Entry and the seat check happen on that Windows desk after the operator pastes GROK_CREW_OK on Connect.`,
+    `This seat bot_id is ${id}. purpose is ${purpose}. Do not run keep, a Routine, or a scheduled job from this chat. Entry and the seat check happen on that Windows desk.`,
     'If Connect sends disconnected, do not start keep or a Routine from chat.',
     'The operator will not paste the invite again. When you get the text, do only that job. Do not put the token in chat.',
     `When the job changes, send one heartbeat on that Windows only, at once. Do not send it as a Routine. Start with action ${work.start}, then ${work.ready} when done. On start and on handoff, put one spoken line to the next seat in detail.note. Those two lines are the crew board chat. Do not invent a line. Do not put the token in chat.`,
     startBeat,
     readyBeat,
     `On that Windows only, if ${port} is not open, stop and say ${port} is missing. If this conversation is not that Windows, do not say ${port} is missing. Do not search the disk for the script.`,
-    'If that still fails, send only the GROK_CREW_OK line and stop.',
   ];
 }
 
@@ -775,64 +786,68 @@ export function remoteConnectPaste(
   if (lang === 'ko') {
     return [
       `당신은 Grok Crew와 연결합니다. 이름은 ${who}입니다.`,
-      `역할은 ${job}입니다. 연결할 때 아래 역할 스킬과 보조 스킬을 읽고 그 일만 합니다.`,
+      `역할은 ${job}입니다. 아래 역할 스킬과 보조 스킬을 읽고 그 일만 합니다. 다른 자리 일을 하지 않습니다.`,
       `보낼 나라는 ${marketLabel(dest, 'ko')}입니다. 나라를 바꿨으면 이 글을 다시 복사하세요.`,
+      '',
+      skills,
+      '',
       ...(windows.length ? windows : ['다른 컴퓨터에서는 127.0.0.1에 붙지 마세요. 이 창을 열 수 없습니다.']),
       `연결 코드: ${pairCode}`,
       '',
-      '첫 답은 아래 한 줄만 보내세요.',
+      '첫 답은 아래 한 줄입니다. 그다음부터 운영자가 주는 일을 위 역할대로 합니다.',
       line,
       '',
-      '그다음부터 운영자가 주는 일만 합니다. 끝난 컷은 운영자가 이 Windows 창에 놓습니다.',
-      '',
-      skills,
+      '끝난 컷은 운영자가 이 Windows 창에 놓습니다.',
     ].join('\n');
   }
   if (lang === 'zh') {
     return [
       `你正在连接 Grok Crew。名字是 ${who}。`,
-      `角色是 ${job}。连接后阅读下面的角色技能和一项辅助技能，只做那件事。`,
+      `角色是 ${job}。阅读下面的角色技能和一项辅助技能，只做那件事。不要做别的位子的工作。`,
       `要发往的国家是 ${marketLabel(dest, 'zh')}。改了国家请重新复制这段文字。`,
+      '',
+      skills,
+      '',
       ...(windows.length ? windows : ['另一台电脑不要连接 127.0.0.1。打不开这个窗口。']),
       `连接代码：${pairCode}`,
       '',
-      '第一句回复只发下面这一行。',
+      '第一句回复是下面这一行。之后按上面的角色做操作员给的工作。',
       line,
       '',
-      '之后只做操作员给的工作。完成的成片由操作员放到这个 Windows 窗口。',
-      '',
-      skills,
+      '完成的成片由操作员放到这个 Windows 窗口。',
     ].join('\n');
   }
   if (lang === 'ja') {
     return [
       `あなたは Grok Crew と接続します。名前は ${who} です。`,
-      `役割は ${job} です。下の役割スキルと補助スキルを読んで、その仕事だけします。`,
+      `役割は ${job} です。下の役割スキルと補助スキルを読んで、その仕事だけします。ほかの席の仕事はしません。`,
       `送る国は ${marketLabel(dest, 'ja')} です。国を変えたらこの文をコピーし直してください。`,
+      '',
+      skills,
+      '',
       ...(windows.length ? windows : ['別のコンピュータから 127.0.0.1 に接続しないでください。この窓は開けません。']),
       `接続コード: ${pairCode}`,
       '',
-      '最初の返事はこの一行だけです。',
+      '最初の返事は次の一行です。そのあとは上の役割どおり、運営者が渡す仕事をします。',
       line,
       '',
-      'そのあとは運営者が渡す仕事だけします。終わったカットは運営者がこの Windows の窓に置きます。',
-      '',
-      skills,
+      '終わったカットは運営者がこの Windows の窓に置きます。',
     ].join('\n');
   }
   return [
     `You are connecting to Grok Crew as ${who}.`,
-    `Your role is ${job}. Read the role skill and one extra below and only do that job.`,
+    `Your role is ${job}. Read the role skill and one extra below and only do that job. Do not do another seat's work.`,
     `Destination country: ${marketLabel(dest, 'en')}. If you change it, copy this text again.`,
+    '',
+    skills,
+    '',
     ...(windows.length ? windows : ['Do not connect to 127.0.0.1 from another computer.']),
     `Connection code: ${pairCode}`,
     '',
-    'Reply with this one line only:',
+    'The first reply is this one line. After that, do the operator work using the role above.',
     line,
     '',
-    'After that, only do the work the operator gives. The operator drops the finished cut on this Windows window.',
-    '',
-    skills,
+    'The operator drops the finished cut on this Windows window.',
   ].join('\n');
 }
 

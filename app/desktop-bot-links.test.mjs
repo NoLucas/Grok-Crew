@@ -24,6 +24,7 @@ const {
   replyMatchesSeat,
   suggestedConnectReply,
   confirmRemoteReplies,
+  confirmCopiedSeat,
   upsertLinkedBot,
   activeRosterSeat,
   familyIsConnected,
@@ -90,7 +91,7 @@ describe('remote bot links', () => {
       assert.match(text, /루틴을 만들지 마세요|Do not create a Grok Routine|不要做 Routine|ルーチンを作らない/);
       assert.match(text, /예약 작업을 만들지 마세요|Do not create a chat scheduled|不要在聊天里做 still_here|予約作業を作らない/);
       assert.match(text, /그 Windows가 아니|cannot be verified|不是那台 Windows|その Windows ではない/);
-      assert.match(text, /책상이 합니다|desk after the operator pastes|书桌来做|机がします/);
+      assert.match(text, /책상이 합니다|happen on that Windows desk|书桌来做|机がします/);
       assert.match(text, /disconnected/);
       assert.doesNotMatch(text, /grok-crew.py keep/);
       assert.doesNotMatch(text, /Start-Sleep/);
@@ -115,9 +116,11 @@ describe('remote bot links', () => {
       assert.match(text, /7214가 없다|没有 7214|7214 がない|7214 is missing/);
       assert.match(text, /이 대화가 그 Windows가 아니면|If this conversation is not that Windows|若这段对话不是那台 Windows|この会話がその Windows でなければ/);
       assert.match(text, /창이 없다고 하지 마세요|Do not say the window is missing|不要说没有窗口|窓がないと言わないでください/);
-      assert.match(text, /책상이 입장|desk enters the seat|书桌会签到|机が入場/);
+      assert.match(text, /첫 답은 아래 한 줄|第一句回复是下面这一行|最初の返事は次の一行|The first reply is this one line/);
+      assert.match(text, /위 역할대로|按上面的角色|上の役割どおり|using the role above/);
+      assert.doesNotMatch(text, /연결에 그 줄을 붙이면|pastes that line on Connect|贴到连接后|接続にその行を貼ると/);
+      assert.doesNotMatch(text, /한 줄만 보내고 멈추세요|Send only the GROK_CREW_OK line and stop|只发 GROK_CREW_OK 那一行然后停下|一行だけ送って止まってください/);
       assert.match(text, /사람이 다시 붙이지 않습니다|will not paste the invite again|不会再粘贴邀请|もう一度貼ることはありません/);
-      assert.match(text, /GROK_CREW_OK 한 줄만|只发 GROK_CREW_OK|GROK_CREW_OK の一行だけ|only the GROK_CREW_OK line/);
       assert.match(text, /디스크에서 스크립트를 찾지 마세요|不要在磁盘上找脚本|ディスクでスクリプトを探さない|Do not search the disk for the script/);
       assert.doesNotMatch(text, /스크립트를 찾는 중|searching for the script/);
       assert.doesNotMatch(text, /Claude/);
@@ -148,11 +151,18 @@ describe('remote bot links', () => {
     assert.match(china, /Destination country: China/);
     assert.doesNotMatch(china, /Vimeo public pages/);
     assert.doesNotMatch(china, /당신은/);
+    const planner = remoteConnectPaste('grok', '7K2M9Q', 'ko', 'planner');
     const editor = remoteConnectPaste('grok', '7K2M9Q', 'ko', 'editor');
     assert.match(editor, /grok-crew-cut-to-plan/);
     assert.match(editor, /grok-editor/);
     assert.match(editor, /cut_started/);
     assert.match(editor, /cut_ready/);
+    assert.ok(planner.indexOf('grok-crew-planner') < planner.indexOf('Invoke-RestMethod'));
+    assert.ok(scraper.indexOf('grok-crew-scraper') < scraper.indexOf('Invoke-RestMethod'));
+    assert.ok(editor.indexOf('grok-crew-cut-to-plan') < editor.indexOf('Invoke-RestMethod'));
+    assert.match(planner, /당신은 기획자입니다/);
+    assert.match(scraper, /당신은 스크래핑 봇입니다/);
+    assert.match(editor, /당신은 편집자입니다/);
     assert.equal(grokSeatBotId('editor'), 'grok-editor');
     assert.equal(seatPurpose('scraper'), 'collect');
     assert.deepEqual(heartbeatWorkPair('planner'), { start: 'plan_started', ready: 'plan_ready' });
@@ -337,6 +347,17 @@ describe('remote bot links', () => {
         last_action: 'collect_started',
       }],
     }), true);
+  });
+
+  it('enters a seat from the copied connect message', () => {
+    const empty = { pairCode: 'QDWAVN', bots: [] };
+    const planner = confirmCopiedSeat(empty, 'grok', 'planner', 'ko');
+    assert.equal(linkedBySeat(planner.bots, 'grok', 'planner')?.status, 'connected');
+    assert.ok(linkedBySeat(planner.bots, 'grok', 'planner')?.confirmedAt);
+    assert.equal(hasConnectedBot(undefined, planner), true);
+    const agent = confirmCopiedSeat(empty, 'custom', 'scraper', 'ko');
+    assert.equal(linkedBySeat(agent.bots, 'custom', 'scraper')?.status, 'connected');
+    assert.equal(seatIsConnected('custom', 'scraper', agent, undefined), true);
   });
 
   it('attaches a seat when the operator pastes the bot GROK_CREW_OK line', () => {
