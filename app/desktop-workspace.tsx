@@ -338,10 +338,7 @@ export default function DesktopWorkspace() {
   const [proxyJob, setProxyJob] = useState<LocalJob | null>(null);
   const [proxyBusy, setProxyBusy] = useState(false);
   const [useProxy, setUseProxy] = useState(true);
-  const [newProject, setNewProject] = useState({ title: '', source_path: '', output_path: 'outputs/final-video.mp4' });
   const [newElement, setNewElement] = useState({ brollPath: '', title: '', caption: '' });
-  const [createOpen, setCreateOpen] = useState(false);
-  const [addingFolder, setAddingFolder] = useState(false);
   const [previewOutput, setPreviewOutput] = useState(false);
   const [playhead, setPlayhead] = useState(0);
   const [queueJobs, setQueueJobs] = useState<LocalJob[]>([]);
@@ -896,7 +893,6 @@ export default function DesktopWorkspace() {
     const existing = projectForReedit(workspace.projects, sourcePath);
     setSpecDeskOpen(false);
     setBotPanelOpen(false);
-    setCreateOpen(false);
     setDrawer('none');
     if (existing) {
       setSelectedProjectId(existing.id);
@@ -906,7 +902,6 @@ export default function DesktopWorkspace() {
     }
     const name = sourcePath.split(/[/\\]/).pop() || t('내 파일', 'My file', '我的文件', '自分のファイル');
     const title = name.replace(/\.[^.]+$/, '');
-    setNewProject((current) => ({ ...current, title: current.title || title, source_path: sourcePath }));
     setBusy(true);
     try {
       const result = await api('/api/v2/projects', {
@@ -938,8 +933,9 @@ export default function DesktopWorkspace() {
       if (picked) await createProjectFromPath(picked);
       return;
     }
-    setCreateOpen(true);
-    setDrawer('projects');
+    setActivePanel('auto');
+    setPeekAuto(true);
+    setMessage(t('시작 칸에 영상을 놓으세요.', 'Drop the video in Start.', '请把视频放到开始栏。', '開始欄に映像を置いてください。'));
   };
   const openSampleProject = async () => {
     setBusy(true);
@@ -949,7 +945,6 @@ export default function DesktopWorkspace() {
       setAdvancedSpecOpen(false);
       setSelectedProjectId(result.project.id);
       setActivePanel('edit');
-      setCreateOpen(false);
       setDrawer('none');
       await placeInRecent(result.project.id);
       await refreshWorkspace(true);
@@ -962,32 +957,6 @@ export default function DesktopWorkspace() {
       setBusy(false);
     }
   };
-  const createProject = async () => {
-    if (!newProject.title.trim() || !newProject.source_path) { setMessage(t('프로젝트 이름과 원본을 선택하세요.', 'Choose a project name and source.', '请选择项目名称和素材。', 'プロジェクト名と素材を選択してください。')); return; }
-    setBusy(true);
-    try {
-      const result = await api('/api/v2/projects', { method: 'POST', body: JSON.stringify({
-        title: newProject.title, source_path: newProject.source_path, output_path: newProject.output_path,
-        timeline: { clips: [{ in: 0, out: 10, keep: true, caption: '' }], render_settings: { fps: 30, quality: 'balanced', platform: 'reels_tiktok_shorts', captions_enabled: true } }, caption: '',
-      }) }) as { project: Project };
-      setSelectedProjectId(result.project.id); setActivePanel('edit'); setCreateOpen(false); setDrawer('none'); setNewProject({ title: '', source_path: '', output_path: 'outputs/final-video.mp4' });
-      await placeInRecent(result.project.id);
-      await refreshWorkspace(true); setMessage(t('프로젝트를 만들었습니다. 편집 화면에서 바로 자를 수 있습니다.', 'Project created. Cut it from the editor.', '项目已创建，可在编辑画面直接剪辑。', 'プロジェクトを作成しました。編集画面ですぐ切れます。'));
-    } catch (error) { setMessage(error instanceof Error ? error.message : t('프로젝트 생성에 실패했습니다.', 'Project creation failed.', '项目创建失败。', 'プロジェクト作成に失敗しました。')); } finally { setBusy(false); }
-  };
-
-  const importMedia = async () => {
-    if (!window.grokCrew) { setMessage(t('파일 가져오기는 데스크톱 앱에서 사용할 수 있습니다.', 'File import is available in the desktop app.', '文件导入仅在桌面应用中可用。', 'ファイル読み込みはデスクトップアプリで利用できます。')); return; }
-    setBusy(true);
-    try {
-      const imported = await window.grokCrew.selectMedia();
-      if (!imported) return;
-      await refreshWorkspace(true);
-      setNewProject((current) => ({ ...current, source_path: imported }));
-      setMessage(t('영상을 목록에 넣었습니다. 원본에서 고른 뒤 만들기를 누르세요.', 'The video is on the list. Pick it as the source, then press Create.', '视频已放入列表。请选为素材，再点创建。', '映像を一覧に入れました。素材で選んでから作成を押してください。'));
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Media import failed.'); } finally { setBusy(false); }
-  };
-
   const patchTimeline = async (operations: Array<Record<string, unknown>>, success?: string) => {
     if (!project || !timeline) return null;
     const result = await api(`/api/v2/projects/${project.id}/timeline/patch`, { method: 'POST', body: JSON.stringify({ schema: 'grok-crew.timeline-patch/v1', base_revision: timeline.revision, origin: 'human', created_by: 'operator', operations }) }) as { timeline: Timeline };
@@ -1541,8 +1510,6 @@ export default function DesktopWorkspace() {
         style={columnStyleVars(columns.widths) as CSSProperties}
       >
         <aside className={`desktop-sidebar ${drawer === 'projects' ? 'open' : ''}`}>
-          <div className="desktop-side-head"><b>{t('프로젝트', 'Projects', '项目', 'プロジェクト')}</b><div className="desktop-side-head-actions"><button type="button" className={showAutoDesk || !project ? 'active' : ''} onClick={() => { setSpecDeskOpen(true); setAdvancedSpecOpen(false); setBotPanelOpen(false); setPeekAuto(true); setActivePanel('auto'); setDrawer('none'); }}>{t('새 규격', 'New brief', '新规格', '新しい仕様')}</button><button type="button" aria-label={t('폴더 만들기', 'Create a folder', '创建文件夹', 'フォルダを作る')} aria-pressed={addingFolder} onClick={() => setAddingFolder((value) => !value)}>＋</button></div></div>
-          {createOpen && <section className="desktop-create-card">{sampleAvailable ? <button type="button" className="desktop-primary" disabled={busy} onClick={() => void openSampleProject()}>{t('샘플로 시작', 'Start with the sample', '从示例开始', 'サンプルで始める')}</button> : null}<p className="desktop-create-hint">{t('가져오기는 이 PC의 영상을 목록에 넣는 일입니다. 넣은 뒤 원본을 고르고 만들기를 누르면 편집이 열립니다. 봇에게 맡기려면 자동 탭에 제목만 적으세요.', 'Import puts a video from this PC on the list. Then pick that source and press Create to open Edit. To hand it to a bot, write the title on Auto.', '导入是把这台电脑的视频放进列表。再选素材并点创建，就会打开编辑。要交给机器人，请到自动页只写标题。', '読み込みはこの PC の映像を一覧に入れることです。素材を選んで作成を押すと編集が開きます。ボットに任せるなら自動でタイトルだけ書いてください。')}</p><input value={newProject.title} onChange={(event) => setNewProject({ ...newProject, title: event.target.value })} placeholder={t('프로젝트 이름', 'Project name', '项目名称', 'プロジェクト名')} /><select value={newProject.source_path} onChange={(event) => setNewProject({ ...newProject, source_path: event.target.value })}><option value="">{t('원본 선택', 'Choose source', '选择素材', '素材を選択')}</option>{workspace.media.filter((item) => item.kind === 'video' && item.area === 'inputs').map((item) => <option value={item.path} key={item.path}>{item.name}</option>)}</select><button className="desktop-secondary" disabled={busy} onClick={() => void importMedia()}>{t('내 컴퓨터에서 가져오기', 'Import from computer', '从电脑导入', 'コンピュータから読み込む')}</button><input value={newProject.output_path} onChange={(event) => setNewProject({ ...newProject, output_path: event.target.value })} placeholder={t('저장 파일 이름', 'Output file name', '输出文件名', '出力ファイル名')} /><button className="desktop-primary" disabled={busy} onClick={() => void createProject()}>{t('만들기', 'Create', '创建', '作成')}</button></section>}
           <DesktopProjectLibrary
             projects={workspace.projects}
             folders={workspace.project_folders ?? []}
@@ -1552,8 +1519,7 @@ export default function DesktopWorkspace() {
             studioState={studioState}
             senderLabel={(item) => handoffSenderLabel(item, t)}
             request={api}
-            addingFolder={addingFolder}
-            onAddingFolder={setAddingFolder}
+            filePreviewUrl={(path) => mediaUrl(path)}
             onSelect={(projectId) => {
               if (!projectId) {
                 setSelectedProjectId('');
@@ -1644,7 +1610,7 @@ export default function DesktopWorkspace() {
                   studioReady={studioState === 'ready'}
                   sampleAvailable={sampleAvailable}
                   onOpenSample={() => { setSpecDeskOpen(false); setAdvancedSpecOpen(false); void openSampleProject(); }}
-                  onOpenOwnFootage={() => { setSpecDeskOpen(false); setAdvancedSpecOpen(false); setCreateOpen(true); setDrawer('projects'); }}
+                  onOpenOwnFootage={() => { setSpecDeskOpen(false); setAdvancedSpecOpen(false); void openOwnFileFromDesk(); }}
                   request={api}
                   onRefresh={() => refreshWorkspace(true)}
                   onImported={async (projectId, sender) => {

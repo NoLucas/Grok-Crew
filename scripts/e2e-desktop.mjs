@@ -29,17 +29,36 @@ try {
   await page.waitForLoadState('domcontentloaded');
   await page.locator('.desktop-shell').waitFor({ timeout: 30_000 });
 
-  // Create a project using only visible desktop controls.
-  await page.locator('.desktop-side-head button').first().click();
-  const create = page.locator('.desktop-create-card');
-  await create.locator('input').first().fill('Desktop E2E');
-  await create.locator('select').selectOption({ label: 'e2e-source.mp4' });
-  await create.locator('.desktop-primary').click();
+  // Create a project, then open it from the folder file list.
+  await page.waitForFunction(async () => {
+    const workspace = await window.grokCrew?.request('/api/v2/workspace');
+    return (workspace?.media ?? []).some((item) => String(item.name || '').includes('e2e-source'));
+  }, null, { timeout: 30_000 });
+  await page.evaluate(async () => {
+    const workspace = await window.grokCrew.request('/api/v2/workspace');
+    const source = (workspace.media ?? []).find((item) => String(item.name || '').includes('e2e-source'));
+    if (!source?.path) throw new Error('e2e source missing');
+    await window.grokCrew.request('/api/v2/projects', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Desktop E2E',
+        source_path: source.path,
+        output_path: 'outputs/final-video.mp4',
+        timeline: {
+          clips: [{ in: 0, out: 10, keep: true, caption: '' }],
+          render_settings: { fps: 30, quality: 'balanced', platform: 'reels_tiktok_shorts', captions_enabled: true },
+        },
+        caption: '',
+      }),
+    });
+  });
+  await page.locator('.desktop-library-file-open').first().waitFor({ timeout: 20_000 });
+  await page.locator('.desktop-library-file-open').first().click();
   await page.locator('.desktop-project-bar h1').filter({ hasText: 'Desktop E2E' }).waitFor();
   await page.locator('.desktop-project-chips').filter({ hasText: 'fps' }).waitFor();
 
   // Direct edit, marker, undo, and redo without opening a terminal.
-  await page.locator('.desktop-titlebar nav button').nth(1).click();
+  await page.locator('nav button').filter({ hasText: /편집|Edit|编辑|編集/ }).click();
   const clip = page.locator('.desktop-clip-body').first();
   await clip.click();
   await clip.press('s');

@@ -88,7 +88,11 @@ describe('desk composer restage', () => {
     assert.match(text, /올린 기록/);
     assert.equal(text.includes('desktop-version-fold'), false);
     assert.equal(text.includes('버전 기록'), false);
-    assert.match(text, /폴더 만들기/);
+    assert.match(src('desktop-project-library.tsx'), /폴더 만들기/);
+    assert.equal(text.includes("t('새 규격'"), false);
+    assert.equal(text.includes('desktop-create-card'), false);
+    assert.equal(text.includes('desktop-side-head'), false);
+    assert.equal(text.includes('addingFolder'), false);
     assert.match(text, /미리보기 프록시/);
     assert.equal(text.includes('desktop-card-title'), false);
   });

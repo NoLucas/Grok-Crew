@@ -5,6 +5,8 @@ import {
   findRecentFolder,
   groupLibraryProjects,
   isRecentFolderTitle,
+  libraryFileCard,
+  libraryOpenFolderId,
   readRememberedRecentId,
   summarizeTrash,
   trashDaysLeft,
@@ -70,11 +72,10 @@ type Props = {
   studioState: 'loading' | 'ready' | 'error';
   senderLabel: (project: LibraryProject) => string;
   request: StudioRequest;
-  addingFolder?: boolean;
+  filePreviewUrl?: (path: string) => string;
   onSelect: (projectId: string) => void;
   onRefresh: () => Promise<void> | void;
   onMessage: (text: string) => void;
-  onAddingFolder?: (open: boolean) => void;
 };
 
 export function DesktopProjectLibrary({
@@ -86,19 +87,19 @@ export function DesktopProjectLibrary({
   studioState,
   senderLabel,
   request,
-  addingFolder = false,
+  filePreviewUrl,
   onSelect,
   onRefresh,
   onMessage,
-  onAddingFolder,
 }: Props) {
   const { language, t } = useLanguage();
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [renaming, setRenaming] = useState<{ kind: 'project' | 'folder'; id: string; value: string } | null>(null);
+  const [addingFolder, setAddingFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [dropId, setDropId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [folded, setFolded] = useState<Record<string, boolean>>({});
+  const [openFolderId, setOpenFolderId] = useState('');
   const [folderUndo, setFolderUndo] = useState<FolderUndo | null>(null);
   const [purgePrompt, setPurgePrompt] = useState<PurgePrompt | null>(null);
   const [sourceAction, setSourceAction] = useState<SourceAction>('keep');
@@ -109,9 +110,17 @@ export function DesktopProjectLibrary({
   const grouped = groupLibraryProjects(projects, folders, recent?.id);
   const expiry = summarizeTrash(trash);
   const setDraft = (open: boolean) => {
-    onAddingFolder?.(open);
+    setAddingFolder(open);
     if (!open) setFolderName('');
   };
+  const openId = libraryOpenFolderId({
+    folders: grouped.folders,
+    selectedProjectId: selectedId,
+    preferredFolderId: openFolderId,
+    recentId: recent?.id,
+  });
+  const openRow = grouped.folders.find((row) => row.folder.id === openId);
+  const openFiles = openRow?.projects ?? grouped.unfiled;
 
   useEffect(() => {
     if (!menu) return;
@@ -151,6 +160,12 @@ export function DesktopProjectLibrary({
     };
   }, [folders, language, onRefresh, projects, request, studioState]);
 
+  useEffect(() => {
+    if (!openId) return;
+    if (openFolderId && grouped.folders.some((row) => row.folder.id === openFolderId)) return;
+    setOpenFolderId(openId);
+  }, [grouped.folders, openFolderId, openId]);
+
   const run = async (path: string, body?: Record<string, unknown>, ok?: string) => {
     setBusy(true);
     try {
@@ -176,7 +191,9 @@ export function DesktopProjectLibrary({
       setDraft(false);
       return;
     }
-    await run('/api/v2/project-folders', { title: name }, t('폴더를 만들었습니다.', 'Created the folder.', '已创建文件夹。', 'フォルダを作りました。'));
+    const created = await run('/api/v2/project-folders', { title: name }, t('폴더를 만들었습니다.', 'Created the folder.', '已创建文件夹。', 'フォルダを作りました。')) as { folder?: { id?: string } } | null;
+    const nextId = String(created?.folder?.id || '').trim();
+    if (nextId) setOpenFolderId(nextId);
     setDraft(false);
   };
 
@@ -307,36 +324,58 @@ export function DesktopProjectLibrary({
 
   const renderProject = (item: LibraryProject) => {
     const renamingThis = renaming?.kind === 'project' && renaming.id === item.id;
+    const card = libraryFileCard(item);
+    const preview = card.path && filePreviewUrl ? filePreviewUrl(card.path) : '';
     return (
       <div
         key={item.id}
-        className={!specDeskOpen && item.id === selectedId ? 'desktop-library-item is-active' : 'desktop-library-item'}
+        className={!specDeskOpen && item.id === selectedId ? 'desktop-library-file is-active' : 'desktop-library-file'}
         draggable={!renamingThis}
         onDragStart={onDragStart(item.id)}
         onContextMenu={(event) => openProjectMenu(event, item.id)}
       >
         <button
           type="button"
-          className="desktop-library-open"
+          className="desktop-library-file-open"
           onClick={() => onSelect(item.id)}
           onContextMenu={(event) => openProjectMenu(event, item.id)}
+          title={`${card.name}${senderLabel(item) ? ` · ${senderLabel(item)}` : ''}`}
         >
-          <ClipGlyph />
-          <div>
-            {renamingThis ? (
-              <input
-                autoFocus
-                value={renaming.value}
-                onChange={(event) => setRenaming({ ...renaming, value: event.target.value })}
-                onBlur={() => void commitRename()}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') void commitRename();
-                  if (event.key === 'Escape') setRenaming(null);
+          <span className={`desktop-library-file-thumb is-${card.kind}`}>
+            {card.kind === 'image' && preview ? (
+              // Local workspace thumbs are served by the loopback sidecar.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={preview} alt="" />
+            ) : card.kind === 'video' && preview ? (
+              <video
+                muted
+                playsInline
+                preload="metadata"
+                src={preview}
+                onLoadedMetadata={(event) => {
+                  const video = event.currentTarget;
+                  if (video.currentTime < 0.05) video.currentTime = 0.1;
                 }}
               />
-            ) : <b>{item.title}</b>}
-            <small>{senderLabel(item)} · {new Date(item.updated_at).toLocaleDateString()}</small>
-          </div>
+            ) : (
+              <ClipGlyph />
+            )}
+            {card.kind === 'video' && card.ext ? <em>{card.ext}</em> : null}
+          </span>
+          {renamingThis ? (
+            <input
+              autoFocus
+              value={renaming.value}
+              onChange={(event) => setRenaming({ ...renaming, value: event.target.value })}
+              onBlur={() => void commitRename()}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void commitRename();
+                if (event.key === 'Escape') setRenaming(null);
+              }}
+            />
+          ) : (
+            <span className={`desktop-library-file-name is-${card.kind}`}>{card.label}</span>
+          )}
         </button>
       </div>
     );
@@ -352,69 +391,91 @@ export function DesktopProjectLibrary({
           </button>
         </div>
       ) : null}
-      {addingFolder ? (
-        <form className="desktop-library-add" onSubmit={(event) => void createFolder(event)}>
-          <input
-            autoFocus
-            value={folderName}
-            maxLength={80}
-            placeholder={t('폴더 이름', 'Folder name', '文件夹名', 'フォルダ名')}
-            onChange={(event) => setFolderName(event.target.value)}
-          />
-          <button type="submit" className="desktop-secondary" disabled={!folderName.trim() || busy}>{t('만들기', 'Create', '创建', '作成')}</button>
-          <button type="button" className="desktop-auto-text" onClick={() => setDraft(false)}>{t('닫기', 'Close', '关闭', '閉じる')}</button>
-        </form>
-      ) : null}
-      <div className="desktop-project-list desktop-library-list">
-        {grouped.folders.map(({ folder, projects: items }) => {
-          const isRecent = folder.id === recent?.id;
-          return (
-          <details
-            key={folder.id}
-            className={`${dropId === folder.id ? 'desktop-library-folder is-drop' : 'desktop-library-folder'}${isRecent ? ' is-recent' : ''}`}
-            open={!folded[folder.id]}
-            onToggle={(event) => {
-              const nextOpen = event.currentTarget.open;
-              setFolded((current) => ({ ...current, [folder.id]: !nextOpen }));
-            }}
-            onDragOver={onDragOver(folder.id)}
-            onDragLeave={() => setDropId((current) => (current === folder.id ? null : current))}
-            onDrop={onDrop(folder.id)}
+      <section className="desktop-library-folders" aria-label={t('폴더', 'Folders', '文件夹', 'フォルダ')}>
+        <header className="desktop-library-pane-head">
+          <b>{t('폴더', 'Folders', '文件夹', 'フォルダ')}</b>
+          <button
+            type="button"
+            aria-label={t('폴더 만들기', 'Create a folder', '创建文件夹', 'フォルダを作る')}
+            aria-pressed={addingFolder}
+            onClick={() => setDraft(!addingFolder)}
           >
-            <summary onContextMenu={isRecent ? undefined : (event) => openFolderMenu(event, folder.id)}>
-              <i className="desktop-library-chevron" aria-hidden="true" />
-              <FolderGlyph recent={isRecent} />
-              {renaming?.kind === 'folder' && renaming.id === folder.id ? (
-                <input
-                  autoFocus
-                  value={renaming.value}
-                  onClick={(event) => event.preventDefault()}
-                  onChange={(event) => setRenaming({ ...renaming, value: event.target.value })}
-                  onBlur={() => void commitRename()}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      void commitRename();
-                    }
-                    if (event.key === 'Escape') setRenaming(null);
-                  }}
-                />
-              ) : <b>{isRecent ? t('최근기록', 'Recent', '最近记录', '最近') : folder.title}</b>}
-              <em>{items.length}</em>
-            </summary>
-            {items.length ? items.map(renderProject) : <p className="desktop-library-empty">{t('이 폴더는 비어 있습니다. 프로젝트를 끌어다 놓으세요.', 'This folder is empty. Drop a project here.', '这个文件夹是空的。把项目拖进来。', 'このフォルダは空です。プロジェクトをドロップしてください。')}</p>}
-          </details>
-          );
-        })}
-        {!recent && grouped.unfiled.length ? grouped.unfiled.map(renderProject) : null}
-        {studioState === 'loading' && !projects.length ? <p className="desktop-side-empty">{t('Local Studio에 연결하는 중…', 'Connecting to Local Studio…', '正在连接本地工作室…', 'Local Studio に接続しています…')}</p> : null}
-        {studioState === 'error' && !projects.length ? <p className="desktop-side-empty">{t('연결하지 못했습니다. 다시 시도하세요.', 'Could not connect. Retry from the banner.', '无法连接。请从横幅重试。', '接続できません。バナーから再試行してください。')}</p> : null}
-        {studioState === 'ready' && !projects.length && !folders.length ? (
-          <div className="desktop-side-empty">
-            <p>{t('아직 컷이 없습니다. 가운데에서 제목을 적거나 영상을 놓으세요.', 'No cut yet. Write a title in the middle, or drop a video.', '还没有剪辑。请在中间写标题，或放进视频。', 'カットはまだありません。中央にタイトルを書くか、映像を置いてください。')}</p>
-          </div>
+            ＋
+          </button>
+        </header>
+        {addingFolder ? (
+          <form className="desktop-library-add" onSubmit={(event) => void createFolder(event)}>
+            <input
+              autoFocus
+              value={folderName}
+              maxLength={80}
+              placeholder={t('폴더 이름', 'Folder name', '文件夹名', 'フォルダ名')}
+              onChange={(event) => setFolderName(event.target.value)}
+            />
+            <button type="submit" className="desktop-secondary" disabled={!folderName.trim() || busy}>{t('만들기', 'Create', '创建', '作成')}</button>
+            <button type="button" className="desktop-auto-text" onClick={() => setDraft(false)}>{t('닫기', 'Close', '关闭', '閉じる')}</button>
+          </form>
         ) : null}
-      </div>
+        <div className="desktop-library-folder-list">
+          {!grouped.folders.length ? (
+            <p className="desktop-library-empty">{t('폴더가 없습니다.', 'No folders yet.', '还没有文件夹。', 'フォルダはまだありません。')}</p>
+          ) : null}
+          {grouped.folders.map(({ folder, projects: items }) => {
+            const isRecent = folder.id === recent?.id;
+            const active = folder.id === openId;
+            return (
+              <button
+                key={folder.id}
+                type="button"
+                className={`desktop-library-folder${active ? ' is-active' : ''}${dropId === folder.id ? ' is-drop' : ''}${isRecent ? ' is-recent' : ''}`}
+                onClick={() => setOpenFolderId(folder.id)}
+                onContextMenu={isRecent ? undefined : (event) => openFolderMenu(event, folder.id)}
+                onDragOver={onDragOver(folder.id)}
+                onDragLeave={() => setDropId((current) => (current === folder.id ? null : current))}
+                onDrop={onDrop(folder.id)}
+              >
+                <FolderGlyph recent={isRecent} />
+                {renaming?.kind === 'folder' && renaming.id === folder.id ? (
+                  <input
+                    autoFocus
+                    value={renaming.value}
+                    onClick={(event) => event.stopPropagation()}
+                    onChange={(event) => setRenaming({ ...renaming, value: event.target.value })}
+                    onBlur={() => void commitRename()}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        void commitRename();
+                      }
+                      if (event.key === 'Escape') setRenaming(null);
+                    }}
+                  />
+                ) : <b>{isRecent ? t('최근기록', 'Recent', '最近记录', '最近') : folder.title}</b>}
+                <em>{items.length}</em>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+      <section className="desktop-library-files" aria-label={t('파일', 'Files', '文件', 'ファイル')}>
+        <header className="desktop-library-pane-head">
+          <b>{t('파일', 'Files', '文件', 'ファイル')}</b>
+          {openRow ? <span>{openRow.folder.id === recent?.id ? t('최근기록', 'Recent', '最近记录', '最近') : openRow.folder.title}</span> : null}
+        </header>
+        {openFiles.length ? (
+          <div className="desktop-library-file-grid">
+            {openFiles.map(renderProject)}
+          </div>
+        ) : (
+          <p className="desktop-library-empty">
+            {studioState === 'loading' && !projects.length
+              ? t('Local Studio에 연결하는 중…', 'Connecting to Local Studio…', '正在连接本地工作室…', 'Local Studio に接続しています…')
+              : studioState === 'error' && !projects.length
+                ? t('연결하지 못했습니다. 다시 시도하세요.', 'Could not connect. Retry from the banner.', '无法连接。请从横幅重试。', '接続できません。バナーから再試行してください。')
+                : t('이 폴더는 비어 있습니다.', 'This folder is empty.', '这个文件夹是空的。', 'このフォルダは空です。')}
+          </p>
+        )}
+      </section>
       <details className="desktop-library-trash">
         <summary>
           <b>{t('휴지통', 'Trash', '废纸篓', 'ゴミ箱')}</b>

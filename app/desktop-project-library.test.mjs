@@ -9,6 +9,8 @@ const {
   findRecentFolder,
   groupLibraryProjects,
   isRecentFolderTitle,
+  libraryFileCard,
+  libraryOpenFolderId,
   recentFolderTitle,
   summarizeTrash,
   trashDaysLeft,
@@ -46,6 +48,59 @@ test("library chrome drops the unfiled bucket and the add-folder toolbar", () =>
   assert.equal(text.includes("폴더 추가"), false);
   assert.match(text, /최근기록으로/);
   assert.match(text, /FolderGlyph/);
+  assert.match(text, /desktop-library-folders/);
+  assert.match(text, /desktop-library-file-grid/);
+  assert.match(text, /폴더 만들기/);
+  assert.match(text, /card\.label/);
+  assert.equal(text.includes("desktop-library-chevron"), false);
+  assert.equal(text.includes("current_revision"), false);
+  assert.equal(text.includes("desktop-side-head"), false);
+});
+
+test("opens the clicked folder and shows a short file card", () => {
+  const grouped = groupLibraryProjects(
+    [
+      { id: "a", title: "In folder", folder_id: "fld_1", updated_at: "2026-08-01", source_path: "inputs/talk.mp4" },
+      { id: "b", title: "Loose", folder_id: "fld_recent", updated_at: "2026-08-02", source_path: "inputs/sign.png" },
+    ],
+    [
+      { id: "fld_1", title: "릴스" },
+      { id: "fld_recent", title: "최근기록" },
+    ],
+    "fld_recent",
+  );
+  assert.equal(libraryOpenFolderId({
+    folders: grouped.folders,
+    preferredFolderId: "fld_1",
+    selectedProjectId: "b",
+    recentId: "fld_recent",
+  }), "fld_1");
+  assert.equal(libraryOpenFolderId({
+    folders: grouped.folders,
+    selectedProjectId: "b",
+    recentId: "fld_recent",
+  }), "fld_recent");
+  const video = libraryFileCard({
+    id: "a",
+    title: "In folder",
+    updated_at: "2026-08-01",
+    source_path: "C:/Users/a/Videos/grok-e8884c4f-2b93-4be3-88b1-12622df0c3b5.mp4",
+  });
+  assert.equal(video.kind, "video");
+  assert.equal(video.ext, "MP4");
+  assert.equal(video.shortName.endsWith(".mp4"), true);
+  assert.equal(video.label.endsWith(".mp4"), false);
+  assert.equal(video.label.includes("grok"), true);
+  assert.ok(video.label.length <= 12);
+  const image = libraryFileCard({
+    id: "b",
+    title: "shot",
+    updated_at: "2026-08-02",
+    source_path: "inputs/화면 캡처 2026-08-24 210447.jpg",
+  });
+  assert.equal(image.kind, "image");
+  assert.equal(image.label, "화면 캡처 2026-08-24 210447.jpg");
+  assert.equal(image.ext, "JPG");
 });
 
 test("pins recent and parks unfiled projects inside it", () => {

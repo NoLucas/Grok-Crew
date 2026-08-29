@@ -1,3 +1,5 @@
+import { ownedFileExtension, ownedFileName, ownedMediaKind, shortOwnedFileName } from './desktop-auto-state';
+
 export type LibraryProject = {
   id: string;
   title: string;
@@ -6,6 +8,8 @@ export type LibraryProject = {
   current_revision?: number;
   handoff_door?: string | null;
   handoff_agent?: string | null;
+  source_path?: string | null;
+  output_path?: string | null;
 };
 
 export type LibraryFolder = {
@@ -142,6 +146,40 @@ export function trashExpiryState(purgeAfter: string, now = Date.now()) {
   const days = Math.max(0, Math.ceil((stamp - now) / 86_400_000));
   const expired = stamp <= now;
   return { days, expired, dueSoon: !expired && days <= TRASH_DUE_SOON_DAYS };
+}
+
+export function libraryOpenFolderId(input: {
+  folders: Array<{ folder: LibraryFolder; projects: LibraryProject[] }>;
+  selectedProjectId?: string;
+  preferredFolderId?: string;
+  recentId?: string;
+}): string {
+  const ids = input.folders.map((row) => row.folder.id);
+  const preferred = String(input.preferredFolderId || '').trim();
+  if (preferred && ids.includes(preferred)) return preferred;
+  const selected = String(input.selectedProjectId || '').trim();
+  if (selected) {
+    const hit = input.folders.find((row) => row.projects.some((item) => item.id === selected));
+    if (hit) return hit.folder.id;
+  }
+  const recent = String(input.recentId || '').trim();
+  if (recent && ids.includes(recent)) return recent;
+  return ids[0] || '';
+}
+
+export function libraryFileCard(project: LibraryProject) {
+  const path = String(project.source_path || project.output_path || '').trim();
+  const name = ownedFileName(path) || String(project.title || '').trim();
+  const kind = ownedMediaKind(path || name);
+  const stem = name.replace(/\.[^.]+$/, '');
+  return {
+    path,
+    name,
+    shortName: shortOwnedFileName(path || name, kind === 'video' ? 14 : 22),
+    label: kind === 'video' ? (stem.length <= 12 ? stem : `${stem.slice(0, 10)}…`) : name,
+    ext: ownedFileExtension(path || name),
+    kind,
+  };
 }
 
 export function summarizeTrash(items: TrashItem[], now = Date.now()) {
