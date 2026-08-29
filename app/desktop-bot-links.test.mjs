@@ -114,6 +114,9 @@ describe('remote bot links', () => {
         assert.doesNotMatch(text, /네이버 TV/);
       }
       assert.match(text, /7214가 없다|没有 7214|7214 がない|7214 is missing/);
+      assert.match(text, /이 대화가 그 Windows가 아니면|If this conversation is not that Windows|若这段对话不是那台 Windows|この会話がその Windows でなければ/);
+      assert.match(text, /창이 없다고 하지 마세요|Do not say the window is missing|不要说没有窗口|窓がないと言わないでください/);
+      assert.match(text, /책상이 입장|desk enters the seat|书桌会签到|机が入場/);
       assert.match(text, /api\/bots\/next-invite/);
       assert.match(text, /next-invite/);
       assert.match(text, /사람이 초대문을 다시 붙이지 않습니다|操作员不会再粘贴一次|人が招待文をもう一度貼ることはありません|will not paste the invite again/);

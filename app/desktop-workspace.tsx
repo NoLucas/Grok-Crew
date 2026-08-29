@@ -19,11 +19,13 @@ import { DesktopLogoMark } from './desktop-logo-mark';
 import { DesktopBotPanel } from './desktop-bot-panel';
 import {
   connectedRemoteNames,
+  confirmedGrokRoles,
   disconnectHeartbeatBody,
   ensureBotLinks,
   forgetBotLinksOnQuit,
   grokSeatsToDisconnect,
   hasConnectedBot,
+  SEAT_KEEP_SECONDS,
   seatLampRows,
   lostConnectedSeats,
   seatConnectSnapshot,
@@ -33,7 +35,8 @@ import {
   type BotLinkState,
   type SeatKey,
 } from './desktop-bot-links';
-import { seatName, seatShortLabel, type BotRole } from './bot-skills';
+import { BOT_ROLES, seatName, seatShortLabel, type BotRole } from './bot-skills';
+import { enterGrokSeatOnDesk, runDeskKeepTick } from './desktop-grok-desk-keep';
 import { AutoDesk } from './desktop-auto-desk';
 import { DesktopReviseCard } from './desktop-revise-card';
 import {
@@ -372,6 +375,9 @@ export default function DesktopWorkspace() {
   const [studioState, setStudioState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [drawer, setDrawer] = useState<'none' | 'projects' | 'status'>('none');
   const [botLinks, setBotLinks] = useState<BotLinkState>({ pairCode: '', bots: [] });
+  const deskKeepRef = useRef<Partial<Record<BotRole, number>>>({});
+  const languageRef = useRef(language);
+  languageRef.current = language;
   const [voiceSetup, setVoiceSetup] = useState(() => readVoiceSetup());
   const [voiceDraft, setVoiceDraft] = useState<VoiceModelId>(() => readVoiceSetup().modelId);
   const [voiceBusy, setVoiceBusy] = useState(false);
@@ -464,6 +470,70 @@ export default function DesktopWorkspace() {
     if (!response.ok) throw new Error(String(data.error ?? `Local Studio ${response.status}`));
     return data;
   }, []);
+
+  const postJson = useCallback(async (path: string, body: unknown) => {
+    return api(path, { method: 'POST', body: JSON.stringify(body) });
+  }, [api]);
+
+  const stopDeskKeep = useCallback((role: BotRole) => {
+    const id = deskKeepRef.current[role];
+    if (id) {
+      window.clearInterval(id);
+      delete deskKeepRef.current[role];
+    }
+  }, []);
+
+  const stopAllDeskKeep = useCallback(() => {
+    for (const role of BOT_ROLES) stopDeskKeep(role);
+  }, [stopDeskKeep]);
+
+  const enterAndKeepGrokSeat = useCallback(async (role: BotRole) => {
+    if (deskKeepRef.current[role]) return;
+    deskKeepRef.current[role] = -1;
+    try {
+      await enterGrokSeatOnDesk({
+        post: postJson,
+        role,
+        language: languageRef.current,
+      });
+    } catch (error) {
+      delete deskKeepRef.current[role];
+      throw error;
+    }
+    const tick = async () => {
+      try {
+        const result = await runDeskKeepTick({
+          post: postJson,
+          role,
+          language: languageRef.current,
+        });
+        if (result === 'disconnected') stopDeskKeep(role);
+      } catch {
+        /* sidecar may be down for one tick */
+      }
+    };
+    if (deskKeepRef.current[role] !== -1) return;
+    void tick();
+    deskKeepRef.current[role] = window.setInterval(() => { void tick(); }, SEAT_KEEP_SECONDS * 1000);
+  }, [postJson, stopDeskKeep]);
+
+  const enterConfirmedGrokSeats = useCallback(async (roles: BotRole[]) => {
+    for (const role of roles) await enterAndKeepGrokSeat(role);
+  }, [enterAndKeepGrokSeat]);
+
+  useEffect(() => {
+    if (studioState !== 'ready') return;
+    const live = new Set(confirmedGrokRoles(botLinks));
+    for (const role of BOT_ROLES) {
+      if (live.has(role)) {
+        if (!deskKeepRef.current[role]) void enterAndKeepGrokSeat(role);
+      } else {
+        stopDeskKeep(role);
+      }
+    }
+  }, [botLinks, enterAndKeepGrokSeat, stopDeskKeep, studioState]);
+
+  useEffect(() => () => { stopAllDeskKeep(); }, [stopAllDeskKeep]);
 
   const refreshWorkspace = useCallback(async (quiet = false) => {
     try {
@@ -1482,6 +1552,7 @@ export default function DesktopWorkspace() {
                         /* still quit even if one seat rejects the command */
                       }
                     }
+                    stopAllDeskKeep();
                     forgetBotLinksOnQuit(botLinks);
                     setBotLinks(ensureBotLinks());
                     setQuitAsk(false);
@@ -1680,6 +1751,7 @@ export default function DesktopWorkspace() {
                   onSeatCommand={async (body) => {
                     await api('/api/bots/heartbeat', { method: 'POST', body: JSON.stringify(body) });
                   }}
+                  onEnterConfirmedGrok={enterConfirmedGrokSeats}
                 />
               </div>
           ) : (

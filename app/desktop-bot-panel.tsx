@@ -8,6 +8,7 @@ import { readAutoPrefs } from './desktop-auto-state';
 import {
   type BotLinkState,
   type LinkChangeCause,
+  confirmRemoteReplies,
   connectedRemoteNames,
   disconnectHeartbeatBody,
   familyIsConnected,
@@ -55,6 +56,7 @@ type BotPanelProps = {
   onLinksChange: (next: BotLinkState, cause?: LinkChangeCause) => void;
   onRefresh: () => Promise<void>;
   onSeatCommand?: (body: { bot_id: string; display_name: string; action: string }) => Promise<void>;
+  onEnterConfirmedGrok?: (roles: BotRole[]) => Promise<void>;
 };
 
 const OTHER_FAMILIES: Array<{ id: 'grok' | 'custom'; ko: string; en: string; zh: string; ja: string }> = [
@@ -90,14 +92,17 @@ export function DesktopBotPanel({
   onLinksChange,
   onRefresh,
   onSeatCommand,
+  onEnterConfirmedGrok,
 }: BotPanelProps) {
   const { language, t } = useLanguage();
   const [openSeat, setOpenSeat] = useState<OtherSeat>({ kind: 'grok', role: 'planner' });
   const [familyId, setFamilyId] = useState<(typeof OTHER_FAMILIES)[number]['id']>('grok');
   const [copied, setCopied] = useState('');
   const [blockedKind, setBlockedKind] = useState('');
+  const [okPaste, setOkPaste] = useState('');
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [attaching, setAttaching] = useState(false);
   const [disconnecting, setDisconnecting] = useState('');
   const [lastBundle, setLastBundle] = useState(() => readLastConnectBundle());
   const [releasedNote, setReleasedNote] = useState('');
@@ -153,6 +158,43 @@ export function DesktopBotPanel({
     if (seat.kind === 'grok') rememberBundle();
     setReleasedNote('');
     await onRefresh();
+  };
+
+  const attachOkReply = async () => {
+    setError('');
+    if (!links.pairCode) {
+      setError(t('연결 코드가 아직 없습니다. 잠시 후 다시 눌러 주세요.', 'The connect code is not ready yet. Try again in a moment.', '连接代码还没好。请稍后再按。', '接続コードがまだありません。少ししてから押してください。'));
+      return;
+    }
+    const { next, confirmed } = confirmRemoteReplies(links, okPaste, language);
+    if (!confirmed.length) {
+      setError(t('GROK_CREW_OK 줄과 연결 코드가 맞는지 보세요.', 'Check the GROK_CREW_OK line and the connect code.', '请核对 GROK_CREW_OK 行和连接代码。', 'GROK_CREW_OK の行と接続コードを確かめてください。'));
+      return;
+    }
+    writeBotLinks(next);
+    onLinksChange(next, 'attach');
+    setAttaching(true);
+    try {
+      const grokRoles = confirmed.filter((item) => item.kind === 'grok').map((item) => item.role);
+      if (grokRoles.length && onEnterConfirmedGrok) await onEnterConfirmedGrok(grokRoles);
+      setOkPaste('');
+      setReleasedNote(t(
+        `${confirmed.map((item) => seatName(item.kind, item.role, language)).join(' · ')} 자리를 이 책상에 입장했습니다.`,
+        `Entered ${confirmed.map((item) => seatName(item.kind, item.role, language)).join(' · ')} on this desk.`,
+        `已让 ${confirmed.map((item) => seatName(item.kind, item.role, language)).join(' · ')} 在这张书桌签到。`,
+        `${confirmed.map((item) => seatName(item.kind, item.role, language)).join(' · ')} をこの机に入場しました。`,
+      ));
+      await onRefresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t(
+        '이 책상에서 입장하지 못했습니다.',
+        'This desk could not enter that seat.',
+        '这张书桌没能签到。',
+        'この机で入場できませんでした。',
+      ));
+    } finally {
+      setAttaching(false);
+    }
   };
 
   const refreshNow = async () => {
@@ -233,7 +275,7 @@ export function DesktopBotPanel({
     <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
       <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('연결 글을 봇 창에 붙이세요. 복사만으로는 연결되지 않고, 이 탭에 머뭅니다. 자리마다 연결 글을 복사한 뒤 시작으로 가세요. 램프가 켜지면 연결됨입니다.', 'Paste the connect text in the bot window. Copying is not a connection, and this tab stays open. Copy each seat, then go to Start. The lamp means connected.', '把连接文字贴到机器人窗口。只复制不算已连接，也不会离开这个页。每个位子复制后再去开始。灯亮就是已连接。', '接続文をボット窓に貼る。コピーしただけでは接続されず、このタブに留まります。席ごとにコピーしてから開始へ。ランプが付けば接続済み。')}</p>
+        <p>{t('연결 글을 봇 창에 붙이세요. Linux Grok은 GROK_CREW_OK만 보내고 멈춥니다. 그 줄을 아래 칸에 붙이면 이 책상이 입장합니다. 복사만으로는 연결되지 않습니다.', 'Paste the connect text in the bot window. A Linux Grok sends only GROK_CREW_OK and stops. Paste that line below and this desk enters the seat. Copying is not a connection.', '把连接文字贴到机器人窗口。Linux 上的 Grok 只发 GROK_CREW_OK 然后停下。把那一行贴到下面，这张书桌会签到。只复制不算已连接。', '接続文をボット窓に貼る。Linux の Grok は GROK_CREW_OK だけ送って止まります。その行を下に貼るとこの机が入場します。コピーしただけでは接続されません。')}</p>
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">
@@ -279,6 +321,30 @@ export function DesktopBotPanel({
         </p>
       )}
       <p className="desktop-spec-meta">{t('자리 확인은 이 Windows의 keep이 1분마다 합니다. 채팅에 매 분 작업을 만들지 마세요. 1분을 놓치면 보드에 마지막 확인이 나고, 5분이 지나면 자리는 한가합니다.', 'Seat check is Windows keep every minute. Do not make a chat every-minute job. After one missed minute the board shows last check. After five minutes the seat is idle.', '位子确认由 Windows keep 每分钟做。不要在聊天里做每分钟作业。错过 1 分钟看板会写上次确认，过 5 分钟位子空闲。', '席の確認は Windows の keep が1分ごとにします。チャットに毎分の作業を作らないでください。1分逃すとボードに最後の確認が出て、5分で席は待機です。')}</p>
+
+      <section className="desktop-bot-confirm">
+        <b>{t('봇이 보낸 한 줄', 'The line the bot sent', '机器人发来的一行', 'ボットが送った一行')}</b>
+        <p>{t('편집자가 이미 들어와 있어도, Linux Grok은 이 책상의 창을 볼 수 없습니다. GROK_CREW_OK 줄을 붙이면 이 Windows가 그 자리를 입장합니다.', 'Even if the editor already entered, a Linux Grok cannot see this desk window. Paste the GROK_CREW_OK line and this Windows enters that seat.', '即使剪辑已经进来，Linux 上的 Grok 也看不见这张书桌的窗口。贴上 GROK_CREW_OK 行，这台 Windows 会为那个位子签到。', '編集者がすでに入っていても、Linux の Grok はこの机の窓を見えません。GROK_CREW_OK の行を貼ると、この Windows がその席を入場します。')}</p>
+        <textarea
+          className="desktop-bot-paste"
+          rows={4}
+          value={okPaste}
+          onChange={(event) => setOkPaste(event.target.value)}
+          placeholder={`GROK_CREW_OK ${links.pairCode || 'XXXXXX'} Grok Bot 기획자`}
+          spellCheck={false}
+        />
+        <button
+          type="button"
+          className="desktop-primary"
+          disabled={!studioReady || attaching || !okPaste.trim() || Boolean(disconnecting)}
+          aria-busy={attaching}
+          onClick={() => { void attachOkReply(); }}
+        >
+          {attaching
+            ? t('입장하는 중', 'Entering', '正在签到', '入場中')
+            : t('이 책상에 입장', 'Enter on this desk', '在这张书桌签到', 'この机に入場')}
+        </button>
+      </section>
 
       <section className="desktop-auto-composer-card">
         <h2>{t('봇 붙이기', 'Attach a bot', '接上机器人', 'ボットを付ける')}</h2>
