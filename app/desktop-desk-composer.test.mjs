@@ -51,6 +51,8 @@ describe('desk composer restage', () => {
     assert.equal(auto.includes('안 열리면'), false);
     assert.match(chrome, /t\('시작', 'Start', '开始', '開始'\)/);
     assert.match(chrome, /사용자 설정/);
+    assert.match(chrome, /projectForReedit/);
+    assert.match(chrome, /이 영상을 다시 엽니다/);
   });
 
   it('Setup and Export use option chips, not four cards at once', () => {
