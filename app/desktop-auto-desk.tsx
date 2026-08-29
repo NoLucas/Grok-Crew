@@ -157,7 +157,7 @@ export function AutoDesk({
   const [voiceFeel, setVoiceFeel] = useState<VoiceFeel>(() => resolveVoiceFeel(prefs.voiceFeel));
   const [voiceAccent, setVoiceAccent] = useState<VoiceAccent>(() => resolveVoiceAccent(prefs.voiceAccent));
   const [voiceSaved, setVoiceSaved] = useState(Boolean(prefs.voiceSaved));
-  const [voicePreview, setVoicePreview] = useState<'idle' | 'playing' | 'blocked'>('idle');
+  const [voicePreview, setVoicePreview] = useState<'idle' | 'loading' | 'playing' | 'blocked' | 'missing'>('idle');
   const [pickedMarket, setPickedMarket] = useState<CrewMarket | null>(() => (
     prefs.marketTouched ? resolveCrewMarket(prefs.market, language) : null
   ));
@@ -272,11 +272,16 @@ export function AutoDesk({
     const gender = next?.gender ?? voiceGender;
     const feel = next?.feel ?? voiceFeel;
     const accent = next?.accent ?? voiceAccent;
-    const result = playVoicePreview({ accent, gender, feel });
-    setVoicePreview(result);
-    if (result === 'playing') {
-      window.setTimeout(() => setVoicePreview((current) => (current === 'playing' ? 'idle' : current)), 5000);
-    }
+    setVoicePreview('loading');
+    void playVoicePreview(
+      { accent, gender, feel },
+      { request, studioOrigin: studioDownloadBase() },
+    ).then((result) => {
+      setVoicePreview(result);
+      if (result === 'playing') {
+        window.setTimeout(() => setVoicePreview((current) => (current === 'playing' ? 'idle' : current)), 8000);
+      }
+    });
   };
 
   const toggleCaptions = () => {
@@ -1078,9 +1083,11 @@ export function AutoDesk({
                             className="desktop-secondary"
                             onClick={() => hearVoice()}
                           >
-                            {voicePreview === 'playing'
-                              ? t('듣는 중…', 'Listening…', '试听中…', '再生中…')
-                              : t('미리듣기', 'Preview', '试听', '試し聞き')}
+                            {voicePreview === 'loading'
+                              ? t('Kokoro 만드는 중…', 'Making Kokoro…', '正在做 Kokoro…', 'Kokoro 作成中…')
+                              : voicePreview === 'playing'
+                                ? t('듣는 중…', 'Listening…', '试听中…', '再生中…')
+                                : t('미리듣기', 'Preview', '试听', '試し聞き')}
                           </button>
                           <button
                             type="button"
@@ -1103,14 +1110,16 @@ export function AutoDesk({
                           </button>
                         </div>
                         <p className="desktop-spec-meta">
-                          {voicePreview === 'blocked'
-                            ? t('이 창에서 미리듣기를 재생하지 못했습니다. 말투를 다시 누르거나 미리듣기를 누르세요.', 'This window could not play the preview. Tap a language or Preview again.', '这个窗口没能播放试听。请再点语种或试听。', 'この窓では試し聞きできませんでした。話し方か試し聞きを押してください。')
-                            : t(
-                              `미리듣기는 「${voicePreviewPhrase(voiceAccent)}」입니다. 말투를 고르면 그 나라 말로 들립니다.`,
-                              `Preview says “${voicePreviewPhrase(voiceAccent)}”. Pick a language to hear it.`,
-                              `试听是「${voicePreviewPhrase(voiceAccent)}」。选语种就会用那种话来听。`,
-                              `試し聞きは「${voicePreviewPhrase(voiceAccent)}」です。話し方を選ぶとその国の言葉で聞こえます。`,
-                            )}
+                          {voicePreview === 'missing'
+                            ? t('이 PC에 Kokoro-82M 미리듣기가 없습니다. 왼쪽 위 톱니에서 모델을 받으세요.', 'Kokoro-82M preview is not on this PC. Download it from the top-left gear.', '这台电脑没有 Kokoro-82M 试听。请用左上齿轮收下模型。', 'この PC に Kokoro-82M の試し聞きがありません。左上の歯車でモデルを受け取ります。')
+                            : voicePreview === 'blocked'
+                              ? t('이 창에서 Kokoro-82M 미리듣기를 재생하지 못했습니다. 말투를 다시 누르거나 미리듣기를 누르세요.', 'This window could not play the Kokoro-82M preview. Tap a language or Preview again.', '这个窗口没能播放 Kokoro-82M 试听。请再点语种或试听。', 'この窓では Kokoro-82M の試し聞きできませんでした。話し方か試し聞きを押してください。')
+                              : t(
+                                `미리듣기는 이 PC의 Kokoro-82M이 「${voicePreviewPhrase(voiceAccent)}」를 말한 소리입니다.`,
+                                `Preview is this PC’s Kokoro-82M saying “${voicePreviewPhrase(voiceAccent)}”.`,
+                                `试听是这台电脑的 Kokoro-82M 说「${voicePreviewPhrase(voiceAccent)}」。`,
+                                `試し聞きはこの PC の Kokoro-82M が「${voicePreviewPhrase(voiceAccent)}」と言った音です。`,
+                              )}
                         </p>
                         <p className="desktop-spec-meta">
                           {voiceSaved

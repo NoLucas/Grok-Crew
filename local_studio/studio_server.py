@@ -1047,8 +1047,12 @@ def main() -> None:
     args = parser.parse_args(); load_dotenv(); init_db()
     os.environ["LOCAL_STUDIO_PORT"] = str(args.port)
     from first_run import provision_sample_media
+    from voice_preview import provision_preview_audio
     if provision_sample_media():
         print("Bundled sample clip is in workspace/inputs/grok-crew-sample.mp4")
+    preview_count = provision_preview_audio()
+    if preview_count:
+        print(f"Bundled Kokoro-82M previews are in workspace/voice-previews ({preview_count} files)")
     from handlers import StudioHandler  # deferred: handlers.py imports this module, so avoid a top-level cycle
     with db() as conn:
         conn.execute("UPDATE jobs SET status = 'failed', error_text = ?, updated_at = ? WHERE status = 'running'", ("Interrupted by an unclean Local Studio shutdown.", utc_now()))

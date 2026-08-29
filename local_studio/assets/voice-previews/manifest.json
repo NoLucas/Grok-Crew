@@ -1,0 +1,410 @@
+{
+  "schema": "grok-crew.voice-preview/v1",
+  "engine": "kokoro-82m",
+  "repo": "hexgrad/Kokoro-82M",
+  "sample_rate": 24000,
+  "count": 40,
+  "files": [
+    {
+      "file": "female__warm__ko.wav",
+      "speaker_id": "af_heart",
+      "gender": "female",
+      "feel": "warm",
+      "accent": "ko",
+      "lang_code": "a",
+      "text": "안녕하세요 Grok Crew 입니다 잘부탁드려요",
+      "bytes": 262844
+    },
+    {
+      "file": "female__warm__en-us.wav",
+      "speaker_id": "af_heart",
+      "gender": "female",
+      "feel": "warm",
+      "accent": "en-us",
+      "lang_code": "a",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 165644
+    },
+    {
+      "file": "female__warm__en-gb.wav",
+      "speaker_id": "bf_emma",
+      "gender": "female",
+      "feel": "warm",
+      "accent": "en-gb",
+      "lang_code": "b",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 166844
+    },
+    {
+      "file": "female__warm__zh.wav",
+      "speaker_id": "zf_xiaoxiao",
+      "gender": "female",
+      "feel": "warm",
+      "accent": "zh",
+      "lang_code": "z",
+      "text": "你好，我是 Grok Crew，请多关照。",
+      "bytes": 163244
+    },
+    {
+      "file": "female__warm__ja.wav",
+      "speaker_id": "jf_alpha",
+      "gender": "female",
+      "feel": "warm",
+      "accent": "ja",
+      "lang_code": "j",
+      "text": "こんにちは。Grok Crewです。よろしくお願いします。",
+      "bytes": 174044
+    },
+    {
+      "file": "female__clear__ko.wav",
+      "speaker_id": "af_sarah",
+      "gender": "female",
+      "feel": "clear",
+      "accent": "ko",
+      "lang_code": "a",
+      "text": "안녕하세요 Grok Crew 입니다 잘부탁드려요",
+      "bytes": 256844
+    },
+    {
+      "file": "female__clear__en-us.wav",
+      "speaker_id": "af_sarah",
+      "gender": "female",
+      "feel": "clear",
+      "accent": "en-us",
+      "lang_code": "a",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 177644
+    },
+    {
+      "file": "female__clear__en-gb.wav",
+      "speaker_id": "bf_alice",
+      "gender": "female",
+      "feel": "clear",
+      "accent": "en-gb",
+      "lang_code": "b",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 156044
+    },
+    {
+      "file": "female__clear__zh.wav",
+      "speaker_id": "zf_xiaoyi",
+      "gender": "female",
+      "feel": "clear",
+      "accent": "zh",
+      "lang_code": "z",
+      "text": "你好，我是 Grok Crew，请多关照。",
+      "bytes": 159644
+    },
+    {
+      "file": "female__clear__ja.wav",
+      "speaker_id": "jf_nezumi",
+      "gender": "female",
+      "feel": "clear",
+      "accent": "ja",
+      "lang_code": "j",
+      "text": "こんにちは。Grok Crewです。よろしくお願いします。",
+      "bytes": 200444
+    },
+    {
+      "file": "female__bright__ko.wav",
+      "speaker_id": "af_nova",
+      "gender": "female",
+      "feel": "bright",
+      "accent": "ko",
+      "lang_code": "a",
+      "text": "안녕하세요 Grok Crew 입니다 잘부탁드려요",
+      "bytes": 228044
+    },
+    {
+      "file": "female__bright__en-us.wav",
+      "speaker_id": "af_nova",
+      "gender": "female",
+      "feel": "bright",
+      "accent": "en-us",
+      "lang_code": "a",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 152444
+    },
+    {
+      "file": "female__bright__en-gb.wav",
+      "speaker_id": "bf_lily",
+      "gender": "female",
+      "feel": "bright",
+      "accent": "en-gb",
+      "lang_code": "b",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 147644
+    },
+    {
+      "file": "female__bright__zh.wav",
+      "speaker_id": "zf_xiaoni",
+      "gender": "female",
+      "feel": "bright",
+      "accent": "zh",
+      "lang_code": "z",
+      "text": "你好，我是 Grok Crew，请多关照。",
+      "bytes": 160844
+    },
+    {
+      "file": "female__bright__ja.wav",
+      "speaker_id": "jf_tebukuro",
+      "gender": "female",
+      "feel": "bright",
+      "accent": "ja",
+      "lang_code": "j",
+      "text": "こんにちは。Grok Crewです。よろしくお願いします。",
+      "bytes": 183644
+    },
+    {
+      "file": "female__calm__ko.wav",
+      "speaker_id": "af_river",
+      "gender": "female",
+      "feel": "calm",
+      "accent": "ko",
+      "lang_code": "a",
+      "text": "안녕하세요 Grok Crew 입니다 잘부탁드려요",
+      "bytes": 246044
+    },
+    {
+      "file": "female__calm__en-us.wav",
+      "speaker_id": "af_river",
+      "gender": "female",
+      "feel": "calm",
+      "accent": "en-us",
+      "lang_code": "a",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 162044
+    },
+    {
+      "file": "female__calm__en-gb.wav",
+      "speaker_id": "bf_isabella",
+      "gender": "female",
+      "feel": "calm",
+      "accent": "en-gb",
+      "lang_code": "b",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 178844
+    },
+    {
+      "file": "female__calm__zh.wav",
+      "speaker_id": "zf_xiaobei",
+      "gender": "female",
+      "feel": "calm",
+      "accent": "zh",
+      "lang_code": "z",
+      "text": "你好，我是 Grok Crew，请多关照。",
+      "bytes": 207644
+    },
+    {
+      "file": "female__calm__ja.wav",
+      "speaker_id": "jf_gongitsune",
+      "gender": "female",
+      "feel": "calm",
+      "accent": "ja",
+      "lang_code": "j",
+      "text": "こんにちは。Grok Crewです。よろしくお願いします。",
+      "bytes": 234044
+    },
+    {
+      "file": "male__warm__ko.wav",
+      "speaker_id": "am_liam",
+      "gender": "male",
+      "feel": "warm",
+      "accent": "ko",
+      "lang_code": "a",
+      "text": "안녕하세요 Grok Crew 입니다 잘부탁드려요",
+      "bytes": 237644
+    },
+    {
+      "file": "male__warm__en-us.wav",
+      "speaker_id": "am_liam",
+      "gender": "male",
+      "feel": "warm",
+      "accent": "en-us",
+      "lang_code": "a",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 153644
+    },
+    {
+      "file": "male__warm__en-gb.wav",
+      "speaker_id": "bm_george",
+      "gender": "male",
+      "feel": "warm",
+      "accent": "en-gb",
+      "lang_code": "b",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 180044
+    },
+    {
+      "file": "male__warm__zh.wav",
+      "speaker_id": "zm_yunxia",
+      "gender": "male",
+      "feel": "warm",
+      "accent": "zh",
+      "lang_code": "z",
+      "text": "你好，我是 Grok Crew，请多关照。",
+      "bytes": 183644
+    },
+    {
+      "file": "male__warm__ja.wav",
+      "speaker_id": "jm_kumo",
+      "gender": "male",
+      "feel": "warm",
+      "accent": "ja",
+      "lang_code": "j",
+      "text": "こんにちは。Grok Crewです。よろしくお願いします。",
+      "bytes": 188444
+    },
+    {
+      "file": "male__clear__ko.wav",
+      "speaker_id": "am_michael",
+      "gender": "male",
+      "feel": "clear",
+      "accent": "ko",
+      "lang_code": "a",
+      "text": "안녕하세요 Grok Crew 입니다 잘부탁드려요",
+      "bytes": 276044
+    },
+    {
+      "file": "male__clear__en-us.wav",
+      "speaker_id": "am_michael",
+      "gender": "male",
+      "feel": "clear",
+      "accent": "en-us",
+      "lang_code": "a",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 177644
+    },
+    {
+      "file": "male__clear__en-gb.wav",
+      "speaker_id": "bm_daniel",
+      "gender": "male",
+      "feel": "clear",
+      "accent": "en-gb",
+      "lang_code": "b",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 151244
+    },
+    {
+      "file": "male__clear__zh.wav",
+      "speaker_id": "zm_yunxi",
+      "gender": "male",
+      "feel": "clear",
+      "accent": "zh",
+      "lang_code": "z",
+      "text": "你好，我是 Grok Crew，请多关照。",
+      "bytes": 163244
+    },
+    {
+      "file": "male__clear__ja.wav",
+      "speaker_id": "jm_kumo",
+      "gender": "male",
+      "feel": "clear",
+      "accent": "ja",
+      "lang_code": "j",
+      "text": "こんにちは。Grok Crewです。よろしくお願いします。",
+      "bytes": 178844
+    },
+    {
+      "file": "male__bright__ko.wav",
+      "speaker_id": "am_puck",
+      "gender": "male",
+      "feel": "bright",
+      "accent": "ko",
+      "lang_code": "a",
+      "text": "안녕하세요 Grok Crew 입니다 잘부탁드려요",
+      "bytes": 249644
+    },
+    {
+      "file": "male__bright__en-us.wav",
+      "speaker_id": "am_puck",
+      "gender": "male",
+      "feel": "bright",
+      "accent": "en-us",
+      "lang_code": "a",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 135644
+    },
+    {
+      "file": "male__bright__en-gb.wav",
+      "speaker_id": "bm_fable",
+      "gender": "male",
+      "feel": "bright",
+      "accent": "en-gb",
+      "lang_code": "b",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 162044
+    },
+    {
+      "file": "male__bright__zh.wav",
+      "speaker_id": "zm_yunyang",
+      "gender": "male",
+      "feel": "bright",
+      "accent": "zh",
+      "lang_code": "z",
+      "text": "你好，我是 Grok Crew，请多关照。",
+      "bytes": 134444
+    },
+    {
+      "file": "male__bright__ja.wav",
+      "speaker_id": "jm_kumo",
+      "gender": "male",
+      "feel": "bright",
+      "accent": "ja",
+      "lang_code": "j",
+      "text": "こんにちは。Grok Crewです。よろしくお願いします。",
+      "bytes": 170444
+    },
+    {
+      "file": "male__calm__ko.wav",
+      "speaker_id": "am_onyx",
+      "gender": "male",
+      "feel": "calm",
+      "accent": "ko",
+      "lang_code": "a",
+      "text": "안녕하세요 Grok Crew 입니다 잘부탁드려요",
+      "bytes": 286844
+    },
+    {
+      "file": "male__calm__en-us.wav",
+      "speaker_id": "am_onyx",
+      "gender": "male",
+      "feel": "calm",
+      "accent": "en-us",
+      "lang_code": "a",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 183644
+    },
+    {
+      "file": "male__calm__en-gb.wav",
+      "speaker_id": "bm_lewis",
+      "gender": "male",
+      "feel": "calm",
+      "accent": "en-gb",
+      "lang_code": "b",
+      "text": "Hello. This is Grok Crew. Nice to meet you.",
+      "bytes": 195644
+    },
+    {
+      "file": "male__calm__zh.wav",
+      "speaker_id": "zm_yunjian",
+      "gender": "male",
+      "feel": "calm",
+      "accent": "zh",
+      "lang_code": "z",
+      "text": "你好，我是 Grok Crew，请多关照。",
+      "bytes": 181244
+    },
+    {
+      "file": "male__calm__ja.wav",
+      "speaker_id": "jm_kumo",
+      "gender": "male",
+      "feel": "calm",
+      "accent": "ja",
+      "lang_code": "j",
+      "text": "こんにちは。Grok Crewです。よろしくお願いします。",
+      "bytes": 196844
+    }
+  ],
+  "failed": []
+}

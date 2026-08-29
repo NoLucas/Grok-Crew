@@ -1,4 +1,11 @@
-import type { VoiceAccent, VoiceFeel, VoiceGender } from './desktop-voice-personas';
+import {
+  resolveVoicePersona,
+  type VoiceAccent,
+  type VoiceFeel,
+  type VoiceGender,
+} from './desktop-voice-personas';
+
+export const VOICE_PREVIEW_ENGINE = 'kokoro-82m';
 
 export const VOICE_PREVIEW_PHRASE: Record<VoiceAccent, string> = {
   ko: '안녕하세요 Grok Crew 입니다 잘부탁드려요',
@@ -7,6 +14,8 @@ export const VOICE_PREVIEW_PHRASE: Record<VoiceAccent, string> = {
   zh: '你好，我是 Grok Crew，请多关照。',
   ja: 'こんにちは。Grok Crewです。よろしくお願いします。',
 };
+
+export type VoicePreviewStatus = 'playing' | 'blocked' | 'missing';
 
 export function voicePreviewPhrase(accent: VoiceAccent): string {
   return VOICE_PREVIEW_PHRASE[accent] || VOICE_PREVIEW_PHRASE.ko;
@@ -27,71 +36,111 @@ export function voicePreviewRate(feel: VoiceFeel): number {
   return 1;
 }
 
-type SpeechVoice = { lang?: string; name?: string };
-type SpeechHandle = {
-  cancel: () => void;
-  speak: (utterance: unknown) => void;
-  getVoices: () => SpeechVoice[];
+export function voicePreviewFileName(input: {
+  gender?: VoiceGender;
+  feel?: VoiceFeel;
+  accent?: VoiceAccent;
+}): string {
+  const persona = resolveVoicePersona(input);
+  return `${persona.gender}__${persona.feel}__${persona.accent}.wav`;
+}
+
+export function voicePreviewMediaUrl(
+  input: { gender?: VoiceGender; feel?: VoiceFeel; accent?: VoiceAccent },
+  studioOrigin = '',
+): string {
+  const base = studioOrigin.replace(/\/$/, '');
+  return `${base}/media/voice-previews/${voicePreviewFileName(input)}`;
+}
+
+type PreviewAudio = {
+  pause: () => void;
+  src: string;
 };
 
-function scoreVoice(voice: SpeechVoice, lang: string, gender: VoiceGender): number {
-  const voiceLang = String(voice.lang || '').replace('_', '-');
-  const name = String(voice.name || '').toLowerCase();
-  let score = 0;
-  if (voiceLang.toLowerCase() === lang.toLowerCase()) score += 8;
-  else if (voiceLang.toLowerCase().startsWith(lang.slice(0, 2).toLowerCase())) score += 5;
-  const female = /female|woman|girl|zira|samantha|karen|moira|yuna|heami|xiaoxiao|nanami|kyoko|haruka/.test(name);
-  const male = /male|man|boy|david|mark|george|daniel|yunjian|keita|ichiro/.test(name);
-  if (gender === 'female' && female) score += 3;
-  if (gender === 'male' && male) score += 3;
-  if (gender === 'female' && male) score -= 2;
-  if (gender === 'male' && female) score -= 2;
-  return score;
+type PreviewRequest = (path: string, init?: RequestInit) => Promise<Record<string, unknown>>;
+
+let currentAudio: PreviewAudio | null = null;
+
+function isKokoroEngine(value: unknown): boolean {
+  return String(value || '').trim().toLowerCase() === VOICE_PREVIEW_ENGINE;
 }
 
-export function pickPreviewVoice(
-  voices: SpeechVoice[],
-  lang: string,
-  gender: VoiceGender,
-): SpeechVoice | null {
-  let best: SpeechVoice | null = null;
-  let bestScore = 0;
-  for (const voice of voices) {
-    const score = scoreVoice(voice, lang, gender);
-    if (score > bestScore) {
-      best = voice;
-      bestScore = score;
+function absolutePreviewUrl(url: string, studioOrigin = ''): string {
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = studioOrigin.replace(/\/$/, '');
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
+}
+
+export function stopVoicePreview(audio: PreviewAudio | null = currentAudio) {
+  const handle = audio ?? currentAudio;
+  if (!handle) return;
+  try {
+    handle.pause();
+    handle.src = '';
+  } catch {
+    /* already stopped */
+  }
+  if (handle === currentAudio) currentAudio = null;
+}
+
+async function playHtmlAudio(url: string): Promise<void> {
+  if (typeof Audio !== 'function') throw new Error('blocked');
+  const audio = new Audio(url);
+  currentAudio = audio;
+  await new Promise<void>((resolve, reject) => {
+    audio.onplaying = () => resolve();
+    audio.onerror = () => reject(new Error('blocked'));
+    const started = audio.play();
+    if (started && typeof started.then === 'function') {
+      started.then(() => resolve()).catch(() => reject(new Error('blocked')));
+    }
+  });
+}
+
+export async function playVoicePreview(
+  input: { accent: VoiceAccent; gender?: VoiceGender; feel?: VoiceFeel },
+  deps?: {
+    request?: PreviewRequest;
+    studioOrigin?: string;
+    play?: (url: string) => Promise<void>;
+  },
+): Promise<VoicePreviewStatus> {
+  stopVoicePreview();
+  const persona = resolveVoicePersona(input);
+  const studioOrigin = deps?.studioOrigin || '';
+  let url = '';
+  let missing = false;
+  if (deps?.request) {
+    try {
+      const data = await deps.request('/api/v2/first-run/voice-preview', {
+        method: 'POST',
+        body: JSON.stringify({
+          gender: persona.gender,
+          feel: persona.feel,
+          accent: persona.accent,
+          speaker_id: persona.speakerId,
+        }),
+      });
+      if (data.engine != null && !isKokoroEngine(data.engine)) return 'blocked';
+      const returned = String(data.url || '').trim();
+      if (returned) url = absolutePreviewUrl(returned, studioOrigin);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error || '');
+      missing = /not on this PC|voice_missing|Kokoro-82M is not installed/i.test(message);
     }
   }
-  return bestScore > 0 ? best : null;
-}
-
-export function playVoicePreview(
-  input: { accent: VoiceAccent; gender?: VoiceGender; feel?: VoiceFeel },
-  speech?: SpeechHandle | null,
-): 'playing' | 'blocked' {
-  const handle = speech ?? (typeof window !== 'undefined' ? window.speechSynthesis as SpeechHandle | undefined : undefined);
-  if (!handle?.speak) return 'blocked';
-  const lang = voicePreviewLang(input.accent);
-  const text = voicePreviewPhrase(input.accent);
-  const gender = input.gender === 'male' ? 'male' : 'female';
-  const utterance = typeof SpeechSynthesisUtterance === 'function'
-    ? new SpeechSynthesisUtterance(text)
-    : { text, lang, rate: voicePreviewRate(input.feel || 'warm'), voice: null as SpeechVoice | null };
-  utterance.lang = lang;
-  utterance.rate = voicePreviewRate(input.feel || 'warm');
-  const voice = pickPreviewVoice(handle.getVoices?.() ?? [], lang, gender);
-  if (voice && 'voice' in utterance) utterance.voice = voice as SpeechSynthesisVoice;
+  if (!url && studioOrigin) url = voicePreviewMediaUrl(persona, studioOrigin);
+  if (!url) {
+    const page = typeof window !== 'undefined' ? window.location.origin : '';
+    if (page) url = `${page}/voice-previews/${voicePreviewFileName(persona)}`;
+  }
+  if (!url) return missing ? 'missing' : 'blocked';
   try {
-    handle.cancel();
-    handle.speak(utterance);
+    if (deps?.play) await deps.play(url);
+    else await playHtmlAudio(url);
     return 'playing';
   } catch {
-    return 'blocked';
+    return missing ? 'missing' : 'blocked';
   }
-}
-
-export function stopVoicePreview(speech?: SpeechHandle | null) {
-  const handle = speech ?? (typeof window !== 'undefined' ? window.speechSynthesis as SpeechHandle | undefined : undefined);
-  handle?.cancel?.();
 }

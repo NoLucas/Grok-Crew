@@ -5,9 +5,11 @@ import { describe, it } from 'node:test';
 register('./timeline/ts-resolver.helper.mjs', import.meta.url);
 
 const {
-  pickPreviewVoice,
+  VOICE_PREVIEW_ENGINE,
   playVoicePreview,
+  voicePreviewFileName,
   voicePreviewLang,
+  voicePreviewMediaUrl,
   voicePreviewPhrase,
   voicePreviewRate,
 } = await import('./desktop-voice-preview.ts');
@@ -25,28 +27,46 @@ describe('voice preview lines', () => {
     assert.equal(voicePreviewLang('zh'), 'zh-CN');
     assert.equal(voicePreviewLang('ja'), 'ja-JP');
     assert.equal(voicePreviewRate('bright') > voicePreviewRate('calm'), true);
+    assert.equal(voicePreviewFileName({ gender: 'female', feel: 'warm', accent: 'ko' }), 'female__warm__ko.wav');
+    assert.equal(VOICE_PREVIEW_ENGINE, 'kokoro-82m');
   });
 
-  it('plays the greeting on the matching language voice', () => {
-    const spoken = [];
-    const speech = {
-      cancel() { spoken.push('cancel'); },
-      speak(utterance) { spoken.push(utterance); },
-      getVoices() {
-        return [
-          { lang: 'en-US', name: 'Samantha' },
-          { lang: 'ko-KR', name: 'Yuna' },
-          { lang: 'ja-JP', name: 'Kyoko' },
-        ];
-      },
+  it('plays the Kokoro-82M wav from Local Studio, never speechSynthesis', () => {
+    const played = [];
+    const request = async (path, init) => {
+      assert.equal(path, '/api/v2/first-run/voice-preview');
+      assert.equal(init.method, 'POST');
+      const body = JSON.parse(init.body);
+      assert.equal(body.accent, 'ko');
+      assert.equal(body.speaker_id, 'af_heart');
+      return {
+        engine: 'kokoro-82m',
+        speaker_id: 'af_heart',
+        text: voicePreviewPhrase('ko'),
+        url: '/media/voice-previews/female__warm__ko.wav',
+      };
     };
-    assert.equal(playVoicePreview({ accent: 'ko', gender: 'female' }, speech), 'playing');
-    assert.equal(spoken[0], 'cancel');
-    assert.equal(spoken[1].text, '안녕하세요 Grok Crew 입니다 잘부탁드려요');
-    assert.equal(spoken[1].lang, 'ko-KR');
-    assert.equal(spoken[1].voice.name, 'Yuna');
-    assert.equal(playVoicePreview({ accent: 'ja' }, { cancel() {}, speak() { throw new Error('no'); }, getVoices() { return []; } }), 'blocked');
-    assert.equal(playVoicePreview({ accent: 'zh' }, null), 'blocked');
-    assert.equal(pickPreviewVoice([{ lang: 'en-GB', name: 'Daniel' }], 'en-GB', 'male')?.name, 'Daniel');
+    return playVoicePreview(
+      { accent: 'ko', gender: 'female', feel: 'warm' },
+      {
+        request,
+        studioOrigin: 'http://127.0.0.1:7214',
+        play: async (url) => { played.push(url); },
+      },
+    ).then(async (status) => {
+      assert.equal(status, 'playing');
+      assert.equal(played[0], 'http://127.0.0.1:7214/media/voice-previews/female__warm__ko.wav');
+      assert.equal(voicePreviewMediaUrl({ accent: 'ja', gender: 'female', feel: 'warm' }, 'http://127.0.0.1:7214'), 'http://127.0.0.1:7214/media/voice-previews/female__warm__ja.wav');
+      const missing = await playVoicePreview(
+        { accent: 'zh' },
+        { request: async () => { throw new Error('Kokoro-82M is not installed on this PC.'); } },
+      );
+      assert.equal(missing, 'missing');
+      const otherEngine = await playVoicePreview(
+        { accent: 'en-us' },
+        { request: async () => ({ engine: 'speechSynthesis', url: '/nope.wav' }), play: async () => {} },
+      );
+      assert.equal(otherEngine, 'blocked');
+    });
   });
 });
