@@ -12,10 +12,21 @@ describe('desk composer restage', () => {
     assert.match(text, /data-stage="compose"/);
     assert.match(text, /봇 붙이기/);
     assert.equal(text.includes('desktop-spec-hero'), false);
-    assert.match(text, /이 PC에서 봇 쓰기/);
+    assert.equal(text.includes('이 PC에서 봇 쓰기'), false);
+    assert.equal(text.includes('크루 보드'), false);
+    assert.equal(text.includes('안 열리면'), false);
+    assert.equal(text.includes('봇 없이 영상 열기'), false);
     assert.match(text, /이 창의 다른 연결/);
-    assert.match(text, /봇 없이 영상 열기/);
     assert.equal((text.match(/<h1>/g) || []).length, 1);
+  });
+
+  it('Start keeps open-own-file and leaves the crew board on Auto', () => {
+    const auto = src('desktop-auto-desk.tsx');
+    const chrome = src('desktop-workspace.tsx');
+    assert.match(auto, /봇 없이 영상 열기/);
+    assert.match(auto, /DesktopCrewBoard/);
+    assert.equal(auto.includes('안 열리면'), false);
+    assert.match(chrome, /t\('시작', 'Start', '开始', '開始'\)/);
   });
 
   it('Setup and Export use option chips, not four cards at once', () => {

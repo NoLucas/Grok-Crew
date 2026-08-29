@@ -41,7 +41,6 @@ import { DesktopCrewBoard } from './desktop-crew-board';
 import { activityForSpec, type CrewLoadState } from './desktop-crew-log';
 import { seatShortLabel, withCrewInvite } from './bot-skills';
 import { CREW_MARKETS, marketFromLanguage, marketLabel, resolveCrewMarket, type CrewMarket } from './crew-market';
-import { DesktopInstallHelp } from './desktop-install-help';
 import { DesktopNewsCard } from './desktop-news-card';
 import { confirmVoiceChoice, type VoiceModelId } from './desktop-voice-models';
 import {
@@ -696,7 +695,8 @@ export function AutoDesk({
 
           {mode === 'own_file' ? (
             <section className="desktop-auto-composer-card desktop-auto-own">
-              <p>{t('이 컴퓨터에 영상이 있으면, 봇 없이 바로 잘라 볼 화면이 열립니다.', 'If the video is on this computer, the cut screen opens without a bot.', '若视频在这台电脑，不用机器人也会打开剪辑画面。', 'このパソコンに映像があれば、ボットなしで切る画面が開きます。')}</p>
+              <h2>{t('봇 없이 영상 열기', 'Open a video with no bot', '不用机器人打开视频', 'ボットなしで映像を開く')}</h2>
+              <p>{t('이 PC 영상을 바로 엽니다. 그러면 설정·편집·내보내기가 켜집니다.', 'Open a video on this PC. Setup, Edit, and Export then turn on.', '直接打开这台电脑上的视频。设置、编辑、导出就会打开。', 'この PC の映像を開く。設定・編集・書き出しが付く。')}</p>
               <button
                 type="button"
                 className={ownOver ? 'desktop-simple-drop is-over' : 'desktop-simple-drop'}
@@ -748,7 +748,7 @@ export function AutoDesk({
                   {t('이름 붙이기', 'Add a name', '加名字', '名前を付ける')}
                 </button>
                 <button type="button" onClick={() => setMode('own_file')}>
-                  {t('이미 있는 영상 열기', 'Open a video I already have', '打开已有视频', 'もうある映像を開く')}
+                  {t('봇 없이 영상 열기', 'Open a video with no bot', '不用机器人打开视频', 'ボットなしで映像を開く')}
                 </button>
               </div>
               {nameOpen ? (
@@ -1382,7 +1382,6 @@ export function AutoDesk({
             ) : null}
           </div>
           <DesktopNewsCard />
-          <DesktopInstallHelp />
         </details>
       ) : null}
     </div>

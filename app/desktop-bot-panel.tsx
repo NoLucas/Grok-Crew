@@ -1,14 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { connectPaste, connectedBot, type CrewRoster } from './desktop-bot-connect';
+import { useMemo, useState } from 'react';
+import { type CrewRoster } from './desktop-bot-connect';
 import { BOT_ROLES, seatName, type BotRole } from './bot-skills';
 import { marketLabel, resolveCrewMarket } from './crew-market';
-import { autoSeatRows, readAutoPrefs, type BotActivityItem } from './desktop-auto-state';
-import { DesktopCrewBoard } from './desktop-crew-board';
-import { DesktopInstallHelp } from './desktop-install-help';
-import { readDeskWait, type DeskWaitState } from './desktop-wait-state';
-import { activityForSpec, crewBoardScope, type CrewLoadState } from './desktop-crew-log';
+import { readAutoPrefs } from './desktop-auto-state';
 import {
   type BotLinkState,
   type LinkChangeCause,
@@ -21,7 +17,6 @@ import {
   remoteConnectPaste,
   releaseHeldSeats,
   releaseLinkedSeat,
-  clearAllReleased,
   seatIsConnected,
   studioPortFromApiBase,
   writeBotLinks,
@@ -55,13 +50,9 @@ type BotPanelProps = {
   roster?: CrewRoster;
   links: BotLinkState;
   studioReady: boolean;
-  allowOwnFile?: boolean;
   services?: ConnectServices;
-  wait?: DeskWaitState | null;
   onLinksChange: (next: BotLinkState, cause?: LinkChangeCause) => void;
   onRefresh: () => Promise<void>;
-  onOpenOwnFile?: () => void;
-  request?: (path: string, init?: RequestInit) => Promise<Record<string, unknown>>;
 };
 
 const OTHER_FAMILIES: Array<{ id: 'grok' | 'custom'; ko: string; en: string; zh: string; ja: string }> = [
@@ -93,13 +84,9 @@ export function DesktopBotPanel({
   roster,
   links,
   studioReady,
-  allowOwnFile = false,
   services,
-  wait,
   onLinksChange,
   onRefresh,
-  onOpenOwnFile,
-  request,
 }: BotPanelProps) {
   const { language, t } = useLanguage();
   const [openSeat, setOpenSeat] = useState<OtherSeat>({ kind: 'grok', role: 'planner' });
@@ -109,14 +96,8 @@ export function DesktopBotPanel({
   const [error, setError] = useState('');
   const [replyText, setReplyText] = useState('');
   const [replyError, setReplyError] = useState('');
-  const [activity, setActivity] = useState<BotActivityItem[]>([]);
-  const [activityState, setActivityState] = useState<CrewLoadState>('loading');
   const [lastBundle, setLastBundle] = useState(() => readLastConnectBundle());
   const [releasedNote, setReleasedNote] = useState('');
-  const local = connectedBot(roster);
-  const localLabel = String(local?.display_name || '').includes('???')
-    ? String(local?.bot_id || '').trim()
-    : String(local?.display_name || local?.bot_id || '').trim();
   const connected = hasConnectedBot(roster, links);
   const studioPort = studioPortFromApiBase(
     typeof window !== 'undefined' ? window.grokCrew?.apiBase : undefined,
@@ -125,46 +106,12 @@ export function DesktopBotPanel({
   const market = resolveCrewMarket(prefs.market, language);
   const destName = marketLabel(market, language);
   const recipeId = lastBundle?.recipeId || prefs.recipeId || 'instagram_reel';
-  const liveWait = wait !== undefined ? wait : readDeskWait();
   const connectedNames = connectedRemoteNames(links, roster);
-  const boardScope = crewBoardScope(liveWait, activity);
-  const seatRows = autoSeatRows({
-    roster,
-    links,
-    language,
-    activity: activityForSpec(activity, boardScope.specId),
-  });
 
   const connectText = useMemo(
     () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role, studioPort, market),
     [language, links.pairCode, market, openSeat.kind, openSeat.role, studioPort],
   );
-  const localText = useMemo(() => connectPaste(language, studioPort), [language, studioPort]);
-
-  useEffect(() => {
-    if (!request) {
-      setActivityState('ready');
-      return undefined;
-    }
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const data = await request('/api/bot-activity') as { activity?: BotActivityItem[] };
-        if (cancelled) return;
-        setActivity(Array.isArray(data.activity) ? data.activity : []);
-        setActivityState('ready');
-      } catch {
-        if (cancelled) return;
-        setActivityState('error');
-      }
-    };
-    void load();
-    const timer = window.setInterval(() => void load(), 8000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [request]);
 
   const rememberBundle = (nextMarket = market, nextRecipe = recipeId) => {
     const saved = writeLastConnectBundle({
@@ -201,24 +148,6 @@ export function DesktopBotPanel({
     }
     markCopied(seat);
     if (seat.kind === 'grok') rememberBundle();
-    setReleasedNote('');
-    await onRefresh();
-  };
-
-  const copyLocal = async () => {
-    setError('');
-    setBlockedKind('');
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
-      await navigator.clipboard.writeText(localText);
-      setCopied('same_pc');
-      window.setTimeout(() => setCopied(''), 4000);
-    } catch {
-      setBlockedKind('same_pc');
-    }
-    const next = clearAllReleased(links);
-    writeBotLinks(next);
-    onLinksChange(next, 'copy');
     setReleasedNote('');
     await onRefresh();
   };
@@ -272,7 +201,7 @@ export function DesktopBotPanel({
     <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
       <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('연결 글을 봇 창에 붙이세요. 복사만으로는 연결되지 않고, 이 탭에 머뭅니다. 자리마다 연결 글을 복사한 뒤 자동으로 가세요. 램프가 켜지면 연결됨입니다.', 'Paste the connect text in the bot window. Copying is not a connection, and this tab stays open. Copy each seat, then go to Auto. The lamp means connected.', '把连接文字贴到机器人窗口。只复制不算已连接，也不会离开这个页。每个位子复制后再去自动。灯亮就是已连接。', '接続文をボット窓に貼る。コピーしただけでは接続されず、このタブに留まります。席ごとにコピーしてから自動へ。ランプが付けば接続済み。')}</p>
+        <p>{t('연결 글을 봇 창에 붙이세요. 복사만으로는 연결되지 않고, 이 탭에 머뭅니다. 자리마다 연결 글을 복사한 뒤 시작으로 가세요. 램프가 켜지면 연결됨입니다.', 'Paste the connect text in the bot window. Copying is not a connection, and this tab stays open. Copy each seat, then go to Start. The lamp means connected.', '把连接文字贴到机器人窗口。只复制不算已连接，也不会离开这个页。每个位子复制后再去开始。灯亮就是已连接。', '接続文をボット窓に貼る。コピーしただけでは接続されず、このタブに留まります。席ごとにコピーしてから開始へ。ランプが付けば接続済み。')}</p>
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">
@@ -321,7 +250,7 @@ export function DesktopBotPanel({
         </div>
         {links.pairCode ? <p className="desktop-spec-meta">{t(`연결 코드 ${links.pairCode}`, `Code ${links.pairCode}`, `连接代码 ${links.pairCode}`, `接続コード ${links.pairCode}`)}</p> : null}
         <p className="desktop-spec-meta">
-          {t(`이 글은 ${destName}용입니다. 보낼 나라는 자동에서 바꿉니다. 바꿨으면 다시 복사하세요.`, `This text is for ${destName}. Change the destination country in Auto. Copy again after a change.`, `这段文字是给 ${destName} 的。要发往的国家在自动里改。改了请再复制。`, `この文は ${destName} 用です。送る国は自動で変えます。変えたらコピーし直してください。`)}
+          {t(`이 글은 ${destName}용입니다. 보낼 나라는 시작에서 바꿉니다. 바꿨으면 다시 복사하세요.`, `This text is for ${destName}. Change the destination country in Start. Copy again after a change.`, `这段文字是给 ${destName} 的。要发往的国家在开始里改。改了请再复制。`, `この文は ${destName} 用です。送る国は開始で変えます。変えたらコピーし直してください。`)}
         </p>
         {OTHER_FAMILIES.filter((family) => family.id === familyId).map((family) => (
           <div key={family.id} className="desktop-bot-family">
@@ -381,46 +310,11 @@ export function DesktopBotPanel({
             ) : null}
           </div>
         ))}
-        {blockedKind && blockedKind !== 'same_pc' ? (
+        {blockedKind ? (
           <textarea className="desktop-bot-paste" value={connectText} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
         ) : null}
         {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
       </section>
-
-      <DesktopCrewBoard
-        rows={seatRows}
-        activity={activity}
-        loadState={activityState}
-        specId={boardScope.specId}
-        jobTitle={boardScope.jobTitle}
-        onRetry={request ? () => {
-          setActivityState('loading');
-          void request('/api/bot-activity').then((data) => {
-            const payload = data as { activity?: BotActivityItem[] };
-            setActivity(Array.isArray(payload.activity) ? payload.activity : []);
-            setActivityState('ready');
-          }).catch(() => setActivityState('error'));
-        } : undefined}
-      />
-
-      <details className="desktop-auto-help">
-        <summary>{t('이 PC에서 봇 쓰기', 'Use a bot on this PC', '在这台电脑上用机器人', 'この PC でボットを使う')}</summary>
-        <p>{t('같은 PC 봇은 체크인 글을 그 창에 붙이면 이름이 여기 뜹니다. 창을 끄지 마세요.', 'A bot on this PC pastes the check-in line and its name appears here. Do not close this window.', '这台电脑上的机器人贴签到文字后，名字会出现在这里。不要关掉窗口。', '同じ PC のボットはチェックイン文を貼ると名前が出ます。窓を閉じないでください。')}</p>
-        <div className={`desktop-connect-row${local ? ' is-connected' : ''}`}>
-          <div>
-            <b>{local ? (localLabel || t('이 PC 봇', 'This PC bot', '这台电脑的机器人', 'この PC のボット')) : t('이 PC 봇', 'This PC bot', '这台电脑的机器人', 'この PC のボット')}</b>
-            <Lamp on={Boolean(local)} label={lampText(Boolean(local), t)} />
-          </div>
-          {local ? null : (
-            <button type="button" className="desktop-primary" disabled={!studioReady} onClick={() => void copyLocal()}>
-              {copied === 'same_pc' ? t('복사했습니다', 'Copied', '已复制', 'コピーしました') : t('연결 글 복사', 'Copy the connect text', '复制连接文字', '接続文をコピー')}
-            </button>
-          )}
-        </div>
-        {blockedKind === 'same_pc' ? (
-          <textarea className="desktop-bot-paste" value={localText} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
-        ) : null}
-      </details>
 
       {services ? (
         <details className="desktop-auto-help">
@@ -496,18 +390,6 @@ export function DesktopBotPanel({
               </div>
             </li>
           </ul>
-        </details>
-      ) : null}
-
-      <DesktopInstallHelp variant={connected ? 'fold' : 'open'} />
-
-      {allowOwnFile && onOpenOwnFile ? (
-        <details className="desktop-auto-help">
-          <summary>{t('봇 없이 영상 열기', 'Open a video with no bot', '不用机器人打开视频', 'ボットなしで映像を開く')}</summary>
-          <p>{t('이 PC 영상을 바로 엽니다. 그러면 설정·편집·내보내기가 켜집니다.', 'Open a video on this PC. Setup, Edit, and Export then turn on.', '直接打开这台电脑上的视频。设置、编辑、导出就会打开。', 'この PC の映像を開く。設定・編集・書き出しが付く。')}</p>
-          <button type="button" className="desktop-secondary" onClick={onOpenOwnFile}>
-            {t('영상 고르기', 'Pick a video', '选择视频', '映像を選ぶ')}
-          </button>
         </details>
       ) : null}
     </div>

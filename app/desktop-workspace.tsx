@@ -1387,7 +1387,7 @@ export default function DesktopWorkspace() {
         {firstOpen ? null : (
         <nav aria-label={t('작업 패널', 'Workspace panels', '工作面板', '作業パネル')}>
           <button type="button" className={`${showBotRoom ? 'active' : ''}${hasConnectedBot(workspace.crew_roster, botLinks) ? ' is-connected' : ' needs-bot'}`} aria-current={showBotRoom ? 'page' : undefined} onClick={() => { setBotPanelOpen(true); setSpecDeskOpen(true); setAdvancedSpecOpen(false); }}>{t('연결', 'Connect', '连接', '接続')}</button>
-          <button type="button" className={!showBotRoom && showAutoDesk ? 'active' : ''} aria-current={!showBotRoom && showAutoDesk ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(true); setAdvancedSpecOpen(false); setActivePanel('auto'); }}>{t('자동', 'Auto', '自动', '自動')}{autoDot !== 'off' ? <i className={`desktop-auto-nav-dot is-${autoDot}`} aria-hidden="true" /> : null}</button>
+          <button type="button" className={!showBotRoom && showAutoDesk ? 'active' : ''} aria-current={!showBotRoom && showAutoDesk ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(true); setAdvancedSpecOpen(false); setActivePanel('auto'); }}>{t('시작', 'Start', '开始', '開始')}{autoDot !== 'off' ? <i className={`desktop-auto-nav-dot is-${autoDot}`} aria-hidden="true" /> : null}</button>
           {showWorkTabs ? (
             <>
               <button type="button" className={!showBotRoom && !showAutoDesk && activePanel === 'setup' ? 'active' : ''} aria-current={!showBotRoom && !showAutoDesk && activePanel === 'setup' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(false); setSpecDeskOpen(false); setAdvancedSpecOpen(false); setActivePanel('setup'); }}>{t('설정', 'Setup', '设置', '設定')}</button>
@@ -1617,7 +1617,7 @@ export default function DesktopWorkspace() {
           : showBotRoom || showAutoDesk || advancedSpecOpen || !project ? (
             advancedSpecOpen ? (
               <div className="desktop-simple-wrap">
-                <button type="button" className="desktop-secondary" onClick={() => { setAdvancedSpecOpen(false); setActivePanel('auto'); setPeekAuto(true); }}>{t('자동으로', 'Back to Auto', '回到自动', '自動へ')}</button>
+                <button type="button" className="desktop-secondary" onClick={() => { setAdvancedSpecOpen(false); setActivePanel('auto'); setPeekAuto(true); }}>{t('시작으로', 'Back to Start', '回到开始', '開始へ')}</button>
                 <details className="desktop-auto-help">
                   <summary>{t('봇이 가져온 파일', 'Files the bot brought', '机器人带来的文件', 'ボットが持ってきたファイル')}</summary>
                 <HandoffFolderBoard
@@ -1658,7 +1658,6 @@ export default function DesktopWorkspace() {
                   roster={workspace.crew_roster}
                   links={botLinks}
                   studioReady={studioState === 'ready'}
-                  allowOwnFile={!project}
                   services={{
                     studioReady: studioState === 'ready',
                     github,
@@ -1690,9 +1689,6 @@ export default function DesktopWorkspace() {
                     }
                   }}
                   onRefresh={() => refreshWorkspace(true)}
-                  onOpenOwnFile={() => void openOwnFileFromDesk()}
-                  wait={deskWait}
-                  request={api}
                 />
               ) : null}
               {!showBotRoom ? (
@@ -1719,7 +1715,7 @@ export default function DesktopWorkspace() {
                 saveFailed={autoSaveFailed}
                 
                 onOpenSample={() => { setSpecDeskOpen(false); void openSampleProject(); }}
-                onOpenOwnFootage={() => { setSpecDeskOpen(false); setCreateOpen(true); setDrawer('projects'); }}
+                onOpenOwnFootage={() => { setSpecDeskOpen(false); void openOwnFileFromDesk(); }}
                 onCopied={(next) => {
                   writeDeskWait(next);
                   deskWaitRef.current = next;

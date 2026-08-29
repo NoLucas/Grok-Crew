@@ -8222,6 +8222,7 @@ select {
 }
 .desktop-auto-gate { margin: 0; color: var(--desktop-muted); font-size: 13px; line-height: 1.5; }
 .desktop-auto-own { display: grid; gap: 8px; }
+.desktop-auto-own > h2 { margin: 0; font-size: 16px; font-weight: 750; }
 .desktop-auto-own > p { margin: 0; color: var(--desktop-muted); font-size: 13px; line-height: 1.45; }
 .desktop-auto-owned-list {
   list-style: none;
