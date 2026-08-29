@@ -554,7 +554,7 @@ export type AutoActivityLine = {
   when: string;
 };
 
-const IDLE_ACTIONS = new Set(['still_here', 'entered_local_studio']);
+const IDLE_ACTIONS = new Set(['still_here', 'entered_local_studio', 'disconnected']);
 const WORK_STARTED = new Set(['plan_started', 'collect_started', 'cut_started']);
 const WORK_READY = new Set(['plan_ready', 'collect_ready', 'cut_ready']);
 
@@ -619,6 +619,9 @@ export function heartbeatActionKind(action?: string | null): 'idle' | 'started' 
 
 export function heartbeatActionLabel(action: string | undefined | null, language = 'ko'): string {
   const raw = String(action || '').trim();
+  if (raw === 'disconnected') {
+    return autoCopy(language, '연결 해제', 'disconnected', '已断开', '接続を外した');
+  }
   if (raw === 'still_here' || raw === 'entered_local_studio') {
     return autoCopy(language, '이 자리에 있음 · 할 일은 아직 안 적음', 'here · no job written yet', '在这个位子 · 还没写下要做的事', 'この席にいる · 仕事はまだ書いていない');
   }

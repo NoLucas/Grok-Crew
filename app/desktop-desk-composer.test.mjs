@@ -20,6 +20,11 @@ describe('desk composer restage', () => {
     assert.match(text, /자리 확인은 이 Windows의 keep이 1분마다/);
     assert.match(text, /채팅에 매 분 작업을 만들지 마세요/);
     assert.match(text, /Seat check is Windows keep every minute/);
+    assert.match(text, /desktop-spinner-inline/);
+    assert.match(text, /확인 중/);
+    assert.match(text, /끊는 중/);
+    assert.match(text, /onSeatCommand/);
+    assert.match(text, /disconnectHeartbeatBody/);
     assert.equal(text.includes('끊김'), false);
     assert.equal(text.includes('한 줄로 붙이기'), false);
     assert.equal(text.includes('이 줄로 붙이기'), false);

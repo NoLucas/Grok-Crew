@@ -133,6 +133,12 @@ def record_bot_heartbeat(body: dict[str, Any]) -> dict[str, Any]:
     detail = safe_detail(body.get("detail", {}))
     now = utc_now()
     with db() as conn:
+        existing = conn.execute("SELECT last_action FROM bot_sessions WHERE bot_id = ?", (bot_id,)).fetchone()
+        previous = str((row_dict(existing) or {}).get("last_action") or "").strip() if existing else ""
+        # Operator disconnect sticks until a new bot-entry. keep still_here must not relight the lamp.
+        if previous == "disconnected" and action not in {"disconnected", "entered_local_studio"}:
+            row = conn.execute("SELECT * FROM bot_sessions WHERE bot_id = ?", (bot_id,)).fetchone()
+            return row_dict(row) or {}
         conn.execute("""INSERT INTO bot_sessions (bot_id, display_name, last_action, last_detail_json, last_seen, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(bot_id) DO UPDATE SET display_name = excluded.display_name, last_action = excluded.last_action,

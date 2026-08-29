@@ -7,6 +7,7 @@ All notable changes to Grok Crew are documented here.
 ### Desk
 
 - Seat connectedness stays a 60-second check. Windows `keep` does that loop on the registered machine. Chat must not create a `still_here` / 매 분 scheduled job. After one missed minute the crew board shows last check. After five minutes the sidecar marks the seat idle. Lamps stay 연결됨 / 연결되지않음.
+- Connect **연결 해제** now posts heartbeat `disconnected` for each live Grok seat. `keep` stops when it sees that command, and `still_here` cannot relight a released seat until a new `bot-entry`. Refresh shows a spinner while the roster reloads.
 
 ## 1.0.15 - 2026-08-29
 

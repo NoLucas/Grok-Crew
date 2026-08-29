@@ -19,8 +19,10 @@ import { DesktopLogoMark } from './desktop-logo-mark';
 import { DesktopBotPanel } from './desktop-bot-panel';
 import {
   connectedRemoteNames,
+  disconnectHeartbeatBody,
   ensureBotLinks,
   forgetBotLinksOnQuit,
+  grokSeatsToDisconnect,
   hasConnectedBot,
   seatLampRows,
   lostConnectedSeats,
@@ -1469,10 +1471,22 @@ export default function DesktopWorkspace() {
                 type="button"
                 className="desktop-primary desktop-quit-confirm"
                 onClick={() => {
-                  forgetBotLinksOnQuit(botLinks);
-                  setBotLinks(ensureBotLinks());
-                  setQuitAsk(false);
-                  if (window.grokCrew?.quit) void window.grokCrew.quit();
+                  void (async () => {
+                    for (const role of grokSeatsToDisconnect(botLinks, workspace.crew_roster)) {
+                      try {
+                        await api('/api/bots/heartbeat', {
+                          method: 'POST',
+                          body: JSON.stringify(disconnectHeartbeatBody(role, workspace.crew_roster, language)),
+                        });
+                      } catch {
+                        /* still quit even if one seat rejects the command */
+                      }
+                    }
+                    forgetBotLinksOnQuit(botLinks);
+                    setBotLinks(ensureBotLinks());
+                    setQuitAsk(false);
+                    if (window.grokCrew?.quit) void window.grokCrew.quit();
+                  })();
                 }}
               >
                 {t('종료', 'Quit', '退出', '終了')}
@@ -1663,6 +1677,9 @@ export default function DesktopWorkspace() {
                     }
                   }}
                   onRefresh={() => refreshWorkspace(true)}
+                  onSeatCommand={async (body) => {
+                    await api('/api/bots/heartbeat', { method: 'POST', body: JSON.stringify(body) });
+                  }}
                 />
               </div>
           ) : (

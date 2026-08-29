@@ -180,6 +180,28 @@ export function releaseHeldSeats(
   return next;
 }
 
+export const DISCONNECT_ACTION = 'disconnected';
+
+export function disconnectHeartbeatBody(
+  role: BotRole,
+  roster?: CrewRoster | null,
+  language = 'ko',
+): { bot_id: string; display_name: string; action: typeof DISCONNECT_ACTION } {
+  const bot = knownRosterSeat(roster, role);
+  return {
+    bot_id: grokSeatBotId(role),
+    display_name: String(bot?.display_name || seatName('grok', role, language)),
+    action: DISCONNECT_ACTION,
+  };
+}
+
+export function grokSeatsToDisconnect(
+  links?: BotLinkState | null,
+  roster?: CrewRoster | null,
+): BotRole[] {
+  return BOT_ROLES.filter((role) => seatIsConnected('grok', role, links, roster));
+}
+
 function normalizeBots(value: unknown): LinkedBot[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is LinkedBot => {
@@ -614,7 +636,7 @@ function grokKeepLines(who: string, role: BotRole, origin: string): { py: string
   const pull = `Invoke-RestMethod -Uri ${origin}/api/bots/next-invite -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}"}'`;
   return {
     py: `python grok-crew.py keep --server ${origin} --bot-id ${id} --display-name "${who}" --purpose ${purpose}`,
-    ps: `${entry}; while ($true) { ${beat}; try { ${pull} } catch {}; Start-Sleep -Seconds ${SEAT_KEEP_SECONDS} }`,
+    ps: `${entry}; while ($true) { $beat = ${beat}; if ($beat.bot.last_action -eq 'disconnected') { break }; try { ${pull} } catch {}; Start-Sleep -Seconds ${SEAT_KEEP_SECONDS} }`,
     entry,
     beat,
     pull,
@@ -649,6 +671,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       'PowerShell이면 아래를 한 번만 돌리세요.',
       keep.ps,
       'keep가 돌아가면 7214·still_here·exe 확인을 다시 요청하지 마세요.',
+      '연결에서 연결 해제를 누르면 책상이 disconnected를 보냅니다. keep은 그 명령을 보고 멈춥니다. 채팅에서 keep을 다시 켜지 마세요.',
       '초대문은 keep이 읽습니다. 사람이 초대문을 다시 붙이지 않습니다. 글을 받으면 그 일만 합니다. 404면 할 일이 아직 없습니다. 409면 다른 봇이 가져간 것입니다. 채팅에 토큰을 넣지 마세요.',
       `할 일이 바뀌면 같은 Windows에서 heartbeat를 바로 한 번 보냅니다. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 끝나면 detail.note에 다음 자리에 남긴 말을 한 줄만 넣습니다. 없는 말은 만들지 마세요. 채팅에는 토큰을 넣지 마세요.`,
       readyBeat,
@@ -670,6 +693,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       '若用 PowerShell，只跑下面这一次。',
       keep.ps,
       'keep 在跑时，不要再请求检查 7214、still_here 或 exe。',
+      '连接里按下断开后书桌会发 disconnected。keep 看到后停下。不要从聊天再开 keep。',
       '邀请由 keep 读取。操作员不会再粘贴一次。读到文字后只做那件事。404 表示还没有工作。409 表示别的机器人已经拿走。不要把令牌写进聊天。',
       `事情一变就在同一台 Windows 上立刻发一次 heartbeat。action 先用 ${work.start}，做完改成 ${work.ready}。做完时只在 detail.note 写留给下一位子的一行。不要编造没有的话。不要把令牌写进聊天。`,
       readyBeat,
@@ -691,6 +715,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       'PowerShell なら下を一度だけ回してください。',
       keep.ps,
       'keep が動いているなら、7214・still_here・exe 確認を再リクエストしないでください。',
+      '接続で接続を外すと机が disconnected を送ります。keep はその命令を見て止まります。チャットから keep を再起動しないでください。',
       '招待文は keep が読みます。人が招待文をもう一度貼ることはありません。文を受け取ったらその仕事だけします。404 なら仕事はまだありません。409 なら他のボットが取りました。トークンをチャットに書かないでください。',
       `仕事が変わったら同じ Windows ですぐ heartbeat を一度送ります。action は ${work.start} で始め、終わったら ${work.ready} です。終わったら detail.note に次の席へ残した一行だけ。ない言葉は作らないでください。トークンをチャットに書かないでください。`,
       readyBeat,
@@ -711,6 +736,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     'If you use PowerShell, run the next line once.',
     keep.ps,
     'While keep is running, do not ask again to check 7214, still_here, or the exe.',
+    'If Connect sends disconnected, keep stops. Do not start keep again from chat.',
     'keep reads the invite. The operator will not paste the invite again. When you get the text, do only that job. 404 means no job yet. 409 means another bot already took it. Do not put the token in chat.',
     `When the job changes, send one heartbeat on that same Windows at once. Start with action ${work.start}, then ${work.ready} when done. On ${work.ready}, put only one line in detail.note for the next seat. Do not invent a line. Do not put the token in chat.`,
     readyBeat,

@@ -3,14 +3,17 @@ import grok_crew
 
 
 class FakeClient:
-    def __init__(self, invite_error=""):
+    def __init__(self, invite_error="", last_action="still_here"):
         self.calls = []
         self.invite_error = invite_error
+        self.last_action = last_action
 
     def request(self, path, body=None):
         self.calls.append((path, body))
         if path == "/api/bots/next-invite" and self.invite_error:
             raise RuntimeError(self.invite_error)
+        if path == "/api/bots/heartbeat":
+            return {"bot": {"bot_id": body["bot_id"], "last_action": self.last_action}}
         return {"ok": True, "path": path}
 
 
@@ -51,3 +54,10 @@ def test_keep_parser_is_a_same_pc_loop():
     assert grok_crew.SEAT_KEEP_SECONDS == config.SEAT_KEEP_SECONDS == 60
     assert config.SEAT_ACTIVE_SECONDS == 300
     assert args.interval == grok_crew.SEAT_KEEP_SECONDS
+
+
+def test_keep_stops_when_desk_sends_disconnected():
+    client = FakeClient(last_action="disconnected")
+    grok_crew.keep_seat(client, "grok-editor", "Grok Bot 편집자", "edit_video", interval=0, once=False)
+    assert [path for path, _ in client.calls] == ["/api/bot-entry", "/api/bots/heartbeat"]
+    assert grok_crew.heartbeat_last_action({"bot": {"last_action": "disconnected"}}) == "disconnected"

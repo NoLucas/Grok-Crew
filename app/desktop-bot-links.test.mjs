@@ -30,6 +30,9 @@ const {
   grokSeatBotId,
   SEAT_KEEP_SECONDS,
   SEAT_ACTIVE_SECONDS,
+  DISCONNECT_ACTION,
+  disconnectHeartbeatBody,
+  grokSeatsToDisconnect,
   grokSeatLampRows,
   seatLampRows,
   seatIsConnected,
@@ -91,6 +94,8 @@ describe('remote bot links', () => {
       assert.match(text, /예약 작업을 만들지 마세요|Do not create a chat scheduled|不要在聊天里做 still_here|予約作業を作らない/);
       assert.match(text, /그 Windows가 아니|cannot be verified|不是那台 Windows|その Windows ではない/);
       assert.match(text, /keep가 돌아가면|keep 在跑时|keep が動いている|While keep is running/);
+      assert.match(text, /disconnected/);
+      assert.match(text, /\$beat\.bot\.last_action -eq 'disconnected'/);
       assert.doesNotMatch(text, /1분마다 같은 Windows에서 still_here heartbeat를 남기세요/);
       assert.doesNotMatch(text, /Leave a still_here heartbeat on the same Windows every minute so this desk knows the window is open/);
       assert.doesNotMatch(text, /5분마다|每 5 分钟|5 分ごと|every five minutes/);
@@ -211,6 +216,12 @@ describe('remote bot links', () => {
     assert.equal(seatIsConnected('grok', 'planner', copied, idle), false);
     const held = releaseHeldSeats(empty, idle);
     assert.equal(seatIsConnected('grok', 'planner', held, idle), false);
+    assert.deepEqual(grokSeatsToDisconnect(empty, idle), ['planner']);
+    assert.deepEqual(disconnectHeartbeatBody('planner', idle, 'ko'), {
+      bot_id: 'grok-planner',
+      display_name: 'Grok Bot 기획자',
+      action: DISCONNECT_ACTION,
+    });
   });
 
   it('turns a Grok seat green from an active same-PC check-in', () => {

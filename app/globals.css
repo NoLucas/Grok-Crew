@@ -9513,6 +9513,12 @@ select {
   width: 28px; height: 28px; border: 2px solid #dddde3; border-top-color: var(--desktop-blue);
   border-radius: 50%; animation: desktop-spin .8s linear infinite;
 }
+.desktop-spinner-inline {
+  width: 14px; height: 14px; border-width: 2px; display: inline-block; vertical-align: -2px; margin-right: 6px;
+}
+.desktop-connect-toolbar button {
+  display: inline-flex; align-items: center;
+}
 @keyframes desktop-spin { to { transform: rotate(360deg); } }
 .desktop-banner {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;

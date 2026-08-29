@@ -111,6 +111,16 @@ def test_forget_bot_sessions_clears_checkins(studio):
         assert conn.execute("SELECT COUNT(*) FROM bot_sessions").fetchone()[0] == 0
 
 
+def test_still_here_does_not_revive_a_disconnected_seat(studio):
+    studio.record_bot_heartbeat({"bot_id": "grok-planner", "display_name": "Grok Bot 기획자", "action": "entered_local_studio"})
+    gone = studio.record_bot_heartbeat({"bot_id": "grok-planner", "display_name": "Grok Bot 기획자", "action": "disconnected"})
+    assert gone["last_action"] == "disconnected"
+    stuck = studio.record_bot_heartbeat({"bot_id": "grok-planner", "display_name": "Grok Bot 기획자", "action": "still_here"})
+    assert stuck["last_action"] == "disconnected"
+    revived = studio.record_bot_heartbeat({"bot_id": "grok-planner", "display_name": "Grok Bot 기획자", "action": "entered_local_studio"})
+    assert revived["last_action"] == "entered_local_studio"
+
+
 def test_human_edit_settings_do_not_create_fake_bot_presence(studio):
     saved = studio.set_edit_method({"origin": "human", "updated_by": "operator", "method": {"fps": 60}})
     assert saved["origin"] == "human"

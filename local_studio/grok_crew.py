@@ -119,6 +119,15 @@ def require_human_approval(args: argparse.Namespace) -> None:
         raise ValueError("This command requires --human-approved after a person has recorded approval.")
 
 
+def heartbeat_last_action(payload: Any) -> str:
+    if not isinstance(payload, dict):
+        return ""
+    bot = payload.get("bot")
+    if isinstance(bot, dict):
+        return str(bot.get("last_action") or "").strip()
+    return str(payload.get("last_action") or "").strip()
+
+
 def keep_seat(
     client: LocalStudioClient,
     bot_id: str,
@@ -130,6 +139,7 @@ def keep_seat(
     """Enter once, then leave still_here and read next-invite on this same PC.
 
     The chat agent must not schedule a new computer command every minute.
+    If the desk posts disconnected, keep stops so the lamp stays off.
     """
     print_json(client.request("/api/bot-entry", {
         "bot_id": bot_id,
@@ -137,11 +147,14 @@ def keep_seat(
         "purpose": purpose,
     }))
     while True:
-        print_json(client.request("/api/bots/heartbeat", {
+        beat = client.request("/api/bots/heartbeat", {
             "bot_id": bot_id,
             "display_name": display_name,
             "action": "still_here",
-        }))
+        })
+        print_json(beat)
+        if heartbeat_last_action(beat) == "disconnected":
+            return
         try:
             print_json(client.request("/api/bots/next-invite", {"bot_id": bot_id}))
         except RuntimeError as exc:

@@ -9,7 +9,9 @@ import {
   type BotLinkState,
   type LinkChangeCause,
   connectedRemoteNames,
+  disconnectHeartbeatBody,
   familyIsConnected,
+  grokSeatsToDisconnect,
   hasConnectedBot,
   markRemoteCopied,
   readLastConnectBundle,
@@ -52,6 +54,7 @@ type BotPanelProps = {
   services?: ConnectServices;
   onLinksChange: (next: BotLinkState, cause?: LinkChangeCause) => void;
   onRefresh: () => Promise<void>;
+  onSeatCommand?: (body: { bot_id: string; display_name: string; action: string }) => Promise<void>;
 };
 
 const OTHER_FAMILIES: Array<{ id: 'grok' | 'custom'; ko: string; en: string; zh: string; ja: string }> = [
@@ -86,6 +89,7 @@ export function DesktopBotPanel({
   services,
   onLinksChange,
   onRefresh,
+  onSeatCommand,
 }: BotPanelProps) {
   const { language, t } = useLanguage();
   const [openSeat, setOpenSeat] = useState<OtherSeat>({ kind: 'grok', role: 'planner' });
@@ -93,6 +97,8 @@ export function DesktopBotPanel({
   const [copied, setCopied] = useState('');
   const [blockedKind, setBlockedKind] = useState('');
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [disconnecting, setDisconnecting] = useState('');
   const [lastBundle, setLastBundle] = useState(() => readLastConnectBundle());
   const [releasedNote, setReleasedNote] = useState('');
   const connected = hasConnectedBot(roster, links);
@@ -149,28 +155,78 @@ export function DesktopBotPanel({
     await onRefresh();
   };
 
-  const disconnectSeat = (seat: OtherSeat) => {
-    const next = releaseLinkedSeat(links, seat.kind, seat.role);
-    writeBotLinks(next);
-    onLinksChange(next, 'release');
-    setReleasedNote(t(
-      '이 창에서 끊었습니다. 봇 창이 켜져 있으면 그 쪽은 그대로일 수 있습니다.',
-      'This window released the seat. The bot window may still be open.',
-      '这个窗口已断开。机器人窗口可能还开着。',
-      'この窓で外しました。ボットの窓は開いたままのことがあります。',
-    ));
+  const refreshNow = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    const started = Date.now();
+    try {
+      await onRefresh();
+    } finally {
+      const wait = 400 - (Date.now() - started);
+      if (wait > 0) await new Promise((resolve) => window.setTimeout(resolve, wait));
+      setRefreshing(false);
+    }
   };
 
-  const disconnectAll = () => {
-    const next = releaseHeldSeats(links, roster);
-    writeBotLinks(next);
-    onLinksChange(next, 'release');
-    setReleasedNote(t(
-      '이 창에서 모든 자리를 끊었습니다. 다시 쓰려면 연결 글을 붙이세요.',
-      'This window released every seat. Paste the connect text to use them again.',
-      '这个窗口已断开所有位子。要再用请贴连接文字。',
-      'この窓ですべての席を外しました。もう一度使うには接続文を貼ってください。',
-    ));
+  const sendDisconnect = async (roles: BotRole[]) => {
+    if (!onSeatCommand) return;
+    for (const role of roles) {
+      await onSeatCommand(disconnectHeartbeatBody(role, roster, language));
+    }
+  };
+
+  const disconnectSeat = async (seat: OtherSeat) => {
+    setError('');
+    setDisconnecting(`${seat.kind}-${seat.role}`);
+    try {
+      if (seat.kind === 'grok') await sendDisconnect([seat.role]);
+      const next = releaseLinkedSeat(links, seat.kind, seat.role);
+      writeBotLinks(next);
+      onLinksChange(next, 'release');
+      setReleasedNote(t(
+        '연결 해제 명령을 보냈습니다. 다시 쓰려면 연결 글을 붙이세요.',
+        'The disconnect command was sent. Paste the connect text to use this seat again.',
+        '已发送断开命令。要再用请贴连接文字。',
+        '切断の命令を送りました。もう一度使うには接続文を貼ってください。',
+      ));
+      await onRefresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t(
+        '연결 해제 명령을 보내지 못했습니다.',
+        'Could not send the disconnect command.',
+        '没能发送断开命令。',
+        '切断の命令を送れませんでした。',
+      ));
+    } finally {
+      setDisconnecting('');
+    }
+  };
+
+  const disconnectAll = async () => {
+    setError('');
+    setDisconnecting('all');
+    try {
+      await sendDisconnect(grokSeatsToDisconnect(links, roster));
+      const next = releaseHeldSeats(links, roster);
+      writeBotLinks(next);
+      onLinksChange(next, 'release');
+      setReleasedNote(t(
+        '모든 자리에 연결 해제 명령을 보냈습니다. 다시 쓰려면 연결 글을 붙이세요.',
+        'The disconnect command was sent to every seat. Paste the connect text to use them again.',
+        '已向所有位子发送断开命令。要再用请贴连接文字。',
+        'すべての席に切断の命令を送りました。もう一度使うには接続文を貼ってください。',
+      ));
+      await onRefresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t(
+        '연결 해제 명령을 보내지 못했습니다.',
+        'Could not send the disconnect command.',
+        '没能发送断开命令。',
+        '切断の命令を送れませんでした。',
+      ));
+    } finally {
+      setDisconnecting('');
+    }
   };
 
   return (
@@ -188,11 +244,28 @@ export function DesktopBotPanel({
             : lampText(connected, t)}
         />
         <div className="desktop-connect-toolbar">
-          <button type="button" className="desktop-secondary" disabled={!studioReady} onClick={() => { void onRefresh(); }}>
-            {t('연결 새로고침', 'Refresh connection', '刷新连接', '接続を更新')}
+          <button
+            type="button"
+            className="desktop-secondary"
+            disabled={!studioReady || refreshing || Boolean(disconnecting)}
+            aria-busy={refreshing}
+            onClick={() => { void refreshNow(); }}
+          >
+            {refreshing ? <span className="desktop-spinner desktop-spinner-inline" aria-hidden="true" /> : null}
+            {refreshing
+              ? t('확인 중', 'Checking', '确认中', '確認中')
+              : t('연결 새로고침', 'Refresh connection', '刷新连接', '接続を更新')}
           </button>
-          <button type="button" className="desktop-secondary" disabled={!connected} onClick={disconnectAll}>
-            {t('연결 해제', 'Disconnect', '断开连接', '接続を外す')}
+          <button
+            type="button"
+            className="desktop-secondary"
+            disabled={!connected || refreshing || Boolean(disconnecting)}
+            aria-busy={disconnecting === 'all'}
+            onClick={() => { void disconnectAll(); }}
+          >
+            {disconnecting === 'all'
+              ? t('끊는 중', 'Disconnecting', '断开中', '切断中')
+              : t('연결 해제', 'Disconnect', '断开连接', '接続を外す')}
           </button>
         </div>
       </section>
@@ -247,7 +320,17 @@ export function DesktopBotPanel({
                     </div>
                     <div className="desktop-simple-copy-row">
                       {on ? (
-                        <button type="button" className="desktop-secondary" onClick={() => disconnectSeat(seat)}>{t('연결 해제', 'Disconnect', '断开连接', '接続を外す')}</button>
+                        <button
+                          type="button"
+                          className="desktop-secondary"
+                          disabled={refreshing || Boolean(disconnecting)}
+                          aria-busy={disconnecting === key}
+                          onClick={() => { void disconnectSeat(seat); }}
+                        >
+                          {disconnecting === key
+                            ? t('끊는 중', 'Disconnecting', '断开中', '切断中')
+                            : t('연결 해제', 'Disconnect', '断开连接', '接続を外す')}
+                        </button>
                       ) : (
                         <button
                           type="button"
