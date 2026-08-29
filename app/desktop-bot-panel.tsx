@@ -205,6 +205,7 @@ export function DesktopBotPanel({
           {t(`이 창은 7214가 아니라 127.0.0.1:${studioPort}를 엽니다. 연결 글은 그 주소를 씁니다.`, `This window opened 127.0.0.1:${studioPort}, not 7214. The connect text uses that address.`, `这个窗口开的是 127.0.0.1:${studioPort}，不是 7214。连接文字用这个地址。`, `この窓は 7214 ではなく 127.0.0.1:${studioPort} を開いています。接続文はそのアドレスを使います。`)}
         </p>
       )}
+      <p className="desktop-spec-meta">{t('자리 확인은 이 Windows의 keep이 1분마다 합니다. 채팅에 매 분 작업을 만들지 마세요. 1분을 놓치면 보드에 마지막 확인이 나고, 5분이 지나면 자리는 한가합니다.', 'Seat check is Windows keep every minute. Do not make a chat every-minute job. After one missed minute the board shows last check. After five minutes the seat is idle.', '位子确认由 Windows keep 每分钟做。不要在聊天里做每分钟作业。错过 1 分钟看板会写上次确认，过 5 分钟位子空闲。', '席の確認は Windows の keep が1分ごとにします。チャットに毎分の作業を作らないでください。1分逃すとボードに最後の確認が出て、5分で席は待機です。')}</p>
 
       <section className="desktop-auto-composer-card">
         <h2>{t('봇 붙이기', 'Attach a bot', '接上机器人', 'ボットを付ける')}</h2>

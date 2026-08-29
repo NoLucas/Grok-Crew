@@ -143,6 +143,8 @@ describe('crew board notes', () => {
       language: 'ko',
     });
     assert.match(nextSeatOfflineNote(rows, 'planner', 'ko', 'grok'), /연결되지않음/);
+    assert.equal(presenceStaleMinutes(59), null);
+    assert.equal(presenceStaleMinutes(60), 1);
     assert.equal(presenceStaleMinutes(180), 3);
     assert.match(presenceStaleCopy(3, 'ko'), /3분 전/);
     assert.doesNotMatch(presenceStaleCopy(3, 'ko'), /끊김/);

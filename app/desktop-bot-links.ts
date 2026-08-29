@@ -20,6 +20,11 @@ export function grokSeatBotId(role: BotRole): string {
 
 export const DEFAULT_STUDIO_PORT = 7214;
 
+/** Windows `keep` leaves still_here and reads the invite on this interval. Chat must not schedule it. */
+export const SEAT_KEEP_SECONDS = 60;
+/** Sidecar marks a seat idle after this many seconds without a check-in. Lamps stay connected/not-connected. */
+export const SEAT_ACTIVE_SECONDS = 300;
+
 export function studioCheckInPort(port?: number): number {
   const n = Number(port);
   if (!Number.isInteger(n) || n < 1 || n > 65535) return DEFAULT_STUDIO_PORT;
@@ -609,7 +614,7 @@ function grokKeepLines(who: string, role: BotRole, origin: string): { py: string
   const pull = `Invoke-RestMethod -Uri ${origin}/api/bots/next-invite -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}"}'`;
   return {
     py: `python grok-crew.py keep --server ${origin} --bot-id ${id} --display-name "${who}" --purpose ${purpose}`,
-    ps: `${entry}; while ($true) { ${beat}; try { ${pull} } catch {}; Start-Sleep -Seconds 60 }`,
+    ps: `${entry}; while ($true) { ${beat}; try { ${pull} } catch {}; Start-Sleep -Seconds ${SEAT_KEEP_SECONDS} }`,
     entry,
     beat,
     pull,

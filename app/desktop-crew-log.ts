@@ -1,4 +1,5 @@
 import { BOT_ROLES, seatName, seatShortLabel, type BotRole } from './bot-skills';
+import { SEAT_KEEP_SECONDS } from './desktop-bot-links';
 import {
   activitySeatName,
   formatSince,
@@ -120,8 +121,8 @@ export function activityForSpec(
 }
 
 export function presenceStaleMinutes(seconds: number | null | undefined): number | null {
-  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 60) return null;
-  return Math.max(1, Math.floor(seconds / 60));
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < SEAT_KEEP_SECONDS) return null;
+  return Math.max(1, Math.floor(seconds / SEAT_KEEP_SECONDS));
 }
 
 export function presenceStaleCopy(minutes: number, language = 'ko'): string {

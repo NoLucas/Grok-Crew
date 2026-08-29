@@ -1,3 +1,4 @@
+import config
 import grok_crew
 
 
@@ -47,4 +48,6 @@ def test_keep_parser_is_a_same_pc_loop():
     ])
     assert args.group == "keep"
     assert args.once is True
-    assert args.interval == 60
+    assert grok_crew.SEAT_KEEP_SECONDS == config.SEAT_KEEP_SECONDS == 60
+    assert config.SEAT_ACTIVE_SECONDS == 300
+    assert args.interval == grok_crew.SEAT_KEEP_SECONDS

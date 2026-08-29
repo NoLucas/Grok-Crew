@@ -24,6 +24,8 @@ Grok Crew가 이 PC에서 켜져 있을 때:
 python grok-crew.py entry --bot-id cursor-desk --display-name "Cursor" --purpose edit_video
 ```
 
+Grok 자리는 같은 스크립트의 `keep`을 한 번 돌립니다. 1분마다 자리 확인은 그 Windows 루프가 하고, 채팅에 매 분 예약 작업을 만들지 않습니다. Cursor 같은 PC 예는 위 `entry` 한 줄 그대로입니다.
+
 스크립트는 `http://127.0.0.1:7214/downloads/grok-crew.py`입니다. 토큰이 켜져 있으면 런타임에서만 받습니다. `.env`를 읽지 않습니다.
 
 끝난 컷은 `local_studio/workspace/handoff-inbox/editor/`에 둡니다. 화면이 받기 버튼 없이 엽니다.

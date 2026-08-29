@@ -28,6 +28,8 @@ const {
   activeRosterSeat,
   familyIsConnected,
   grokSeatBotId,
+  SEAT_KEEP_SECONDS,
+  SEAT_ACTIVE_SECONDS,
   grokSeatLampRows,
   seatLampRows,
   seatIsConnected,
@@ -82,6 +84,9 @@ describe('remote bot links', () => {
       assert.match(text, /plan_edit/);
       assert.match(text, /heartbeat/);
       assert.match(text, /grok-crew.py keep/);
+      assert.equal(SEAT_KEEP_SECONDS, 60);
+      assert.equal(SEAT_ACTIVE_SECONDS, 300);
+      assert.match(text, new RegExp(`Start-Sleep -Seconds ${SEAT_KEEP_SECONDS}`));
       assert.match(text, /1분마다|每 1 分钟|1 分ごと|every minute/);
       assert.match(text, /예약 작업을 만들지 마세요|Do not create a chat scheduled|不要在聊天里做 still_here|予約作業を作らない/);
       assert.match(text, /그 Windows가 아니|cannot be verified|不是那台 Windows|その Windows ではない/);

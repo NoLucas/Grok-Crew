@@ -34,6 +34,7 @@ from config import (
     EXECUTION_MODES,
     PROJECT_BUNDLE_SCHEMA,
     RENDER_EXECUTOR,
+    SEAT_ACTIVE_SECONDS,
     SITE_BASE_URL,
     load_dotenv,
     studio_api_base_url,
@@ -161,7 +162,7 @@ def list_bots() -> dict[str, Any]:
         seen = datetime.fromisoformat(str(bot["last_seen"]))
         seconds_since_checkin = max(0, int((now - seen).total_seconds()))
         bot["seconds_since_checkin"] = seconds_since_checkin
-        bot["presence"] = "active" if seconds_since_checkin <= 300 else "idle"
+        bot["presence"] = "active" if seconds_since_checkin <= SEAT_ACTIVE_SECONDS else "idle"
         bot["execution_policy"] = policies.get(bot["bot_id"], {"bot_id": bot["bot_id"], "mode": "approval_required", "updated_by": "local_default", "updated_at": None, "is_default": True})
         bots.append(bot)
     return {"bots": bots, "summary": {"total_known": len(bots), "active_now": sum(bot["presence"] == "active" for bot in bots), "activity_rule": "active means a recorded check-in within the last 5 minutes"}}
@@ -563,7 +564,7 @@ def list_bot_entries() -> list[dict[str, Any]]:
         last_seen = entry.pop("last_seen", None)
         if last_seen:
             seconds = max(0, int((now - datetime.fromisoformat(str(last_seen))).total_seconds()))
-            entry["presence"] = "active" if seconds <= 300 else "idle"
+            entry["presence"] = "active" if seconds <= SEAT_ACTIVE_SECONDS else "idle"
             entry["seconds_since_checkin"] = seconds
         else:
             entry["presence"] = "idle"

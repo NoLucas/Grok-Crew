@@ -26,7 +26,7 @@ const commands = [
     en: "Start and status",
     zh: "启动与状态",
     ja: "開始とステータス",
-    code: "health · contract · guide · tools · site --page production · entry · policy get|set · heartbeat · bots list|activity|entries",
+    code: "health · contract · guide · tools · site --page production · entry · keep · heartbeat · bots list|activity|entries",
     detailKo:
       "로컬 서비스 상태를 읽고, 브라우저 작업 주소·봇 입장·실행 정책·활동 기록을 남깁니다.",
     detailEn:

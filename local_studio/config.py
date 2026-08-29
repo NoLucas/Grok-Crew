@@ -39,6 +39,11 @@ BOT_GUIDE_ZH_PATH = BASE_DIR / "bot-guide.zh.json"
 BOT_GUIDE_JA_PATH = BASE_DIR / "bot-guide.ja.json"
 TERMINAL_CLI_PATH = BASE_DIR / "grok_crew.py"
 
+# Windows `keep` leaves still_here and reads the invite on this interval. Chat must not schedule it.
+SEAT_KEEP_SECONDS = 60
+# Sidecar marks a seat idle after this many seconds without a check-in. Lamps stay connected/not-connected.
+SEAT_ACTIVE_SECONDS = 300
+
 
 def parse_allowed_origins(raw: str) -> frozenset[str]:
     """Comma-separated LOCAL_STUDIO_ALLOWED_ORIGINS override, falling back to the

@@ -11,7 +11,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 import config
-from config import utc_now
+from config import SEAT_ACTIVE_SECONDS, utc_now
 from db import db, row_dict
 from style_recipes import (
     MAX_DURATION_SECONDS,
@@ -846,7 +846,7 @@ def crew_roster() -> dict[str, Any]:
         bots.append({
             "bot_id": bot.get("bot_id"),
             "display_name": str(bot.get("display_name") or bot.get("bot_id") or "").strip(),
-            "presence": "active" if seconds <= 300 else "idle",
+            "presence": "active" if seconds <= SEAT_ACTIVE_SECONDS else "idle",
             "seconds_since_checkin": seconds,
             "last_action": str(bot.get("last_action") or "").strip(),
             "purpose": purpose,

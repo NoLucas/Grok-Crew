@@ -4,6 +4,10 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+### Desk
+
+- Seat connectedness stays a 60-second check. Windows `keep` does that loop on the registered machine. Chat must not create a `still_here` / 매 분 scheduled job. After one missed minute the crew board shows last check. After five minutes the sidecar marks the seat idle. Lamps stay 연결됨 / 연결되지않음.
+
 ## 1.0.15 - 2026-08-29
 
 Local 1.0.15. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.15` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.15). Guest notes: `docs/RELEASE_NOTES.v1.0.15.md`. Guest Drive download stays the last published file. Already-installed 1.0.14 desks check Grok-crew-test for this tag. Grok-Crew gets the same notes.

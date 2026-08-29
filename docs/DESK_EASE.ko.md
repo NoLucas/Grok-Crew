@@ -44,7 +44,7 @@
 1  켤 때 잔여·7214          Codex (Electron main / process tree)
 2  숨기기 ≠ 종료 글         Cursor 또는 Codex (글만, 동작은 1.0.7 유지)
 3  어제랑 같게 + 대기 다시 복사   Cursor (app UI)
-4  연결 탭 보드 + 한 건 묶기 + 메모 + still_here 분   Cursor (app UI, 초대문 한 줄)
+4  연결 탭 보드 + 한 건 묶기 + 메모 + keep 1분 자리 확인   Cursor (app UI, 초대문 한 줄)
 5  SmartScreen 세 장을 연결에도   Cursor (그림·글만)
 —  서명 / 제자리 업데이트 / Drive   Maintainer. 코드 슬라이스가 아니다.
 ```
@@ -174,7 +174,7 @@ Agent 자리: 이미 대기/연결됨으로 저장된 글이 있을 때만 묶�
 
 - **Workstream / owner:** `crew-board-connect` / Cursor.
 - **Base commit:** 슬라이스 3 뒤 SHA.
-- **User-visible outcome:** 연결 탭에도 같은 보드가 있다. 대기 중이 아니어도 남긴 한 줄을 본다. **한 규격**의 줄만 묶는다. 다음 자리가 연결되지않음이면 그 사실만 쓴다. 주고받은 말을 이 PC 메모로 저장·복사한다. `still_here`가 끊긴 분만 보드에 적는다. 램프 글자는 늘 두 개다.
+- **User-visible outcome:** 연결 탭에도 같은 보드가 있다. 대기 중이 아니어도 남긴 한 줄을 본다. **한 규격**의 줄만 묶는다. 다음 자리가 연결되지않음이면 그 사실만 쓴다. 주고받은 말을 이 PC 메모로 저장·복사한다. Windows `keep`이 60초마다 자리 확인을 남긴다. 채팅은 매 분 예약 작업을 만들지 않는다. 60초를 넘기면 보드에 마지막 확인 N분만 적는다. 램프 글자는 늘 두 개다.
 - **Allowed paths:** `app/desktop-crew-log.ts`, `app/desktop-crew-log.test.mjs`(없으면 추가), `app/desktop-crew-board.tsx`, `app/desktop-bot-panel.tsx`, `app/desktop-auto-desk.tsx`(필터·메모 버튼), `app/desktop-bot-links.ts`의 **Grok 초대 한 줄**(detail에 규격 id), `app/desktop-bot-links.test.mjs`, `app/globals.css`.
 - **Forbidden paths:** `local_studio/studio_server.py` 새 라우트, `handlers.py`, 스키마, Agent 체크인, “읽음” 문구.
 
@@ -219,13 +219,15 @@ activityForSpec(activity, specId)
 
 `DesktopCrewBoard`를 `DesktopBotPanel` 아래(봇 붙이기 카드 뒤, 접힌 도움 앞)에 한 번 마운트한다. 자리 줄은 연결 탭이 이미 가진 roster/links로 `AutoSeatRow`를 만든다. 활동은 8초 폴링 `GET /api/bot-activity`. 로딩·빈·오류 카피는 기존 함수. 연결 램프를 보드에 복제하지 않는다.
 
-### still_here 끊긴 분 — 보드만
+### 자리 확인 분 — 보드만
+
+Windows `keep`이 60초마다 `still_here`와 초대문 읽기를 한다. 채팅에 매 분 예약 작업을 만들지 않는다.
 
 roster의 `seconds_since_checkin` 또는 마지막 `still_here` 시각. 60초를 넘기면 그 자리 카드에만:
 
-- ko: `자리 확인이 N분 끊김`
+- ko: `마지막 확인 N분 전`
 
-N은 분으로 내림. 램프 라벨을 바꾸지 않는다. “자리 비움” 같은 세 번째 단어를 만들지 않는다.
+N은 분으로 내림. 램프 라벨을 바꾸지 않는다. “끊김”·“자리 비움” 같은 세 번째 단어를 만들지 않는다.
 
 ### 이 PC 메모
 

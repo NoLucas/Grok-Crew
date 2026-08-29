@@ -15,6 +15,11 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 
+try:
+    from config import SEAT_KEEP_SECONDS
+except ImportError:  # served as /downloads/grok-crew.py without the sidecar package
+    SEAT_KEEP_SECONDS = 60
+
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 BROWSER_PAGES = {
     "desktop": "http://localhost:3000/",
@@ -119,7 +124,7 @@ def keep_seat(
     bot_id: str,
     display_name: str,
     purpose: str,
-    interval: float = 60,
+    interval: float = SEAT_KEEP_SECONDS,
     once: bool = False,
 ) -> None:
     """Enter once, then leave still_here and read next-invite on this same PC.
@@ -187,7 +192,7 @@ def build_parser() -> argparse.ArgumentParser:
     keep.add_argument("--bot-id", required=True)
     keep.add_argument("--display-name", required=True)
     keep.add_argument("--purpose", default="edit_video")
-    keep.add_argument("--interval", type=float, default=60, help="Seconds between still_here beats. Default 60.")
+    keep.add_argument("--interval", type=float, default=SEAT_KEEP_SECONDS, help=f"Seconds between still_here beats. Default {SEAT_KEEP_SECONDS}.")
     keep.add_argument("--once", action="store_true", help="Enter, beat, and read once, then exit.")
 
     bots = commands.add_parser("bots", help="Read verified local bot presence and activity.")
