@@ -37,6 +37,8 @@ describe('desk composer restage', () => {
     assert.equal(auto.includes('자리 램프는 위 막대입니다'), false);
     assert.equal(auto.includes("t('연결 열기'"), false);
     assert.match(auto, /어떤 영상을 만들까요\?/);
+    assert.match(auto, /메세지를 입력하세요/);
+    assert.equal(auto.includes('예: 카페 오픈 15초'), false);
     assert.match(auto, /desktop-auto-composer-drop/);
     assert.match(auto, /제작 시작/);
     assert.equal(auto.includes('내 파일을 넣거나, 받을 공개 파일 주소를 적으세요'), false);

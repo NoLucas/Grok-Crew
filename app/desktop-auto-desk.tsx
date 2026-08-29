@@ -838,7 +838,7 @@ export function AutoDesk({
                     }}
                     placeholder={composerOver
                       ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
-                      : t('예: 카페 오픈 15초, 손과 간판이 먼저. 이미지·영상을 여기에 놓아도 됩니다.', 'Example: a 15s cafe open, hands and the sign first. You can drop images or video here.', '例如：咖啡馆开业 15 秒，手先出、再出招牌。也可以把图片或视频放在这里。', '例: カフェ開店15秒、手と看板が先。画像や映像をここに置いてもよい。')}
+                      : t('메세지를 입력하세요', 'Enter a message', '请输入消息', 'メッセージを入力してください')}
                     rows={10}
                     aria-invalid={Boolean(error) && !titleFromPrompt(title, goal)}
                     disabled={saving}
