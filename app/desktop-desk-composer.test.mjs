@@ -45,6 +45,12 @@ describe('desk composer restage', () => {
     assert.match(auto, /allowedAccents\.map/);
     assert.equal(auto.includes('VOICE_ACCENTS.map'), false);
     assert.match(auto, /한국어 언어팩이 없습니다/);
+    assert.match(auto, /You can only pick languages it supports/);
+    assert.match(auto, /只能选择它支持的语种/);
+    assert.match(auto, /対応している言語だけ選べます/);
+    assert.equal(auto.includes('How it sounds'), false);
+    assert.equal(auto.includes('Making Kokoro'), false);
+    assert.equal(auto.includes('只显示它收下的语种'), false);
     assert.equal(auto.includes('speechSynthesis'), false);
     assert.equal(auto.includes('미리듣기는 이 창에서 재생하지 않습니다'), false);
     assert.equal(auto.includes('목소리 만들기'), false);

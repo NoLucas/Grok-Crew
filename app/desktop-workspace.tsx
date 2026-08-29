@@ -493,12 +493,12 @@ export default function DesktopWorkspace() {
       await refreshWorkspace(true);
       setMessage(t(
         `${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'}만 이 PC에 받습니다.`,
-        `Only ${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'} will be kept on this PC.`,
-        `这台电脑只收下 ${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'}。`,
-        `この PC には ${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'} だけ受け取ります。`,
+        `Only ${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'} will be downloaded on this PC.`,
+        `这台电脑只下载 ${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'}。`,
+        `この PC には ${id === 'kokoro-82m' ? 'Kokoro-82M' : id === 'step-audio-editx' ? 'Step Audio EditX' : 'Zonos-v0.1'} だけダウンロードします。`,
       ));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t('모델을 받지 못했습니다. 나중에 설정에서 다시 누르세요.', 'Could not download the model. Try again later in Setup.', '没能下载模型。请稍后在设置里再按。', 'モデルを受け取れませんでした。あとで設定でもう一度。'));
+      setMessage(error instanceof Error ? error.message : t('모델을 받지 못했습니다. 나중에 설정에서 다시 누르세요.', 'Could not download the model. Try again later in Setup.', '没能下载模型。请稍后在设置里再试。', 'モデルをダウンロードできませんでした。あとで設定でもう一度。'));
     } finally {
       setVoiceBusy(false);
     }

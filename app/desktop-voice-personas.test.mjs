@@ -22,6 +22,9 @@ describe('voice personas', () => {
     assert.equal(resolveVoicePersona({ gender: 'male', feel: 'calm', accent: 'en-gb' }).speakerId, 'bm_lewis');
     assert.equal(resolveVoicePersona({ gender: 'female', feel: 'bright', accent: 'zh' }).speakerId, 'zf_xiaoni');
     assert.match(voicePersonaLabel(next, 'ko'), /따뜻한 여자 · 미국 영어/);
+    assert.equal(voicePersonaLabel(next, 'en'), 'Warm Female · US English');
+    assert.equal(voicePersonaLabel(next, 'zh'), '温暖 女声 · 美式英语');
+    assert.equal(voicePersonaLabel(next, 'ja'), 'あたたかい 女性 · アメリカ英語');
     assert.equal(resolveVoicePersona({ accent: 'ko' }).accent, 'ko');
     assert.equal(resolveVoicePersona({
       accent: 'ko',

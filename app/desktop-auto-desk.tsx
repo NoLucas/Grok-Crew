@@ -1024,14 +1024,14 @@ export function AutoDesk({
                       onClick={() => setWantTts((value) => !value)}
                     >
                       <b>{t('tts생성', 'TTS', 'TTS生成', 'TTS生成')}</b>
-                      <span>{wantTts ? t('켬 · 이 컴퓨터가 말함', 'On · this computer speaks', '开 · 这台电脑说话', 'オン · このパソコンが話す') : t('끔', 'Off', '关', 'オフ')}</span>
+                      <span>{wantTts ? t('켬 · 이 컴퓨터가 말함', 'On · this PC speaks', '开 · 由这台电脑配音', 'オン · このパソコンが話す') : t('끔', 'Off', '关', 'オフ')}</span>
                     </button>
                   </div>
                   {wantTts ? (
                     <div className="desktop-auto-voice-pick">
                       <section className="desktop-voice-persona" aria-label={t('어떤 목소리', 'Which voice', '哪种声音', 'どんな声')}>
-                        <b>{t('어떤 목소리로 시작할까요', 'How should the voice start', '用哪种声音开始', 'どんな声で始めますか')}</b>
-                        <p>{t(`성별, 느낌, 말투를 고릅니다. 말투는 이 PC의 ${voiceModelLabel(voiceModelId)}이 받은 언어만 보입니다. 사람을 복제하지 않습니다. 마음에 들면 저장하세요.`, `Pick gender, feel, and how it sounds. Only languages ${voiceModelLabel(voiceModelId)} kept on this PC can speak. It does not clone a person. Save the one you like.`, `选性别、感觉、听起来像哪国话。语种只显示这台电脑收下的 ${voiceModelLabel(voiceModelId)} 会说的。不克隆人。喜欢就保存。`, `性別・感じ・話し方を選ぶ。話し方はこの PC の ${voiceModelLabel(voiceModelId)} が受けた言語だけ。人の声は複製しない。気に入ったら保存。`)}</p>
+                        <b>{t('어떤 목소리로 시작할까요', 'What voice should we start with?', '用哪种声音开始？', 'どの声で始めますか')}</b>
+                        <p>{t(`성별, 느낌, 말투를 고릅니다. 말투는 이 PC의 ${voiceModelLabel(voiceModelId)}이 받은 언어만 보입니다. 사람을 복제하지 않습니다. 마음에 들면 저장하세요.`, `Pick gender, tone, and language. You only see languages this PC’s ${voiceModelLabel(voiceModelId)} can speak. It doesn’t clone anyone’s voice. Save the one you like.`, `选性别、语气和语种。这里只显示这台电脑上的 ${voiceModelLabel(voiceModelId)} 会说的语言。不会克隆真人的声音。喜欢就保存。`, `性別、声の感じ、言語を選びます。この PC の ${voiceModelLabel(voiceModelId)} が話せる言語だけ出ます。人の声は複製しません。気に入ったら保存してください。`)}</p>
                         <div className="desktop-auto-filter">
                           <span>{t('성별', 'Gender', '性别', '性別')}</span>
                           <div className="desktop-auto-chips" role="radiogroup" aria-label={t('성별', 'Gender', '性别', '性別')}>
@@ -1050,8 +1050,8 @@ export function AutoDesk({
                           </div>
                         </div>
                         <div className="desktop-auto-filter">
-                          <span>{t('느낌', 'Feel', '感觉', '感じ')}</span>
-                          <div className="desktop-auto-chips" role="radiogroup" aria-label={t('느낌', 'Feel', '感觉', '感じ')}>
+                          <span>{t('느낌', 'Tone', '语气', 'トーン')}</span>
+                          <div className="desktop-auto-chips" role="radiogroup" aria-label={t('느낌', 'Tone', '语气', 'トーン')}>
                             {VOICE_FEELS.map((item) => (
                               <button
                                 key={item}
@@ -1067,8 +1067,8 @@ export function AutoDesk({
                           </div>
                         </div>
                         <div className="desktop-auto-filter">
-                          <span>{t('말투', 'How it sounds', '听起来', '話し方')}</span>
-                          <div className="desktop-auto-chips" role="radiogroup" aria-label={t('말투', 'How it sounds', '听起来', '話し方')}>
+                          <span>{t('말투', 'Language', '语种', '言語')}</span>
+                          <div className="desktop-auto-chips" role="radiogroup" aria-label={t('말투', 'Language', '语种', '言語')}>
                             {allowedAccents.map((item) => (
                               <button
                                 key={item}
@@ -1087,9 +1087,9 @@ export function AutoDesk({
                           <p className="desktop-spec-meta">
                             {t(
                               '이 모델은 한국어 언어팩이 없습니다. 받은 언어의 말투만 고릅니다.',
-                              'This model has no Korean language pack. Only languages it kept are shown.',
-                              '这个模型没有韩语语言包。只显示它收下的语种。',
-                              'このモデルに韓国語の言語パックはありません。受けた言語の話し方だけ出ます。',
+                              'This model has no Korean language pack. You can only pick languages it supports.',
+                              '这个模型没有韩语语言包。只能选择它支持的语种。',
+                              'このモデルに韓国語の言語パックはありません。対応している言語だけ選べます。',
                             )}
                           </p>
                         ) : null}
@@ -1108,9 +1108,9 @@ export function AutoDesk({
                             onClick={() => hearVoice()}
                           >
                             {voicePreview === 'loading'
-                              ? t('Kokoro 만드는 중…', 'Making Kokoro…', '正在做 Kokoro…', 'Kokoro 作成中…')
+                              ? t('Kokoro 만드는 중…', 'Preparing Kokoro…', '正在准备 Kokoro…', 'Kokoro を準備中…')
                               : voicePreview === 'playing'
-                                ? t('듣는 중…', 'Listening…', '试听中…', '再生中…')
+                                ? t('듣는 중…', 'Playing…', '试听中…', '再生中…')
                                 : t('미리듣기', 'Preview', '试听', '試し聞き')}
                           </button>
                           <button
@@ -1129,29 +1129,29 @@ export function AutoDesk({
                             }}
                           >
                             {voiceSaved
-                              ? t('이 목소리로 저장됨', 'Saved this voice', '已保存这个声音', 'この声で保存した')
+                              ? t('이 목소리로 저장됨', 'Voice saved', '已保存此声音', 'この声で保存済み')
                               : t('이 목소리로 저장', 'Save this voice', '保存这个声音', 'この声で保存')}
                           </button>
                         </div>
                         <p className="desktop-spec-meta">
                           {voicePreview === 'missing'
-                            ? t('이 PC에 Kokoro-82M 미리듣기가 없습니다. 왼쪽 위 톱니에서 모델을 받으세요.', 'Kokoro-82M preview is not on this PC. Download it from the top-left gear.', '这台电脑没有 Kokoro-82M 试听。请用左上齿轮收下模型。', 'この PC に Kokoro-82M の試し聞きがありません。左上の歯車でモデルを受け取ります。')
+                            ? t('이 PC에 Kokoro-82M 미리듣기가 없습니다. 왼쪽 위 톱니에서 모델을 받으세요.', 'Kokoro-82M preview isn’t on this PC. Download the model from the gear at the top left.', '这台电脑没有 Kokoro-82M 试听。请用左上角的齿轮下载模型。', 'この PC に Kokoro-82M の試し聞きがありません。左上の歯車からモデルをダウンロードしてください。')
                             : voicePreview === 'blocked'
-                              ? t('이 창에서 Kokoro-82M 미리듣기를 재생하지 못했습니다. 말투를 다시 누르거나 미리듣기를 누르세요.', 'This window could not play the Kokoro-82M preview. Tap a language or Preview again.', '这个窗口没能播放 Kokoro-82M 试听。请再点语种或试听。', 'この窓では Kokoro-82M の試し聞きできませんでした。話し方か試し聞きを押してください。')
+                              ? t('이 창에서 Kokoro-82M 미리듣기를 재생하지 못했습니다. 말투를 다시 누르거나 미리듣기를 누르세요.', 'This window couldn’t play the Kokoro-82M preview. Tap a language or Preview again.', '这个窗口没能播放 Kokoro-82M 试听。请再点语种或试听。', 'この窓では Kokoro-82M の試し聞きを再生できませんでした。言語か試し聞きを押してください。')
                               : t(
                                 `미리듣기는 이 PC의 ${voiceModelLabel(voiceModelId)}이 「${voicePreviewPhrase(voiceAccent)}」를 말한 소리입니다.`,
-                                `Preview is this PC’s ${voiceModelLabel(voiceModelId)} saying “${voicePreviewPhrase(voiceAccent)}”.`,
-                                `试听是这台电脑的 ${voiceModelLabel(voiceModelId)} 说「${voicePreviewPhrase(voiceAccent)}」。`,
+                                `This preview is this PC’s ${voiceModelLabel(voiceModelId)} saying “${voicePreviewPhrase(voiceAccent)}”.`,
+                                `试听是这台电脑上的 ${voiceModelLabel(voiceModelId)} 说的「${voicePreviewPhrase(voiceAccent)}」。`,
                                 `試し聞きはこの PC の ${voiceModelLabel(voiceModelId)} が「${voicePreviewPhrase(voiceAccent)}」と言った音です。`,
                               )}
                         </p>
                         <p className="desktop-spec-meta">
                           {voiceSaved
-                            ? t('이 컴퓨터에 기억했습니다. 다음에 열어도 이 목소리로 시작합니다.', 'Remembered on this computer. Next open starts with this voice.', '已记在这台电脑。下次打开还用这个声音。', 'このパソコンに覚えました。次に開いてもこの声で始まります。')
-                            : t('고른 값은 저장하면 남고, 만들기를 눌러도 남습니다.', 'Save keeps the pick. Start keeps it too.', '保存会留下选择。按开始也会留下。', '保存すれば残る。作り始めても残る。')}
+                            ? t('이 컴퓨터에 기억했습니다. 다음에 열어도 이 목소리로 시작합니다.', 'Saved on this computer. Next time you open it, this voice is used.', '已保存在这台电脑。下次打开也用这个声音。', 'このパソコンに保存しました。次に開いてもこの声で始まります。')
+                            : t('고른 값은 저장하면 남고, 만들기를 눌러도 남습니다.', 'Saving keeps your pick. Starting a job keeps it too.', '保存后会留下选择。按开始也会留下。', '保存すれば残ります。作り始めても残ります。')}
                         </p>
                         <p className="desktop-spec-meta">
-                          {t('모델 받기는 왼쪽 위 톱니에서 합니다. 자동은 켜고 끄기만 합니다.', 'Download the model from the top-left gear. Auto only turns TTS on or off.', '下载模型请用左上齿轮。自动只负责开关。', 'モデルの受け取りは左上の歯車。自動はオンオフだけです。')}
+                          {t('모델 받기는 왼쪽 위 톱니에서 합니다. 자동은 켜고 끄기만 합니다.', 'Download the model from the gear at the top left. Auto only turns TTS on or off.', '下载模型请用左上角的齿轮。自动里只开关 TTS。', 'モデルのダウンロードは左上の歯車から。自動はオンとオフだけです。')}
                         </p>
                       </section>
                     </div>

@@ -111,11 +111,11 @@ export function voiceGenderLabel(gender: VoiceGender, language = 'ko'): string {
   const lang = language.slice(0, 2);
   if (gender === 'male') {
     if (lang === 'zh') return '男声';
-    if (lang === 'ja') return '男の声';
+    if (lang === 'ja') return '男性';
     return lang === 'en' ? 'Male' : '남자';
   }
   if (lang === 'zh') return '女声';
-  if (lang === 'ja') return '女の声';
+  if (lang === 'ja') return '女性';
   return lang === 'en' ? 'Female' : '여자';
 }
 
@@ -123,7 +123,7 @@ export function voiceFeelLabel(feel: VoiceFeel, language = 'ko'): string {
   const lang = language.slice(0, 2);
   if (feel === 'clear') {
     if (lang === 'zh') return '清晰';
-    if (lang === 'ja') return 'はっきりした';
+    if (lang === 'ja') return 'はっきり';
     return lang === 'en' ? 'Clear' : '또렷한';
   }
   if (feel === 'bright') {

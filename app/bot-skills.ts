@@ -1291,18 +1291,18 @@ function ttsInviteLine(language: string, voice: VoiceInvite): string {
   const lang = langOf(language);
   if (lang === 'zh') {
     return tts
-      ? `TTS：开。只用这台电脑上的 ${label}。声音是 ${who}，说话人 ${persona.speakerId}。不要用别的 TTS。配音关着就不要盖原声。不要克隆人。`
-      : 'TTS：关。不要做 TTS，不要生成声音。';
+      ? `TTS：开。只用这台电脑上的 ${label}。声音是 ${who}，说话人 ${persona.speakerId}。不要用别的 TTS。配音关着就不要盖原声。不要克隆真人的声音。`
+      : 'TTS：关。不要生成 TTS，不要生成声音。';
   }
   if (lang === 'ja') {
     return tts
       ? `TTS：オン。この PC の ${label} だけ。声は ${who}、話者 ${persona.speakerId}。他の TTS は使わない。吹き替えがオフなら元の音を覆わない。人の声は複製しない。`
-      : 'TTS：オフ。TTS を作らない。声を生成しない。';
+      : 'TTS：オフ。TTS は作らない。声も生成しない。';
   }
   if (lang === 'en') {
     return tts
-      ? `TTS: on. Use only ${label} on this PC. Voice: ${who}, speaker ${persona.speakerId}. Do not use another TTS. If dubbing is off, do not cover the original. Do not clone a person.`
-      : 'TTS: off. Do not make TTS. Do not generate a voice.';
+      ? `TTS: on. Use only ${label} on this PC. Voice: ${who}, speaker ${persona.speakerId}. Do not use another TTS. If dubbing is off, do not cover the original. Do not clone anyone’s voice.`
+      : 'TTS: off. Do not generate TTS. Do not generate a voice.';
   }
   return tts
     ? `TTS: 켬. 이 PC의 ${label} 하나만. 목소리는 ${who}. 화자 ${persona.speakerId}만. 다른 TTS는 쓰지 않습니다. 더빙이 꺼져 있으면 원본 소리를 덮지 않습니다. 사람을 복제하지 않습니다.`

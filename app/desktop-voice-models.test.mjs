@@ -58,7 +58,14 @@ describe('voice model picker', () => {
     assert.equal(resolveVoiceAccentForModel('ko', 'kokoro-82m', 'ko'), 'en-us');
     assert.equal(resolveVoiceAccentForModel(undefined, 'kokoro-82m', 'zh'), 'zh');
     assert.match(voiceModelLanguageLine('kokoro-82m', 'ko'), /미국 영어 · 영국 영어 · 중국어 · 일본어/);
+    assert.match(voiceModelLanguageLine('kokoro-82m', 'en'), /US English · UK English · Chinese · Japanese/);
+    assert.match(voiceModelLanguageLine('kokoro-82m', 'zh'), /美式英语 · 英式英语 · 中文 · 日语/);
+    assert.match(voiceModelLanguageLine('kokoro-82m', 'ja'), /アメリカ英語 · イギリス英語 · 中国語 · 日本語/);
     assert.doesNotMatch(voiceModelLanguageLine('kokoro-82m', 'ko'), /한국어/);
+    assert.doesNotMatch(voiceModelLanguageLine('kokoro-82m', 'en'), /Korean/);
+    assert.match(VOICE_MODELS.find((item) => item.id === 'kokoro-82m').warning.en, /Korean language pack/);
+    assert.match(VOICE_MODELS.find((item) => item.id === 'kokoro-82m').warning.zh, /韩语语言包/);
+    assert.match(VOICE_MODELS.find((item) => item.id === 'kokoro-82m').warning.ja, /韓国語の言語パック/);
     assert.match(VOICE_MODELS.find((item) => item.id === 'kokoro-82m').warning.ko, /한국어 언어팩은 없습니다/);
   });
 

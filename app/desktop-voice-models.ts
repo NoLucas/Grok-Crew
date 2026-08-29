@@ -49,16 +49,16 @@ export const VOICE_MODELS: VoiceModelInfo[] = [
     recommended: true,
     summary: {
       ko: '기본. 가벼운 더빙 목소리. 다음만 누르면 이 모델을 받습니다.',
-      en: 'Default. A light dubbing voice. Next downloads this one.',
+      en: 'Default. A light dubbing voice. Tap Next to download this one.',
       zh: '默认。轻量配音。只按下一步就下载这个。',
-      ja: '初期値。軽い吹き替え。次へだけ押せばこれを受け取る。',
+      ja: 'おすすめ。軽い吹き替えです。次へを押すだけでダウンロードします。',
     },
     accents: ['en-us', 'en-gb', 'zh', 'ja'],
     warning: {
       ko: '메모리 4GB면 됩니다. CPU만으로도 됩니다. 외장 그래픽이 없어도 됩니다. 목소리는 복제하지 않습니다. 한국어 언어팩은 없습니다.',
-      en: 'About 4GB RAM. CPU is enough. A discrete GPU is not required. It does not clone a voice. There is no Korean language pack.',
-      zh: '大约 4GB 内存。只用 CPU 即可。不需要独立显卡。不会克隆声音。没有韩语语言包。',
-      ja: 'メモリ 4GB あれば足ります。CPU だけで動きます。外付け GPU は不要。声の複製はしません。韓国語の言語パックはありません。',
+      en: 'Needs about 4GB of RAM. CPU is enough. A dedicated GPU is not required. It does not clone voices. There is no Korean language pack.',
+      zh: '大约需要 4GB 内存。只用 CPU 即可。不需要独立显卡。不会克隆声音。没有韩语语言包。',
+      ja: 'メモリは 4GB あれば足ります。CPU だけで動きます。外付け GPU は不要です。声の複製はしません。韓国語の言語パックはありません。',
     },
   },
   {
@@ -68,16 +68,16 @@ export const VOICE_MODELS: VoiceModelInfo[] = [
     license: 'Apache-2.0',
     summary: {
       ko: '더 무거운 더빙. 짧은 클립용. NVIDIA 그래픽이 필요합니다.',
-      en: 'Heavier dubbing. Short clips. Needs an NVIDIA GPU.',
-      zh: '更重的配音。短片段。需要 NVIDIA 显卡。',
-      ja: '重い吹き替え。短いクリップ向け。NVIDIA GPU が必要。',
+      en: 'Heavier dubbing for short clips. Needs an NVIDIA GPU.',
+      zh: '更重的配音，适合短片段。需要 NVIDIA 显卡。',
+      ja: '重い吹き替えです。短いクリップ向けで、NVIDIA GPU が必要です。',
     },
     accents: ['en-us', 'en-gb', 'zh', 'ja'],
     warning: {
       ko: '그래픽 메모리 12GB가 바닥입니다. 16GB가 더 안전합니다. NVIDIA + CUDA가 필요합니다. 내장 그래픽·일반 노트북에서는 받지 마세요. 한 번에 대략 30초 클립입니다. 받기도 큽니다. 한국어 언어팩은 없습니다.',
-      en: '12GB VRAM is the floor; 16GB is safer. Needs NVIDIA + CUDA. Skip this on integrated graphics or a typical laptop. Clips are about 30 seconds. The download is large. There is no Korean language pack.',
-      zh: '显存 12GB 是下限，16GB 更稳。需要 NVIDIA + CUDA。核显或普通笔记本不要下。片段大约 30 秒。下载也很大。没有韩语语言包。',
-      ja: 'VRAM 12GB が下限、16GB の方が安全。NVIDIA + CUDA が必要。内蔵 GPU や普通のノートでは受けないでください。クリップはおよそ 30 秒。ダウンロードも大きいです。韓国語の言語パックはありません。',
+      en: '12GB VRAM is the minimum; 16GB is safer. Needs NVIDIA + CUDA. Don’t use this on integrated graphics or a typical laptop. Clips are about 30 seconds. The download is large. There is no Korean language pack.',
+      zh: '显存至少 12GB，16GB 更稳妥。需要 NVIDIA + CUDA。核显或普通笔记本请不要下载。片段大约 30 秒。下载文件也很大。没有韩语语言包。',
+      ja: 'VRAM は 12GB が下限で、16GB の方が安全です。NVIDIA + CUDA が必要です。内蔵 GPU や普通のノートではダウンロードしないでください。クリップはおよそ 30 秒です。ダウンロードも大きいです。韓国語の言語パックはありません。',
     },
   },
   {
@@ -87,9 +87,9 @@ export const VOICE_MODELS: VoiceModelInfo[] = [
     license: 'Apache-2.0',
     summary: {
       ko: '44kHz 더빙. 영어·일본어·중국어는 됩니다. 한국어 언어팩은 없습니다.',
-      en: '44kHz dubbing. English, Japanese, and Chinese are fine. There is no Korean language pack.',
-      zh: '44kHz 配音。英日中可以。没有韩语语言包。',
-      ja: '44kHz の吹き替え。英・日・中は使える。韓国語の言語パックはありません。',
+      en: '44kHz dubbing. English, Japanese, and Chinese work. There is no Korean language pack.',
+      zh: '44kHz 配音。英语、日语、中文可用。没有韩语语言包。',
+      ja: '44kHz の吹き替えです。英・日・中は使えます。韓国語の言語パックはありません。',
     },
     accents: ['en-us', 'en-gb', 'zh', 'ja'],
     warning: {
