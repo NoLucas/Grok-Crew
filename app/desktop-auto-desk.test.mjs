@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
 import { describe, it } from 'node:test';
 
@@ -48,6 +49,7 @@ const {
   shortOwnedFileName,
   localFilePreviewUrl,
   safeWorkspaceRel,
+  safeStudioOrigin,
   writeAnotherComposeReset,
 } = await import('./desktop-auto-state.ts');
 
@@ -117,6 +119,13 @@ describe('auto desk start rules', () => {
     assert.equal(collectQueryIsUrlList('http://169.254.169.254/latest/meta-data'), false);
     assert.equal(collectQueryIsUrlList('http://[fd12:3456::1]/clip.mp4'), false);
     assert.equal(collectQueryIsUrlList('http://[fe80::1]/clip.mp4'), false);
+    assert.equal(collectQueryIsUrlList('http://[::ffff:127.0.0.1]/secret.mp4'), false);
+    assert.equal(collectQueryIsUrlList('http://[::ffff:169.254.169.254]/latest/meta-data'), false);
+    assert.equal(collectQueryIsUrlList('http://[::ffff:7f00:1]/secret.mp4'), false);
+    assert.equal(collectQueryIsUrlList('http://2130706433/secret.mp4'), false);
+    assert.equal(collectQueryIsUrlList('http://metadata.goog/latest'), false);
+    assert.equal(collectQueryIsUrlList('http://127.1/secret.mp4'), false);
+    assert.equal(collectQueryIsUrlList('https://example.com/ok.mp4'), true);
   });
 });
 
@@ -559,10 +568,20 @@ describe('auto desk prefs and names', () => {
     assert.equal(localFilePreviewUrl('file:///etc/passwd'), '');
     assert.equal(localFilePreviewUrl('C:\\Users\\a\\Videos\\talk.mp4'), '');
     assert.equal(localFilePreviewUrl('/tmp/../etc/passwd.png'), '');
+    assert.equal(localFilePreviewUrl('/tmp/%2e%2e/etc/passwd.png'), '');
+    assert.equal(localFilePreviewUrl('C:/Users/a/Pictures/sign.png?x=1'), '');
     assert.equal(safeWorkspaceRel('/workspace/local_studio/workspace/inputs/a.mp4'), 'inputs/a.mp4');
     assert.equal(safeWorkspaceRel('../etc/passwd'), '');
     assert.equal(safeWorkspaceRel('https://evil.example/a.mp4'), '');
     assert.equal(safeWorkspaceRel('javascript:alert(1)'), '');
+    assert.equal(safeStudioOrigin('https://evil.example/api'), 'http://127.0.0.1:7214');
+    assert.equal(safeStudioOrigin('http://127.0.0.1:9001/steal'), 'http://127.0.0.1:9001');
+    assert.equal(safeStudioOrigin('http://user:pass@127.0.0.1:7214'), 'http://127.0.0.1:7214');
+    assert.equal(safeStudioOrigin('http://127.0.0.1:7214@evil.example/'), 'http://127.0.0.1:7214');
+    const csp = readFileSync(new URL('../next.config.ts', import.meta.url), 'utf8');
+    assert.match(csp, /object-src 'none'/);
+    assert.match(csp, /frame-src 'none'/);
+    assert.match(csp, /Permissions-Policy/);
     assert.deepEqual(writeAnotherComposeReset(), {
       stayOnCompose: true,
       ownedPaths: [],

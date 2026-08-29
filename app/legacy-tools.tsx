@@ -18,11 +18,12 @@ import {
   type AdvancedTool,
   type ToolCatalogPayload,
 } from './advanced-tools';
+import { studioDownloadBase } from './desktop-auto-state';
 import { useLanguage } from './language';
 import { SiteHeader } from './site-header';
 
 function studioBase() {
-  return typeof window !== 'undefined' && window.grokCrew?.apiBase ? window.grokCrew.apiBase : 'http://127.0.0.1:7214';
+  return studioDownloadBase();
 }
 
 function ToolCard({

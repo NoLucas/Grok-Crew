@@ -9,6 +9,7 @@ const contentSecurityPolicy = [
   "connect-src 'self' http://127.0.0.1:* http://localhost:*",
   "font-src 'self' data:",
   "object-src 'none'",
+  "frame-src 'none'",
   "frame-ancestors 'none'",
   "base-uri 'none'",
   "form-action 'self'",
@@ -24,6 +25,7 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'no-referrer' },
           { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=()' },
         ],
       },
     ];

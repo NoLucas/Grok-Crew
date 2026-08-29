@@ -11,10 +11,11 @@ import {
   TOOLS_ASSIGN_EVENT,
   type ToolCatalogPayload,
 } from './advanced-tools';
+import { studioDownloadBase } from './desktop-auto-state';
 import { useLanguage } from './language';
 
 function studioBase() {
-  return typeof window !== 'undefined' && window.grokCrew?.apiBase ? window.grokCrew.apiBase : 'http://127.0.0.1:7214';
+  return studioDownloadBase();
 }
 
 export function PlanningBanner({ current }: { current: string }) {

@@ -177,12 +177,13 @@ export function safeWorkspaceRel(path: string): string {
 
 export function localFilePreviewUrl(path: string): string {
   const text = String(path || '').trim();
-  if (!text || /^[a-z][a-z0-9+.-]*:/i.test(text)) return '';
+  if (!text) return '';
   const unix = text.replace(/\\/g, '/');
   if (!unix || unix.split('/').includes('..')) return '';
+  if (/[\u0000-\u001f\u007f?#%]/.test(unix)) return '';
   if (ownedMediaKind(unix) !== 'image') return '';
   if (/^[A-Za-z]:\//.test(unix)) return `file:///${unix}`;
-  if (unix.startsWith('/')) return `file://${unix}`;
+  if (unix.startsWith('/') && !unix.startsWith('//')) return `file://${unix}`;
   return '';
 }
 
@@ -199,26 +200,112 @@ export function writeAnotherComposeReset() {
 }
 
 const DIRECT_FILE_URL = /^https?:\/\/[^\s]+$/i;
+const BLOCKED_COLLECT_HOSTS = new Set([
+  'localhost',
+  'localhost.localdomain',
+  'metadata.google.internal',
+  'metadata.goog',
+  '0.0.0.0',
+  '::',
+  '::1',
+]);
+export const DEFAULT_STUDIO_BASE = 'http://127.0.0.1:7214';
+
+function parseIpv4(host: string): number[] | null {
+  const parts = host.split('.');
+  if (parts.length !== 4) return null;
+  const octets: number[] = [];
+  for (const part of parts) {
+    if (!/^\d{1,3}$/.test(part)) return null;
+    if (part.length > 1 && part.startsWith('0')) return null;
+    const value = Number(part);
+    if (value > 255) return null;
+    octets.push(value);
+  }
+  return octets;
+}
+
+function ipv4FromMapped(host: string): number[] | null {
+  const compact = host.replace(/^(?:0:){5}ffff:/i, '::ffff:');
+  const dotted = compact.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
+  if (dotted) return parseIpv4(dotted[1]);
+  const hex = compact.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+  if (!hex) return null;
+  const high = Number.parseInt(hex[1], 16);
+  const low = Number.parseInt(hex[2], 16);
+  if (!Number.isFinite(high) || !Number.isFinite(low)) return null;
+  return [(high >> 8) & 255, high & 255, (low >> 8) & 255, low & 255];
+}
+
+function ipv4Blocked(octets: number[]): boolean {
+  const [a, b] = octets;
+  if (a === 0 || a === 10 || a === 127) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  if (a === 198 && (b === 18 || b === 19)) return true;
+  if (a >= 224) return true;
+  return false;
+}
+
+function blockedCollectHost(host: string): boolean {
+  const raw = String(host || '').replace(/^\[|\]$/g, '').toLowerCase().replace(/\.$/, '');
+  if (!raw || BLOCKED_COLLECT_HOSTS.has(raw)) return true;
+  if (raw.endsWith('.localhost') || raw.endsWith('.local') || raw.endsWith('.internal')) return true;
+  if (/^\d+$/.test(raw)) return true;
+  const mapped = ipv4FromMapped(raw);
+  if (mapped) return ipv4Blocked(mapped);
+  if (raw.includes('.')) {
+    const octets = parseIpv4(raw);
+    if (octets) return ipv4Blocked(octets);
+    if (/^[\d.]+$/.test(raw)) return true;
+  }
+  if (raw.includes(':')) {
+    if (raw === '::' || raw === '::1') return true;
+    if (raw.startsWith('fe80:') || raw.startsWith('fc') || raw.startsWith('fd') || raw.startsWith('ff')) return true;
+    if (raw.startsWith('2001:db8:')) return true;
+    if (!/^[23]/.test(raw)) return true;
+  }
+  return false;
+}
 
 function publicCollectUrl(value: string): boolean {
   if (!DIRECT_FILE_URL.test(value)) return false;
   try {
     const parsed = new URL(value);
     if (parsed.username || parsed.password) return false;
-    const host = parsed.hostname.replace(/^\[|\]$/g, '').toLowerCase();
-    if (!host || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
-      return false;
-    }
-    if (host === '0.0.0.0' || host === '::' || host === '::1') return false;
-    if (host.includes(':') && (host.startsWith('fe80:') || host.startsWith('fc') || host.startsWith('fd'))) return false;
-    if (/^(127|10|0)\./.test(host)) return false;
-    if (/^192\.168\./.test(host)) return false;
-    if (/^169\.254\./.test(host)) return false;
-    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return false;
-    if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(host)) return false;
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    return !blockedCollectHost(parsed.hostname);
   } catch {
     return false;
+  }
+}
+
+export function safeStudioOrigin(value?: string | null): string {
+  const text = String(value || '').trim();
+  if (!text) return DEFAULT_STUDIO_BASE;
+  try {
+    const parsed = new URL(text);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return DEFAULT_STUDIO_BASE;
+    if (parsed.username || parsed.password) return DEFAULT_STUDIO_BASE;
+    const host = parsed.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+    const mapped = ipv4FromMapped(host);
+    const loopback = host === 'localhost'
+      || host === '::1'
+      || (mapped ? mapped[0] === 127 : false)
+      || (() => {
+        const octets = parseIpv4(host);
+        return Boolean(octets && octets[0] === 127);
+      })();
+    if (!loopback) return DEFAULT_STUDIO_BASE;
+    if (parsed.port && (!/^\d{1,5}$/.test(parsed.port) || Number(parsed.port) > 65535)) {
+      return DEFAULT_STUDIO_BASE;
+    }
+    const hostname = host.includes(':') ? `[${host}]` : host;
+    return `${parsed.protocol}//${hostname}${parsed.port ? `:${parsed.port}` : ''}`;
+  } catch {
+    return DEFAULT_STUDIO_BASE;
   }
 }
 
@@ -988,7 +1075,8 @@ export function shouldPingCut(input: {
 }
 
 export function studioDownloadBase(): string {
-  return typeof window !== 'undefined' && window.grokCrew?.apiBase ? window.grokCrew.apiBase : 'http://127.0.0.1:7214';
+  const raw = typeof window !== 'undefined' ? window.grokCrew?.apiBase : '';
+  return safeStudioOrigin(raw);
 }
 
 export function droppedFilePath(file: File): string {

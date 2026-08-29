@@ -5,6 +5,7 @@ import { useMemo, useRef, useState, type DragEvent } from 'react';
 import { connectedBot, type CrewRoster } from './desktop-bot-connect';
 import { DesktopInstallHelp } from './desktop-install-help';
 import { useLanguage } from './language';
+import { studioDownloadBase } from './desktop-auto-state';
 import { formatCheckTime, type DeskPullStatus, type DeskWaitState } from './desktop-wait-state';
 
 type StyleRecipe = {
@@ -42,10 +43,6 @@ function localized(map: { ko?: string; en?: string; zh?: string; ja?: string } |
   if (!map) return fallback;
   const key = language.slice(0, 2) as 'ko' | 'en' | 'zh' | 'ja';
   return map[key] || map.en || fallback;
-}
-
-function studioDownloadBase() {
-  return typeof window !== 'undefined' && window.grokCrew?.apiBase ? window.grokCrew.apiBase : 'http://127.0.0.1:7214';
 }
 
 function droppedFilePath(file: File): string {

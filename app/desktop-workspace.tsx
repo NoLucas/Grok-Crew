@@ -40,6 +40,7 @@ import {
   safeWorkspaceRel,
   shouldAutoPullInbox,
   shouldClearWaitForImport,
+  studioDownloadBase,
   writeAutoPrefs,
 } from './desktop-auto-state';
 import { DesktopVoiceSetup } from './desktop-voice-setup';
@@ -119,7 +120,7 @@ declare global {
 }
 
 function studioBase() {
-  return typeof window !== 'undefined' && window.grokCrew?.apiBase ? window.grokCrew.apiBase : 'http://127.0.0.1:7214';
+  return studioDownloadBase();
 }
 type PublishMode = 'export_only' | 'ask' | 'auto';
 type Project = { id: string; title: string; source_path: string; output_path: string; updated_at: string; current_revision: number; folder_id?: string | null; handoff_door?: string | null; handoff_agent?: string | null; edit_spec_id?: string | null };

@@ -1,5 +1,6 @@
 'use client';
 
+import { studioDownloadBase } from './desktop-auto-state';
 import { useLanguage } from './language';
 
 function figureLine(text: string, max = 28): string {
@@ -134,7 +135,7 @@ export function DesktopInstallHelp({ variant = 'fold' }: { variant?: 'fold' | 'o
       <details className="desktop-spec-advanced">
         <summary>{t('다른 방법', 'Other method', '其他方法', '別の方法')}</summary>
         <p className="desktop-simple-help">
-          <a href={`${typeof window !== 'undefined' && window.grokCrew?.apiBase ? window.grokCrew.apiBase : 'http://127.0.0.1:7214'}/downloads/grok-crew-bot.zip`}>
+          <a href={`${studioDownloadBase()}/downloads/grok-crew-bot.zip`}>
             {t('봇에게 줄 파일', 'File for the bot', '给机器人的文件', 'ボット用ファイル')}
           </a>
         </p>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { useLanguage } from './language';
-import { safeWorkspaceRel } from './desktop-auto-state';
+import { safeWorkspaceRel, studioDownloadBase } from './desktop-auto-state';
 
 export type HandoffFolderFile = {
   name: string;
@@ -54,7 +54,7 @@ type MenuState = {
 };
 
 function studioBase() {
-  return typeof window !== 'undefined' && window.grokCrew?.apiBase ? window.grokCrew.apiBase : 'http://127.0.0.1:7214';
+  return studioDownloadBase();
 }
 
 function mediaUrl(path: string) {
