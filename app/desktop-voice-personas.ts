@@ -172,6 +172,16 @@ export function voicePersonaLabel(persona: VoicePersona, language = 'ko'): strin
   return `${voiceFeelLabel(persona.feel, language)} ${voiceGenderLabel(persona.gender, language)} · ${voiceAccentLabel(persona.accent, language)}`;
 }
 
-export function voicePersonaKeep(persona: VoicePersona): string {
-  return `목소리는 ${voicePersonaLabel(persona, 'ko')}. 화자는 ${persona.speakerId} 하나만. 사람을 복제하지 않는다. 다른 화자·TTS는 쓰지 않는다.`;
+function voiceLang(language?: string): 'ko' | 'en' | 'zh' | 'ja' {
+  const lang = String(language || 'ko').slice(0, 2);
+  return lang === 'en' || lang === 'zh' || lang === 'ja' ? lang : 'ko';
+}
+
+export function voicePersonaKeep(persona: VoicePersona, language = 'ko'): string {
+  const who = voicePersonaLabel(persona, language);
+  const lang = voiceLang(language);
+  if (lang === 'zh') return `声音是 ${who}。说话人只要 ${persona.speakerId}。不要克隆真人。不要用别的说话人或 TTS。`;
+  if (lang === 'ja') return `声は ${who}。話者は ${persona.speakerId} だけ。人の声は複製しない。他の話者・TTS は使わない。`;
+  if (lang === 'en') return `Voice is ${who}. Speaker ${persona.speakerId} only. Do not clone a person. Do not use another speaker or TTS.`;
+  return `목소리는 ${who}. 화자는 ${persona.speakerId} 하나만. 사람을 복제하지 않는다. 다른 화자·TTS는 쓰지 않는다.`;
 }

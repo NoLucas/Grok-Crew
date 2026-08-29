@@ -205,12 +205,25 @@ export function voiceModelLabel(value?: unknown): string {
   return voiceModelInfo(value).label;
 }
 
-export function dubbingMustKeep(value?: unknown): string {
+function voiceLang(language?: string): 'ko' | 'en' | 'zh' | 'ja' {
+  const lang = String(language || 'ko').slice(0, 2);
+  return lang === 'en' || lang === 'zh' || lang === 'ja' ? lang : 'ko';
+}
+
+export function dubbingMustKeep(value?: unknown, language = 'ko'): string {
   const label = voiceModelLabel(value);
+  const lang = voiceLang(language);
+  if (lang === 'zh') return `配音：有操作员语音文件就只用那个。没有就只用这台电脑的语音模型 ${label}。不要用别的 TTS。`;
+  if (lang === 'ja') return `吹き替えは運営者の音声ファイルがあればそれだけ。なければこの PC の音声モデル ${label} だけ。他の TTS は使わない。`;
+  if (lang === 'en') return `Dubbing: use the operator audio file if present. If none, use only ${label} on this PC. Do not use another TTS.`;
   return `더빙은 운영자 음성 파일이 있으면 그것만. 없으면 이 PC의 음성 모델 ${label} 하나만 쓴다. 다른 TTS는 쓰지 않는다.`;
 }
 
-export function operatorDubMustKeep(): string {
+export function operatorDubMustKeep(language = 'ko'): string {
+  const lang = voiceLang(language);
+  if (lang === 'zh') return '配音只用操作员放进的语音文件。没有就保留原声。不要生成 TTS。';
+  if (lang === 'ja') return '吹き替えは運営者が入れた音声ファイルだけ。なければ元の音。TTS は作らない。';
+  if (lang === 'en') return 'Dubbing uses only the operator audio file. If none, keep the original. Do not generate TTS.';
   return '더빙은 운영자가 넣은 음성 파일만. 없으면 원본 소리. TTS를 만들지 않는다.';
 }
 
@@ -219,18 +232,41 @@ export function voiceMustKeep(input: {
   wantTts?: boolean;
   voiceModelId?: unknown;
   personaKeep?: string;
+  language?: string;
 }): string | undefined {
+  const language = input.language || 'ko';
+  const lang = voiceLang(language);
   const dubbing = Boolean(input.wantDubbing);
   const tts = Boolean(input.wantTts);
   if (!dubbing && !tts) return undefined;
-  if (dubbing && !tts) return operatorDubMustKeep();
+  if (dubbing && !tts) return operatorDubMustKeep(language);
   const persona = String(input.personaKeep || '').trim();
-  const engine = `TTS는 이 PC의 음성 모델 ${voiceModelLabel(input.voiceModelId)} 하나만.`;
-  const extra = persona ? ` ${persona}` : ' 다른 TTS는 쓰지 않는다.';
+  const label = voiceModelLabel(input.voiceModelId);
+  const engine = lang === 'zh'
+    ? `TTS 只用这台电脑的语音模型 ${label}。`
+    : lang === 'ja'
+      ? `TTS はこの PC の音声モデル ${label} だけ。`
+      : lang === 'en'
+        ? `TTS uses only ${label} on this PC.`
+        : `TTS는 이 PC의 음성 모델 ${label} 하나만.`;
+  const noOther = lang === 'zh'
+    ? '不要用别的 TTS。'
+    : lang === 'ja'
+      ? '他の TTS は使わない。'
+      : lang === 'en'
+        ? 'Do not use another TTS.'
+        : '다른 TTS는 쓰지 않는다.';
+  const noCover = lang === 'zh'
+    ? '配音关着就不要盖原声。'
+    : lang === 'ja'
+      ? '吹き替えがオフなら元の音を覆わない。'
+      : lang === 'en'
+        ? 'If dubbing is off, do not cover the original.'
+        : '더빙이 꺼져 있으면 원본 소리를 덮지 않는다.';
   if (!dubbing && tts) {
-    return `${engine} 더빙이 꺼져 있으면 원본 소리를 덮지 않는다.${persona ? ` ${persona}` : ' 다른 TTS는 쓰지 않는다.'}`;
+    return `${engine} ${noCover}${persona ? ` ${persona}` : ` ${noOther}`}`;
   }
-  return `${dubbingMustKeep(input.voiceModelId)}${persona ? ` ${persona}` : extra}`;
+  return `${dubbingMustKeep(input.voiceModelId, language)}${persona ? ` ${persona}` : ` ${noOther}`}`;
 }
 
 export function downloadPercent(download?: VoiceDownloadStatus | null): number {

@@ -91,6 +91,12 @@ describe('voice model picker', () => {
     assert.match(String(voiceMustKeep({ wantTts: true })), /Kokoro-82M 하나만/);
     assert.match(String(voiceMustKeep({ wantTts: true, voiceModelId: 'zonos-v0.1' })), /Zonos-v0.1 하나만/);
     assert.match(String(voiceMustKeep({ wantDubbing: true, wantTts: true })), /Kokoro-82M 하나만/);
+    assert.match(String(voiceMustKeep({ wantTts: true, language: 'en' })), /TTS uses only Kokoro-82M/);
+    assert.doesNotMatch(String(voiceMustKeep({ wantTts: true, language: 'en' })), /하나만/);
+    assert.match(String(voiceMustKeep({ wantTts: true, language: 'zh' })), /只用这台电脑的语音模型 Kokoro-82M/);
+    assert.match(String(voiceMustKeep({ wantTts: true, language: 'ja' })), /この PC の音声モデル Kokoro-82M だけ/);
+    assert.match(String(voiceMustKeep({ wantDubbing: true, language: 'en' })), /operator audio file/);
+    assert.doesNotMatch(String(voiceMustKeep({ wantDubbing: true, language: 'en' })), /운영자/);
     assert.equal(downloadPercent({ received_bytes: 25, total_bytes: 100 }), 25);
   });
 });

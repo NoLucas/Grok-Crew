@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.14** · with Grok Bot · free now
+**v1.0.15** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -43,12 +43,20 @@ The source files live in [`public/bot-skills/`](public/bot-skills/). Copying the
 1. Open `GrokCrew-Windows.exe`. The installer asks which TTS to keep, downloads that one, then copies the app. Next with no pick is Kokoro-82M.
 2. First open asks for a language. If the installer already left a voice, the TTS wizard stays closed.
 3. On **Connect**, copy the attach text again into the bot window. Grok Bot should check in from the registered Windows after approval. If that does not land, paste the bot `GROK_CREW_OK` line here. Copying alone does not connect.
-4. On **Auto**, write what they want and press **Make**. This window waits. The **crew board** shows who did what and the one line left for the next seat.
+4. On **Start**, write what they want and press **Start production**. If the Grok seats are already checked in on this Windows, they read the waiting invite. This window waits. The **crew board** shows who did what and the one line left for the next seat.
 5. When the preview appears, **save on this PC**. Posting is later, and only if they want it.
 
-If attach fails, **Connect** says how to fix it. Do not open Auto first.
+If attach fails, **Connect** says how to fix it. Do not open Start first.
 
 ---
+
+## What changed in v1.0.15
+
+- Same-PC checked-in Grok seats read the waiting invite after Start production. Copy again is hidden for those seats.
+- Left-sidebar video cards can play in place. The file name still opens the project.
+- English, Chinese, and Japanese connect commands and TTS keep lines stay in that language. Homepage copy uses Start, not Auto.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.15 notes](docs/RELEASE_NOTES.v1.0.15.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.15.
 
 ## What changed in v1.0.14
 
@@ -56,7 +64,7 @@ If attach fails, **Connect** says how to fix it. Do not open Auto first.
 - The sidebar is folders plus a file gallery. Helper copy and the unused command bar are gone.
 - Collect URLs also reject IPv6-mapped private hosts. The desk only follows a loopback studio origin.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.14 notes](docs/RELEASE_NOTES.v1.0.14.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.14.
+The 1.0.14 list is in [the 1.0.14 notes](docs/RELEASE_NOTES.v1.0.14.md).
 
 ## What changed in v1.0.13
 

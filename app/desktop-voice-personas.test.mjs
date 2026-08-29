@@ -32,5 +32,9 @@ describe('voice personas', () => {
     }).accent, 'en-us');
     assert.match(voicePersonaKeep(next), /af_heart 하나만/);
     assert.match(voicePersonaKeep(next), /사람을 복제하지 않는다/);
+    assert.match(voicePersonaKeep(next, 'en'), /Speaker af_heart only/);
+    assert.doesNotMatch(voicePersonaKeep(next, 'en'), /하나만/);
+    assert.match(voicePersonaKeep(next, 'zh'), /说话人只要 af_heart/);
+    assert.match(voicePersonaKeep(next, 'ja'), /話者は af_heart だけ/);
   });
 });

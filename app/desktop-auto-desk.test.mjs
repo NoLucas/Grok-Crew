@@ -302,6 +302,22 @@ describe('auto desk job payload', () => {
       wantTts: true,
       voiceModelId: 'zonos-v0.1',
     }).must_keep), /Zonos-v0.1 하나만/);
+    assert.match(String(autoJobPayload({
+      title: 'TTS on',
+      recipeId: 'instagram_reel',
+      language: 'en',
+      useScrape: true,
+      collectQuery: 'https://example.com/a.mp4',
+      wantTts: true,
+    }).must_keep), /TTS uses only Kokoro-82M/);
+    assert.doesNotMatch(String(autoJobPayload({
+      title: 'TTS on',
+      recipeId: 'instagram_reel',
+      language: 'en',
+      useScrape: true,
+      collectQuery: 'https://example.com/a.mp4',
+      wantTts: true,
+    }).must_keep), /하나만/);
   });
 });
 

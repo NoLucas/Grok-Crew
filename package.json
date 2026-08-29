@@ -1,6 +1,6 @@
 {
   "name": "grok-crew",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "license": "BUSL-1.1",
   "author": "Grok Crew contributors",
   "description": "Local-first short-form desk: you write the brief, a Grok bot supplies source and cut.",

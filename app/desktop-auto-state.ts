@@ -364,7 +364,8 @@ export function autoJobPayload(input: AutoJobInput): Record<string, unknown> {
     wantDubbing: input.wantDubbing,
     wantTts: input.wantTts,
     voiceModelId: input.voiceModelId,
-    personaKeep: persona ? voicePersonaKeep(persona) : undefined,
+    personaKeep: persona ? voicePersonaKeep(persona, input.language) : undefined,
+    language: input.language,
   });
   if (keep) body.must_keep = keep;
   return body;

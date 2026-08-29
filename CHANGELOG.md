@@ -4,6 +4,16 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.15 - 2026-08-29
+
+Local 1.0.15. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.15` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.15). Guest notes: `docs/RELEASE_NOTES.v1.0.15.md`. Guest Drive download stays the last published file. Already-installed 1.0.14 desks check Grok-crew-test for this tag. Grok-Crew gets the same notes.
+
+### Desk
+
+- Checked-in Grok seats on the same Windows read the waiting invite after Start production. Copy again stays hidden for those seats.
+- Left-sidebar video cards play in place. The file name still opens the project.
+- Connect paste, skill text, and TTS keep lines stay in the desk language (ko / en / zh / ja). Homepage and README how-to use Start, not Auto.
+
 ## 1.0.14 - 2026-08-29
 
 Local 1.0.14. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.14` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.14) only. Guest notes: `docs/RELEASE_NOTES.v1.0.14.md`. Guest Drive download stays the last published file. Already-installed 1.0.13 desks check Grok-crew-test for this tag.
