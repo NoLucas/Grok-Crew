@@ -138,7 +138,9 @@ describe('built-in bot skills', () => {
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true }), /TTS: 켬/);
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true }), /Kokoro-82M 하나만/);
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true }), /따뜻한 여자 · 미국 영어/);
-    assert.doesNotMatch(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true }), /한국어/);
+    assert.match(voiceInviteBlock('ko', { tts: true }), /따뜻한 여자 · 미국 영어/);
+    assert.doesNotMatch(voiceInviteBlock('ko', { tts: true }), /한국어/);
+    assert.doesNotMatch(voiceInviteBlock('ko', { tts: true, voiceAccent: 'ko' }), /한국어/);
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true, voiceAccent: 'ko' }), /따뜻한 여자 · 미국 영어/);
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true, voiceGender: 'male', voiceFeel: 'clear', voiceAccent: 'zh' }), /또렷한 남자 · 중국어/);
     assert.match(withCrewInvite('제목: 카페 오픈', 'ko', { tts: true, voiceModelId: 'step-audio-editx' }), /Step Audio EditX 하나만/);
