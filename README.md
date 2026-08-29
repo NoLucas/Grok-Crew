@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.17** · with Grok Bot · free now
+**v1.0.18** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,12 +50,19 @@ If attach fails, **Connect** says how to fix it. Do not open Start first.
 
 ---
 
+## What changed in v1.0.18
+
+- Connect has no paste box for `GROK_CREW_OK`. Copying the connect text enters that seat on this desk.
+- The bot’s first reply is `GROK_CREW_OK`, then it does that seat’s job. Planner, scraper, and editor no longer share a “send OK and stop” script.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.18 notes](docs/RELEASE_NOTES.v1.0.18.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.18.
+
 ## What changed in v1.0.17
 
 - The bot sends only `GROK_CREW_OK` and stops. Do not make a Grok Routine or `keep` in chat. Paste that line on Connect and this desk enters the seat.
 - A Linux Grok must not say the window or 7214 is missing.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.17 notes](docs/RELEASE_NOTES.v1.0.17.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.17.
+The 1.0.17 list is in [the 1.0.17 notes](docs/RELEASE_NOTES.v1.0.17.md).
 
 ## What changed in v1.0.16
 

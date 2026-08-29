@@ -4,6 +4,10 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.18 - 2026-08-29
+
+Local 1.0.18. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.18` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.18) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.18). Guest notes: `docs/RELEASE_NOTES.v1.0.18.md`. Guest Drive download stays the last published file. Already-installed 1.0.17 desks check Grok-crew-test for this tag.
+
 ### Desk
 
 - Connect no longer has a paste box for the bot `GROK_CREW_OK` line. Copying the connect message enters that seat on this Windows desk and holds `still_here` here.
