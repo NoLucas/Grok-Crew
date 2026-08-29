@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 로컬 영상 작업대" width="100%" />
 </p>
 
-**v1.0.12** · with Grok Bot · 지금 무료
+**v1.0.13** · with Grok Bot · 지금 무료
 
 쇼츠를 혼자 자르며 밤을 샐 필요 없습니다.
 쓰던 **Grok Bot**이나 Agent를 붙이면, 다듬은 파일이 **이 PC 폴더**에 남습니다.
@@ -50,12 +50,19 @@
 
 ---
 
+## v1.0.13에서 달라진 것
+
+- TTS 미리듣기는 카탈로그 화자만 쓰고, 응답에 이 PC 절대 경로를 넣지 않습니다.
+- 수집 주소는 공개 파일 URL만 받습니다. `/media`는 미리보기 파일만 줍니다.
+
+자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.13 릴리스 노트](docs/RELEASE_NOTES.v1.0.13.md)입니다. 손님용 드라이브 파일은 그대로입니다. 이미 설치한 책상은 Grok-crew-test의 v1.0.13을 봅니다.
+
 ## v1.0.12에서 달라진 것
 
 - TTS 말투는 받은 모델이 말할 수 있는 언어만 보입니다. Kokoro-82M에는 한국어 언어팩이 없습니다.
 - 미리듣기는 Kokoro-82M WAV입니다.
 
-자세한 목록은 [CHANGELOG.md](CHANGELOG.md)와 [1.0.12 릴리스 노트](docs/RELEASE_NOTES.v1.0.12.md)입니다. 손님용 드라이브 파일은 그대로입니다. 이미 설치한 책상은 Grok-crew-test의 v1.0.12를 봅니다.
+1.0.12 목록은 [1.0.12 릴리스 노트](docs/RELEASE_NOTES.v1.0.12.md)입니다.
 
 ## v1.0.11에서 달라진 것
 

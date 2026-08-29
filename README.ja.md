@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — このPCの映像デスク" width="100%" />
 </p>
 
-**v1.0.12** · with Grok Bot · いま無料
+**v1.0.13** · with Grok Bot · いま無料
 
 Shorts を一人で切って夜を明かす必要はありません。
 使っている **Grok Bot** や Agent を付ければ、できたファイルは **このPCのフォルダ** に残ります。
@@ -50,12 +50,19 @@ Shorts を一人で切って夜を明かす必要はありません。
 
 ---
 
+## v1.0.13 で変わったこと
+
+- TTS の試し聞きはカタログの話者だけを使い、このPCの絶対パスは返しません。
+- 収集の住所は公開ファイル URL だけです。`/media` はプレビューだけ出します。
+
+一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.13 リリースノート](docs/RELEASE_NOTES.v1.0.13.md) です。ゲスト用ドライブのファイルはそのままです。すでに入れた机は Grok-crew-test の v1.0.13 を見ます。
+
 ## v1.0.12 で変わったこと
 
 - TTS の言語は、入れたモデルが話せるものだけ出ます。Kokoro-82M に韓国語の言語パックはありません。
 - 試し聞きは Kokoro-82M の WAV です。
 
-一覧は [CHANGELOG.md](CHANGELOG.md) と [1.0.12 リリースノート](docs/RELEASE_NOTES.v1.0.12.md) です。ゲスト用ドライブのファイルはそのままです。すでに入れた机は Grok-crew-test の v1.0.12 を見ます。
+1.0.12 の一覧は [1.0.12 リリースノート](docs/RELEASE_NOTES.v1.0.12.md) です。
 
 ## v1.0.11 で変わったこと
 

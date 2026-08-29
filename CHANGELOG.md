@@ -4,6 +4,18 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.13 - 2026-08-29
+
+Local 1.0.13. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.13` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.13) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.13). Guest notes: `docs/RELEASE_NOTES.v1.0.13.md`. Guest Drive download stays the last published file. Already-installed 1.0.12 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- TTS preview no longer accepts a caller-chosen Kokoro speaker path. Only catalog speaker ids are used.
+- Voice-preview JSON no longer returns a workspace absolute path. The desk plays only the loopback `/media/voice-previews/…wav`.
+- Collect URL lists reject `file://`, loopback, and link-local hosts. Recipe wording is unchanged.
+- Tokenless `/media` serves preview media only, not model weights.
+- Voice-model download stays on Hugging Face HTTPS. The installer script keeps that host and filename rule.
+
 ## 1.0.12 - 2026-08-29
 
 Local 1.0.12. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.12` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.12) only. Guest notes: `docs/RELEASE_NOTES.v1.0.12.md`. Guest download stays the same Google Drive file. Already-installed 1.0.11 desks check Grok-crew-test for this tag.
