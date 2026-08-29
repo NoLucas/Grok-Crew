@@ -254,6 +254,18 @@ function relativeWorkspacePath(value: string) {
   return index >= 0 ? normalized.slice(index + marker.length) : normalized;
 }
 
+function sameDeskMediaPath(left: string, right: string) {
+  const a = relativeWorkspacePath(left).replace(/^\.?\//, '').toLowerCase();
+  const b = relativeWorkspacePath(right).replace(/^\.?\//, '').toLowerCase();
+  return Boolean(a) && a === b;
+}
+
+function projectForReedit(projects: Project[], sourcePath: string) {
+  return projects.find((item) => (
+    sameDeskMediaPath(item.source_path, sourcePath) || sameDeskMediaPath(item.output_path, sourcePath)
+  )) ?? null;
+}
+
 function handoffSenderLabel(
   item: { handoff_agent?: string | null; handoff_door?: string | null },
   t: (ko: string, en: string, zh: string, ja: string) => string,
@@ -879,13 +891,20 @@ export default function DesktopWorkspace() {
     });
   };
   const createProjectFromPath = async (sourcePath: string) => {
-    const name = sourcePath.split(/[/\\]/).pop() || t('내 파일', 'My file', '我的文件', '自分のファイル');
-    const title = name.replace(/\.[^.]+$/, '');
-    setNewProject((current) => ({ ...current, title: current.title || title, source_path: sourcePath }));
+    const existing = projectForReedit(workspace.projects, sourcePath);
     setSpecDeskOpen(false);
     setBotPanelOpen(false);
     setCreateOpen(false);
     setDrawer('none');
+    if (existing) {
+      setSelectedProjectId(existing.id);
+      setActivePanel('edit');
+      setMessage(t('이 영상을 다시 엽니다. 편집에서 바로 자를 수 있습니다.', 'Reopening this video. Cut it in Edit.', '正在重新打开这个视频。可在编辑里直接剪。', 'この映像をもう一度開きます。編集ですぐ切れます。'));
+      return;
+    }
+    const name = sourcePath.split(/[/\\]/).pop() || t('내 파일', 'My file', '我的文件', '自分のファイル');
+    const title = name.replace(/\.[^.]+$/, '');
+    setNewProject((current) => ({ ...current, title: current.title || title, source_path: sourcePath }));
     setBusy(true);
     try {
       const result = await api('/api/v2/projects', {
@@ -903,7 +922,7 @@ export default function DesktopWorkspace() {
       setActivePanel('edit');
       await placeInRecent(created.id);
       await refreshWorkspace(true);
-      setMessage(t('내 파일을 열었습니다. 타임라인에서 바로 자를 수 있습니다.', 'Opened your file. Cut it on the timeline.', '已打开你的文件。可直接在时间线上剪。', '自分のファイルを開きました。タイムラインですぐ切れます。'));
+      setMessage(t('내 영상을 편집으로 열었습니다. 타임라인에서 바로 자를 수 있습니다.', 'Opened your video in Edit. Cut it on the timeline.', '已在编辑中打开你的视频。可直接在时间线上剪。', '自分の映像を編集で開きました。タイムラインですぐ切れます。'));
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : t('파일을 열지 못했습니다.', 'Could not open the file.', '无法打开文件。', 'ファイルを開けませんでした。'));
     } finally {

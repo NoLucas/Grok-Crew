@@ -27,7 +27,12 @@ describe('desk composer restage', () => {
   it('Start keeps open-own-file and leaves the crew board on Auto', () => {
     const auto = src('desktop-auto-desk.tsx');
     const chrome = src('desktop-workspace.tsx');
-    assert.match(auto, /봇 없이 영상 열기/);
+    assert.match(auto, /내 영상 재편집/);
+    assert.match(auto, /영상제목 설정/);
+    assert.match(auto, /영상의 이름을 설정하지 않으면 프롬프트가 제목이됩니다/);
+    assert.equal(auto.includes('봇 없이 영상 열기'), false);
+    assert.equal(auto.includes('이름 붙이기'), false);
+    assert.equal(auto.includes('비우면 위의 첫 줄'), false);
     assert.match(auto, /어떤 영상을 만들까요\?/);
     assert.match(auto, /내파일\/주소/);
     assert.match(auto, /원하는 파일이나 주소를 넣어주세요/);

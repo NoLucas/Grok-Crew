@@ -719,15 +719,22 @@ export function AutoDesk({
                   aria-pressed={nameOpen}
                   onClick={() => setNameOpen((value) => !value)}
                 >
-                  {t('이름 붙이기', 'Add a name', '加名字', '名前を付ける')}
+                  {t('영상제목 설정', 'Set the video title', '设置视频标题', '映像タイトルを設定')}
                 </button>
                 <button
                   type="button"
                   className={ownOpen ? 'is-on' : ''}
                   aria-pressed={ownOpen}
-                  onClick={() => setOwnOpen((value) => !value)}
+                  onClick={() => {
+                    if (ownOpen) {
+                      setOwnOpen(false);
+                      return;
+                    }
+                    setOwnOpen(true);
+                    void pickOwnFile();
+                  }}
                 >
-                  {t('봇 없이 영상 열기', 'Open a video with no bot', '不用机器人打开视频', 'ボットなしで映像を開く')}
+                  {t('내 영상 재편집', 'Re-edit my video', '再剪我的视频', '自分の映像を再編集')}
                 </button>
                 <label className="desktop-auto-caption-check">
                   <span>{t('자막', 'Captions', '字幕', '字幕')}</span>
@@ -741,7 +748,7 @@ export function AutoDesk({
               </div>
               {ownOpen ? (
                 <section className="desktop-auto-own">
-                  <p>{t('이 PC 영상을 바로 엽니다. 그러면 사용자 설정·편집·내보내기가 켜집니다.', 'Open a video on this PC. Settings, Edit, and Export then turn on.', '直接打开这台电脑上的视频。用户设置、编辑、导出就会打开。', 'この PC の映像を開く。ユーザー設定・編集・書き出しが付く。')}</p>
+                  <p>{t('내 영상을 다시 자릅니다. 고르면 편집이 열립니다.', 'Re-edit a video you already have. Picking one opens Edit.', '再剪已有的视频。选好就会打开编辑。', '自分の映像をもう一度切る。選ぶと編集が開く。')}</p>
                   <button
                     type="button"
                     className={ownOver ? 'desktop-simple-drop is-quiet is-over' : 'desktop-simple-drop is-quiet'}
@@ -754,21 +761,21 @@ export function AutoDesk({
                   >
                     <b>{ownOver
                       ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
-                      : t('영상을 여기 놓거나 고르기', 'Drop a video here, or pick one', '把视频放这里，或选择', '映像をここに置くか選ぶ')}</b>
+                      : t('다시 자를 영상을 놓거나 고르기', 'Drop or pick the video to re-edit', '放下或选择要再剪的视频', 'もう一度切る映像を置くか選ぶ')}</b>
                     <span>{t('경로는 적지 마세요.', 'Do not type a path.', '不要填写路径。', 'パスは書かないでください。')}</span>
                   </button>
                 </section>
               ) : null}
               {nameOpen ? (
                 <label className="desktop-spec-field desktop-auto-name">
-                  <span>{t('이름', 'Name', '名字', '名前')} <em>{t('없어도 됨', 'optional', '可以不填', 'なくてもよい')}</em></span>
+                  <span>{t('영상 제목', 'Video title', '视频标题', '映像タイトル')} <em>{t('없어도 됨', 'optional', '可以不填', 'なくてもよい')}</em></span>
                   <input
                     value={title}
                     onChange={(event) => {
                       setTitle(event.target.value);
                       if (error) setError('');
                     }}
-                    placeholder={t('비우면 위의 첫 줄', 'First line above if empty', '留空就用上面第一行', '空なら上の一行目')}
+                    placeholder={t('영상의 이름을 설정하지 않으면 프롬프트가 제목이됩니다.', 'If you do not set a video name, the prompt becomes the title.', '不设视频名时，提示词会成为标题。', '映像の名前を付けないと、上の文がタイトルになります。')}
                     disabled={saving}
                   />
                 </label>
