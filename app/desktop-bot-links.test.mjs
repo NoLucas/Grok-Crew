@@ -9,6 +9,9 @@ const {
   emptyBotLinks,
   forgetBotLinksOnQuit,
   hasConnectedBot,
+  hasWaitingCopiedSeat,
+  seatReadyToStart,
+  connectReadyLine,
   linkedByKind,
   linkedBySeat,
   makePairCode,
@@ -116,9 +119,12 @@ describe('remote bot links', () => {
       assert.match(text, /7214가 없다|没有 7214|7214 がない|7214 is missing/);
       assert.match(text, /이 대화가 그 Windows가 아니면|If this conversation is not that Windows|若这段对话不是那台 Windows|この会話がその Windows でなければ/);
       assert.match(text, /창이 없다고 하지 마세요|Do not say the window is missing|不要说没有窗口|窓がないと言わないでください/);
-      assert.match(text, /GROK_CREW_OK만 보내고 일을 끝내지 마세요|不要只发 GROK_CREW_OK 就结束|GROK_CREW_OK だけ送って仕事を終わらせない|Do not send only GROK_CREW_OK and stop/);
+      assert.match(text, /GROK_CREW_OK만 보내고 멈추면 실패|只发 GROK_CREW_OK 就停下来算失败|GROK_CREW_OK だけ送って止まると失敗|Sending only GROK_CREW_OK and stopping is a failure/);
+      assert.match(text, /첫 답은 아래 두 줄|第一句回复必须是下面两行|最初の返事は次の二行|The first reply must be these two lines/);
+      assert.match(text, /한 줄만 쓰면 실패한|只写一行就是失败|一行だけなら失敗|One line only is a failure/);
       assert.match(text, /시작 글이 할 일|开始文字才是工作|開始の文が仕事|Start invite the operator pastes is the job/);
       assert.match(text, /위 역할대로|按上面的角色|上の役割どおり|with the role above/);
+      assert.match(text, /기획 준비됨|策划已就绪|企画の準備ができました|Planner ready/);
       assert.doesNotMatch(text, /연결에 그 줄을 붙이면|pastes that line on Connect|贴到连接后|接続にその行を貼ると/);
       assert.doesNotMatch(text, /한 줄만 보내고 멈추세요|Send only the GROK_CREW_OK line and stop|只发 GROK_CREW_OK 那一行然后停下|一行だけ送って止まってください/);
       assert.doesNotMatch(text, /첫 답은 아래 한 줄|第一句回复是下面这一行|最初の返事は次の一行|The first reply is this one line/);
@@ -324,6 +330,13 @@ describe('remote bot links', () => {
     assert.equal(next.bots[0].status, 'waiting');
     assert.equal(next.bots[0].place, 'other_pc');
     assert.equal(hasConnectedBot(undefined, next), false);
+    assert.equal(hasWaitingCopiedSeat(next), true);
+    assert.equal(seatReadyToStart(next), true);
+    assert.equal(hasWaitingCopiedSeat(empty), false);
+    assert.equal(seatReadyToStart(empty), false);
+    assert.equal(connectReadyLine('planner', 'ko'), '기획 준비됨. 시작 글을 이 창에 붙이면 바로 구성을 적습니다.');
+    assert.match(connectReadyLine('scraper', 'en'), /Scraper ready/);
+    assert.match(connectReadyLine('editor', 'zh'), /剪辑已就绪/);
   });
 
   it('does not light a copied scraper from a leftover idle roster', () => {
@@ -355,6 +368,7 @@ describe('remote bot links', () => {
     const essay = remoteConnectPaste('grok', 'QDWAVN', 'ko', 'planner');
     assert.equal(isBareConnectReply(essay, 'QDWAVN'), false);
     assert.equal(isBareConnectReply('GROK_CREW_OK QDWAVN Grok Bot 기획자', 'QDWAVN'), true);
+    assert.equal(isBareConnectReply(`GROK_CREW_OK QDWAVN Grok Bot 기획자\n${connectReadyLine('planner', 'ko')}`, 'QDWAVN'), true);
     assert.equal(isBareConnectReply('GROK_CREW_OK AAAAAA Grok Bot 기획자', 'QDWAVN'), false);
     assert.equal(isBareConnectReply('', 'QDWAVN'), false);
   });

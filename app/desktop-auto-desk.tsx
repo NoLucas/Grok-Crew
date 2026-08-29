@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { CrewRoster } from './desktop-bot-connect';
-import { hasConnectedBot, writeLastConnectBundle, type BotLinkState } from './desktop-bot-links';
+import { hasConnectedBot, hasWaitingCopiedSeat, writeLastConnectBundle, type BotLinkState } from './desktop-bot-links';
 import {
   DEFAULT_RECIPE_ID,
   RECIPE_ORDER,
@@ -211,6 +211,7 @@ export function AutoDesk({
   const ownInputRef = useRef<HTMLInputElement>(null);
   const attachedName = attachedBotName(roster, remoteNames, links, language);
   const attached = Boolean(attachedName) || hasConnectedBot(roster, links);
+  const startReady = attached || hasWaitingCopiedSeat(links);
   const hasProject = Boolean(previewUrl || projectTitle);
   const cards = useMemo(() => {
     const byId = new Map(recipes.map((item) => [item.id, item]));
@@ -393,7 +394,7 @@ export function AutoDesk({
     const check = canStartAuto({
       title: title || projectTitle,
       goal: nextGoal,
-      attached,
+      attached: startReady,
       useOwn: readyUseOwn,
       useScrape,
       ownedPaths: readyOwned,
@@ -408,7 +409,7 @@ export function AutoDesk({
           ? readyUseOwn && !readyOwned.length
             ? t('영상이나 사진을 넣으세요.', 'Put in a video or an image.', '请放入视频或图片。', '映像か写真を入れてください。')
             : t('한 줄에 공개 파일 주소 하나만 적으세요. http로 시작하는 직접 주소여야 합니다.', 'Write one public file URL per line. It must be a direct http address.', '每行只写一个公开文件地址。必须是以 http 开头的直接地址。', '一行に公開ファイルの住所一つ。http で始まる直接の住所にしてください。')
-        : t('먼저 연결하세요.', 'Connect first.', '请先连接。', '先に接続してください。'));
+        : t('연결에서 붙일 글을 먼저 복사하세요.', 'Copy the connect text first.', '请先复制连接文字。', '先に接続文をコピーしてください。'));
       return;
     }
     const heading = titleFromPrompt(title || projectTitle, nextGoal);
@@ -1278,13 +1279,13 @@ export function AutoDesk({
                 </fieldset>
               ) : null}
 
-              {attached && (titleFromPrompt(title, goal) || ownedPaths.length > 0) ? (
+              {startReady && (titleFromPrompt(title, goal) || ownedPaths.length > 0) ? (
                 <p className="desktop-auto-recap">
-                  {`${attachedName} · ${marketName} · ${styleLabel} · ${wayLabel} · ${t('TTS생성', 'TTS', 'TTS生成', 'TTS生成')} ${soundLabel}`}
+                  {`${attachedName || t('연결 글 복사됨', 'Connect text copied', '已复制连接文字', '接続文をコピー済み')} · ${marketName} · ${styleLabel} · ${wayLabel} · ${t('TTS생성', 'TTS', 'TTS生成', 'TTS生成')} ${soundLabel}`}
                 </p>
               ) : null}
-              {!attached ? (
-                <p className="desktop-auto-gate">{t('봇을 먼저 연결해야 만들 수 있습니다. 연결 열기를 누르세요.', 'Connect a bot first, then you can make it. Open Connect.', '请先连接机器人，才能开始做。请打开连接。', '先にボットを接続すると作れます。接続を開いてください。')}</p>
+              {!startReady ? (
+                <p className="desktop-auto-gate">{t('연결에서 붙일 글을 먼저 복사하세요. 복사만으로는 램프가 켜지지 않습니다.', 'Copy the connect text first. Copying does not light the lamp.', '请先复制连接文字。只复制不会亮灯。', '先に接続文をコピーしてください。コピーしただけではランプは点きません。')}</p>
               ) : null}
               <button type="submit" className="desktop-primary desktop-auto-make" disabled={formLocked}>
                 {saving
@@ -1331,12 +1332,18 @@ export function AutoDesk({
           </ol>
           {samePcPull ? null : (
           <div className="desktop-auto-interrupt">
-            <p>{t(`사람 손길 · ${pasteTarget} 창에 한 번 붙이세요.`, `Your step · paste it once in the ${pasteTarget} window.`, `人手 · 请在 ${pasteTarget} 窗口贴一次。`, `人の手 · ${pasteTarget} の窓に一度貼ってください。`)}</p>
+            <p>{t(`사람 손길 · ${pasteTarget} 창에 한 번 붙이세요. 봇이 GROK_CREW_OK만 보냈으면 아직 이 일이 안 간 겁니다.`, `Your step · paste it once in the ${pasteTarget} window. If the bot only sent GROK_CREW_OK, the job has not arrived.`, `人手 · 请在 ${pasteTarget} 窗口贴一次。机器人只发了 GROK_CREW_OK 就说明这件事还没送到。`, `人の手 · ${pasteTarget} の窓に一度貼ってください。ボットが GROK_CREW_OK だけ送ったなら、この仕事はまだ届いていません。`)}</p>
             <button type="button" className="desktop-primary desktop-recopy-btn" disabled={!inviteText.trim()} onClick={() => { void recopyInvite(); }}>
               {copied
                 ? t(`복사했습니다. ${pasteTarget} 창에 붙이세요.`, `Copied. Paste it in the ${pasteTarget} window.`, `已复制。请贴到 ${pasteTarget} 窗口。`, `コピーしました。${pasteTarget} の窓に貼ってください。`)
                 : t(`다시 복사 · ${pasteTarget}`, `Copy again · ${pasteTarget}`, `再复制 · ${pasteTarget}`, `もう一度コピー · ${pasteTarget}`)}
             </button>
+            {inviteText.trim() ? (
+              <details className="desktop-spec-advanced desktop-simple-invite" open>
+                <summary>{t('봇이 읽을 글 보기', 'Show the text the bot reads', '查看机器人要读的文字', 'ボットが読む文を見る')}</summary>
+                <textarea value={inviteText} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
+              </details>
+            ) : null}
           </div>
           )}
           <DesktopCrewBoard
@@ -1499,11 +1506,7 @@ export function AutoDesk({
       ) : null}
 
       {clipboardBlocked && !samePcPull ? (
-        <details className="desktop-spec-advanced desktop-simple-invite" open>
-          <summary>{t('봇이 읽을 글 보기', 'Show the text the bot reads', '查看机器人要读的文字', 'ボットが読む文を見る')}</summary>
-          <p className="desktop-spec-error">{t('아래 글을 직접 복사하세요. 클립보드를 쓰지 못했습니다.', 'Copy the text below. The clipboard was blocked.', '请手动复制下面的文字。无法使用剪贴板。', '下の文を自分でコピーしてください。クリップボードを使えませんでした。')}</p>
-          <textarea value={inviteText} readOnly rows={8} onFocus={(event) => event.currentTarget.select()} />
-        </details>
+        <p className="desktop-spec-error">{t('클립보드를 쓰지 못했습니다. 위의 글을 직접 복사하세요.', 'The clipboard was blocked. Copy the text above yourself.', '无法使用剪贴板。请手动复制上面的文字。', 'クリップボードを使えませんでした。上の文を自分でコピーしてください。')}</p>
       ) : null}
 
       {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}

@@ -120,6 +120,8 @@ describe('built-in bot skills', () => {
 
   it('appends the crew order to an invite without inventing a new API', () => {
     const text = withCrewInvite('제목: 카페 오픈', 'ko');
+    assert.match(text, /===== 지금 시작 =====/);
+    assert.match(text, /GROK_CREW_OK만 보내지 마세요/);
     assert.match(text, /제목: 카페 오픈/);
     assert.match(text, /기획자/);
     assert.match(text, /스크래핑/);

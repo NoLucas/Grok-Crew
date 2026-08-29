@@ -939,6 +939,10 @@ describe('auto desk seats and inbox guards', () => {
     assert.match(auto, /samePcPull \? null/);
     assert.match(auto, /다시 복사 · \$\{pasteTarget\}/);
     assert.match(auto, /사람 손길/);
+    assert.match(auto, /GROK_CREW_OK만 보냈으면 아직 이 일이 안 간/);
+    assert.match(auto, /봇이 읽을 글 보기/);
+    assert.match(auto, /hasWaitingCopiedSeat/);
+    assert.match(auto, /연결에서 붙일 글을 먼저 복사하세요/);
     assert.doesNotMatch(auto, /봇이 읽는 중/);
     const pasted = alwaysCrewSeats({
       links: {

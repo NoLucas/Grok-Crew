@@ -1357,6 +1357,35 @@ export function destinationInviteLine(language = 'ko', market?: string): string 
   }, language);
 }
 
+export function jobBeginBanner(language = 'ko'): string {
+  return pick({
+    ko: [
+      '===== 지금 시작 =====',
+      '이 글이 할 일입니다. GROK_CREW_OK만 보내지 마세요. 이미 보냈으면 아래 제목으로 바로 하세요.',
+      'Linux·공유·클라우드에서 127.0.0.1이나 grok-crew.py를 실행하지 마세요. 그 주소는 이 책상이 아닙니다.',
+      '기획·수집·편집은 이 채팅에 적는 일입니다. 표시 한 줄을 다시 보내지 마세요.',
+    ].join('\n'),
+    en: [
+      '===== Start now =====',
+      'This text is the job. Do not send only GROK_CREW_OK. If you already sent it, begin from the title below.',
+      'Do not run 127.0.0.1 or grok-crew.py from Linux, shared, or cloud. That address is not this desk.',
+      'Planning, fetching, and cutting happen in this chat. Do not send the mark line again.',
+    ].join('\n'),
+    zh: [
+      '===== 现在开始 =====',
+      '这段文字就是工作。不要只发 GROK_CREW_OK。若已经发过，按下面的标题马上做。',
+      '不要在 Linux、共享或云上运行 127.0.0.1 或 grok-crew.py。那个地址不是这张书桌。',
+      '策划、采集、剪辑写在这个聊天里。不要再只发那一行标记。',
+    ].join('\n'),
+    ja: [
+      '===== 今すぐ開始 =====',
+      'この文が仕事です。GROK_CREW_OK だけ送らないでください。すでに送ったなら下の題で今始めてください。',
+      'Linux・共有・クラウドで 127.0.0.1 や grok-crew.py を実行しないでください。その住所はこのデスクではありません。',
+      '企画・収集・編集はこのチャットに書くことです。印の一行だけを再送しないでください。',
+    ].join('\n'),
+  }, language);
+}
+
 export function specHeartbeatLine(language = 'ko', specId?: string): string {
   const id = String(specId || '').trim();
   if (!id) return '';
@@ -1380,6 +1409,8 @@ export function withCrewInvite(invite: string, language = 'ko', voice: VoiceInvi
         ? `Keep using the skill you received at connect. Role core plus one extra: ${SKILL_INDEX}.`
         : `연결할 때 받은 스킬을 그대로 쓰세요. 역할 코어와 보조 스킬은 ${SKILL_INDEX}.`;
   return [
+    jobBeginBanner(language),
+    '',
     text,
     '',
     specHeartbeatLine(language, specId),

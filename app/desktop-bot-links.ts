@@ -457,6 +457,21 @@ export function hasConnectedBot(roster?: CrewRoster | null, links?: BotLinkState
   ));
 }
 
+/** A copied other-PC seat can receive a Start invite. That is not a green lamp. */
+export function hasWaitingCopiedSeat(links?: BotLinkState | null): boolean {
+  return (links?.bots ?? []).some((bot) => (
+    (bot.kind === 'grok' || bot.kind === 'custom')
+    && bot.status === 'waiting'
+    && Boolean(bot.pairCode)
+    && Boolean(bot.role)
+  ));
+}
+
+/** Start may run after a connect copy or a real handshake. Lamps still use hasConnectedBot. */
+export function seatReadyToStart(links?: BotLinkState | null, roster?: CrewRoster | null): boolean {
+  return hasConnectedBot(roster, links) || hasWaitingCopiedSeat(links);
+}
+
 /** One follow bar for Grok or Agent. A leftover mystery roster bot does not light a lamp. */
 export function seatLampRows(
   roster?: CrewRoster | null,
@@ -679,6 +694,35 @@ export function seatId(kind: BotKind, role: BotRole, pairCode: string): string {
   return `${kind}-${role}-${pairCode}`;
 }
 
+export function connectReadyLine(role: BotRole, language = 'ko'): string {
+  const lang = language.slice(0, 2);
+  if (role === 'scraper') {
+    return lang === 'zh'
+      ? '采集已就绪。开始文字或策划一到，马上收。'
+      : lang === 'ja'
+        ? '収集の準備ができました。開始の文か企画が来たらすぐ受けます。'
+        : lang === 'en'
+          ? 'Scraper ready. When the Start invite or plan arrives, fetch at once.'
+          : '수집 준비됨. 시작 글이나 기획이 오면 바로 받습니다.';
+  }
+  if (role === 'editor') {
+    return lang === 'zh'
+      ? '剪辑已就绪。剪法一到就剪。'
+      : lang === 'ja'
+        ? '編集の準備ができました。切り方が来たらすぐ切ります。'
+        : lang === 'en'
+          ? 'Editor ready. When the cut method arrives, cut at once.'
+          : '편집 준비됨. 자를 방법이 오면 바로 자릅니다.';
+  }
+  return lang === 'zh'
+    ? '策划已就绪。开始文字一贴到这个窗口，马上写结构。'
+    : lang === 'ja'
+      ? '企画の準備ができました。開始の文をこの窓に貼ったらすぐ構成を書きます。'
+      : lang === 'en'
+        ? 'Planner ready. When the Start invite is pasted in this chat, write the plan at once.'
+        : '기획 준비됨. 시작 글을 이 창에 붙이면 바로 구성을 적습니다.';
+}
+
 function grokWindowsCheckIn(who: string, role: BotRole, language: string, studioPort = DEFAULT_STUDIO_PORT): string[] {
   const lang = language.slice(0, 2);
   const port = studioCheckInPort(studioPort);
@@ -790,19 +834,23 @@ export function remoteConnectPaste(
   const line = `GROK_CREW_OK ${pairCode} ${who}`;
   const job = roleLabel(role, lang === 'zh' || lang === 'ja' || lang === 'en' ? lang : 'ko');
   const windows = family === 'grok' ? grokWindowsCheckIn(who, role, lang, studioPort) : [];
+  const ready = connectReadyLine(role, lang);
   if (lang === 'ko') {
     return [
       `당신은 Grok Crew와 연결합니다. 이름은 ${who}입니다.`,
       `역할은 ${job}입니다. 아래 역할 스킬과 보조 스킬을 읽고 그 일만 합니다. 다른 자리 일을 하지 않습니다.`,
       `보낼 나라는 ${marketLabel(dest, 'ko')}입니다. 나라를 바꿨으면 이 글을 다시 복사하세요.`,
+      'GROK_CREW_OK만 보내고 멈추면 실패입니다. 그 한 줄은 일이 아닙니다. 제목·목표가 보이면 위 역할대로 지금 하세요.',
       '',
       skills,
       '',
       ...(windows.length ? windows : ['다른 컴퓨터에서는 127.0.0.1에 붙지 마세요. 이 창을 열 수 없습니다.']),
       `연결 코드: ${pairCode}`,
-      `이 자리 표시: ${line}`,
+      '첫 답은 아래 두 줄입니다. 한 줄만 쓰면 실패한 겁니다.',
+      line,
+      ready,
       '',
-      'GROK_CREW_OK만 보내고 일을 끝내지 마세요. 이 글은 역할입니다. 운영자가 다음에 붙이는 시작 글이 할 일입니다. 그 글을 받으면 위 역할대로 바로 하세요. 이 글 안에 이미 할 일이 있으면 지금 하세요.',
+      '이 글은 역할입니다. 운영자가 다음에 붙이는 시작 글이 할 일입니다. 그 글을 받으면 위 역할대로 바로 하세요. 기획·수집·편집은 이 채팅에서 바로 적습니다. 표시 한 줄을 다시 보내지 마세요.',
       '',
       '끝난 컷은 운영자가 이 Windows 창에 놓습니다.',
     ].join('\n');
@@ -812,14 +860,17 @@ export function remoteConnectPaste(
       `你正在连接 Grok Crew。名字是 ${who}。`,
       `角色是 ${job}。阅读下面的角色技能和一项辅助技能，只做那件事。不要做别的位子的工作。`,
       `要发往的国家是 ${marketLabel(dest, 'zh')}。改了国家请重新复制这段文字。`,
+      '只发 GROK_CREW_OK 就停下来算失败。那一行不是工作。若已看到标题或目标，现在按上面的角色做。',
       '',
       skills,
       '',
       ...(windows.length ? windows : ['另一台电脑不要连接 127.0.0.1。打不开这个窗口。']),
       `连接代码：${pairCode}`,
-      `这个位子的标记：${line}`,
+      '第一句回复必须是下面两行。只写一行就是失败。',
+      line,
+      ready,
       '',
-      '不要只发 GROK_CREW_OK 就结束。这段文字是角色。操作员接下来贴的开始文字才是工作。收到后立刻按上面的角色做。如果这段文字里已经有工作，现在就做。',
+      '这段文字是角色。操作员接下来贴的开始文字才是工作。收到后立刻按上面的角色做。策划、采集、剪辑写在这个聊天里。不要再只发那一行标记。',
       '',
       '完成的成片由操作员放到这个 Windows 窗口。',
     ].join('\n');
@@ -829,14 +880,17 @@ export function remoteConnectPaste(
       `あなたは Grok Crew と接続します。名前は ${who} です。`,
       `役割は ${job} です。下の役割スキルと補助スキルを読んで、その仕事だけします。ほかの席の仕事はしません。`,
       `送る国は ${marketLabel(dest, 'ja')} です。国を変えたらこの文をコピーし直してください。`,
+      'GROK_CREW_OK だけ送って止まると失敗です。その一行は仕事ではありません。題や目標が見えたら上の役割どおり今やってください。',
       '',
       skills,
       '',
       ...(windows.length ? windows : ['別のコンピュータから 127.0.0.1 に接続しないでください。この窓は開けません。']),
       `接続コード: ${pairCode}`,
-      `この席の印: ${line}`,
+      '最初の返事は次の二行です。一行だけなら失敗です。',
+      line,
+      ready,
       '',
-      'GROK_CREW_OK だけ送って仕事を終わらせないでください。この文は役割です。運営者が次に貼る開始の文が仕事です。それを受けたら上の役割どおりすぐやってください。この文の中にすでに仕事があれば今やってください。',
+      'この文は役割です。運営者が次に貼る開始の文が仕事です。それを受けたら上の役割どおりすぐやってください。企画・収集・編集はこのチャットに書きます。印の一行だけを再送しないでください。',
       '',
       '終わったカットは運営者がこの Windows の窓に置きます。',
     ].join('\n');
@@ -845,14 +899,17 @@ export function remoteConnectPaste(
     `You are connecting to Grok Crew as ${who}.`,
     `Your role is ${job}. Read the role skill and one extra below and only do that job. Do not do another seat's work.`,
     `Destination country: ${marketLabel(dest, 'en')}. If you change it, copy this text again.`,
+    'Sending only GROK_CREW_OK and stopping is a failure. That line is not the job. If a title or goal is already here, do the role now.',
     '',
     skills,
     '',
     ...(windows.length ? windows : ['Do not connect to 127.0.0.1 from another computer.']),
     `Connection code: ${pairCode}`,
-    `This seat mark: ${line}`,
+    'The first reply must be these two lines. One line only is a failure.',
+    line,
+    ready,
     '',
-    'Do not send only GROK_CREW_OK and stop. This text is the role. The next Start invite the operator pastes is the job. When you get it, do that job with the role above. If this text already has a job, do it now.',
+    'This text is the role. The next Start invite the operator pastes is the job. When you get it, do that job with the role above. Write the plan, fetch, or cut in this chat. Do not send the mark line again.',
     '',
     'The operator drops the finished cut on this Windows window.',
   ].join('\n');

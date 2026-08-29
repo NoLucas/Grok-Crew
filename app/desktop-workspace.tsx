@@ -25,6 +25,7 @@ import {
   forgetBotLinksOnQuit,
   grokSeatsToDisconnect,
   hasConnectedBot,
+  seatReadyToStart,
   SEAT_KEEP_SECONDS,
   seatLampRows,
   lostConnectedSeats,
@@ -740,7 +741,7 @@ export default function DesktopWorkspace() {
   );
   const showLanguageGate = !langPicked && gatePending;
   const firstOpen = showLanguageGate || needsFirstVoiceSetup(voiceSetup, workspace.first_run?.voice_model);
-  const deskReady = hasConnectedBot(workspace.crew_roster, botLinks) || Boolean(project);
+  const deskReady = seatReadyToStart(botLinks, workspace.crew_roster) || Boolean(project);
   const showWorkTabs = Boolean(project);
   const showBotRoom = botPanelOpen || (!deskReady && !peekAuto);
   useEffect(() => {
