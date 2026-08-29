@@ -33,6 +33,10 @@ describe('desk composer restage', () => {
     assert.match(auto, /원하는 파일이나 주소를 넣어주세요/);
     assert.match(auto, /TTS생성/);
     assert.match(auto, /업로드 위치/);
+    assert.match(auto, /desktop-auto-caption-check/);
+    assert.match(auto, /tts생성/);
+    assert.equal(auto.includes('목소리 만들기'), false);
+    assert.equal(auto.includes('내 목소리'), false);
     assert.equal(auto.includes("t('화면',"), false);
     assert.equal(auto.includes("t('올릴 곳'"), false);
     assert.equal(auto.includes("t('어디에 올릴까요'"), false);

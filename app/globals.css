@@ -7672,6 +7672,7 @@ select {
 .desktop-auto-composer-tools {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 .desktop-auto-composer-tools button {
@@ -7686,6 +7687,26 @@ select {
 .desktop-auto-composer-tools button.is-on {
   border-color: var(--desktop-blue);
   background: #eef5ff;
+}
+.desktop-auto-caption-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 4px 2px;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  cursor: pointer;
+  user-select: none;
+}
+.desktop-auto-caption-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--desktop-blue);
+  cursor: pointer;
 }
 .desktop-auto-options {
   display: grid;
@@ -7933,7 +7954,7 @@ select {
 .desktop-auto-shape-chips { padding-top: 2px; }
 .desktop-auto-switches {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 .desktop-auto-switches button {

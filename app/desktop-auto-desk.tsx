@@ -150,7 +150,6 @@ export function AutoDesk({
   const [ownedPaths, setOwnedPaths] = useState<string[]>([]);
   const [collectQuery, setCollectQuery] = useState('');
   const [wantCaptions, setWantCaptions] = useState(Boolean(prefs.wantCaptions));
-  const [wantDubbing, setWantDubbing] = useState(Boolean(prefs.wantDubbing));
   const [wantTts, setWantTts] = useState(Boolean(prefs.wantTts));
   const [voiceModelId] = useState<VoiceModelId>(() => confirmVoiceChoice(prefs.voiceModelId));
   const [voiceGender, setVoiceGender] = useState<VoiceGender>(() => resolveVoiceGender(prefs.voiceGender));
@@ -266,9 +265,14 @@ export function AutoDesk({
   const showCrewBoard = showWaiting || showArrived;
   const soundLabel = wantTts
     ? t(`만듦 · ${voicePersonaLabel(voicePersona, language)}`, `Made · ${voicePersonaLabel(voicePersona, language)}`, `做了 · ${voicePersonaLabel(voicePersona, language)}`, `作った · ${voicePersonaLabel(voicePersona, language)}`)
-    : wantCaptions || wantDubbing
-      ? [wantCaptions ? t('자막', 'Captions', '字幕', '字幕') : '', wantDubbing ? t('내 목소리', 'My voice', '我的声音', '自分の声') : ''].filter(Boolean).join(' · ')
-      : t('끔', 'Off', '关', 'オフ');
+    : t('끔', 'Off', '关', 'オフ');
+  const toggleCaptions = () => {
+    setWantCaptions((value) => {
+      const next = !value;
+      setPrefs(writeAutoPrefs({ wantCaptions: next }));
+      return next;
+    });
+  };
   const togglePane = (pane: Exclude<AutoOptionPane, ''>) => {
     setOptionPane((current) => (current === pane ? '' : pane));
   };
@@ -383,7 +387,7 @@ export function AutoDesk({
           ownedPaths: readyOwned,
           collectQuery,
           wantCaptions,
-          wantDubbing,
+          wantDubbing: false,
           wantTts,
           voiceModelId,
           voiceGender,
@@ -397,7 +401,7 @@ export function AutoDesk({
       const invite = await request(`/api/v2/edit-specs/${record.id}/invite?lang=${encodeURIComponent(language)}`);
       const text = withCrewInvite(String(invite.text || ''), language, {
         captions: wantCaptions,
-        dubbing: wantDubbing,
+        dubbing: false,
         tts: wantTts,
         voiceModelId,
         voiceGender,
@@ -415,7 +419,7 @@ export function AutoDesk({
       setPrefs(writeAutoPrefs({
         recipeId,
         wantCaptions,
-        wantDubbing,
+        wantDubbing: false,
         wantTts,
         voiceModelId,
         voiceGender,
@@ -725,6 +729,15 @@ export function AutoDesk({
                 >
                   {t('봇 없이 영상 열기', 'Open a video with no bot', '不用机器人打开视频', 'ボットなしで映像を開く')}
                 </button>
+                <label className="desktop-auto-caption-check">
+                  <span>{t('자막', 'Captions', '字幕', '字幕')}</span>
+                  <input
+                    type="checkbox"
+                    checked={wantCaptions}
+                    onChange={toggleCaptions}
+                    disabled={saving}
+                  />
+                </label>
               </div>
               {ownOpen ? (
                 <section className="desktop-auto-own">
@@ -826,7 +839,7 @@ export function AutoDesk({
                   type="button"
                   role="tab"
                   aria-selected={optionPane === 'sound'}
-                  className={`desktop-auto-option${optionPane === 'sound' ? ' is-open' : ''}${wantCaptions || wantDubbing || wantTts ? ' is-set' : ''}`}
+                  className={`desktop-auto-option${optionPane === 'sound' ? ' is-open' : ''}${wantTts ? ' is-set' : ''}`}
                   onClick={() => togglePane('sound')}
                 >
                   <span>{t('TTS생성', 'TTS', 'TTS生成', 'TTS生成')}</span>
@@ -961,33 +974,15 @@ export function AutoDesk({
 
               {optionPane === 'sound' ? (
                 <fieldset className="desktop-auto-option-pane desktop-auto-voice">
-                  <legend>{t('글자와 소리', 'Words and sound', '字和声音', '文字と音')}</legend>
+                  <legend>{t('tts생성', 'TTS', 'TTS生成', 'TTS生成')}</legend>
                   <div className="desktop-auto-switches">
-                    <button
-                      type="button"
-                      className={wantCaptions ? 'is-on' : ''}
-                      aria-pressed={wantCaptions}
-                      onClick={() => setWantCaptions((value) => !value)}
-                    >
-                      <b>{t('자막', 'Captions', '字幕', '字幕')}</b>
-                      <span>{wantCaptions ? t('켬 · 말하는 구간에 글자', 'On · words on speech', '开 · 说话处加字', 'オン · 話しているところに字') : t('끔', 'Off', '关', 'オフ')}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={wantDubbing ? 'is-on' : ''}
-                      aria-pressed={wantDubbing}
-                      onClick={() => setWantDubbing((value) => !value)}
-                    >
-                      <b>{t('내 목소리', 'My voice', '我的声音', '自分の声')}</b>
-                      <span>{wantDubbing ? t('켬 · 내가 넣은 소리', 'On · audio I added', '开 · 我放的声音', 'オン · 入れた音') : t('끔', 'Off', '关', 'オフ')}</span>
-                    </button>
                     <button
                       type="button"
                       className={wantTts ? 'is-on' : ''}
                       aria-pressed={wantTts}
                       onClick={() => setWantTts((value) => !value)}
                     >
-                      <b>{t('목소리 만들기', 'Make a voice', '做声音', '声を作る')}</b>
+                      <b>{t('tts생성', 'TTS', 'TTS生成', 'TTS生成')}</b>
                       <span>{wantTts ? t('켬 · 이 컴퓨터가 말함', 'On · this computer speaks', '开 · 这台电脑说话', 'オン · このパソコンが話す') : t('끔', 'Off', '关', 'オフ')}</span>
                     </button>
                   </div>
