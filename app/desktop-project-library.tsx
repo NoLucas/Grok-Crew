@@ -104,6 +104,8 @@ export function DesktopProjectLibrary({
   const [purgePrompt, setPurgePrompt] = useState<PurgePrompt | null>(null);
   const [sourceAction, setSourceAction] = useState<SourceAction>('keep');
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const videoEls = useRef(new Map<string, HTMLVideoElement>());
+  const [playingId, setPlayingId] = useState<string | null>(null);
   const bootRef = useRef(false);
   const rememberedRecentId = typeof window === 'undefined' ? '' : readRememberedRecentId(window.localStorage);
   const recent = findRecentFolder(folders, rememberedRecentId);
@@ -165,6 +167,33 @@ export function DesktopProjectLibrary({
     if (openFolderId && grouped.folders.some((row) => row.folder.id === openFolderId)) return;
     setOpenFolderId(openId);
   }, [grouped.folders, openFolderId, openId]);
+
+  useEffect(() => {
+    setPlayingId(null);
+    for (const video of videoEls.current.values()) video.pause();
+  }, [openId]);
+
+  useEffect(() => {
+    if (!playingId) return;
+    const video = videoEls.current.get(playingId);
+    if (!video) return;
+    video.muted = false;
+    void video.play().catch(() => {
+      /* browser blocked autoplay; controls stay so the operator can press play */
+    });
+  }, [playingId]);
+
+  const bindLibraryVideo = (id: string) => (el: HTMLVideoElement | null) => {
+    if (el) videoEls.current.set(id, el);
+    else videoEls.current.delete(id);
+  };
+
+  const playLibraryVideo = (id: string) => {
+    for (const [otherId, video] of videoEls.current) {
+      if (otherId !== id) video.pause();
+    }
+    setPlayingId(id);
+  };
 
   const run = async (path: string, body?: Record<string, unknown>, ok?: string) => {
     setBusy(true);
@@ -326,6 +355,7 @@ export function DesktopProjectLibrary({
     const renamingThis = renaming?.kind === 'project' && renaming.id === item.id;
     const card = libraryFileCard(item);
     const preview = card.path && filePreviewUrl ? filePreviewUrl(card.path) : '';
+    const videoPlaying = card.kind === 'video' && Boolean(preview) && playingId === item.id;
     return (
       <div
         key={item.id}
@@ -334,6 +364,39 @@ export function DesktopProjectLibrary({
         onDragStart={onDragStart(item.id)}
         onContextMenu={(event) => openProjectMenu(event, item.id)}
       >
+        {card.kind === 'video' && preview ? (
+          <div className={`desktop-library-file-thumb is-video${videoPlaying ? ' is-playing' : ''}`}>
+            <video
+              ref={bindLibraryVideo(item.id)}
+              controls={videoPlaying}
+              muted={!videoPlaying}
+              playsInline
+              preload="metadata"
+              src={preview}
+              onClick={(event) => event.stopPropagation()}
+              onPlay={() => playLibraryVideo(item.id)}
+              onEnded={() => setPlayingId((current) => (current === item.id ? null : current))}
+              onLoadedMetadata={(event) => {
+                const video = event.currentTarget;
+                if (video.currentTime < 0.05) video.currentTime = 0.1;
+              }}
+            />
+            {videoPlaying ? null : (
+              <button
+                type="button"
+                className="desktop-library-file-play"
+                aria-label={t('이 영상 재생', 'Play this video', '播放这个视频', 'この映像を再生')}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  playLibraryVideo(item.id);
+                }}
+              >
+                <span aria-hidden="true">▶</span>
+              </button>
+            )}
+            {card.ext ? <em>{card.ext}</em> : null}
+          </div>
+        ) : null}
         <button
           type="button"
           className="desktop-library-file-open"
@@ -341,27 +404,17 @@ export function DesktopProjectLibrary({
           onContextMenu={(event) => openProjectMenu(event, item.id)}
           title={`${card.name}${senderLabel(item) ? ` · ${senderLabel(item)}` : ''}`}
         >
+          {card.kind === 'video' && preview ? null : (
           <span className={`desktop-library-file-thumb is-${card.kind}`}>
             {card.kind === 'image' && preview ? (
               // Local workspace thumbs are served by the loopback sidecar.
               // eslint-disable-next-line @next/next/no-img-element
               <img src={preview} alt="" />
-            ) : card.kind === 'video' && preview ? (
-              <video
-                muted
-                playsInline
-                preload="metadata"
-                src={preview}
-                onLoadedMetadata={(event) => {
-                  const video = event.currentTarget;
-                  if (video.currentTime < 0.05) video.currentTime = 0.1;
-                }}
-              />
             ) : (
               <ClipGlyph />
             )}
-            {card.kind === 'video' && card.ext ? <em>{card.ext}</em> : null}
           </span>
+          )}
           {renamingThis ? (
             <input
               autoFocus

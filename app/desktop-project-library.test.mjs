@@ -51,6 +51,10 @@ test("library chrome drops the unfiled bucket and the add-folder toolbar", () =>
   assert.match(text, /desktop-library-folders/);
   assert.match(text, /desktop-library-file-grid/);
   assert.match(text, /폴더 만들기/);
+  assert.match(text, /desktop-library-file-play/);
+  assert.match(text, /이 영상 재생/);
+  assert.match(text, /controls=\{videoPlaying\}/);
+  assert.match(text, /playLibraryVideo/);
   assert.match(text, /card\.label/);
   assert.equal(text.includes("desktop-library-chevron"), false);
   assert.equal(text.includes("current_revision"), false);

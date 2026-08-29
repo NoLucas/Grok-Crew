@@ -7205,7 +7205,7 @@ select {
   align-content: start;
   gap: 10px 8px;
 }
-.desktop-library-file { min-width: 0; border-radius: 10px; }
+.desktop-library-file { display: grid; gap: 6px; min-width: 0; border-radius: 10px; }
 .desktop-library-file.is-active { outline: 2px solid var(--desktop-blue); }
 .desktop-library-file-open {
   display: grid;
@@ -7216,6 +7216,39 @@ select {
   background: transparent;
   color: inherit;
   text-align: center;
+}
+.desktop-library-file-play {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.desktop-library-file-play span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding-left: 3px;
+  border-radius: 50%;
+  background: rgba(12, 14, 18, .72);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .28);
+  font-size: 13px;
+  line-height: 1;
+}
+.desktop-library-file-play:hover span,
+.desktop-library-file-play:focus-visible span {
+  background: rgba(12, 14, 18, .88);
+}
+.desktop-library-file-thumb.is-playing em { opacity: .0; }
+.desktop-library-file-thumb video::-webkit-media-controls-panel {
+  background: linear-gradient(transparent, rgba(0, 0, 0, .55));
 }
 .desktop-library-file-thumb {
   position: relative;
