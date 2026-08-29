@@ -196,6 +196,19 @@ export function DesktopProjectLibrary({
     setPlayingId(id);
   };
 
+  const pauseLibraryVideo = (id: string) => {
+    videoEls.current.get(id)?.pause();
+    setPlayingId((current) => (current === id ? null : current));
+  };
+
+  const toggleLibraryVideo = (id: string) => {
+    if (playingId === id) {
+      pauseLibraryVideo(id);
+      return;
+    }
+    playLibraryVideo(id);
+  };
+
   const run = async (path: string, body?: Record<string, unknown>, ok?: string) => {
     setBusy(true);
     try {
@@ -378,13 +391,16 @@ export function DesktopProjectLibrary({
           <div className={`desktop-library-file-thumb is-video${videoPlaying ? ' is-playing' : ''}`}>
             <video
               ref={bindLibraryVideo(item.id)}
-              controls={videoPlaying}
               muted={!videoPlaying}
               playsInline
               preload="metadata"
               src={preview}
-              onClick={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                toggleLibraryVideo(item.id);
+              }}
               onPlay={() => playLibraryVideo(item.id)}
+              onPause={() => setPlayingId((current) => (current === item.id ? null : current))}
               onEnded={() => setPlayingId((current) => (current === item.id ? null : current))}
               onError={(event) => {
                 const next = useLocalPreview(event.currentTarget.currentSrc || event.currentTarget.src);
@@ -395,19 +411,19 @@ export function DesktopProjectLibrary({
                 if (video.currentTime < 0.05) video.currentTime = 0.1;
               }}
             />
-            {videoPlaying ? null : (
-              <button
-                type="button"
-                className="desktop-library-file-play"
-                aria-label={t('이 영상 재생', 'Play this video', '播放这个视频', 'この映像を再生')}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  playLibraryVideo(item.id);
-                }}
-              >
-                <span aria-hidden="true">▶</span>
-              </button>
-            )}
+            <button
+              type="button"
+              className={`desktop-library-file-play${videoPlaying ? ' is-pause' : ''}`}
+              aria-label={videoPlaying
+                ? t('이 영상 정지', 'Pause this video', '暂停这个视频', 'この映像を停止')
+                : t('이 영상 재생', 'Play this video', '播放这个视频', 'この映像を再生')}
+              onClick={(event) => {
+                event.stopPropagation();
+                toggleLibraryVideo(item.id);
+              }}
+            >
+              <span aria-hidden="true">{videoPlaying ? '❚❚' : '▶'}</span>
+            </button>
             {card.ext ? <em>{card.ext}</em> : null}
           </div>
         ) : null}

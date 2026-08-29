@@ -7246,10 +7246,12 @@ select {
 .desktop-library-file-play:focus-visible span {
   background: rgba(12, 14, 18, .88);
 }
-.desktop-library-file-thumb.is-playing em { opacity: .0; }
-.desktop-library-file-thumb video::-webkit-media-controls-panel {
-  background: linear-gradient(transparent, rgba(0, 0, 0, .55));
+.desktop-library-file-play.is-pause span {
+  padding-left: 0;
+  letter-spacing: 1px;
+  font-size: 12px;
 }
+.desktop-library-file-thumb.is-playing em { opacity: .0; }
 .desktop-library-file-thumb {
   position: relative;
   display: grid;

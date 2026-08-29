@@ -53,6 +53,9 @@ test("library chrome drops the unfiled bucket and the add-folder toolbar", () =>
   assert.match(text, /폴더 만들기/);
   assert.match(text, /desktop-library-file-play/);
   assert.match(text, /이 영상 재생/);
+  assert.match(text, /이 영상 정지/);
+  assert.match(text, /toggleLibraryVideo/);
+  assert.match(text, /pauseLibraryVideo/);
   assert.match(text, /편집/);
   assert.match(text, /onEdit/);
   assert.match(text, /libraryPreviewUrl/);
@@ -61,8 +64,9 @@ test("library chrome drops the unfiled bucket and the add-folder toolbar", () =>
   const workspace = readFileSync(new URL('./desktop-workspace.tsx', import.meta.url), 'utf8');
   assert.match(workspace, /onEdit=\{\(projectId\) => \{[\s\S]*setActivePanel\('edit'\)/);
   assert.match(workspace, /onSelect=\{\(projectId\) => \{\s*setSelectedProjectId\(projectId\);\s*\}\}/);
-  assert.match(text, /controls=\{videoPlaying\}/);
+  assert.equal(text.includes('controls={videoPlaying}'), false);
   assert.match(text, /playLibraryVideo/);
+  assert.match(text, /onPause=/);
   assert.match(text, /card\.label/);
   assert.equal(text.includes("desktop-library-chevron"), false);
   assert.equal(text.includes("current_revision"), false);

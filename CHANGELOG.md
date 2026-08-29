@@ -12,6 +12,7 @@ All notable changes to Grok Crew are documented here.
 - `other_pc` seats always get the Start invite on the clipboard. Desk-side `still_here` is not same-PC invite pull.
 - Connect text treats `GROK_CREW_OK` alone as a failed first reply. The bot must send a two-line ready mark, then do the Start invite in that chat.
 - Start can run after a connect copy (waiting), without lighting the lamp. The waiting screen keeps the job text visible so an OK-only bot can still receive the work.
+- Sidebar file cards can pause an in-place video preview. Click the card again or the pause mark.
 
 ## 1.0.18 - 2026-08-29
 
