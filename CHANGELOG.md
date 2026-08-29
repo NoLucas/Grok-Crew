@@ -4,9 +4,16 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.12 - 2026-08-29
+
+Local 1.0.12. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.12` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.12) only. Guest notes: `docs/RELEASE_NOTES.v1.0.12.md`. Guest download stays the same Google Drive file. Already-installed 1.0.11 desks check Grok-crew-test for this tag.
+
 ### Desk
 
-- A finished cut left as a loose `mp4` in `handoff-inbox/editor` now counts as pending and opens on Auto. The editor bot often writes `reel-15s.mp4` there instead of a bundle folder.
+- Start TTS only shows languages the installed model can speak. That list comes from the exe catalog. Kokoro-82M has no Korean pack, so 한국어 is hidden and leftover Korean prefs snap to US English.
+- Preview plays a real Kokoro-82M greeting WAV, not the browser’s speechSynthesis.
+- English, Chinese, and Japanese TTS copy no longer calques Korean download words.
+- A finished cut left as a loose `mp4` in `handoff-inbox/editor` now counts as pending and opens on Start. The editor bot often writes `reel-15s.mp4` there instead of a bundle folder.
 - The three Grok seats stay visible under the title bar on every tab. Each lamp still only says 연결됨 or 연결되지않음.
 
 ## 1.0.11 - 2026-08-28

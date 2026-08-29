@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.11** · with Grok Bot · free now
+**v1.0.12** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,12 +50,19 @@ If attach fails, **Connect** says how to fix it. Do not open Auto first.
 
 ---
 
+## What changed in v1.0.12
+
+- TTS language chips show only languages the installed model can speak. Kokoro-82M has no Korean pack.
+- Preview plays a real Kokoro-82M WAV.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.12 notes](docs/RELEASE_NOTES.v1.0.12.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.12.
+
 ## What changed in v1.0.11
 
 - Auto collect is a direct file URL list only. A search phrase does not start a job.
 - Picking a file on Auto no longer fails on the workspace-relative `inputs\...` path the desk already stored.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.11 notes](docs/RELEASE_NOTES.v1.0.11.md). Guest Drive download stays the last published 1.0.10 exe. Already-installed desks check Grok-crew-test for v1.0.11.
+The 1.0.11 list is in [the 1.0.11 notes](docs/RELEASE_NOTES.v1.0.11.md).
 
 ## What changed in v1.0.10
 

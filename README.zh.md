@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.11** · with Grok Bot · 现在免费
+**v1.0.12** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,12 +50,19 @@
 
 ---
 
+## v1.0.12 改了什么
+
+- TTS 语种只显示已安装模型会说的语言。Kokoro-82M 没有韩语语言包。
+- 试听是 Kokoro-82M 的 WAV。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.12 发布说明](docs/RELEASE_NOTES.v1.0.12.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.12。
+
 ## v1.0.11 改了什么
 
 - 自动收集只收公开文件地址。搜索词不会开工。
 - 选自己的文件时，不再因为工作区相对路径 `inputs\...` 报错。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.11 发布说明](docs/RELEASE_NOTES.v1.0.11.md)。客人用的网盘文件仍是 1.0.10。已安装的书桌看 Grok-crew-test 的 v1.0.11。
+1.0.11 列表见 [1.0.11 发布说明](docs/RELEASE_NOTES.v1.0.11.md)。
 
 ## v1.0.10 改了什么
 
