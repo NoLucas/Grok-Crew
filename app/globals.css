@@ -7659,11 +7659,103 @@ select {
   font-weight: 800;
   letter-spacing: -.02em;
 }
-.desktop-spec-desk .desktop-auto-prompt > textarea,
-.desktop-auto-prompt textarea {
+.desktop-auto-composer-drop {
+  display: grid;
+  gap: 10px;
   min-height: min(22rem, 48vh);
-  padding: 18px 18px;
+  padding: 12px;
+  border: 1px solid var(--desktop-line);
   border-radius: 16px;
+  background: var(--desktop-input);
+}
+.desktop-auto-composer-drop.is-over {
+  border-color: #2f6f46;
+  box-shadow: 0 0 0 3px rgba(47, 111, 70, .12);
+}
+.desktop-auto-composer-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.desktop-auto-composer-file {
+  position: relative;
+  width: 72px;
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--desktop-line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--desktop-ink);
+}
+.desktop-auto-composer-file img {
+  width: 100%;
+  height: 72px;
+  object-fit: cover;
+}
+.desktop-auto-composer-file-name {
+  display: block;
+  padding: 8px 6px 18px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: break-all;
+  text-align: center;
+}
+.desktop-auto-composer-file em {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #eceef2;
+  color: #5c616b;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+}
+.desktop-auto-composer-file-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(20, 22, 26, .72);
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+}
+.desktop-auto-composer-attach {
+  display: flex;
+  justify-content: flex-start;
+}
+.desktop-auto-composer-add {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--desktop-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--desktop-ink);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+}
+.desktop-spec-desk .desktop-auto-prompt > textarea,
+.desktop-auto-prompt textarea,
+.desktop-auto-composer-drop textarea {
+  min-height: min(16rem, 36vh);
+  padding: 8px 6px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   font-size: 18px;
   line-height: 1.55;
   font-weight: 550;
@@ -8368,6 +8460,8 @@ select {
 .desktop-auto-empty b { font-size: 13px; letter-spacing: -.02em; }
 .desktop-auto-card p,
 .desktop-auto-empty p { margin: 0; color: var(--desktop-muted); font-size: 12px; line-height: 1.45; }
+.desktop-revise-card { gap: 10px; }
+.desktop-revise-card .desktop-primary { width: 100%; }
 .desktop-auto-now { display: grid; gap: 8px; margin-top: 8px; }
 .desktop-auto-now > b {
   font-size: 11px;
@@ -9246,8 +9340,16 @@ select {
 .desktop-export-grid.is-composer {
   grid-template-columns: 1fr;
   width: min(640px, 100%);
+  max-width: 640px;
+  margin-inline: auto;
   justify-self: center;
+  justify-items: stretch;
   gap: 12px;
+  padding-inline: 16px;
+}
+.desktop-setup-grid.is-composer .desktop-auto-lead,
+.desktop-export-grid.is-composer .desktop-auto-lead {
+  text-align: center;
 }
 .desktop-setup-grid.is-composer .desktop-auto-options { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .desktop-card { border: 1px solid var(--desktop-line); border-radius: 12px; background: var(--desktop-panel); box-shadow: 0 1px 2px rgba(0, 0, 0, .02); }

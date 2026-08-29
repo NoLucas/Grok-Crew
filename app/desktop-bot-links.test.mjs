@@ -214,7 +214,10 @@ describe('remote bot links', () => {
     assert.equal(seatIsConnected('custom', 'editor', empty, roster), false);
     assert.equal(familyIsConnected('grok', empty, roster), true);
     assert.equal(familyIsConnected('custom', empty, roster), false);
-    assert.deepEqual(connectedRemoteNames(empty, roster), ['Grok Bot 기획자', 'Grok Bot 편집자']);
+    assert.deepEqual(connectedRemoteNames(empty, roster), ['Grok Bot 1 -기획자', 'Grok Bot 2 -편집자']);
+    assert.deepEqual(connectedRemoteNames(empty, {
+      bots: [{ bot_id: 'grok-editor', display_name: 'Grok Bot ???', presence: 'active' }],
+    }), ['Grok Bot 1 -편집자']);
     assert.equal(hasConnectedBot(roster, empty), true);
     assert.deepEqual(grokSeatLampRows(roster, empty), [
       { role: 'planner', connected: true },

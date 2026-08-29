@@ -1,6 +1,7 @@
 import type { CrewRoster } from './desktop-bot-connect';
 import {
   GROK_SEAT_BOT_IDS,
+  connectedRemoteNames,
   rosterMatchesSeat,
   seatIsConnected,
   type BotLinkState,
@@ -137,6 +138,51 @@ export function cleanOwnedPaths(value: unknown): string[] {
 export function ownedFileName(path: string): string {
   const parts = String(path || '').replace(/\\/g, '/').split('/');
   return parts[parts.length - 1] || path;
+}
+
+export function ownedFileExtension(path: string): string {
+  const name = ownedFileName(path);
+  const at = name.lastIndexOf('.');
+  return at >= 0 ? name.slice(at + 1).toUpperCase() : '';
+}
+
+export function ownedMediaKind(path: string): 'image' | 'video' | 'other' {
+  const ext = ownedFileExtension(path).toLowerCase();
+  if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext)) return 'image';
+  if (['mp4', 'mov', 'webm', 'm4v', 'mkv'].includes(ext)) return 'video';
+  return 'other';
+}
+
+export function shortOwnedFileName(path: string, max = 18): string {
+  const name = ownedFileName(path);
+  if (name.length <= max) return name;
+  const at = name.lastIndexOf('.');
+  const ext = at >= 0 ? name.slice(at) : '';
+  const stem = at >= 0 ? name.slice(0, at) : name;
+  const keep = Math.max(4, max - ext.length - 3);
+  return `${stem.slice(0, keep)}...${ext}`;
+}
+
+export function localFilePreviewUrl(path: string): string {
+  const text = String(path || '').trim();
+  if (!text) return '';
+  if (text.startsWith('file:')) return text;
+  const unix = text.replace(/\\/g, '/');
+  if (/^[A-Za-z]:\//.test(unix)) return `file:///${unix}`;
+  if (unix.startsWith('/')) return `file://${unix}`;
+  return '';
+}
+
+export function writeAnotherComposeReset() {
+  return {
+    stayOnCompose: true,
+    ownedPaths: [] as string[],
+    useOwn: false,
+    useScrape: false,
+    collectQuery: '',
+    title: '',
+    goal: '',
+  };
 }
 
 const DIRECT_FILE_URL = /^https?:\/\/[^\s]+$/i;
@@ -415,15 +461,7 @@ export function connectedSeatNames(
   links?: BotLinkState | null,
   language = 'ko',
 ): string[] {
-  const names: string[] = [];
-  for (const role of BOT_ROLES) {
-    const grok = seatIsConnected('grok', role, links, roster);
-    const custom = seatIsConnected('custom', role, links, roster);
-    if (!grok && !custom) continue;
-    const name = seatName(grok ? 'grok' : 'custom', role, language);
-    if (!names.includes(name)) names.push(name);
-  }
-  return names;
+  return connectedRemoteNames(links, roster, language);
 }
 
 export function attachedBotName(

@@ -335,7 +335,7 @@ export function DesktopProjectLibrary({
                 }}
               />
             ) : <b>{item.title}</b>}
-            <small>{senderLabel(item)} · v{item.current_revision ?? 1} · {new Date(item.updated_at).toLocaleDateString()}</small>
+            <small>{senderLabel(item)} · {new Date(item.updated_at).toLocaleDateString()}</small>
           </div>
         </button>
       </div>

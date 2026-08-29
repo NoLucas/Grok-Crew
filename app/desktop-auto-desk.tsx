@@ -21,8 +21,13 @@ import {
   canStartAuto,
   droppedFilePath,
   isAbsoluteOwnedPath,
+  localFilePreviewUrl,
+  ownedMediaKind,
+  ownedFileExtension,
   resolveOwnedPaths,
+  shortOwnedFileName,
   titleFromPrompt,
+  writeAnotherComposeReset,
   formatElapsed,
   readAutoPrefs,
   rememberRecentTitle,
@@ -100,6 +105,10 @@ type AutoDeskProps = {
   onSaveLocal: () => Promise<boolean>;
   onCopied: (wait: DeskWaitState) => void;
   onRefresh: () => Promise<void>;
+  onWriteAnother?: () => void;
+  pendingReviseNote?: string;
+  onPendingReviseConsumed?: () => void;
+  projectSourcePath?: string;
   request: (path: string, init?: RequestInit) => Promise<JsonObject>;
 };
 
@@ -133,6 +142,10 @@ export function AutoDesk({
   onSaveLocal,
   onCopied,
   onRefresh,
+  onWriteAnother,
+  pendingReviseNote = '',
+  onPendingReviseConsumed,
+  projectSourcePath = '',
   request,
 }: AutoDeskProps) {
   const { language, t } = useLanguage();
@@ -172,10 +185,11 @@ export function AutoDesk({
     allowedAccents,
   });
   const [ownOver, setOwnOver] = useState(false);
+  const [composerOver, setComposerOver] = useState(false);
+  const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
   const [pickedRecipeId, setPickedRecipeId] = useState(prefs.recipeId || DEFAULT_RECIPE_ID);
   const [recipeTouched, setRecipeTouched] = useState(false);
   const recipeId = recipeTouched ? pickedRecipeId : suggestRecipeId(`${title} ${goal}`, prefs.recipeId);
-  const [revisePrompt, setRevisePrompt] = useState('');
   const [saving, setSaving] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -203,6 +217,7 @@ export function AutoDesk({
   }, [recipes]);
   const selected = cards.find((item) => item.id === recipeId) || cards[0];
   const locked = busy || saving || accepting || savingFile || !studioReady;
+  const formLocked = saving || accepting || !studioReady;
   const checkedClock = formatCheckTime(lastCheckedAt, language);
   const lamps = autoPhaseLamps({
     attached,
@@ -237,15 +252,6 @@ export function AutoDesk({
       : sourceMode === 'own'
         ? t('내가 넣은 영상', 'Clips I put in', '我放进的影像', '自分が入れた映像')
         : t('원하는 파일이나 주소를 넣어주세요', 'Add the file or address you want', '请放入想要的文件或地址', '使いたいファイルか住所を入れてください');
-  const startReady = canStartAuto({
-    title,
-    goal,
-    attached,
-    useOwn,
-    useScrape,
-    ownedPaths,
-    collectQuery,
-  }).ok;
   const elapsedLabel = wait ? formatElapsed(waitElapsedSeconds(wait.copiedAt, nowMs), language) : '';
   const scopedActivity = activityForSpec(activity, wait?.specId);
   const seatRows = alwaysCrewSeats({
@@ -378,7 +384,18 @@ export function AutoDesk({
     const nextGoal = again.trim()
       ? t(`다시: ${again.trim()}${goal.trim() ? `\n\n${goal.trim()}` : ''}`, `Again: ${again.trim()}${goal.trim() ? `\n\n${goal.trim()}` : ''}`, `再来：${again.trim()}${goal.trim() ? `\n\n${goal.trim()}` : ''}`, `やり直し: ${again.trim()}${goal.trim() ? `\n\n${goal.trim()}` : ''}`)
       : goal;
-    const check = canStartAuto({ title, goal: nextGoal, attached, useOwn, useScrape, ownedPaths, collectQuery });
+    const reviseFromProject = Boolean(again.trim() && projectSourcePath && !useOwn && !useScrape);
+    const readyUseOwn = useOwn || reviseFromProject;
+    const readyOwned = reviseFromProject ? [projectSourcePath] : ownedPaths;
+    const check = canStartAuto({
+      title: title || projectTitle,
+      goal: nextGoal,
+      attached,
+      useOwn: readyUseOwn,
+      useScrape,
+      ownedPaths: readyOwned,
+      collectQuery,
+    });
     if (!check.ok) {
       if (check.reason === 'materials') setOptionPane('pictures');
       setStayOnCompose(true);
@@ -387,24 +404,24 @@ export function AutoDesk({
         : check.reason === 'materials'
           ? !useOwn && !useScrape
             ? t('내 파일을 넣거나, 받을 공개 파일 주소를 적으세요. 검색어는 안 됩니다.', 'Add your files, or write the public file URLs to fetch. Not a search phrase.', '放入自己的文件，或写下要收的公开文件地址。不要写搜索词。', '自分のファイルを入れるか、受け取る公開ファイルの住所を書く。検索語はだめです。')
-            : useOwn && !ownedPaths.length
+            : readyUseOwn && !readyOwned.length
               ? t('영상이나 사진을 넣으세요.', 'Put in a video or an image.', '请放入视频或图片。', '映像か写真を入れてください。')
               : t('한 줄에 공개 파일 주소 하나만 적으세요. http로 시작하는 직접 주소여야 합니다.', 'Write one public file URL per line. It must be a direct http address.', '每行只写一个公开文件地址。必须是以 http 开头的直接地址。', '一行に公開ファイルの住所一つ。http で始まる直接の住所にしてください。')
         : t('먼저 연결하세요.', 'Connect first.', '请先连接。', '先に接続してください。'));
       return;
     }
-    const heading = titleFromPrompt(title, nextGoal);
+    const heading = titleFromPrompt(title || projectTitle, nextGoal);
     setSaving(true);
     setError('');
     setSendFailed(false);
     setClipboardBlocked(false);
     try {
-      let readyOwned = ownedPaths;
-      if (useOwn && ownedPaths.some((path) => !isAbsoluteOwnedPath(path))) {
+      let resolvedOwned = readyOwned;
+      if (readyUseOwn && readyOwned.some((path) => !isAbsoluteOwnedPath(path))) {
         try {
           const health = await request('/health');
           const workspace = typeof health.workspace === 'string' ? health.workspace : '';
-          readyOwned = resolveOwnedPaths(ownedPaths, workspace);
+          resolvedOwned = resolveOwnedPaths(readyOwned, workspace);
         } catch {
           /* sidecar also resolves inputs/<name> against the workspace */
         }
@@ -416,9 +433,9 @@ export function AutoDesk({
           goal: nextGoal,
           recipeId,
           language,
-          useOwn,
+          useOwn: readyUseOwn,
           useScrape,
-          ownedPaths: readyOwned,
+          ownedPaths: resolvedOwned,
           collectQuery,
           wantCaptions,
           wantDubbing: false,
@@ -448,7 +465,6 @@ export function AutoDesk({
       setOptionPane('');
       if (again.trim()) {
         setGoal(nextGoal);
-        setRevisePrompt('');
       }
       setPrefs(writeAutoPrefs({
         recipeId,
@@ -493,6 +509,32 @@ export function AutoDesk({
     }
   };
 
+  useEffect(() => {
+    const note = pendingReviseNote.trim();
+    if (!note) return;
+    onPendingReviseConsumed?.();
+    void startJob(note);
+  }, [pendingReviseNote]);
+
+  const writeAnother = () => {
+    const reset = writeAnotherComposeReset();
+    setStayOnCompose(reset.stayOnCompose);
+    setOwnedPaths(reset.ownedPaths);
+    setUseOwn(reset.useOwn);
+    setUseScrape(reset.useScrape);
+    setCollectQuery(reset.collectQuery);
+    setTitle(reset.title);
+    setGoal(reset.goal);
+    setError('');
+    setWatchSpecId('');
+    setAskPublish(false);
+    setFilePreviews((current) => {
+      for (const url of Object.values(current)) URL.revokeObjectURL(url);
+      return {};
+    });
+    onWriteAnother?.();
+  };
+
   const recopyInvite = async () => {
     const text = inviteText.trim();
     if (!text) {
@@ -510,6 +552,15 @@ export function AutoDesk({
     }
   };
 
+  const rememberPreview = (file: File, path: string) => {
+    if (!file.type.startsWith('image/')) return;
+    const url = URL.createObjectURL(file);
+    setFilePreviews((current) => {
+      if (current[path]) URL.revokeObjectURL(current[path]);
+      return { ...current, [path]: url };
+    });
+  };
+
   const addOwnedFiles = (files: FileList | File[] | null | undefined) => {
     if (!files || !files.length) return;
     const next: string[] = [];
@@ -520,6 +571,7 @@ export function AutoDesk({
         return;
       }
       next.push(path);
+      rememberPreview(file, path);
     }
     setOwnedPaths((current) => {
       const seen = new Set(current);
@@ -536,9 +588,26 @@ export function AutoDesk({
     if (error) setError('');
   };
 
+  const removeOwnedFile = (path: string) => {
+    setOwnedPaths((current) => current.filter((item) => item !== path));
+    setFilePreviews((current) => {
+      const url = current[path];
+      if (url) URL.revokeObjectURL(url);
+      const next = { ...current };
+      delete next[path];
+      return next;
+    });
+  };
+
   const takeMaterialFiles = (event: DragEvent<HTMLButtonElement>) => {
     event.preventDefault();
     setOwnOver(false);
+    addOwnedFiles(event.dataTransfer.files);
+  };
+
+  const takeComposerFiles = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setComposerOver(false);
     addOwnedFiles(event.dataTransfer.files);
   };
 
@@ -734,17 +803,69 @@ export function AutoDesk({
             >
               <label className="desktop-spec-field desktop-spec-wide desktop-auto-prompt">
                 <span>{t('어떤 영상을 만들까요?', 'What video should we make?', '要做什么样的视频？', 'どんな映像を作りますか？')}</span>
-                <textarea
-                  value={goal}
-                  onChange={(event) => {
-                    setGoal(event.target.value);
-                    if (error) setError('');
+                <div
+                  className={`desktop-auto-composer-drop${composerOver ? ' is-over' : ''}${ownedPaths.length ? ' has-files' : ''}`}
+                  onDragEnter={(event) => { event.preventDefault(); setComposerOver(true); }}
+                  onDragOver={(event) => { event.preventDefault(); setComposerOver(true); }}
+                  onDragLeave={(event) => {
+                    if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+                    setComposerOver(false);
                   }}
-                  placeholder={t('예: 카페 오픈 15초, 손과 간판이 먼저. 주소여도 됩니다.', 'Example: a 15s cafe open, hands and the sign first. A URL is fine.', '例如：咖啡馆开业 15 秒，手先出、再出招牌。网址也可以。', '例: カフェ開店15秒、手と看板が先。URL でもよい。')}
-                  rows={10}
-                  aria-invalid={Boolean(error) && !titleFromPrompt(title, goal)}
-                  disabled={saving}
-                />
+                  onDrop={takeComposerFiles}
+                >
+                  {ownedPaths.length ? (
+                    <ul className="desktop-auto-composer-files" aria-label={t('넣은 파일', 'Attached files', '已放入的文件', '入れたファイル')}>
+                      {ownedPaths.map((path) => {
+                        const kind = ownedMediaKind(path);
+                        const preview = filePreviews[path] || (kind === 'image' ? localFilePreviewUrl(path) : '');
+                        const ext = ownedFileExtension(path);
+                        return (
+                          <li key={path} className={`desktop-auto-composer-file is-${kind}`}>
+                            {kind === 'image' && preview ? (
+                              // Local file thumbs come from this PC path or a blob URL.
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={preview} alt={ownedFileName(path)} />
+                            ) : (
+                              <span className="desktop-auto-composer-file-name">{shortOwnedFileName(path)}</span>
+                            )}
+                            {kind !== 'image' && ext ? <em>{ext}</em> : null}
+                            <button
+                              type="button"
+                              className="desktop-auto-composer-file-remove"
+                              aria-label={t('빼기', 'Remove', '去掉', '外す')}
+                              onClick={() => removeOwnedFile(path)}
+                            >
+                              ×
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                  <textarea
+                    value={goal}
+                    onChange={(event) => {
+                      setGoal(event.target.value);
+                      if (error) setError('');
+                    }}
+                    placeholder={composerOver
+                      ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
+                      : t('예: 카페 오픈 15초, 손과 간판이 먼저. 이미지·영상을 여기에 놓아도 됩니다.', 'Example: a 15s cafe open, hands and the sign first. You can drop images or video here.', '例如：咖啡馆开业 15 秒，手先出、再出招牌。也可以把图片或视频放在这里。', '例: カフェ開店15秒、手と看板が先。画像や映像をここに置いてもよい。')}
+                    rows={10}
+                    aria-invalid={Boolean(error) && !titleFromPrompt(title, goal)}
+                    disabled={saving}
+                  />
+                  <div className="desktop-auto-composer-attach">
+                    <button
+                      type="button"
+                      className="desktop-auto-composer-add"
+                      aria-label={t('파일 넣기', 'Add a file', '放入文件', 'ファイルを入れる')}
+                      onClick={() => void pickMaterialFiles()}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               </label>
               <div className="desktop-auto-composer-tools">
                 <button
@@ -956,7 +1077,7 @@ export function AutoDesk({
                               <button
                                 type="button"
                                 className="desktop-auto-chip"
-                                onClick={() => setOwnedPaths((current) => current.filter((item) => item !== path))}
+                                onClick={() => removeOwnedFile(path)}
                               >
                                 {t('빼기', 'Remove', '去掉', '外す')}
                               </button>
@@ -1159,7 +1280,7 @@ export function AutoDesk({
                 </fieldset>
               ) : null}
 
-              {attached && titleFromPrompt(title, goal) ? (
+              {attached && (titleFromPrompt(title, goal) || ownedPaths.length > 0) ? (
                 <p className="desktop-auto-recap">
                   {`${attachedName} · ${marketName} · ${styleLabel} · ${wayLabel} · ${t('TTS생성', 'TTS', 'TTS生成', 'TTS生成')} ${soundLabel}`}
                 </p>
@@ -1167,12 +1288,12 @@ export function AutoDesk({
               {!attached ? (
                 <p className="desktop-auto-gate">{t('봇을 먼저 연결해야 만들 수 있습니다. 연결 열기를 누르세요.', 'Connect a bot first, then you can make it. Open Connect.', '请先连接机器人，才能开始做。请打开连接。', '先にボットを接続すると作れます。接続を開いてください。')}</p>
               ) : null}
-              <button type="submit" className="desktop-primary desktop-auto-make" disabled={locked || !startReady}>
+              <button type="submit" className="desktop-primary desktop-auto-make" disabled={formLocked}>
                 {saving
                   ? t('보내는 중…', 'Sending…', '发送中…', '送信中…')
                   : copied
                     ? t('복사했습니다', 'Copied', '已复制', 'コピーしました')
-                    : t('이걸로 만들기', 'Make this', '用这个做', 'これで作る')}
+                    : t('제작 시작', 'Start production', '开始制作', '制作開始')}
               </button>
             </form>
         </>
@@ -1279,8 +1400,8 @@ export function AutoDesk({
           {waitingHandOff && !hasProject && pullStatus !== 'arrived' ? (
             <p className="desktop-spec-meta">{t('컷이 오면 이 탭 가운데에 남습니다. 퍼센트는 없습니다.', 'The cut will land in the middle of this tab. There is no percent.', '成片会留在这个标签中间。没有百分比。', 'カットが来たらこのタブの真ん中に残ります。パーセントはありません。')}</p>
           ) : null}
-          <button type="button" className="desktop-auto-text" onClick={() => setStayOnCompose(true)}>
-            {t('다시 적기', 'Write it again', '再写一次', 'もう一度書く')}
+          <button type="button" className="desktop-auto-text" onClick={writeAnother}>
+            {t('새로 만들기', 'Create new', '新建', '新規作成')}
           </button>
         </section>
       ) : null}
@@ -1300,12 +1421,9 @@ export function AutoDesk({
             <button
               type="button"
               className="desktop-auto-text"
-              onClick={() => {
-                setStayOnCompose(true);
-                setAskPublish(false);
-              }}
+              onClick={writeAnother}
             >
-              {t('다른 영상 적기', 'Write another video', '写另一个视频', '別の映像を書く')}
+              {t('새로 만들기', 'Create new', '新建', '新規作成')}
             </button>
           </header>
           {previewUrl ? (
@@ -1358,7 +1476,6 @@ export function AutoDesk({
                     setTitle('');
                     setAskPublish(false);
                     setGoal('');
-                    setRevisePrompt('');
                     setStayOnCompose(true);
                   }}
                 >
@@ -1367,30 +1484,6 @@ export function AutoDesk({
               </div>
             </section>
           ) : null}
-          <section className="desktop-auto-card desktop-revise-card">
-            <b>{t('마음에 안 들면 다시 말하기', 'If you do not like it, say it again', '不满意就再说一遍', '気に入らなければもう一度言う')}</b>
-            <p>{t('고칠 점만 적으면 새 초대문을 복사합니다. 붙인 봇 창에 그 글을 다시 넣으세요. 이 창이 봇 채팅을 대신 쓰지는 않습니다.', 'Write only what to fix. This copies a new invite. Paste that text in the attached bot window again. This window does not type in the bot chat.', '只写下要改的。会复制新的邀请。请再贴到已接上的机器人窗口。这个窗口不会替你打机器人聊天。', '直したい点だけ書くと、新しい招待文をコピーします。付けたボット窓にその文を再貼りしてください。この窓がボットのチャットを代わりに打ちません。')}</p>
-            <label className="desktop-spec-field desktop-spec-wide">
-              <span>{t('고칠 점', 'What to change', '要改的', '直したい点')}</span>
-              <textarea
-                value={revisePrompt}
-                onChange={(event) => setRevisePrompt(event.target.value)}
-                placeholder={t('예: 간판 클로즈업을 두 번, 손 장면은 빼 주세요.', 'Example: two sign close-ups, drop the hands.', '例如：招牌特写两次，不要手的镜头。', '例: 看板クローズアップを二回、手の場面は外す。')}
-                rows={3}
-                disabled={saving}
-              />
-            </label>
-            <button
-              type="button"
-              className="desktop-primary"
-              disabled={locked || !revisePrompt.trim() || !attached}
-              onClick={() => void startJob(revisePrompt)}
-            >
-              {saving
-                ? t('보내는 중…', 'Sending…', '发送中…', '送信中…')
-                : t('이 말로 다시 만들기', 'Make it again with this', '用这句话再做', 'この言葉でもう一度作る')}
-            </button>
-          </section>
         </section>
       ) : null}
 
@@ -1419,7 +1512,7 @@ export function AutoDesk({
 
       {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
       {sendFailed || pullStatus === 'failed' || saveFailed ? (
-        <button type="button" className="desktop-secondary" disabled={locked || !startReady} onClick={() => void startJob()}>
+        <button type="button" className="desktop-secondary" disabled={formLocked} onClick={() => void startJob()}>
           {t('같은 말로 다시', 'Send the same line again', '再用同一句话', '同じ言葉でもう一度')}
         </button>
       ) : null}

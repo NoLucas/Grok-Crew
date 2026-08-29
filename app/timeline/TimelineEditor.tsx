@@ -895,7 +895,6 @@ export function TimelineEditor({
         <div>
           <b>{t('타임라인 편집', 'Timeline editing', '时间线编辑', 'タイムライン編集')}</b>
           <span>{formatTimecode(timelineDuration(timeline))}</span>
-          <span className="desktop-timeline-revision">v{timeline.revision}</span>
           <button
             type="button"
             disabled={trackBusy || !history.can_undo}

@@ -33,6 +33,7 @@ import {
 } from './desktop-bot-links';
 import { seatName, seatShortLabel, type BotRole } from './bot-skills';
 import { AutoDesk } from './desktop-auto-desk';
+import { DesktopReviseCard } from './desktop-revise-card';
 import {
   autoHeaderDot,
   importedEditSpecId,
@@ -369,6 +370,7 @@ export default function DesktopWorkspace() {
   const [setupPane, setSetupPane] = useState<'' | 'shape' | 'length' | 'sound' | 'pace'>('');
   const [exportPane, setExportPane] = useState<'' | 'post' | 'exchange' | 'receipts'>('');
   const [deskWait, setDeskWait] = useState<DeskWaitState | null>(null);
+  const [pendingReviseNote, setPendingReviseNote] = useState('');
   const [firstCut, setFirstCut] = useState(false);
   const [deskPulse, setDeskPulse] = useState<{ lastCheckedAt: string; pull: DeskPullStatus }>({ lastCheckedAt: '', pull: 'idle' });
   const deskWaitRef = useRef<DeskWaitState | null>(null);
@@ -1621,8 +1623,7 @@ export default function DesktopWorkspace() {
           ) : null}
           {studioState === 'error' ? <div className="desktop-banner error" role="alert"><div><b>{t('Local Studio에 연결하지 못했습니다', 'Could not reach Local Studio', '无法连接 Local Studio', 'Local Studio に接続できません')}</b><p>{t('사이드카가 꺼져 있으면 프로젝트와 렌더를 읽을 수 없습니다.', 'The sidecar is offline, so projects and renders cannot load.', '侧车离线时无法读取项目和渲染。', 'サイドカーが停止しているとプロジェクトとレンダーを読めません。')}</p></div><button type="button" className="desktop-secondary" onClick={() => void refreshWorkspace()}>{t('다시 연결', 'Reconnect', '重新连接', '再接続')}</button></div> : null}
           {studioState === 'loading' && !project ? <div className="desktop-empty" aria-busy="true"><span className="desktop-spinner" /><h1>{t('작업 공간을 불러오는 중', 'Loading the workspace', '正在加载工作区', 'ワークスペースを読み込み中')}</h1><p>{t('Local Studio의 프로젝트와 게시 영수증을 확인합니다.', 'Checking Local Studio projects and publish receipts.', '正在检查本地工作室项目和发布回执。', 'Local Studio のプロジェクトと公開レシートを確認しています。')}</p></div>
-          : showBotRoom || showAutoDesk || advancedSpecOpen || !project ? (
-            advancedSpecOpen ? (
+          : advancedSpecOpen ? (
               <div className="desktop-simple-wrap">
                 <button type="button" className="desktop-secondary" onClick={() => { setAdvancedSpecOpen(false); setActivePanel('auto'); setPeekAuto(true); }}>{t('시작으로', 'Back to Start', '回到开始', '開始へ')}</button>
                 <details className="desktop-auto-help">
@@ -1658,9 +1659,8 @@ export default function DesktopWorkspace() {
                   }}
                 />
               </div>
-            ) : (
+          ) : showBotRoom ? (
               <div className="desktop-simple-wrap">
-              {showBotRoom ? (
                 <DesktopBotPanel
                   roster={workspace.crew_roster}
                   links={botLinks}
@@ -1697,13 +1697,14 @@ export default function DesktopWorkspace() {
                   }}
                   onRefresh={() => refreshWorkspace(true)}
                 />
-              ) : null}
-              {!showBotRoom ? (
-                <>
+              </div>
+          ) : (
+              <>
+              <div className="desktop-simple-wrap" hidden={!showAutoDesk} aria-hidden={!showAutoDesk}>
               <AutoDesk
                 recipes={workspace.style_recipes ?? []}
                 roster={workspace.crew_roster}
-                remoteNames={connectedRemoteNames(botLinks, workspace.crew_roster)}
+                remoteNames={connectedRemoteNames(botLinks, workspace.crew_roster, language)}
                 links={botLinks}
                 connectWaiting={botLinks.bots.some((item) => item.status === 'waiting')}
                 busy={busy}
@@ -1737,16 +1738,26 @@ export default function DesktopWorkspace() {
                 onOpenExport={() => { setBotPanelOpen(false); setPeekAuto(false); setSpecDeskOpen(false); setActivePanel('export'); }}
                 onSaveLocal={() => runLocalRender()}
                 onRefresh={() => refreshWorkspace(true)}
+                onWriteAnother={() => {
+                  clearDeskWait();
+                  deskWaitRef.current = null;
+                  setDeskWait(null);
+                  setDeskPulse({ lastCheckedAt: '', pull: 'idle' });
+                  setSelectedProjectId('');
+                  setActivePanel('auto');
+                  setPeekAuto(true);
+                  setSpecDeskOpen(true);
+                }}
+                pendingReviseNote={pendingReviseNote}
+                onPendingReviseConsumed={() => setPendingReviseNote('')}
+                projectSourcePath={project?.source_path ?? ''}
                 request={api}
               />
-                </>
-              ) : null}
               </div>
-            )
-          )
-          : !timeline ? <div className="desktop-empty" aria-busy="true"><span className="desktop-spinner" /><h1>{t('타임라인을 불러오는 중', 'Loading the timeline', '正在加载时间线', 'タイムラインを読み込み中')}</h1><p>{t('프로젝트가 열려 있습니다. 규격 화면으로 돌아가지 않습니다.', 'A project is open. The spec screen stays hidden.', '项目已打开。不会回到规格页。', 'プロジェクトは開いています。仕様画面には戻りません。')}</p><button type="button" className="desktop-secondary" onClick={() => void refreshProject(project.id)}>{t('다시 읽기', 'Reload', '重新读取', '再読み込み')}</button></div>
-          : <>
-            <div className="desktop-project-bar"><div><small>{t('현재 프로젝트', 'CURRENT PROJECT', '当前项目', '現在のプロジェクト')}</small><h1>{project.title}</h1></div><div className="desktop-project-chips">{project.handoff_agent ? <span className={project.handoff_door === 'editor' || project.handoff_door === 'grok' ? 'is-editor' : 'is-collector'}>{project.handoff_door === 'editor' || project.handoff_door === 'grok' ? t('편집 문', 'Editor door', '剪辑门', '編集ドア') : t('수집 문', 'Collector door', '收集门', '収集ドア')} · {handoffSenderLabel(project, t)}</span> : null}<span>v{timeline.revision}</span><span>{timeline.settings.width}×{timeline.settings.height}</span><span>{timeline.settings.fps}fps</span></div></div>
+              {project && !showAutoDesk ? (
+                !timeline ? <div className="desktop-empty" aria-busy="true"><span className="desktop-spinner" /><h1>{t('타임라인을 불러오는 중', 'Loading the timeline', '正在加载时间线', 'タイムラインを読み込み中')}</h1><p>{t('프로젝트가 열려 있습니다. 규격 화면으로 돌아가지 않습니다.', 'A project is open. The spec screen stays hidden.', '项目已打开。不会回到规格页。', 'プロジェクトは開いています。仕様画面には戻りません。')}</p><button type="button" className="desktop-secondary" onClick={() => void refreshProject(project.id)}>{t('다시 읽기', 'Reload', '重新读取', '再読み込み')}</button></div>
+                : <>
+            <div className="desktop-project-bar"><div><small>{t('현재 프로젝트', 'CURRENT PROJECT', '当前项目', '現在のプロジェクト')}</small><h1>{project.title}</h1></div><div className="desktop-project-chips">{project.handoff_agent ? <span className={project.handoff_door === 'editor' || project.handoff_door === 'grok' ? 'is-editor' : 'is-collector'}>{project.handoff_door === 'editor' || project.handoff_door === 'grok' ? t('편집 문', 'Editor door', '剪辑门', '編集ドア') : t('수집 문', 'Collector door', '收集门', '収集ドア')} · {handoffSenderLabel(project, t)}</span> : null}<span>{timeline.settings.width}×{timeline.settings.height}</span><span>{timeline.settings.fps}fps</span></div></div>
             {activePanel === 'setup' && <div className="desktop-setup-grid is-composer">
               <header className="desktop-auto-lead">
                 <h1>{t('이 컷을 어떻게 자를까요', 'How should this cut be made', '这场剪辑怎么切', 'このカットをどう切るか')}</h1>
@@ -1808,6 +1819,15 @@ export default function DesktopWorkspace() {
               ) : null}
               <p className="desktop-auto-recap">{`${setupShapeLabel} · ${setupLengthLabel} · ${setupSoundLabel} · ${setupPaceLabel}`}</p>
               <button className="desktop-primary desktop-auto-make" disabled={busy} onClick={() => void saveSettings()}>{t('설정만 저장', 'Save controls', '保存设置', '設定を保存')}</button>
+              <DesktopReviseCard
+                attached={hasConnectedBot(workspace.crew_roster, botLinks)}
+                disabled={busy || studioState !== 'ready'}
+                onSubmit={(note) => {
+                  setPendingReviseNote(note);
+                  setActivePanel('auto');
+                  setPeekAuto(true);
+                }}
+              />
               {specLocked && !folds.lockHidden ? (
                 <details
                   className="desktop-lock-note"
@@ -2076,7 +2096,9 @@ export default function DesktopWorkspace() {
                 ) : null}
               </section>
             </div>}
-          </>}
+          </> ) : null}
+          </>
+          )}
         </section>
         {hideInspectorColumn ? null : (
           <div

@@ -36,26 +36,26 @@ try {
   await create.locator('select').selectOption({ label: 'e2e-source.mp4' });
   await create.locator('.desktop-primary').click();
   await page.locator('.desktop-project-bar h1').filter({ hasText: 'Desktop E2E' }).waitFor();
-  await page.locator('.desktop-timeline-revision').filter({ hasText: 'v1' }).waitFor();
+  await page.locator('.desktop-project-chips').filter({ hasText: 'fps' }).waitFor();
 
   // Direct edit, marker, undo, and redo without opening a terminal.
   await page.locator('.desktop-titlebar nav button').nth(1).click();
   const clip = page.locator('.desktop-clip-body').first();
   await clip.click();
   await clip.press('s');
-  await page.locator('.desktop-timeline-revision').filter({ hasText: 'v2' }).waitFor();
+  await page.locator('.desktop-timeline-clip').nth(1).waitFor();
   assert.equal(await page.locator('.desktop-timeline-clip').count(), 2);
 
   const markerButton = page.locator('.desktop-timeline-tools button').filter({ hasText: /Marker|마커|标记|マーカー/ }).first();
   await markerButton.click();
-  await page.locator('.desktop-timeline-revision').filter({ hasText: 'v3' }).waitFor();
+  await page.locator('.desktop-marker-flag').waitFor();
   assert.equal(await page.locator('.desktop-marker-flag').count(), 1);
 
   await page.locator('.desktop-timeline-tools button').filter({ hasText: /Undo|취소|撤销|取消/ }).first().click();
-  await page.locator('.desktop-timeline-revision').filter({ hasText: 'v4' }).waitFor();
+  await page.locator('.desktop-marker-flag').waitFor({ state: 'detached' });
   assert.equal(await page.locator('.desktop-marker-flag').count(), 0);
   await page.locator('.desktop-timeline-tools button').filter({ hasText: /Redo|다시|重做|やり直し/ }).first().click();
-  await page.locator('.desktop-timeline-revision').filter({ hasText: 'v5' }).waitFor();
+  await page.locator('.desktop-marker-flag').waitFor();
   assert.equal(await page.locator('.desktop-marker-flag').count(), 1);
 
   // Generate a proxy and prove the monitor switches to it.

@@ -43,6 +43,11 @@ const {
   titleFromPrompt,
   waitElapsedSeconds,
   writeAutoPrefs,
+  ownedFileExtension,
+  ownedMediaKind,
+  shortOwnedFileName,
+  localFilePreviewUrl,
+  writeAnotherComposeReset,
 } = await import('./desktop-auto-state.ts');
 
 const memory = new Map();
@@ -516,20 +521,46 @@ describe('auto desk prefs and names', () => {
     assert.equal(attachedBotName({ bots: [{ display_name: 'Grok', presence: 'active' }] }), '');
     assert.equal(attachedBotName({
       bots: [{ bot_id: 'grok-planner', display_name: 'Grok', presence: 'active' }],
-    }), 'Grok Bot 기획자');
+    }), 'Grok Bot 1 -기획자');
     assert.equal(attachedBotName({
       bots: [{ display_name: 'Grok Bot 기획자', presence: 'active' }],
-    }), 'Grok Bot 기획자');
+    }), 'Grok Bot 1 -기획자');
     assert.equal(attachedBotName({
       bots: [
         { bot_id: 'grok-planner', display_name: 'Grok', presence: 'active' },
         { bot_id: 'grok-scraper', display_name: 'Grok', presence: 'active' },
       ],
-    }), 'Grok Bot 기획자 · Grok Bot 스크래핑');
+    }), 'Grok Bot 1 -기획자 · Grok Bot 2 -스크래핑');
+    assert.equal(attachedBotName({
+      bots: [{ bot_id: 'grok-editor', display_name: 'Grok Bot ???', presence: 'active' }],
+    }), 'Grok Bot 1 -편집자');
     assert.equal(attachedBotName(undefined, ['Claude']), '');
     assert.equal(attachedBotName(undefined, ['Grok Bot 기획자']), 'Grok Bot 기획자');
     assert.equal(attachedBotName(undefined, []), '');
     assert.doesNotMatch(attachedBotName({ bots: [{ display_name: 'Grok ???', presence: 'active' }] }), /\?\?\?/);
+  });
+
+  it('shows image thumbs and a short mp4 name, and resets compose after 새로 만들기', () => {
+    assert.equal(ownedMediaKind('C:/Users/a/Pictures/sign.png'), 'image');
+    assert.equal(ownedMediaKind('C:/Users/a/Videos/talk.mp4'), 'video');
+    assert.equal(ownedFileExtension('talk.mp4'), 'MP4');
+    assert.equal(shortOwnedFileName('grok3e7089c-very-long-name-6db00e5e.mp4'), 'grok3e7089c....mp4');
+    assert.equal(localFilePreviewUrl('C:\\Users\\a\\Pictures\\sign.png'), 'file:///C:/Users/a/Pictures/sign.png');
+    assert.deepEqual(writeAnotherComposeReset(), {
+      stayOnCompose: true,
+      ownedPaths: [],
+      useOwn: false,
+      useScrape: false,
+      collectQuery: '',
+      title: '',
+      goal: '',
+    });
+    assert.equal(autoDeskStage({
+      wait: { specId: 'spec-1', title: '카페', copiedAt: '2026-08-27T03:00:00.000Z', pasteTarget: 'Grok' },
+      pull: 'arrived',
+      hasProject: true,
+      stayOnCompose: writeAnotherComposeReset().stayOnCompose,
+    }), 'compose');
   });
 });
 

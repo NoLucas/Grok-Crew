@@ -103,7 +103,7 @@ export function DesktopBotPanel({
   const market = resolveCrewMarket(prefs.market, language);
   const destName = marketLabel(market, language);
   const recipeId = lastBundle?.recipeId || prefs.recipeId || 'instagram_reel';
-  const connectedNames = connectedRemoteNames(links, roster);
+  const connectedNames = connectedRemoteNames(links, roster, language);
 
   const connectText = useMemo(
     () => remoteConnectPaste(openSeat.kind, links.pairCode, language, openSeat.role, studioPort, market),

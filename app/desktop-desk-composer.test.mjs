@@ -34,6 +34,12 @@ describe('desk composer restage', () => {
     assert.equal(auto.includes('이름 붙이기'), false);
     assert.equal(auto.includes('비우면 위의 첫 줄'), false);
     assert.match(auto, /어떤 영상을 만들까요\?/);
+    assert.match(auto, /desktop-auto-composer-drop/);
+    assert.match(auto, /제작 시작/);
+    assert.match(auto, /새로 만들기/);
+    assert.equal(auto.includes('이걸로 만들기'), false);
+    assert.equal(auto.includes('다른 영상 적기'), false);
+    assert.equal(auto.includes('마음에 안 들면 다시 말하기'), false);
     assert.match(auto, /내파일\/주소/);
     assert.match(auto, /원하는 파일이나 주소를 넣어주세요/);
     assert.match(auto, /TTS생성/);
@@ -72,6 +78,9 @@ describe('desk composer restage', () => {
     const text = src('desktop-workspace.tsx');
     assert.match(text, /desktop-setup-grid is-composer/);
     assert.match(text, /desktop-export-grid is-composer/);
+    assert.match(text, /DesktopReviseCard/);
+    assert.equal(text.includes('v{timeline.revision}'), false);
+    assert.match(src('desktop-revise-card.tsx'), /마음에 안 들면 다시 말하기/);
     assert.match(text, /setupPane === 'shape'/);
     assert.match(text, /exportPane === 'post'/);
     assert.match(text, /지금 만들기/);

@@ -454,13 +454,81 @@ export function shouldKeepConnectOpenAfterReady(input: {
   return input.wasForcedConnect && !input.nextForcedConnect && !input.peekAuto;
 }
 
-export function connectedRemoteNames(links?: BotLinkState | null, roster?: CrewRoster | null): string[] {
-  const names = links?.bots.filter((item) => item.status === 'connected').map((item) => item.name) ?? [];
-  for (const role of ['planner', 'scraper', 'editor'] as const) {
-    const name = String(heldRosterSeat(roster, role)?.display_name || '').trim();
-    if (name && !names.includes(name)) names.push(name);
+const SEAT_ARRIVAL_RANK: Record<BotRole, number> = {
+  planner: 0,
+  scraper: 1,
+  editor: 2,
+};
+
+export type NumberedSeat = {
+  kind: 'grok' | 'custom';
+  role: BotRole;
+  connectedAt: number;
+};
+
+function seatArrivalTime(
+  kind: 'grok' | 'custom',
+  role: BotRole,
+  links?: BotLinkState | null,
+  roster?: CrewRoster | null,
+): number {
+  const linked = linkedBySeat(links?.bots, kind, role);
+  const linkedAt = Date.parse(String(linked?.connectedAt || linked?.confirmedAt || ''));
+  if (Number.isFinite(linkedAt) && linkedAt > 0) return linkedAt;
+  if (kind !== 'grok') return 0;
+  const bot = heldRosterSeat(roster, role);
+  const age = bot && typeof bot.seconds_since_checkin === 'number' && Number.isFinite(bot.seconds_since_checkin)
+    ? Date.now() - Math.max(0, bot.seconds_since_checkin) * 1000
+    : NaN;
+  return Number.isFinite(age) ? age : 0;
+}
+
+/** Connected seats in arrival order. Mystery display names are ignored. */
+export function connectedNumberedSeats(
+  links?: BotLinkState | null,
+  roster?: CrewRoster | null,
+): NumberedSeat[] {
+  const seats: NumberedSeat[] = [];
+  for (const kind of ['grok', 'custom'] as const) {
+    for (const role of BOT_ROLES) {
+      if (!seatIsConnected(kind, role, links, roster)) continue;
+      seats.push({
+        kind,
+        role,
+        connectedAt: seatArrivalTime(kind, role, links, roster),
+      });
+    }
   }
-  return names;
+  seats.sort((left, right) => {
+    if (left.connectedAt !== right.connectedAt) {
+      if (!left.connectedAt) return 1;
+      if (!right.connectedAt) return -1;
+      return left.connectedAt - right.connectedAt;
+    }
+    if (left.kind !== right.kind) return left.kind === 'grok' ? -1 : 1;
+    return SEAT_ARRIVAL_RANK[left.role] - SEAT_ARRIVAL_RANK[right.role];
+  });
+  return seats;
+}
+
+export function numberedSeatLabel(
+  kind: 'grok' | 'custom',
+  role: BotRole,
+  index: number,
+  language = 'ko',
+): string {
+  const family = kind === 'grok' ? 'Grok Bot' : 'Agent';
+  return `${family} ${index + 1} -${roleLabel(role, language)}`;
+}
+
+export function connectedRemoteNames(
+  links?: BotLinkState | null,
+  roster?: CrewRoster | null,
+  language = 'ko',
+): string[] {
+  return connectedNumberedSeats(links, roster).map((seat, index) => (
+    numberedSeatLabel(seat.kind, seat.role, index, language)
+  ));
 }
 
 export type SeatKey = `${'grok' | 'custom'}:${BotRole}`;
