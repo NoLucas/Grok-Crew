@@ -40,6 +40,8 @@ describe('desk composer restage', () => {
     assert.match(auto, /업로드 위치/);
     assert.match(auto, /desktop-auto-caption-check/);
     assert.match(auto, /tts생성/);
+    assert.match(auto, /미리듣기/);
+    assert.equal(auto.includes('미리듣기는 이 창에서 재생하지 않습니다'), false);
     assert.equal(auto.includes('목소리 만들기'), false);
     assert.equal(auto.includes('내 목소리'), false);
     assert.equal(auto.includes("t('화면',"), false);

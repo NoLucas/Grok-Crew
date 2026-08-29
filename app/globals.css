@@ -8021,6 +8021,8 @@ select {
 }
 .desktop-voice-saved p { margin: 0; font-size: 13px; }
 .desktop-voice-saved.is-saved p { color: var(--desktop-green); }
+.desktop-voice-saved .desktop-secondary,
+.desktop-voice-saved .desktop-primary { min-height: 34px; }
 .desktop-shell.is-voice-first {
   grid-template-rows: auto minmax(0, 1fr);
 }

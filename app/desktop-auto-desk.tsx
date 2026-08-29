@@ -60,6 +60,7 @@ import {
   type VoiceFeel,
   type VoiceGender,
 } from './desktop-voice-personas';
+import { playVoicePreview, stopVoicePreview, voicePreviewPhrase } from './desktop-voice-preview';
 import { useLanguage } from './language';
 import { formatCheckTime, type DeskPullStatus, type DeskWaitState } from './desktop-wait-state';
 
@@ -156,6 +157,7 @@ export function AutoDesk({
   const [voiceFeel, setVoiceFeel] = useState<VoiceFeel>(() => resolveVoiceFeel(prefs.voiceFeel));
   const [voiceAccent, setVoiceAccent] = useState<VoiceAccent>(() => resolveVoiceAccent(prefs.voiceAccent));
   const [voiceSaved, setVoiceSaved] = useState(Boolean(prefs.voiceSaved));
+  const [voicePreview, setVoicePreview] = useState<'idle' | 'playing' | 'blocked'>('idle');
   const [pickedMarket, setPickedMarket] = useState<CrewMarket | null>(() => (
     prefs.marketTouched ? resolveCrewMarket(prefs.market, language) : null
   ));
@@ -266,6 +268,17 @@ export function AutoDesk({
   const soundLabel = wantTts
     ? t(`만듦 · ${voicePersonaLabel(voicePersona, language)}`, `Made · ${voicePersonaLabel(voicePersona, language)}`, `做了 · ${voicePersonaLabel(voicePersona, language)}`, `作った · ${voicePersonaLabel(voicePersona, language)}`)
     : t('끔', 'Off', '关', 'オフ');
+  const hearVoice = (next?: { gender?: VoiceGender; feel?: VoiceFeel; accent?: VoiceAccent }) => {
+    const gender = next?.gender ?? voiceGender;
+    const feel = next?.feel ?? voiceFeel;
+    const accent = next?.accent ?? voiceAccent;
+    const result = playVoicePreview({ accent, gender, feel });
+    setVoicePreview(result);
+    if (result === 'playing') {
+      window.setTimeout(() => setVoicePreview((current) => (current === 'playing' ? 'idle' : current)), 5000);
+    }
+  };
+
   const toggleCaptions = () => {
     setWantCaptions((value) => {
       const next = !value;
@@ -283,6 +296,8 @@ export function AutoDesk({
     if (!stored) return;
     setInviteText((current) => (current.trim() ? current : stored));
   }, [wait?.inviteText]);
+
+  useEffect(() => () => stopVoicePreview(), []);
 
   useEffect(() => {
     if (!waitingHandOff) return;
@@ -1008,7 +1023,7 @@ export function AutoDesk({
                                 role="radio"
                                 aria-checked={voiceGender === item}
                                 className={voiceGender === item ? 'desktop-auto-chip is-selected' : 'desktop-auto-chip'}
-                                onClick={() => { setVoiceGender(item); setVoiceSaved(false); }}
+                                onClick={() => { setVoiceGender(item); setVoiceSaved(false); hearVoice({ gender: item }); }}
                               >
                                 {voiceGenderLabel(item, language)}
                               </button>
@@ -1025,7 +1040,7 @@ export function AutoDesk({
                                 role="radio"
                                 aria-checked={voiceFeel === item}
                                 className={voiceFeel === item ? 'desktop-auto-chip is-selected' : 'desktop-auto-chip'}
-                                onClick={() => { setVoiceFeel(item); setVoiceSaved(false); }}
+                                onClick={() => { setVoiceFeel(item); setVoiceSaved(false); hearVoice({ feel: item }); }}
                               >
                                 {voiceFeelLabel(item, language)}
                               </button>
@@ -1042,7 +1057,7 @@ export function AutoDesk({
                                 role="radio"
                                 aria-checked={voiceAccent === item}
                                 className={voiceAccent === item ? 'desktop-auto-chip is-selected' : 'desktop-auto-chip'}
-                                onClick={() => { setVoiceAccent(item); setVoiceSaved(false); }}
+                                onClick={() => { setVoiceAccent(item); setVoiceSaved(false); hearVoice({ accent: item }); }}
                               >
                                 {voiceAccentLabel(item, language)}
                               </button>
@@ -1058,6 +1073,15 @@ export function AutoDesk({
                               `今の声 · ${voicePersonaLabel(voicePersona, language)}`,
                             )}
                           </p>
+                          <button
+                            type="button"
+                            className="desktop-secondary"
+                            onClick={() => hearVoice()}
+                          >
+                            {voicePreview === 'playing'
+                              ? t('듣는 중…', 'Listening…', '试听中…', '再生中…')
+                              : t('미리듣기', 'Preview', '试听', '試し聞き')}
+                          </button>
                           <button
                             type="button"
                             className="desktop-primary"
@@ -1079,9 +1103,19 @@ export function AutoDesk({
                           </button>
                         </div>
                         <p className="desktop-spec-meta">
+                          {voicePreview === 'blocked'
+                            ? t('이 창에서 미리듣기를 재생하지 못했습니다. 말투를 다시 누르거나 미리듣기를 누르세요.', 'This window could not play the preview. Tap a language or Preview again.', '这个窗口没能播放试听。请再点语种或试听。', 'この窓では試し聞きできませんでした。話し方か試し聞きを押してください。')
+                            : t(
+                              `미리듣기는 「${voicePreviewPhrase(voiceAccent)}」입니다. 말투를 고르면 그 나라 말로 들립니다.`,
+                              `Preview says “${voicePreviewPhrase(voiceAccent)}”. Pick a language to hear it.`,
+                              `试听是「${voicePreviewPhrase(voiceAccent)}」。选语种就会用那种话来听。`,
+                              `試し聞きは「${voicePreviewPhrase(voiceAccent)}」です。話し方を選ぶとその国の言葉で聞こえます。`,
+                            )}
+                        </p>
+                        <p className="desktop-spec-meta">
                           {voiceSaved
                             ? t('이 컴퓨터에 기억했습니다. 다음에 열어도 이 목소리로 시작합니다.', 'Remembered on this computer. Next open starts with this voice.', '已记在这台电脑。下次打开还用这个声音。', 'このパソコンに覚えました。次に開いてもこの声で始まります。')
-                            : t('미리듣기는 이 창에서 재생하지 않습니다. 고른 값은 저장하면 남고, 만들기를 눌러도 남습니다.', 'This window does not play a preview. Save keeps the pick. Start keeps it too.', '这个窗口不播放试听。保存会留下选择。按开始也会留下。', 'この窓では試し聞きしません。保存すれば残る。作り始めても残る。')}
+                            : t('고른 값은 저장하면 남고, 만들기를 눌러도 남습니다.', 'Save keeps the pick. Start keeps it too.', '保存会留下选择。按开始也会留下。', '保存すれば残る。作り始めても残る。')}
                         </p>
                         <p className="desktop-spec-meta">
                           {t('모델 받기는 왼쪽 위 톱니에서 합니다. 자동은 켜고 끄기만 합니다.', 'Download the model from the top-left gear. Auto only turns TTS on or off.', '下载模型请用左上齿轮。自动只负责开关。', 'モデルの受け取りは左上の歯車。自動はオンオフだけです。')}
