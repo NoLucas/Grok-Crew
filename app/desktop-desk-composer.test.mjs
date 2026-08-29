@@ -29,6 +29,14 @@ describe('desk composer restage', () => {
     const chrome = src('desktop-workspace.tsx');
     assert.match(auto, /봇 없이 영상 열기/);
     assert.match(auto, /어떤 영상을 만들까요\?/);
+    assert.match(auto, /내파일\/주소/);
+    assert.match(auto, /원하는 파일이나 주소를 넣어주세요/);
+    assert.match(auto, /TTS생성/);
+    assert.match(auto, /업로드 위치/);
+    assert.equal(auto.includes("t('화면',"), false);
+    assert.equal(auto.includes("t('올릴 곳'"), false);
+    assert.equal(auto.includes("t('어디에 올릴까요'"), false);
+    assert.equal(auto.includes("t('보낼 나라'"), false);
     assert.match(auto, /DesktopCrewBoard/);
     assert.equal(auto.includes("mode === 'own_file' ?"), false);
     assert.equal(auto.includes('안 열리면'), false);

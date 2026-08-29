@@ -226,7 +226,7 @@ export function DesktopBotPanel({
         </div>
         {links.pairCode ? <p className="desktop-spec-meta">{t(`연결 코드 ${links.pairCode}`, `Code ${links.pairCode}`, `连接代码 ${links.pairCode}`, `接続コード ${links.pairCode}`)}</p> : null}
         <p className="desktop-spec-meta">
-          {t(`이 글은 ${destName}용입니다. 보낼 나라는 시작에서 바꿉니다. 바꿨으면 다시 복사하세요.`, `This text is for ${destName}. Change the destination country in Start. Copy again after a change.`, `这段文字是给 ${destName} 的。要发往的国家在开始里改。改了请再复制。`, `この文は ${destName} 用です。送る国は開始で変えます。変えたらコピーし直してください。`)}
+          {t(`이 글은 ${destName}용입니다. 업로드 위치는 시작에서 바꿉니다. 바꿨으면 다시 복사하세요.`, `This text is for ${destName}. Change the upload location in Start. Copy again after a change.`, `这段文字是给 ${destName} 的。上传位置在开始里改。改了请再复制。`, `この文は ${destName} 用です。アップロード位置は開始で変えます。変えたらコピーし直してください。`)}
         </p>
         {OTHER_FAMILIES.filter((family) => family.id === familyId).map((family) => (
           <div key={family.id} className="desktop-bot-family">

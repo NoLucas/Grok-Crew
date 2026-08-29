@@ -31,6 +31,7 @@ import {
   shouldPingCut,
   studioDownloadBase,
   suggestRecipeId,
+  recipeFallbackLabel,
   waitElapsedSeconds,
   writeAutoPrefs,
   ownedFileName,
@@ -102,12 +103,6 @@ type AutoDeskProps = {
   onRefresh: () => Promise<void>;
   request: (path: string, init?: RequestInit) => Promise<JsonObject>;
 };
-
-function localized(map: { ko?: string; en?: string; zh?: string; ja?: string } | undefined, language: string, fallback: string) {
-  if (!map) return fallback;
-  const key = language.slice(0, 2) as 'ko' | 'en' | 'zh' | 'ja';
-  return map[key] || map.en || fallback;
-}
 
 export function AutoDesk({
   recipes = [],
@@ -226,9 +221,7 @@ export function AutoDesk({
     sending: saving,
     saving: savingFile,
   });
-  const styleLabel = selected
-    ? localized(selected.name, language, selected.id)
-    : t('인스타 릴', 'Instagram Reel', 'Instagram Reel', 'Instagram リール');
+  const styleLabel = recipeFallbackLabel(selected?.id || recipeId, language);
   const sourceMode = autoSourceMode({ useOwn, useScrape });
   const wayLabel = sourceMode === 'own_and_collect'
     ? t('내 영상 + 파일 주소', 'My clips + file URLs', '我的影像 + 文件地址', '自分の映像 + ファイル住所')
@@ -236,7 +229,7 @@ export function AutoDesk({
       ? t('공개 파일 주소', 'Public file URLs', '公开文件地址', '公開ファイルの住所')
       : sourceMode === 'own'
         ? t('내가 넣은 영상', 'Clips I put in', '我放进的影像', '自分が入れた映像')
-        : t('화면 아직 없음', 'No pictures yet', '还没有画面', '画面はまだない');
+        : t('원하는 파일이나 주소를 넣어주세요', 'Add the file or address you want', '请放入想要的文件或地址', '使いたいファイルか住所を入れてください');
   const startReady = canStartAuto({
     title,
     goal,
@@ -691,7 +684,7 @@ export function AutoDesk({
         <>
           <header className="desktop-auto-lead">
             <h1>{t('오늘 만들 영상을 적으세요', 'Write the video you want today', '写下今天要做的视频', '今日作る映像を書いてください')}</h1>
-            <p>{t('한 칸만 적으면 됩니다. 화면·올릴 곳·소리는 아래 칩입니다. 시작은 초대문을 복사하니, 지금 자리 창에 한 번 붙이세요.', 'Write in this one box. Pictures, where to post, and sound are chips below. Start copies the invite, so paste it once in the current seat window.', '只写这一栏。画面、发布处、声音是下面的芯片。一开始会复制邀请，请贴到现在的位子窗口一次。', 'ここ一欄だけ書いてください。画面・上げ先・音は下のチップです。始めると招待文をコピーするので、今の席の窓に一度貼ってください。')}</p>
+            <p>{t('한 칸만 적으면 됩니다. 내파일/주소·스타일·TTS생성은 아래 칩입니다. 시작은 초대문을 복사하니, 지금 자리 창에 한 번 붙이세요.', 'Write in this one box. My file/address, style, and TTS are chips below. Start copies the invite, so paste it once in the current seat window.', '只写这一栏。我的文件/地址、风格、TTS 是下面的芯片。一开始会复制邀请，请贴到现在的位子窗口一次。', 'ここ一欄だけ書いてください。自分のファイル/住所・スタイル・TTS生成は下のチップです。始めると招待文をコピーするので、今の席の窓に一度貼ってください。')}</p>
           </header>
 
           <form
@@ -778,8 +771,8 @@ export function AutoDesk({
               ) : null}
 
               <fieldset className="desktop-auto-market">
-                <legend>{t('보낼 나라', 'Destination country', '要发往的国家', '送る国')}</legend>
-                <div className="desktop-auto-chips" role="radiogroup" aria-label={t('보낼 나라', 'Destination country', '要发往的国家', '送る国')}>
+                <legend>{t('업로드 위치', 'Upload location', '上传位置', 'アップロード位置')}</legend>
+                <div className="desktop-auto-chips" role="radiogroup" aria-label={t('업로드 위치', 'Upload location', '上传位置', 'アップロード位置')}>
                   {CREW_MARKETS.map((id) => (
                     <button
                       key={id}
@@ -799,11 +792,11 @@ export function AutoDesk({
                 </div>
                 {marketNeedsRecopy ? (
                   <p className="desktop-spec-meta" role="status">
-                    {t('보낼 나라를 바꿨습니다. 연결 글을 다시 복사하세요.', 'You changed the destination country. Copy the connect text again.', '已改要发往的国家。请重新复制连接文字。', '送る国を変えました。接続文をコピーし直してください。')}
+                    {t('업로드 위치를 바꿨습니다. 연결 글을 다시 복사하세요.', 'You changed the upload location. Copy the connect text again.', '已改上传位置。请重新复制连接文字。', 'アップロード位置を変えました。接続文をコピーし直してください。')}
                   </p>
                 ) : (
                   <p className="desktop-spec-meta">
-                    {t(`${marketName}용 스킬만 붙습니다. 올릴 곳과는 다릅니다.`, `Skills cover ${marketName} only. This is not the post destination.`, `技能只讲 ${marketName}。这和发布处不同。`, `スキルは ${marketName} だけ。上げ先とは違います。`)}
+                    {t(`${marketName}용 스킬만 붙습니다. 스타일과는 다릅니다.`, `Skills cover ${marketName} only. This is not the style.`, `技能只讲 ${marketName}。这和风格不同。`, `スキルは ${marketName} だけ。スタイルとは違います。`)}
                   </p>
                 )}
               </fieldset>
@@ -816,7 +809,7 @@ export function AutoDesk({
                   className={`desktop-auto-option${optionPane === 'pictures' ? ' is-open' : ''}${useOwn || useScrape ? ' is-set' : ''}`}
                   onClick={() => togglePane('pictures')}
                 >
-                  <span>{t('화면', 'Pictures', '画面', '画面')}</span>
+                  <span>{t('내파일/주소', 'My file/address', '我的文件/地址', '自分のファイル/住所')}</span>
                   <b>{wayLabel}</b>
                 </button>
                 <button
@@ -826,7 +819,7 @@ export function AutoDesk({
                   className={`desktop-auto-option${optionPane === 'where' ? ' is-open' : ''} is-set`}
                   onClick={() => togglePane('where')}
                 >
-                  <span>{t('올릴 곳', 'Where to post', '发布处', '上げ先')}</span>
+                  <span>{t('스타일', 'Style', '风格', 'スタイル')}</span>
                   <b>{styleLabel}</b>
                 </button>
                 <button
@@ -836,7 +829,7 @@ export function AutoDesk({
                   className={`desktop-auto-option${optionPane === 'sound' ? ' is-open' : ''}${wantCaptions || wantDubbing || wantTts ? ' is-set' : ''}`}
                   onClick={() => togglePane('sound')}
                 >
-                  <span>{t('소리', 'Sound', '声音', '音')}</span>
+                  <span>{t('TTS생성', 'TTS', 'TTS生成', 'TTS生成')}</span>
                   <b>{soundLabel}</b>
                 </button>
               </div>
@@ -943,8 +936,8 @@ export function AutoDesk({
 
               {optionPane === 'where' ? (
                 <fieldset className="desktop-auto-option-pane desktop-auto-shapes">
-                  <legend>{t('어디에 올릴까요', 'Where will you post it?', '要发到哪里？', 'どこに上げますか')}</legend>
-                  <div className="desktop-auto-chips desktop-auto-shape-chips" role="radiogroup" aria-label={t('올릴 곳', 'Where to post', '发布处', '上げ先')}>
+                  <legend>{t('스타일', 'Style', '风格', 'スタイル')}</legend>
+                  <div className="desktop-auto-chips desktop-auto-shape-chips" role="radiogroup" aria-label={t('스타일', 'Style', '风格', 'スタイル')}>
                     {cards.length ? cards.map((recipe) => (
                       <button
                         key={recipe.id}
@@ -957,7 +950,7 @@ export function AutoDesk({
                           setPickedRecipeId(recipe.id);
                         }}
                       >
-                        {localized(recipe.name, language, recipe.id)}
+                        {recipeFallbackLabel(recipe.id, language)}
                       </button>
                     )) : (
                       <p className="desktop-spec-meta">{t('모양 목록을 아직 읽지 못했습니다.', 'Could not load the shapes yet.', '还没读到样子列表。', '形の一覧をまだ読めません。')}</p>
@@ -1099,7 +1092,7 @@ export function AutoDesk({
 
               {attached && titleFromPrompt(title, goal) ? (
                 <p className="desktop-auto-recap">
-                  {`${attachedName} · ${marketName} · ${styleLabel} · ${wayLabel} · ${t('소리', 'Sound', '声音', '音')} ${soundLabel}`}
+                  {`${attachedName} · ${marketName} · ${styleLabel} · ${wayLabel} · ${t('TTS생성', 'TTS', 'TTS生成', 'TTS生成')} ${soundLabel}`}
                 </p>
               ) : null}
               {!attached ? (

@@ -267,11 +267,14 @@ describe('auto desk style guess', () => {
     assert.equal(suggestRecipeId('유튜브 쇼츠'), 'youtube_short');
     assert.equal(suggestRecipeId('그냥 오늘 말', 'tiktok_tight'), 'tiktok_tight');
     assert.equal(suggestRecipeId(''), DEFAULT_RECIPE_ID);
-    assert.equal(recipeFallbackLabel('youtube_long', 'ko'), '유튜브 긴 영상');
-    assert.equal(recipeFallbackLabel('youtube_long', 'en'), 'YouTube long video');
+    assert.equal(recipeFallbackLabel('youtube_long', 'ko'), '유튜브 본편');
+    assert.equal(recipeFallbackLabel('youtube_long', 'en'), 'YouTube long');
     assert.equal(recipeFallbackLabel('youtube_long', 'zh'), 'YouTube 长视频');
-    assert.equal(recipeFallbackLabel('youtube_long', 'ja'), 'YouTube 長尺');
-    assert.equal(recipeFallbackLabel('instagram_reel', 'ja'), 'Instagram リール');
+    assert.equal(recipeFallbackLabel('youtube_long', 'ja'), 'YouTube 本編');
+    assert.equal(recipeFallbackLabel('instagram_reel', 'ko'), '릴스');
+    assert.equal(recipeFallbackLabel('instagram_reel', 'en'), 'Reels');
+    assert.equal(recipeFallbackLabel('instagram_reel', 'ja'), 'リール');
+    assert.equal(recipeFallbackLabel('tiktok_tight', 'ko'), '틱톡');
   });
 });
 
