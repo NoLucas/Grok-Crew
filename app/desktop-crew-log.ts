@@ -339,7 +339,7 @@ export function crewTalkThread(
       name: row.name,
       actionLabel: heartbeatActionLabel(row.item.action, language),
       note,
-      toName: ready ? handoffTargetName(row.role, language, familyFromBotId(String(row.item.bot_id || '')) || 'grok', afterCollect) : '',
+      toName: handoffTargetName(row.role, language, familyFromBotId(String(row.item.bot_id || '')) || 'grok', afterCollect),
       when: activityWhen(row.item, language),
     });
     if (row.role === 'scraper' && ready) collectSeen = true;
@@ -416,15 +416,19 @@ export function crewNowLine(seats: CrewPipelineSeat[], language = 'ko'): string 
   return `${current.name} · ${current.actionLabel}`;
 }
 
+export function crewTalkSide(role: BotRole | ''): 'in' | 'out' {
+  return role === 'scraper' ? 'out' : 'in';
+}
+
 export function crewBoardEmptyCopy(language = 'ko'): { title: string; body: string } {
   return {
     title: boardCopy(language, '대기중', 'Waiting', '等待中', '待機中'),
     body: boardCopy(
       language,
-      '기다려주시면 봇이 대화하기 시작합니다.',
-      'Wait a moment and the bots will start talking.',
-      '请稍等，机器人会开始对话。',
-      '少し待つとボットが話し始めます。',
+      '자리마다 시작·넘김 한 줄을 남기면 여기에 대화가 쌓입니다.',
+      'When each seat leaves a start or handoff line, the chat fills here.',
+      '每个位子留下开工或转交的一行，对话就会堆在这里。',
+      '席ごとに開始・受け渡しの一行を残すと、ここに会話が溜まります。',
     ),
   };
 }

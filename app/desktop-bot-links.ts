@@ -649,6 +649,13 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
   const origin = studioCheckInOrigin(port);
   const keep = grokKeepLines(who, role, origin);
   const work = heartbeatWorkPair(role);
+  const startHint = lang === 'zh'
+    ? '开工时对下一位子说的一行'
+    : lang === 'ja'
+      ? '始めたことを次の席に言う一行'
+      : lang === 'en'
+        ? 'one spoken line that work has started'
+        : '일을 시작한다는 한 줄';
   const noteHint = lang === 'zh'
     ? '留给下一位子的一行'
     : lang === 'ja'
@@ -656,6 +663,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       : lang === 'en'
         ? 'one line left for the next seat'
         : '다음 자리에 남긴 한 줄';
+  const startBeat = `Invoke-RestMethod -Uri ${origin}/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${grokSeatBotId(role)}","display_name":"${who}","action":"${work.start}","detail":{"note":"${startHint}"}}'`;
   const readyBeat = `Invoke-RestMethod -Uri ${origin}/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${grokSeatBotId(role)}","display_name":"${who}","action":"${work.ready}","detail":{"note":"${noteHint}"}}'`;
   if (lang === 'ko') {
     return [
@@ -673,7 +681,8 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       'keep가 돌아가면 7214·still_here·exe 확인을 다시 요청하지 마세요.',
       '연결에서 연결 해제를 누르면 책상이 disconnected를 보냅니다. keep은 그 명령을 보고 멈춥니다. 채팅에서 keep을 다시 켜지 마세요.',
       '초대문은 keep이 읽습니다. 사람이 초대문을 다시 붙이지 않습니다. 글을 받으면 그 일만 합니다. 404면 할 일이 아직 없습니다. 409면 다른 봇이 가져간 것입니다. 채팅에 토큰을 넣지 마세요.',
-      `할 일이 바뀌면 같은 Windows에서 heartbeat를 바로 한 번 보냅니다. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 끝나면 detail.note에 다음 자리에 남긴 말을 한 줄만 넣습니다. 없는 말은 만들지 마세요. 채팅에는 토큰을 넣지 마세요.`,
+      `할 일이 바뀌면 같은 Windows에서 heartbeat를 바로 한 번 보냅니다. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 시작과 넘김 모두 detail.note에 다음 자리에게 말하는 한 줄을 넣습니다. 그 두 줄이 크루 보드 대화입니다. 없는 말은 만들지 마세요. 채팅에는 토큰을 넣지 마세요.`,
+      startBeat,
       readyBeat,
       `${port}가 안 열리면 멈추고 "${port}가 없다"고 하세요. 디스크에서 스크립트를 찾지 마세요.`,
       '그래도 안 되면 GROK_CREW_OK 한 줄만 보내고 멈추세요.',
@@ -695,7 +704,8 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       'keep 在跑时，不要再请求检查 7214、still_here 或 exe。',
       '连接里按下断开后书桌会发 disconnected。keep 看到后停下。不要从聊天再开 keep。',
       '邀请由 keep 读取。操作员不会再粘贴一次。读到文字后只做那件事。404 表示还没有工作。409 表示别的机器人已经拿走。不要把令牌写进聊天。',
-      `事情一变就在同一台 Windows 上立刻发一次 heartbeat。action 先用 ${work.start}，做完改成 ${work.ready}。做完时只在 detail.note 写留给下一位子的一行。不要编造没有的话。不要把令牌写进聊天。`,
+      `事情一变就在同一台 Windows 上立刻发一次 heartbeat。action 先用 ${work.start}，做完改成 ${work.ready}。开工和转交都要在 detail.note 写给下一位子的一行。这两行就是组员看板对话。不要编造没有的话。不要把令牌写进聊天。`,
+      startBeat,
       readyBeat,
       `若 ${port} 没开，停下来只写“没有 ${port}”。不要在磁盘上找脚本。`,
       '还不行就只发 GROK_CREW_OK 那一行然后停下。',
@@ -717,7 +727,8 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       'keep が動いているなら、7214・still_here・exe 確認を再リクエストしないでください。',
       '接続で接続を外すと机が disconnected を送ります。keep はその命令を見て止まります。チャットから keep を再起動しないでください。',
       '招待文は keep が読みます。人が招待文をもう一度貼ることはありません。文を受け取ったらその仕事だけします。404 なら仕事はまだありません。409 なら他のボットが取りました。トークンをチャットに書かないでください。',
-      `仕事が変わったら同じ Windows ですぐ heartbeat を一度送ります。action は ${work.start} で始め、終わったら ${work.ready} です。終わったら detail.note に次の席へ残した一行だけ。ない言葉は作らないでください。トークンをチャットに書かないでください。`,
+      `仕事が変わったら同じ Windows ですぐ heartbeat を一度送ります。action は ${work.start} で始め、終わったら ${work.ready} です。開始と受け渡しの両方で detail.note に次の席への一言を入れてください。その二行がクルーボードの会話です。ない言葉は作らないでください。トークンをチャットに書かないでください。`,
+      startBeat,
       readyBeat,
       `${port} が開いていなければ止まって「${port} がない」と書いてください。ディスクでスクリプトを探さないでください。`,
       'それでもだめなら GROK_CREW_OK の一行だけ送って止まってください。',
@@ -738,7 +749,8 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     'While keep is running, do not ask again to check 7214, still_here, or the exe.',
     'If Connect sends disconnected, keep stops. Do not start keep again from chat.',
     'keep reads the invite. The operator will not paste the invite again. When you get the text, do only that job. 404 means no job yet. 409 means another bot already took it. Do not put the token in chat.',
-    `When the job changes, send one heartbeat on that same Windows at once. Start with action ${work.start}, then ${work.ready} when done. On ${work.ready}, put only one line in detail.note for the next seat. Do not invent a line. Do not put the token in chat.`,
+    `When the job changes, send one heartbeat on that same Windows at once. Start with action ${work.start}, then ${work.ready} when done. On start and on handoff, put one spoken line to the next seat in detail.note. Those two lines are the crew board chat. Do not invent a line. Do not put the token in chat.`,
+    startBeat,
     readyBeat,
     `If ${port} is not open, stop and say ${port} is missing. Do not search the disk for the script.`,
     'If that still fails, send only the GROK_CREW_OK line and stop.',

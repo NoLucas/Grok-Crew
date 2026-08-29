@@ -8824,6 +8824,12 @@ select {
   overflow: auto;
   list-style: none;
 }
+.desktop-crew-talk-list.desktop-crew-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 2px;
+}
 .desktop-crew-talk-list li {
   display: grid;
   gap: 4px;
@@ -8831,6 +8837,20 @@ select {
   border: 1px solid var(--desktop-line-soft);
   border-radius: 10px;
   background: var(--desktop-wash);
+}
+.desktop-crew-talk-list.desktop-crew-chat li {
+  max-width: min(78%, 36rem);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.desktop-crew-talk-list.desktop-crew-chat li[data-side="in"] { align-self: start; }
+.desktop-crew-talk-list.desktop-crew-chat li[data-side="out"] {
+  align-self: end;
+  text-align: right;
+}
+.desktop-crew-talk-list.desktop-crew-chat li[data-side="out"] .desktop-crew-talk-meta {
+  flex-direction: row-reverse;
 }
 .desktop-crew-talk-list li[data-kind="presence"] {
   padding: 6px 10px;
@@ -8841,6 +8861,7 @@ select {
 .desktop-crew-talk-list li[data-role="planner"] { border-left: 3px solid var(--desktop-blue); }
 .desktop-crew-talk-list li[data-role="scraper"] { border-left: 3px solid var(--desktop-amber); }
 .desktop-crew-talk-list li[data-role="editor"] { border-left: 3px solid var(--desktop-green); }
+.desktop-crew-talk-list.desktop-crew-chat li[data-role] { border-left: 0; }
 .desktop-crew-talk-meta {
   display: flex;
   justify-content: space-between;
@@ -8848,6 +8869,23 @@ select {
   align-items: baseline;
 }
 .desktop-crew-talk-who { font-size: 13px; font-weight: 650; letter-spacing: -.02em; }
+.desktop-crew-chat-bubble,
+.desktop-crew-talk-list.desktop-crew-chat q {
+  border-radius: 14px;
+  padding: 8px 12px;
+}
+.desktop-crew-talk-list.desktop-crew-chat li[data-role="planner"] q {
+  background: color-mix(in srgb, var(--desktop-blue) 16%, var(--desktop-panel));
+  border-radius: 14px 14px 14px 4px;
+}
+.desktop-crew-talk-list.desktop-crew-chat li[data-role="scraper"] q {
+  background: color-mix(in srgb, var(--desktop-amber) 18%, var(--desktop-panel));
+  border-radius: 14px 14px 4px 14px;
+}
+.desktop-crew-talk-list.desktop-crew-chat li[data-role="editor"] q {
+  background: color-mix(in srgb, var(--desktop-green) 16%, var(--desktop-panel));
+  border-radius: 14px 14px 14px 4px;
+}
 .desktop-crew-talk-action { margin: 0; color: var(--desktop-muted); font-size: 12px; }
 .desktop-crew-board-empty-card,
 .desktop-crew-board-error {
@@ -8868,6 +8906,7 @@ select {
   border-color: color-mix(in srgb, var(--desktop-red) 42%, var(--desktop-line));
 }
 @media (max-width: 720px) {
+  .desktop-crew-talk-list.desktop-crew-chat li { max-width: 92%; }
   .desktop-crew-pipe { grid-template-columns: 1fr; }
   .desktop-crew-pipe li { grid-template-columns: 18px minmax(0, 1fr); }
   .desktop-simple-help-figures { grid-template-columns: 1fr; }

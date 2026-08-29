@@ -9,6 +9,7 @@ import {
   crewStagePipeline,
   crewStageShortLabel,
   crewTalkLine,
+  crewTalkSide,
   crewTalkThread,
   presenceStaleCopy,
   type CrewLoadState,
@@ -121,14 +122,19 @@ export function DesktopCrewBoard({
           </div>
         ) : null}
         {shownTalk.length ? (
-          <ol className="desktop-crew-talk-list">
+          <ol className="desktop-crew-talk-list desktop-crew-chat">
             {shownTalk.map((entry) => (
-              <li key={entry.id} data-kind="work" data-role={entry.role || 'unknown'}>
+              <li
+                key={entry.id}
+                data-kind="work"
+                data-role={entry.role || 'unknown'}
+                data-side={crewTalkSide(entry.role)}
+              >
                 <div className="desktop-crew-talk-meta">
                   <span className="desktop-crew-talk-who">{crewTalkLine(entry, language)}</span>
                   {entry.when ? <time>{entry.when}</time> : null}
                 </div>
-                {entry.note ? <q>{entry.note}</q> : null}
+                {entry.note ? <q className="desktop-crew-chat-bubble">{entry.note}</q> : null}
               </li>
             ))}
           </ol>

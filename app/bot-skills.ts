@@ -78,10 +78,10 @@ export function seatShortLabel(role: BotRole, language = 'ko'): string {
 }
 
 const LOOPBACK: L4 = {
-  ko: '봇이 돌아가는 리눅스나 다른 컴퓨터에서 127.0.0.1을 열지 않습니다. 그 주소는 이 책상이 아닙니다. Windows 체크인은 초대문 겉문장만 따릅니다. 채팅에서 1분마다 자리 확인 예약 작업을 만들지 않습니다.',
-  en: 'Do not open 127.0.0.1 from the bot Linux or another computer. That address is not this desk. Windows check-in is only in the connect wrapper. Do not create a chat job that checks the seat every minute.',
-  zh: '不要从机器人所在的 Linux 或另一台电脑打开 127.0.0.1。那个地址不是这张桌子。Windows 签到只写在连接信封里。不要在聊天里做每分钟占位预约。',
-  ja: 'ボットの Linux や別のコンピュータから 127.0.0.1 を開かないでください。その住所はこの机ではありません。Windows のチェックインは接続文の外側だけです。チャットに1分ごとの席確認の予約作業を作らないでください。',
+  ko: '봇이 돌아가는 리눅스나 다른 컴퓨터에서 127.0.0.1을 열지 않습니다. 그 주소는 이 책상이 아닙니다. Windows 체크인은 초대문 겉문장만 따릅니다. 채팅에서 1분마다 자리 확인 예약 작업을 만들지 않습니다. 일을 시작하거나 넘길 때 detail.note에 다음 자리에게 하는 말 한 줄만 넣습니다. 그 줄이 크루 보드 대화입니다. 없는 말은 만들지 않습니다. 자리 확인 줄에는 말을 넣지 않습니다.',
+  en: 'Do not open 127.0.0.1 from the bot Linux or another computer. That address is not this desk. Windows check-in is only in the connect wrapper. Do not create a chat job that checks the seat every minute. When work starts or is handed off, put only one spoken line to the next seat in detail.note. That line is the crew board chat. Do not invent a line. Do not put speech on a seat-check tick.',
+  zh: '不要从机器人所在的 Linux 或另一台电脑打开 127.0.0.1。那个地址不是这张桌子。Windows 签到只写在连接信封里。不要在聊天里做每分钟占位预约。开工或转交时只在 detail.note 写下给下一位子的一行话。那一行就是组员看板对话。不要编造。占位确认行不要写话。',
+  ja: 'ボットの Linux や別のコンピュータから 127.0.0.1 を開かないでください。その住所はこの机ではありません。Windows のチェックインは接続文の外側だけです。チャットに1分ごとの席確認の予約作業を作らないでください。仕事を始めるときと渡すときは detail.note に次の席への一行だけ。その行がクルーボードの会話です。ない言葉は作らない。席確認の行には話を書かない。',
 };
 
 const LOGIN_WALL: L4 = {

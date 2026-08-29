@@ -102,6 +102,8 @@ describe('remote bot links', () => {
       assert.match(text, /plan_started/);
       assert.match(text, /plan_ready/);
       assert.match(text, /detail\.note/);
+      assert.match(text, /크루 보드 대화|crew board chat|组员看板对话|クルーボードの会話/);
+      assert.match(text, /일을 시작한다는 한 줄|one spoken line that work has started|开工时对下一位子说的一行|始めたことを次の席に言う一行/);
       assert.match(text, /없는 말은 만들지 마세요|不要编造没有的话|ない言葉は作らない|Do not invent a line/);
       assert.match(text, /grok-crew-planner/);
       assert.match(text, /grok-crew-edit-plan/);

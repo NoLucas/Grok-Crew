@@ -17,6 +17,7 @@ const {
   crewTalkLine,
   crewNowLine,
   crewTalkMemo,
+  crewTalkSide,
   crewTalkThread,
   handoffTargetName,
   nextSeatOfflineNote,
@@ -81,10 +82,25 @@ describe('crew board notes', () => {
     assert.match(crewTalkLine(thread[0], 'ko'), /기획자 → Grok Bot 스크래핑/);
   });
 
+  it('shows a started note as a spoken line to the next seat', () => {
+    const now = Date.now();
+    const thread = crewTalkThread([
+      { id: 'r', bot_id: 'grok-planner', action: 'plan_ready', created_at: new Date(now - 4_000).toISOString(), detail_json: { note: '손과 간판' } },
+      { id: 's', bot_id: 'grok-planner', action: 'plan_started', created_at: new Date(now - 10_000).toISOString(), detail_json: { note: '간판부터 찾자' } },
+    ], 'ko');
+    assert.equal(thread.length, 2);
+    assert.equal(thread[0].note, '간판부터 찾자');
+    assert.equal(thread[0].toName, 'Grok Bot 스크래핑');
+    assert.match(crewTalkLine(thread[0], 'ko'), /기획자 → Grok Bot 스크래핑/);
+    assert.equal(crewTalkSide('planner'), 'in');
+    assert.equal(crewTalkSide('scraper'), 'out');
+    assert.equal(crewTalkSide('editor'), 'in');
+  });
+
   it('uses waiting copy for an empty conversation', () => {
     const empty = crewBoardEmptyCopy('ko');
     assert.equal(empty.title, '대기중');
-    assert.match(empty.body, /기다려주시면 봇이 대화하기 시작합니다/);
+    assert.match(empty.body, /자리마다 시작·넘김 한 줄을 남기면 여기에 대화가 쌓입니다/);
   });
 
   it('puts the latest real note on the pipeline seat', () => {
@@ -246,6 +262,9 @@ describe('crew board notes', () => {
     assert.equal(board.includes('이 PC에 저장'), false);
     assert.match(board, /data-stage=\{seat.stage\}/);
     assert.match(board, /대화/);
+    assert.match(board, /desktop-crew-chat/);
+    assert.match(board, /crewTalkSide/);
+    assert.match(board, /data-side=\{crewTalkSide\(entry.role\)\}/);
   });
 
   it('copies the thread as a local memo without inventing a line', () => {
