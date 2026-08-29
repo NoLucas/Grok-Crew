@@ -8,6 +8,7 @@ const contentSecurityPolicy = [
   "media-src 'self' blob: http://127.0.0.1:* http://localhost:*",
   "connect-src 'self' http://127.0.0.1:* http://localhost:*",
   "font-src 'self' data:",
+  "object-src 'none'",
   "frame-ancestors 'none'",
   "base-uri 'none'",
   "form-action 'self'",

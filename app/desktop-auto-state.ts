@@ -163,11 +163,24 @@ export function shortOwnedFileName(path: string, max = 18): string {
   return `${stem.slice(0, keep)}...${ext}`;
 }
 
+export function safeWorkspaceRel(path: string): string {
+  const text = String(path || '').trim().replace(/\\/g, '/');
+  if (!text) return '';
+  if (/^[a-z][a-z0-9+.-]*:/i.test(text)) return '';
+  const marker = '/workspace/';
+  const index = text.toLowerCase().lastIndexOf(marker);
+  const rel = (index >= 0 ? text.slice(index + marker.length) : text).replace(/^\/+/, '');
+  if (!rel || rel.split('/').includes('..')) return '';
+  if (rel.startsWith('/') || /^[A-Za-z]:\//.test(rel)) return '';
+  return rel;
+}
+
 export function localFilePreviewUrl(path: string): string {
   const text = String(path || '').trim();
-  if (!text) return '';
-  if (text.startsWith('file:')) return text;
+  if (!text || /^[a-z][a-z0-9+.-]*:/i.test(text)) return '';
   const unix = text.replace(/\\/g, '/');
+  if (!unix || unix.split('/').includes('..')) return '';
+  if (ownedMediaKind(unix) !== 'image') return '';
   if (/^[A-Za-z]:\//.test(unix)) return `file:///${unix}`;
   if (unix.startsWith('/')) return `file://${unix}`;
   return '';
@@ -197,6 +210,7 @@ function publicCollectUrl(value: string): boolean {
       return false;
     }
     if (host === '0.0.0.0' || host === '::' || host === '::1') return false;
+    if (host.includes(':') && (host.startsWith('fe80:') || host.startsWith('fc') || host.startsWith('fd'))) return false;
     if (/^(127|10|0)\./.test(host)) return false;
     if (/^192\.168\./.test(host)) return false;
     if (/^169\.254\./.test(host)) return false;

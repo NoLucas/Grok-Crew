@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { useLanguage } from './language';
+import { safeWorkspaceRel } from './desktop-auto-state';
 
 export type HandoffFolderFile = {
   name: string;
@@ -57,7 +58,9 @@ function studioBase() {
 }
 
 function mediaUrl(path: string) {
-  return `${studioBase()}/media/${path.replaceAll('\\', '/').split('/').map(encodeURIComponent).join('/')}`;
+  const rel = safeWorkspaceRel(path);
+  if (!rel) return '';
+  return `${studioBase()}/media/${rel.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 function normalizePath(path: string) {

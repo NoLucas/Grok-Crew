@@ -37,6 +37,7 @@ import { DesktopReviseCard } from './desktop-revise-card';
 import {
   autoHeaderDot,
   importedEditSpecId,
+  safeWorkspaceRel,
   shouldAutoPullInbox,
   shouldClearWaitForImport,
   writeAutoPrefs,
@@ -277,7 +278,9 @@ function handoffSenderLabel(
 }
 
 function mediaUrl(path: string) {
-  return `${studioBase()}/media/${relativeWorkspacePath(path).split('/').map(encodeURIComponent).join('/')}`;
+  const rel = safeWorkspaceRel(path) || safeWorkspaceRel(relativeWorkspacePath(path));
+  if (!rel) return '';
+  return `${studioBase()}/media/${rel.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 function analysisSceneUrl(projectId: string, sceneId: string, updatedAt: string) {

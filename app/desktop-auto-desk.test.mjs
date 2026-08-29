@@ -47,6 +47,7 @@ const {
   ownedMediaKind,
   shortOwnedFileName,
   localFilePreviewUrl,
+  safeWorkspaceRel,
   writeAnotherComposeReset,
 } = await import('./desktop-auto-state.ts');
 
@@ -114,6 +115,8 @@ describe('auto desk start rules', () => {
       'https://example.com/ok.mp4',
     ]);
     assert.equal(collectQueryIsUrlList('http://169.254.169.254/latest/meta-data'), false);
+    assert.equal(collectQueryIsUrlList('http://[fd12:3456::1]/clip.mp4'), false);
+    assert.equal(collectQueryIsUrlList('http://[fe80::1]/clip.mp4'), false);
   });
 });
 
@@ -553,6 +556,13 @@ describe('auto desk prefs and names', () => {
     assert.equal(ownedFileExtension('talk.mp4'), 'MP4');
     assert.equal(shortOwnedFileName('grok3e7089c-very-long-name-6db00e5e.mp4'), 'grok3e7089c....mp4');
     assert.equal(localFilePreviewUrl('C:\\Users\\a\\Pictures\\sign.png'), 'file:///C:/Users/a/Pictures/sign.png');
+    assert.equal(localFilePreviewUrl('file:///etc/passwd'), '');
+    assert.equal(localFilePreviewUrl('C:\\Users\\a\\Videos\\talk.mp4'), '');
+    assert.equal(localFilePreviewUrl('/tmp/../etc/passwd.png'), '');
+    assert.equal(safeWorkspaceRel('/workspace/local_studio/workspace/inputs/a.mp4'), 'inputs/a.mp4');
+    assert.equal(safeWorkspaceRel('../etc/passwd'), '');
+    assert.equal(safeWorkspaceRel('https://evil.example/a.mp4'), '');
+    assert.equal(safeWorkspaceRel('javascript:alert(1)'), '');
     assert.deepEqual(writeAnotherComposeReset(), {
       stayOnCompose: true,
       ownedPaths: [],
