@@ -63,7 +63,7 @@ import {
   columnStyleVars,
   useDesktopColumnWidths,
 } from './desktop-column-widths';
-import { statusNoteOpen, useDesktopNoteFolds } from './desktop-note-folds';
+import { useDesktopNoteFolds } from './desktop-note-folds';
 import { DesktopEditPresetControls } from './desktop-edit-presets-controls';
 import { DesktopProjectLibrary } from './desktop-project-library';
 import { ensureRecentFolder } from './desktop-project-library-recent';
@@ -330,7 +330,7 @@ export default function DesktopWorkspace() {
   const [method, setMethod] = useState({ ...defaultMethod });
   const [publishPolicy, setPublishPolicy] = useState({ ...defaultPublish });
   const [executionPolicy, setExecutionPolicy] = useState<'auto_edit_render' | 'review_before_render'>('auto_edit_render');
-  const [message, setMessage] = useState(t('Local Studio에 연결하는 중입니다.', 'Connecting to Local Studio.', '正在连接本地工作室。', 'Local Studio に接続しています。'));
+  const [, setMessage] = useState(t('Local Studio에 연결하는 중입니다.', 'Connecting to Local Studio.', '正在连接本地工作室。', 'Local Studio に接続しています。'));
   const [busy, setBusy] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null);
@@ -693,7 +693,6 @@ export default function DesktopWorkspace() {
   const hideInspectorColumn = showBotRoom || showAutoDesk || advancedSpecOpen || specDeskOpen || !project || !timeline;
   const columns = useDesktopColumnWidths(!hideInspectorColumn);
   const { folds, setFold, toggleFold, hideLockNote } = useDesktopNoteFolds();
-  const statusOpen = statusNoteOpen(folds.status, studioState);
   const editToolsOpen = Boolean(project && timeline && !showBotRoom && !showAutoDesk && activePanel === 'edit');
   const handoffFolders = workspace.handoff_folders ?? [];
   const projectFolders = useMemo(() => {
@@ -979,25 +978,6 @@ export default function DesktopWorkspace() {
       setMessage(t('설정을 저장하고 타임라인에 반영했습니다.', 'Settings saved and applied to the timeline.', '设置已保存并应用到时间线。', '設定を保存してタイムラインに反映しました。'));
       return next;
     } catch (error) { setMessage(error instanceof Error ? error.message : t('설정을 저장하지 못했습니다.', 'Could not save settings.', '无法保存设置。', '設定を保存できませんでした。')); return null; } finally { setBusy(false); }
-  };
-
-  const startGrok = async () => {
-    if (!project || !timeline) { setMessage(t('먼저 프로젝트를 만드세요.', 'Create a project first.', '请先创建项目。', '先にプロジェクトを作成してください。')); return; }
-    setRemoteOpen(true);
-    setBusy(true);
-    try {
-      const nextTimeline = await saveSettings(); const revision = nextTimeline?.revision ?? timeline.revision;
-      const created = await api(`/api/v2/projects/${project.id}/control-jobs`, { method: 'POST', body: JSON.stringify({ base_revision: revision, settings: method, execution_policy: executionPolicy, publish_policy: publishPolicy }) }) as { control_job: ControlJob };
-      let delivered = false;
-      if (window.grokCrew && workspace.runners.length > 0 && github.relay_connected) {
-        await window.grokCrew.pushGitRequest(created.control_job.id);
-        delivered = true;
-      }
-      await refreshWorkspace(true);
-      setMessage(delivered
-        ? t('암호화 작업을 control 브랜치로 전송했습니다.', 'Encrypted job sent to the control branch.', '加密任务已发送到 control 分支。', '暗号化ジョブを control ブランチへ送信しました。')
-        : t('작업을 만들었습니다. Grok 제작기와 GitHub relay를 연결한 뒤 전송할 수 있습니다.', 'Job created. Pair the Grok builder and connect the GitHub relay to send it.', '任务已创建。连接 Grok 制作器和 GitHub relay 后即可发送。', 'ジョブを作成しました。Grok 制作機と GitHub relay を接続すると送信できます。'));
-    } catch (error) { setMessage(error instanceof Error ? error.message : t('작업을 시작하지 못했습니다.', 'Could not start the job.', '无法启动任务。', 'ジョブを開始できませんでした。')); } finally { setBusy(false); }
   };
 
   const runLocalRender = async () => {
@@ -2222,33 +2202,6 @@ export default function DesktopWorkspace() {
         />
       ) : null}
 
-      {firstOpen ? null : (
-      <footer className="desktop-command-bar">
-        <div className={`desktop-message ${studioState === 'error' ? 'error' : studioState === 'loading' ? 'loading' : ''}${statusOpen ? '' : ' is-folded'}`}>
-          <button
-            type="button"
-            className="desktop-message-icon"
-            aria-expanded={statusOpen}
-            title={message}
-            onClick={() => { if (studioState !== 'error' && studioState !== 'loading') toggleFold('status'); }}
-          >
-            {studioState === 'error' ? '!' : studioState === 'loading' ? '…' : 'i'}
-          </button>
-          {statusOpen ? <p>{message}</p> : null}
-          {studioState === 'error' || studioState === 'loading' ? null : (
-            <button
-              type="button"
-              className="desktop-inspector-fold"
-              aria-expanded={statusOpen}
-              onClick={() => toggleFold('status')}
-            >
-              {statusOpen ? t('접기', 'Hide', '收起', '閉じる') : t('펼치기', 'Show', '展开', '開く')}
-            </button>
-          )}
-        </div>
-        <div className="desktop-command-summary"><span>{executionPolicy === 'auto_edit_render' ? t('자동 편집·렌더', 'Auto edit & render', '自动编辑和渲染', '自動編集・レンダー') : t('검토 우선', 'Review first', '审核优先', '確認優先')}</span><span>{Object.values(publishPolicy).filter((value) => value === 'auto').length} {t('개 자동 게시', 'auto publish', '个自动发布', '件の自動公開')}</span><button className="desktop-start" disabled={busy || !project || studioState !== 'ready'} onClick={() => void startGrok()}>{busy ? t('처리 중…', 'Working…', '处理中…', '処理中…') : t('편집 Agent로 제작 시작', 'Start with Editor Agent', '使用剪辑 Agent 开始制作', '編集 Agent で制作開始')} <b>→</b></button></div>
-      </footer>
-      )}
     </main>
   );
 }

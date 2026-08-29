@@ -6774,7 +6774,7 @@ select {
   --desktop-weight-strong: 700;
   --desktop-weight-heavy: 800;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   width: 100%;
   height: 100vh;
   overflow: hidden;
@@ -6876,7 +6876,7 @@ select {
   --desktop-weight-heavy: 800;
 }
 .desktop-shell.is-form {
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 .desktop-shell button,
 .desktop-shell input,
@@ -10112,8 +10112,8 @@ select {
   .desktop-shell.is-voice-first .desktop-titlebar { grid-template-columns: 36px 1fr auto; grid-template-rows: auto; }
 }
 @media (max-width: 760px) {
-  .desktop-shell { grid-template-rows: auto minmax(0, 1fr) auto auto; }
-  .desktop-shell.is-form { grid-template-rows: auto minmax(0, 1fr) auto; }
+  .desktop-shell { grid-template-rows: auto minmax(0, 1fr) auto; }
+  .desktop-shell.is-form { grid-template-rows: auto minmax(0, 1fr); }
   .desktop-titlebar { grid-template-columns: 36px 1fr auto; grid-template-rows: auto auto; }
   .desktop-connection { display: none; }
   .desktop-body { grid-template-columns: 1fr; }

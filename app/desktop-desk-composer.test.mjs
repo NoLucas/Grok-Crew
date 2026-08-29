@@ -98,6 +98,10 @@ describe('desk composer restage', () => {
     assert.equal(text.includes('addingFolder'), false);
     assert.match(text, /미리보기 프록시/);
     assert.equal(text.includes('desktop-card-title'), false);
+    assert.equal(text.includes('desktop-command-bar'), false);
+    assert.equal(text.includes('편집 Agent로 제작 시작'), false);
+    assert.equal(text.includes('개 자동 게시'), false);
+    assert.equal(text.includes('startGrok'), false);
   });
 
   it('Advanced spec starts with a composer and folds doors', () => {
