@@ -51,7 +51,7 @@ export function DesktopCrewBoard({
   const pipeline = crewPipeline(rows, scoped, language);
   const thread = crewTalkThread(scoped, language);
   const nowLine = crewNowLine(pipeline, language);
-  const workLines = thread.filter((entry) => entry.kind === 'work');
+  const workLines = thread.filter((entry) => entry.kind === 'work' && entry.note);
   const empty = crewBoardEmptyCopy(language);
   const failed = crewBoardErrorCopy(language);
   const memo = crewTalkMemo(thread, language, jobTitle);
@@ -87,7 +87,7 @@ export function DesktopCrewBoard({
         <ol className="desktop-crew-pipe">
           {pipeline.map((seat, index) => (
             <li key={seat.key} data-mark={seat.mark} data-role={seat.role} data-offline={seat.nextOfflineNote ? 'next' : undefined}>
-              {index > 0 ? <span className="desktop-crew-pipe-arrow" aria-hidden="true">→</span> : null}
+              <span className="desktop-crew-pipe-arrow" aria-hidden="true">{index > 0 ? '→' : ''}</span>
               <div className="desktop-crew-pipe-card">
                 <div className="desktop-crew-pipe-head">
                   <span className={`desktop-connect-lamp${seat.connected ? ' is-on' : ''}`}>
@@ -120,7 +120,7 @@ export function DesktopCrewBoard({
   const talk = (
       <section className="desktop-crew-talk">
         <div className="desktop-crew-talk-head">
-          <b>{t('봇이 남긴 말', 'What the bots left', '机器人留下的话', 'ボットが残した言葉')}</b>
+          <b>{t('대화', 'Talk', '对话', '会話')}</b>
           {memo ? (
             <div className="desktop-crew-board-actions">
               <button type="button" className="desktop-secondary" onClick={() => { void copyMemo(); }}>
@@ -156,19 +156,15 @@ export function DesktopCrewBoard({
             <p>{empty.body}</p>
           </div>
         ) : null}
-        {thread.length ? (
+        {workLines.length ? (
           <ol className="desktop-crew-talk-list">
-            {thread.map((entry) => (
-              <li key={entry.id} data-kind={entry.kind} data-role={entry.role || 'unknown'}>
+            {workLines.map((entry) => (
+              <li key={entry.id} data-kind="work" data-role={entry.role || 'unknown'}>
                 <div className="desktop-crew-talk-meta">
                   <span className="desktop-crew-talk-who">{crewTalkLine(entry, language)}</span>
                   {entry.when ? <time>{entry.when}</time> : null}
                 </div>
-                {entry.kind === 'work' ? (
-                  <>
-                    {entry.note ? <q>{entry.note}</q> : <p className="desktop-crew-talk-action">{entry.actionLabel}</p>}
-                  </>
-                ) : null}
+                {entry.note ? <q>{entry.note}</q> : null}
               </li>
             ))}
           </ol>

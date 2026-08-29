@@ -259,11 +259,11 @@ export function markRemoteCopied(
 ): BotLinkState {
   if (!state.pairCode) return state;
   const family = seat.kind === 'grok' ? 'grok' : 'custom';
-  const cleared = clearReleasedSeat(state, family, seat.role);
   const id = seatId(family, seat.role, state.pairCode);
-  const existing = cleared.bots.find((item) => item.id === id);
-  if (existing?.status === 'connected' && existing.confirmedAt) return cleared;
-  return upsertLinkedBot(cleared, {
+  const existing = state.bots.find((item) => item.id === id);
+  if (existing?.status === 'connected' && existing.confirmedAt) return state;
+  // Copying is not a connection. Do not un-release a seat; leftover idle check-ins must stay dark.
+  return upsertLinkedBot(state, {
     id,
     name: seatName(family, seat.role, seat.language),
     kind: family,
@@ -384,7 +384,9 @@ export function seatIsConnected(
   links?: BotLinkState | null,
   roster?: CrewRoster | null,
 ): boolean {
-  if (seatIsReleased(links, kind, role)) return false;
+  if (seatIsReleased(links, kind, role)) {
+    return kind === 'grok' && Boolean(activeRosterSeat(roster, role));
+  }
   if (kind === 'grok') {
     const rosterBot = knownRosterSeat(roster, role);
     if (rosterBot) return Boolean(heldRosterSeat(roster, role));

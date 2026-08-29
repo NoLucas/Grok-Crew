@@ -192,8 +192,8 @@ describe('remote bot links', () => {
     assert.equal(seatIsReleased(released, 'grok', 'planner'), true);
     assert.equal(seatIsConnected('grok', 'planner', released, idle), false);
     const copied = markRemoteCopied({ ...released, pairCode: 'QDWAVN' }, { kind: 'grok', role: 'planner', language: 'ko' });
-    assert.equal(seatIsReleased(copied, 'grok', 'planner'), false);
-    assert.equal(seatIsConnected('grok', 'planner', copied, idle), true);
+    assert.equal(seatIsReleased(copied, 'grok', 'planner'), true);
+    assert.equal(seatIsConnected('grok', 'planner', copied, idle), false);
     const held = releaseHeldSeats(empty, idle);
     assert.equal(seatIsConnected('grok', 'planner', held, idle), false);
   });
@@ -281,6 +281,31 @@ describe('remote bot links', () => {
     assert.equal(next.bots[0].status, 'waiting');
     assert.equal(next.bots[0].place, 'other_pc');
     assert.equal(hasConnectedBot(undefined, next), false);
+  });
+
+  it('does not light a copied scraper from a leftover idle roster', () => {
+    const idle = {
+      bots: [{
+        bot_id: 'grok-scraper',
+        display_name: 'Grok Bot 스크래핑',
+        presence: 'idle',
+        last_action: 'still_here',
+      }],
+    };
+    const released = releaseLinkedSeat({ pairCode: 'QDWAVN', bots: [] }, 'grok', 'scraper');
+    const copied = markRemoteCopied(released, { kind: 'grok', role: 'scraper', language: 'ko' });
+    assert.equal(copied.bots[0].status, 'waiting');
+    assert.equal(seatIsReleased(copied, 'grok', 'scraper'), true);
+    assert.equal(seatIsConnected('grok', 'scraper', copied, idle), false);
+    assert.equal(hasConnectedBot(idle, copied), false);
+    assert.equal(seatIsConnected('grok', 'scraper', copied, {
+      bots: [{
+        bot_id: 'grok-scraper',
+        display_name: 'Grok Bot 스크래핑',
+        presence: 'active',
+        last_action: 'collect_started',
+      }],
+    }), true);
   });
 
   it('attaches a seat when the operator pastes the bot GROK_CREW_OK line', () => {

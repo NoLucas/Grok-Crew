@@ -735,7 +735,7 @@ export function AutoDesk({
               </div>
               {ownOpen ? (
                 <section className="desktop-auto-own">
-                  <p>{t('이 PC 영상을 바로 엽니다. 그러면 설정·편집·내보내기가 켜집니다.', 'Open a video on this PC. Setup, Edit, and Export then turn on.', '直接打开这台电脑上的视频。设置、编辑、导出就会打开。', 'この PC の映像を開く。設定・編集・書き出しが付く。')}</p>
+                  <p>{t('이 PC 영상을 바로 엽니다. 그러면 사용자 설정·편집·내보내기가 켜집니다.', 'Open a video on this PC. Settings, Edit, and Export then turn on.', '直接打开这台电脑上的视频。用户设置、编辑、导出就会打开。', 'この PC の映像を開く。ユーザー設定・編集・書き出しが付く。')}</p>
                   <button
                     type="button"
                     className={ownOver ? 'desktop-simple-drop is-quiet is-over' : 'desktop-simple-drop is-quiet'}

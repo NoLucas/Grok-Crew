@@ -8,6 +8,7 @@ const {
   activityForSpec,
   activityHandoffNote,
   activitySpecId,
+  crewBoardEmptyCopy,
   crewBoardScope,
   crewPipeline,
   crewTalkLine,
@@ -67,11 +68,18 @@ describe('crew board notes', () => {
     const now = Date.now();
     const thread = crewTalkThread([
       { id: 's', bot_id: 'grok-planner', action: 'plan_started', created_at: new Date(now - 10_000).toISOString() },
+      { id: 'ready-empty', bot_id: 'grok-scraper', action: 'collect_ready', created_at: new Date(now - 6_000).toISOString() },
       { id: 'r', bot_id: 'grok-planner', action: 'plan_ready', created_at: new Date(now - 4_000).toISOString(), detail_json: { note: '손과 간판' } },
     ], 'ko');
     assert.equal(thread.length, 1);
     assert.equal(thread[0].note, '손과 간판');
     assert.match(crewTalkLine(thread[0], 'ko'), /기획자 → Grok Bot 스크래핑/);
+  });
+
+  it('uses waiting copy for an empty conversation', () => {
+    const empty = crewBoardEmptyCopy('ko');
+    assert.equal(empty.title, '대기중');
+    assert.match(empty.body, /기다려주시면 봇이 대화하기 시작합니다/);
   });
 
   it('puts the latest real note on the pipeline seat', () => {

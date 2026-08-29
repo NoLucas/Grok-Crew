@@ -8442,12 +8442,13 @@ select {
 }
 .desktop-crew-pipe li {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 6px;
   align-items: stretch;
 }
 .desktop-crew-pipe-arrow {
-  align-self: center;
+  display: grid;
+  place-items: center;
   color: var(--desktop-muted);
   font-size: 14px;
 }

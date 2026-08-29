@@ -309,8 +309,7 @@ export function crewTalkThread(
     const kind = heartbeatActionKind(row.item.action);
     if (kind !== 'started' && kind !== 'ready') continue;
     const note = activityHandoffNote(row.item.detail_json);
-    // Started ticks without a handoff note are status, not talk.
-    if (kind === 'started' && !note) continue;
+    if (!note) continue;
     const ready = kind === 'ready';
     thread.push({
       id: String(row.item.id || `${row.item.bot_id}-${row.item.action}-${row.item.created_at}`),
@@ -343,13 +342,13 @@ export function crewNowLine(seats: CrewPipelineSeat[], language = 'ko'): string 
 
 export function crewBoardEmptyCopy(language = 'ko'): { title: string; body: string } {
   return {
-    title: boardCopy(language, '넘긴 말이 아직 없습니다', 'No handoff line yet', '还没有转交的话', '渡した言葉はまだありません'),
+    title: boardCopy(language, '대기중', 'Waiting', '等待中', '待機中'),
     body: boardCopy(
       language,
-      '자리가 다음 자리로 넘긴 한 줄만 여깁니다. 자리 확인과 없는 말은 적지 않습니다.',
-      'Only the one line a seat left for the next seat. Seat checks and invented talk stay out.',
-      '只留下位子交给下一位子的那一行。位子确认和编造的话不写。',
-      '席が次の席へ渡した一行だけ残します。席の確認と作った話は書きません。',
+      '기다려주시면 봇이 대화하기 시작합니다.',
+      'Wait a moment and the bots will start talking.',
+      '请稍等，机器人会开始对话。',
+      '少し待つとボットが話し始めます。',
     ),
   };
 }

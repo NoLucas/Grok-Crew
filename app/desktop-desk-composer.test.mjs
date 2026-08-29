@@ -17,6 +17,10 @@ describe('desk composer restage', () => {
     assert.equal(text.includes('안 열리면'), false);
     assert.equal(text.includes('봇 없이 영상 열기'), false);
     assert.match(text, /이 창의 다른 연결/);
+    assert.equal(text.includes('한 줄로 붙이기'), false);
+    assert.equal(text.includes('이 줄로 붙이기'), false);
+    assert.equal(text.includes('Grok 제작기'), false);
+    assert.equal(text.includes('relay 저장소'), false);
     assert.equal((text.match(/<h1>/g) || []).length, 1);
   });
 
@@ -29,6 +33,7 @@ describe('desk composer restage', () => {
     assert.equal(auto.includes("mode === 'own_file' ?"), false);
     assert.equal(auto.includes('안 열리면'), false);
     assert.match(chrome, /t\('시작', 'Start', '开始', '開始'\)/);
+    assert.match(chrome, /사용자 설정/);
   });
 
   it('Setup and Export use option chips, not four cards at once', () => {
@@ -37,6 +42,9 @@ describe('desk composer restage', () => {
     assert.match(text, /desktop-export-grid is-composer/);
     assert.match(text, /setupPane === 'shape'/);
     assert.match(text, /exportPane === 'post'/);
+    assert.match(text, /지금 만들기/);
+    assert.match(text, /다른 편집기/);
+    assert.match(text, /올린 기록/);
     assert.equal(text.includes('desktop-version-fold'), false);
     assert.equal(text.includes('버전 기록'), false);
     assert.match(text, /폴더 만들기/);

@@ -1407,7 +1407,7 @@ export default function DesktopWorkspace() {
           <button type="button" className={!showBotRoom && showAutoDesk ? 'active' : ''} aria-current={!showBotRoom && showAutoDesk ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(true); setAdvancedSpecOpen(false); setActivePanel('auto'); }}>{t('시작', 'Start', '开始', '開始')}{autoDot !== 'off' ? <i className={`desktop-auto-nav-dot is-${autoDot}`} aria-hidden="true" /> : null}</button>
           {showWorkTabs ? (
             <>
-              <button type="button" className={!showBotRoom && !showAutoDesk && activePanel === 'setup' ? 'active' : ''} aria-current={!showBotRoom && !showAutoDesk && activePanel === 'setup' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(false); setSpecDeskOpen(false); setAdvancedSpecOpen(false); setActivePanel('setup'); }}>{t('설정', 'Setup', '设置', '設定')}</button>
+              <button type="button" className={!showBotRoom && !showAutoDesk && activePanel === 'setup' ? 'active' : ''} aria-current={!showBotRoom && !showAutoDesk && activePanel === 'setup' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(false); setSpecDeskOpen(false); setAdvancedSpecOpen(false); setActivePanel('setup'); }}>{t('사용자 설정', 'Settings', '用户设置', 'ユーザー設定')}</button>
               <button type="button" className={!showBotRoom && !showAutoDesk && activePanel === 'edit' ? 'active' : ''} aria-current={!showBotRoom && !showAutoDesk && activePanel === 'edit' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(false); setSpecDeskOpen(false); setAdvancedSpecOpen(false); setActivePanel('edit'); }}>{t('편집', 'Edit', '编辑', '編集')}</button>
               <button type="button" className={!showBotRoom && !showAutoDesk && activePanel === 'export' ? 'active' : ''} aria-current={!showBotRoom && !showAutoDesk && activePanel === 'export' ? 'page' : undefined} onClick={() => { setBotPanelOpen(false); setPeekAuto(false); setSpecDeskOpen(false); setAdvancedSpecOpen(false); setActivePanel('export'); }}>{t('내보내기', 'Export', '导出', '書き出し')}</button>
             </>
@@ -1965,22 +1965,22 @@ export default function DesktopWorkspace() {
             {activePanel === 'export' && <div className="desktop-export-grid is-composer">
               <section className="desktop-auto-lead">
                 <h1>{outputReady ? t('컷이 준비됐습니다', 'The cut is ready', '成片已就绪', 'カットの準備ができました') : t('이 PC에서 파일을 만듭니다', 'This PC makes the file', '这台电脑生成文件', 'このPCでファイルを作ります')}</h1>
-                <p>{t('이 PC에서 파일을 만듭니다. 올리기와 교환은 필요할 때만 엽니다.', 'This PC makes the file. Open posting and exchange only when you need them.', '这台电脑生成文件。发布和交换需要时再开。', 'このPCでファイルを作る。投稿と交換は必要なときだけ開く。')}</p>
+                <p>{t('이 PC에서 영상을 만듭니다. 올릴 곳과 다른 프로그램 파일은 필요할 때만 엽니다.', 'This PC makes the video. Open posting and other-editor files only when you need them.', '这台电脑生成视频。要发到哪里、给别的程序的文件，需要时再开。', 'このPCで映像を作る。投稿先と他のソフト用ファイルは必要なときだけ開く。')}</p>
               </section>
               <section className="desktop-auto-composer-card desktop-render-card">
                 <div className={`desktop-render-state ${outputReady ? 'ready' : ''}`}>
                   <span>{outputReady ? '✓' : '○'}</span>
                   <div>
-                    <b>{outputReady ? t('렌더 파일 준비됨', 'Render ready', '渲染文件已就绪', 'レンダー準備完了') : t('아직 렌더되지 않음', 'Not rendered yet', '尚未渲染', '未レンダー')}</b>
+                    <b>{outputReady ? t('영상 파일 준비됨', 'Video file ready', '视频文件已就绪', '映像ファイル準備完了') : t('아직 안 만들었습니다', 'Not made yet', '还没做', 'まだ作っていません')}</b>
                     <small>{relativeWorkspacePath(project.output_path)} · {timeline.settings.quality} · {timeline.settings.fps}fps</small>
                   </div>
                 </div>
                 <div className="desktop-auto-make">
                   <button type="button" className="desktop-primary" disabled={busy} onClick={() => void runLocalRender()}>
-                    {t('지금 로컬 렌더', 'Render locally now', '立即本地渲染', '今すぐローカルレンダー')}
+                    {t('지금 만들기', 'Make it now', '现在做', '今すぐ作る')}
                   </button>
                   <button type="button" className="desktop-secondary" disabled={busy} onClick={() => void enqueueQueuedRender()}>
-                    {t('대기열에 넣기', 'Add to queue', '加入队列', 'キューに追加')}
+                    {t('나중에 만들기', 'Make it later', '稍后再做', 'あとで作る')}
                   </button>
                 </div>
                 {queueJobs.length ? <p className="desktop-auto-recap">{queueJobs.length} {t('개 대기', 'queued', '个排队', '件待機')}</p> : null}
@@ -1990,11 +1990,11 @@ export default function DesktopWorkspace() {
                     <b>{exportPostLabel}</b>
                   </button>
                   <button type="button" role="tab" className={`desktop-auto-option${exportPane === 'exchange' ? ' is-open' : ''}`} aria-expanded={exportPane === 'exchange'} onClick={() => setExportPane((current) => current === 'exchange' ? '' : 'exchange')}>
-                    <span>{t('교환', 'Exchange', '交换', '交換')}</span>
-                    <b>EDL · OTIO</b>
+                    <span>{t('다른 편집기', 'Other editor', '其他剪辑软件', 'ほかの編集ソフト')}</span>
+                    <b>{t('목록 파일', 'List file', '列表文件', '一覧ファイル')}</b>
                   </button>
                   <button type="button" role="tab" className={`desktop-auto-option${exportPane === 'receipts' ? ' is-open' : ''}`} aria-expanded={exportPane === 'receipts'} onClick={() => setExportPane((current) => current === 'receipts' ? '' : 'receipts')}>
-                    <span>{t('기록', 'Receipts', '回执', '記録')}</span>
+                    <span>{t('올린 기록', 'Post history', '发布记录', '投稿の記録')}</span>
                     <b>{visibleReceipts.length ? `${visibleReceipts.length}` : t('아직 없음', 'None yet', '暂无', 'まだなし')}</b>
                   </button>
                 </div>
@@ -2016,9 +2016,10 @@ export default function DesktopWorkspace() {
                 ) : null}
                 {exportPane === 'exchange' ? (
                   <div className="desktop-auto-option-pane" role="tabpanel">
+                    <p>{t('다른 편집 프로그램에서 열 파일입니다.', 'A file another editor can open.', '给其他剪辑软件打开的文件。', 'ほかの編集ソフトで開くファイルです。')}</p>
                     <div className="desktop-relay-actions">
-                      <button type="button" onClick={() => void exportExchange('edl')}>EDL</button>
-                      <button type="button" onClick={() => void exportExchange('otio')}>OTIO</button>
+                      <button type="button" onClick={() => void exportExchange('edl')}>{t('편집 목록', 'Edit list', '剪辑列表', '編集リスト')}</button>
+                      <button type="button" onClick={() => void exportExchange('otio')}>{t('타임라인 파일', 'Timeline file', '时间线文件', 'タイムラインファイル')}</button>
                     </div>
                     {exchangeText ? <textarea className="desktop-exchange" readOnly value={exchangeText} /> : null}
                   </div>
