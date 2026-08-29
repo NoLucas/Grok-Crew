@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.18** · with Grok Bot · free now
+**v1.0.19** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,17 +50,21 @@ If attach fails, **Connect** says how to fix it. Do not open Start first.
 
 ---
 
-## Not in the installer yet
+## What changed in v1.0.19
 
-- 1.0.18 treated a connect-text copy as entry and hid the Start invite. This branch undoes that.
-- Copying is not a connection. Only a short `GROK_CREW_OK` enters. Paste the Start invite in that window so the seat works.
+- Copying the connect text is waiting only. The lamp waits for a short `GROK_CREW_OK`.
+- An OK-only first reply is a failed start. The first reply is the OK line plus a ready line.
+- Start pastes the job into the same chat. Linux Grok does not open `127.0.0.1`.
+- Sidebar video previews can pause.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.19 notes](docs/RELEASE_NOTES.v1.0.19.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.19.
 
 ## What changed in v1.0.18
 
 - Connect has no paste box for `GROK_CREW_OK`. Copying the connect text enters that seat on this desk.
 - The bot’s first reply is `GROK_CREW_OK`, then it does that seat’s job. Planner, scraper, and editor no longer share a “send OK and stop” script.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.18 notes](docs/RELEASE_NOTES.v1.0.18.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.18.
+The 1.0.18 list is in [the 1.0.18 notes](docs/RELEASE_NOTES.v1.0.18.md). That installer lit the lamp on copy; 1.0.19 undoes that.
 
 ## What changed in v1.0.17
 

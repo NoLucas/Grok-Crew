@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.18** · with Grok Bot · 现在免费
+**v1.0.19** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,17 +50,21 @@
 
 ---
 
-## 还没进安装文件的修复
+## v1.0.19 改了什么
 
-- 1.0.18 只复制连接文字就会签到，并把开始邀请藏起来。这个分支把它改回去。
-- 只复制不算已连接。只有短的 `GROK_CREW_OK` 才算签到。把开始里的文字贴到那个窗口才会做事。
+- 复制连接稿只是等待。灯要等短的 `GROK_CREW_OK`。
+- 只回 `GROK_CREW_OK` 再停下是失败开始。第一句回复是 OK 行加就绪行。
+- 开始会把工作贴进同一窗口。Linux 上的 Grok 不会打开 `127.0.0.1`。
+- 左侧影像预览可以暂停。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.19 发布说明](docs/RELEASE_NOTES.v1.0.19.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.19。
 
 ## v1.0.18 改了什么
 
 - **连接**里没有再贴 `GROK_CREW_OK` 的格子。复制连接文字后，这张书桌会签到。
 - 机器人的第一句回复是 `GROK_CREW_OK`，然后只做那个位子的工作。策划、采集、剪辑不再共用同一段「停下」文字。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.18 发布说明](docs/RELEASE_NOTES.v1.0.18.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.18。
+1.0.18 列表见 [1.0.18 发布说明](docs/RELEASE_NOTES.v1.0.18.md)。那份安装包会在复制时点灯，1.0.19 已修好。
 
 ## v1.0.17 改了什么
 
