@@ -770,15 +770,6 @@ export function AutoDesk({
         </p>
       ) : null}
 
-      {showComposer && !attached ? (
-        <section className="desktop-auto-connect" aria-live="polite">
-          <p>{t('자리 램프는 위 막대입니다. 기획·스크랩·편집은 Grok이든 Agent든 같은 세 칸입니다.', 'Seat lamps are the bar above. Plan, scrap, and cut use the same three cells for Grok or Agent.', '位子灯在上面那条。策划、抓取、剪辑对 Grok 或 Agent 都是同一三格。', '席ランプは上の棒です。企画・スクラップ・編集は Grok でも Agent でも同じ三マスです。')}</p>
-          <button type="button" className="desktop-secondary" onClick={onOpenBots}>
-            {t('연결 열기', 'Open Connect', '打开连接', '接続を開く')}
-          </button>
-        </section>
-      ) : null}
-
       {showComposer && wait ? (
         <button type="button" className="desktop-auto-jump" onClick={() => setStayOnCompose(false)}>
           {hasProject || pullStatus === 'arrived'
@@ -791,7 +782,6 @@ export function AutoDesk({
         <>
           <header className="desktop-auto-lead">
             <h1>{t('오늘 만들 영상을 적으세요', 'Write the video you want today', '写下今天要做的视频', '今日作る映像を書いてください')}</h1>
-            <p>{t('한 칸만 적으면 됩니다. 내파일/주소·스타일·TTS생성은 아래 칩입니다. 시작은 초대문을 복사하니, 지금 자리 창에 한 번 붙이세요.', 'Write in this one box. My file/address, style, and TTS are chips below. Start copies the invite, so paste it once in the current seat window.', '只写这一栏。我的文件/地址、风格、TTS 是下面的芯片。一开始会复制邀请，请贴到现在的位子窗口一次。', 'ここ一欄だけ書いてください。自分のファイル/住所・スタイル・TTS生成は下のチップです。始めると招待文をコピーするので、今の席の窓に一度貼ってください。')}</p>
           </header>
 
           <form

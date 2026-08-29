@@ -33,6 +33,9 @@ describe('desk composer restage', () => {
     assert.equal(auto.includes('봇 없이 영상 열기'), false);
     assert.equal(auto.includes('이름 붙이기'), false);
     assert.equal(auto.includes('비우면 위의 첫 줄'), false);
+    assert.equal(auto.includes('한 칸만 적으면 됩니다'), false);
+    assert.equal(auto.includes('자리 램프는 위 막대입니다'), false);
+    assert.equal(auto.includes("t('연결 열기'"), false);
     assert.match(auto, /어떤 영상을 만들까요\?/);
     assert.match(auto, /desktop-auto-composer-drop/);
     assert.match(auto, /제작 시작/);
