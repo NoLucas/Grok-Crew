@@ -32,8 +32,70 @@ export type TrashSummary = {
 };
 
 export const TRASH_DUE_SOON_DAYS = 3;
+export const RECENT_FOLDER_STORAGE_KEY = 'grok-crew-recent-folder-id';
+export const RECENT_FOLDER_TITLES = {
+  ko: '최근기록',
+  en: 'Recent',
+  zh: '最近记录',
+  ja: '最近',
+} as const;
 
-export function groupLibraryProjects(projects: LibraryProject[], folders: LibraryFolder[]) {
+type MemoryStorage = {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+};
+
+export function recentFolderTitle(language = 'ko'): string {
+  const key = language.slice(0, 2) as keyof typeof RECENT_FOLDER_TITLES;
+  return RECENT_FOLDER_TITLES[key] || RECENT_FOLDER_TITLES.ko;
+}
+
+export function isRecentFolderTitle(title: string): boolean {
+  const name = String(title || '').trim();
+  return Object.values(RECENT_FOLDER_TITLES).includes(name as typeof RECENT_FOLDER_TITLES.ko);
+}
+
+export function readRememberedRecentId(storage?: MemoryStorage | null): string {
+  try {
+    return String(storage?.getItem(RECENT_FOLDER_STORAGE_KEY) || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+export function writeRememberedRecentId(id: string, storage?: MemoryStorage | null) {
+  const next = String(id || '').trim();
+  if (!next || !storage) return;
+  try {
+    storage.setItem(RECENT_FOLDER_STORAGE_KEY, next);
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+export function findRecentFolder(folders: LibraryFolder[], rememberedId = ''): LibraryFolder | null {
+  if (rememberedId) {
+    const remembered = folders.find((folder) => folder.id === rememberedId);
+    if (remembered) return remembered;
+  }
+  return folders.find((folder) => isRecentFolderTitle(folder.title)) || null;
+}
+
+export function unfiledProjectIds(projects: LibraryProject[], folders: LibraryFolder[]): string[] {
+  const known = new Set(folders.map((folder) => folder.id));
+  return projects
+    .filter((project) => {
+      const folderId = typeof project.folder_id === 'string' ? project.folder_id : '';
+      return !folderId || !known.has(folderId);
+    })
+    .map((project) => project.id);
+}
+
+export function groupLibraryProjects(
+  projects: LibraryProject[],
+  folders: LibraryFolder[],
+  recentId?: string | null,
+) {
   const buckets = new Map<string, LibraryProject[]>();
   for (const folder of folders) buckets.set(folder.id, []);
   const unfiled: LibraryProject[] = [];
@@ -43,9 +105,17 @@ export function groupLibraryProjects(projects: LibraryProject[], folders: Librar
     if (bucket) bucket.push(project);
     else unfiled.push(project);
   }
+  const recent = recentId ? folders.find((folder) => folder.id === recentId) : undefined;
+  if (recent) {
+    const bucket = buckets.get(recent.id);
+    if (bucket) bucket.push(...unfiled);
+  }
+  const ordered = recent
+    ? [recent, ...folders.filter((folder) => folder.id !== recent.id)]
+    : folders;
   return {
-    folders: folders.map((folder) => ({ folder, projects: buckets.get(folder.id) ?? [] })),
-    unfiled,
+    folders: ordered.map((folder) => ({ folder, projects: buckets.get(folder.id) ?? [] })),
+    unfiled: recent ? [] : unfiled,
   };
 }
 

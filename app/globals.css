@@ -7124,7 +7124,7 @@ select {
 .desktop-library { display: grid; gap: 8px; }
 .desktop-library-toolbar { display: flex; justify-content: flex-end; padding: 0 8px; }
 .desktop-library-toolbar .desktop-secondary { padding: 5px 8px; font-size: 12px; }
-.desktop-library-add { display: grid; grid-template-columns: 1fr auto; gap: 6px; padding: 0 8px; }
+.desktop-library-add { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; padding: 0 8px; align-items: center; }
 .desktop-library-add input,
 .desktop-library-item input,
 .desktop-library-folder summary input {
@@ -7142,7 +7142,7 @@ select {
 .desktop-library-unfiled.is-drop { outline: 1px dashed var(--desktop-blue); background: color-mix(in srgb, var(--desktop-blue) 8%, transparent); }
 .desktop-library-folder > summary {
   display: grid;
-  grid-template-columns: 14px 1fr auto;
+  grid-template-columns: 10px 14px 1fr auto;
   gap: 6px;
   align-items: center;
   padding: 7px 8px;
@@ -7150,8 +7150,24 @@ select {
   cursor: pointer;
 }
 .desktop-library-folder > summary::-webkit-details-marker { display: none; }
-.desktop-library-folder > summary span { color: var(--desktop-muted); font-size: 11px; transition: transform .12s ease; }
-.desktop-library-folder[open] > summary span { transform: rotate(90deg); }
+.desktop-library-chevron {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 3.5px 0 3.5px 5px;
+  border-color: transparent transparent transparent currentColor;
+  justify-self: center;
+  color: var(--desktop-muted);
+  transition: transform .12s ease;
+}
+.desktop-library-folder[open] > summary .desktop-library-chevron { transform: rotate(90deg); }
+.desktop-library-icon {
+  width: 14px;
+  height: 14px;
+  display: block;
+  color: currentColor;
+  flex: none;
+}
 .desktop-library-folder > summary b { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .desktop-library-folder > summary em { color: var(--desktop-muted); font-size: 11px; font-style: normal; }
 .desktop-library-label,

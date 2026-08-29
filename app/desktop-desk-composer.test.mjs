@@ -37,7 +37,9 @@ describe('desk composer restage', () => {
     assert.match(text, /desktop-export-grid is-composer/);
     assert.match(text, /setupPane === 'shape'/);
     assert.match(text, /exportPane === 'post'/);
-    assert.match(text, /desktop-version-fold/);
+    assert.equal(text.includes('desktop-version-fold'), false);
+    assert.equal(text.includes('버전 기록'), false);
+    assert.match(text, /폴더 만들기/);
     assert.match(text, /미리보기 프록시/);
     assert.equal(text.includes('desktop-card-title'), false);
   });

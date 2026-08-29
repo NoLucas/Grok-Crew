@@ -2,14 +2,41 @@
 
 import { useEffect, useRef, useState, type DragEvent, type FormEvent, type MouseEvent } from 'react';
 import {
+  findRecentFolder,
   groupLibraryProjects,
+  isRecentFolderTitle,
+  readRememberedRecentId,
   summarizeTrash,
   trashDaysLeft,
   type LibraryFolder,
   type LibraryProject,
   type TrashItem,
 } from './desktop-project-library-model';
+import { ensureRecentFolder } from './desktop-project-library-recent';
 import { useLanguage } from './language';
+
+function FolderGlyph({ recent = false }: { recent?: boolean }) {
+  return (
+    <svg className="desktop-library-icon" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M2 4.6h4.1l1.1 1.5H14V13H2z" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      {recent ? (
+        <>
+          <circle cx="10.1" cy="9.6" r="2.05" fill="none" stroke="currentColor" strokeWidth="1.1" />
+          <path d="M10.1 8.5v1.3l.85.55" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+        </>
+      ) : null}
+    </svg>
+  );
+}
+
+function ClipGlyph() {
+  return (
+    <svg className="desktop-library-icon" viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="3" y="4" width="10" height="8" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M6 7.2 10 8 6 8.8z" fill="currentColor" />
+    </svg>
+  );
+}
 
 type StudioRequest = (path: string, init?: RequestInit) => Promise<unknown>;
 
@@ -43,9 +70,11 @@ type Props = {
   studioState: 'loading' | 'ready' | 'error';
   senderLabel: (project: LibraryProject) => string;
   request: StudioRequest;
+  addingFolder?: boolean;
   onSelect: (projectId: string) => void;
   onRefresh: () => Promise<void> | void;
   onMessage: (text: string) => void;
+  onAddingFolder?: (open: boolean) => void;
 };
 
 export function DesktopProjectLibrary({
@@ -57,14 +86,15 @@ export function DesktopProjectLibrary({
   studioState,
   senderLabel,
   request,
+  addingFolder = false,
   onSelect,
   onRefresh,
   onMessage,
+  onAddingFolder,
 }: Props) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [renaming, setRenaming] = useState<{ kind: 'project' | 'folder'; id: string; value: string } | null>(null);
-  const [addingFolder, setAddingFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [dropId, setDropId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -73,8 +103,15 @@ export function DesktopProjectLibrary({
   const [purgePrompt, setPurgePrompt] = useState<PurgePrompt | null>(null);
   const [sourceAction, setSourceAction] = useState<SourceAction>('keep');
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const grouped = groupLibraryProjects(projects, folders);
+  const bootRef = useRef(false);
+  const rememberedRecentId = typeof window === 'undefined' ? '' : readRememberedRecentId(window.localStorage);
+  const recent = findRecentFolder(folders, rememberedRecentId);
+  const grouped = groupLibraryProjects(projects, folders, recent?.id);
   const expiry = summarizeTrash(trash);
+  const setDraft = (open: boolean) => {
+    onAddingFolder?.(open);
+    if (!open) setFolderName('');
+  };
 
   useEffect(() => {
     if (!menu) return;
@@ -90,6 +127,29 @@ export function DesktopProjectLibrary({
     const timer = window.setTimeout(() => setFolderUndo(null), FOLDER_UNDO_MS);
     return () => window.clearTimeout(timer);
   }, [folderUndo]);
+
+  useEffect(() => {
+    if (studioState !== 'ready' || bootRef.current) return;
+    bootRef.current = true;
+    let cancelled = false;
+    void ensureRecentFolder({
+      folders,
+      projects,
+      request,
+      language,
+      storage: typeof window === 'undefined' ? undefined : window.localStorage,
+      migrate: true,
+    }).then((result) => {
+      if (cancelled) return;
+      if (result.created || result.migrated.length) return onRefresh();
+      return undefined;
+    }).catch(() => {
+      bootRef.current = false;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [folders, language, onRefresh, projects, request, studioState]);
 
   const run = async (path: string, body?: Record<string, unknown>, ok?: string) => {
     setBusy(true);
@@ -109,10 +169,15 @@ export function DesktopProjectLibrary({
 
   const createFolder = async (event: FormEvent) => {
     event.preventDefault();
-    if (!folderName.trim()) return;
-    await run('/api/v2/project-folders', { title: folderName.trim() }, t('폴더를 만들었습니다.', 'Created the folder.', '已创建文件夹。', 'フォルダを作りました。'));
-    setFolderName('');
-    setAddingFolder(false);
+    const name = folderName.trim();
+    if (!name) return;
+    if (isRecentFolderTitle(name) || (recent && name === recent.title)) {
+      onMessage(t('최근기록은 이미 있습니다.', 'Recent is already there.', '最近记录已经有了。', '最近はもうあります。'));
+      setDraft(false);
+      return;
+    }
+    await run('/api/v2/project-folders', { title: name }, t('폴더를 만들었습니다.', 'Created the folder.', '已创建文件夹。', 'フォルダを作りました。'));
+    setDraft(false);
   };
 
   const commitRename = async () => {
@@ -121,6 +186,11 @@ export function DesktopProjectLibrary({
       return;
     }
     if (renaming.kind === 'folder') {
+      if (renaming.id === recent?.id || isRecentFolderTitle(renaming.value)) {
+        onMessage(t('최근기록은 이름을 바꿀 수 없습니다.', 'Recent cannot be renamed.', '最近记录不能改名。', '最近は名前を変えられません。'));
+        setRenaming(null);
+        return;
+      }
       await run(`/api/v2/project-folders/${renaming.id}/rename`, { title: renaming.value.trim() }, t('폴더 이름을 바꿨습니다.', 'Renamed the folder.', '已重命名文件夹。', 'フォルダ名を変えました。'));
     } else {
       await run(`/api/v2/projects/${renaming.id}/rename`, { title: renaming.value.trim() }, t('프로젝트 이름을 바꿨습니다.', 'Renamed the project.', '已重命名项目。', 'プロジェクト名を変えました。'));
@@ -154,6 +224,10 @@ export function DesktopProjectLibrary({
   };
 
   const deleteFolder = async (id: string) => {
+    if (recent?.id === id) {
+      onMessage(t('최근기록은 지울 수 없습니다.', 'Recent cannot be deleted.', '最近记录不能删除。', '最近は消せません。'));
+      return;
+    }
     const folder = folders.find((item) => item.id === id);
     const result = await run(`/api/v2/project-folders/${id}/delete`, {}) as {
       id?: string;
@@ -162,13 +236,23 @@ export function DesktopProjectLibrary({
       project_ids?: string[];
     } | null;
     if (result?.id) {
+      const ids = Array.isArray(result.project_ids) ? result.project_ids.map(String) : [];
       setFolderUndo({
         id: result.id,
         title: String(result.title || folder?.title || ''),
         sort_order: Number(result.sort_order || 0),
-        project_ids: Array.isArray(result.project_ids) ? result.project_ids.map(String) : [],
+        project_ids: ids,
       });
-      onMessage(t('폴더를 지웠습니다. 프로젝트는 남아 있습니다.', 'Deleted the folder. Projects stay.', '已删除文件夹。项目仍在。', 'フォルダを消しました。プロジェクトは残ります。'));
+      if (recent?.id) {
+        for (const projectId of ids) {
+          await request(`/api/v2/projects/${projectId}/move`, {
+            method: 'POST',
+            body: JSON.stringify({ folder_id: recent.id }),
+          }).catch(() => null);
+        }
+        await onRefresh();
+      }
+      onMessage(t('폴더를 지웠습니다. 프로젝트는 최근기록에 있습니다.', 'Deleted the folder. Projects are in Recent.', '已删除文件夹。项目在最近记录里。', 'フォルダを消しました。プロジェクトは最近にあります。'));
     }
   };
 
@@ -237,7 +321,7 @@ export function DesktopProjectLibrary({
           onClick={() => onSelect(item.id)}
           onContextMenu={(event) => openProjectMenu(event, item.id)}
         >
-          <span>▣</span>
+          <ClipGlyph />
           <div>
             {renamingThis ? (
               <input
@@ -260,11 +344,6 @@ export function DesktopProjectLibrary({
 
   return (
     <div className="desktop-library">
-      <div className="desktop-library-toolbar">
-        <button type="button" className="desktop-secondary" disabled={busy} onClick={() => setAddingFolder((value) => !value)}>
-          {t('폴더 추가', 'Add folder', '添加文件夹', 'フォルダを追加')}
-        </button>
-      </div>
       {folderUndo ? (
         <div className="desktop-library-undo">
           <p>{t(`“${folderUndo.title}” 폴더를 지웠습니다. 프로젝트는 남아 있습니다.`, `Removed “${folderUndo.title}”. Projects stay.`, `已删除“${folderUndo.title}”文件夹。项目仍在。`, `「${folderUndo.title}」フォルダを消しました。プロジェクトは残ります。`)}</p>
@@ -283,13 +362,16 @@ export function DesktopProjectLibrary({
             onChange={(event) => setFolderName(event.target.value)}
           />
           <button type="submit" className="desktop-secondary" disabled={!folderName.trim() || busy}>{t('만들기', 'Create', '创建', '作成')}</button>
+          <button type="button" className="desktop-auto-text" onClick={() => setDraft(false)}>{t('닫기', 'Close', '关闭', '閉じる')}</button>
         </form>
       ) : null}
       <div className="desktop-project-list desktop-library-list">
-        {grouped.folders.map(({ folder, projects: items }) => (
+        {grouped.folders.map(({ folder, projects: items }) => {
+          const isRecent = folder.id === recent?.id;
+          return (
           <details
             key={folder.id}
-            className={dropId === folder.id ? 'desktop-library-folder is-drop' : 'desktop-library-folder'}
+            className={`${dropId === folder.id ? 'desktop-library-folder is-drop' : 'desktop-library-folder'}${isRecent ? ' is-recent' : ''}`}
             open={!folded[folder.id]}
             onToggle={(event) => {
               const nextOpen = event.currentTarget.open;
@@ -299,8 +381,9 @@ export function DesktopProjectLibrary({
             onDragLeave={() => setDropId((current) => (current === folder.id ? null : current))}
             onDrop={onDrop(folder.id)}
           >
-            <summary onContextMenu={(event) => openFolderMenu(event, folder.id)}>
-              <span>▸</span>
+            <summary onContextMenu={isRecent ? undefined : (event) => openFolderMenu(event, folder.id)}>
+              <i className="desktop-library-chevron" aria-hidden="true" />
+              <FolderGlyph recent={isRecent} />
               {renaming?.kind === 'folder' && renaming.id === folder.id ? (
                 <input
                   autoFocus
@@ -316,21 +399,14 @@ export function DesktopProjectLibrary({
                     if (event.key === 'Escape') setRenaming(null);
                   }}
                 />
-              ) : <b>{folder.title}</b>}
+              ) : <b>{isRecent ? t('최근기록', 'Recent', '最近记录', '最近') : folder.title}</b>}
               <em>{items.length}</em>
             </summary>
             {items.length ? items.map(renderProject) : <p className="desktop-library-empty">{t('이 폴더는 비어 있습니다. 프로젝트를 끌어다 놓으세요.', 'This folder is empty. Drop a project here.', '这个文件夹是空的。把项目拖进来。', 'このフォルダは空です。プロジェクトをドロップしてください。')}</p>}
           </details>
-        ))}
-        <div
-          className={dropId === '' ? 'desktop-library-unfiled is-drop' : 'desktop-library-unfiled'}
-          onDragOver={onDragOver('')}
-          onDragLeave={() => setDropId((current) => (current === '' ? null : current))}
-          onDrop={onDrop(null)}
-        >
-          {folders.length ? <p className="desktop-library-label">{t('폴더 없음', 'No folder', '未分组', 'フォルダなし')}</p> : null}
-          {grouped.unfiled.map(renderProject)}
-        </div>
+          );
+        })}
+        {!recent && grouped.unfiled.length ? grouped.unfiled.map(renderProject) : null}
         {studioState === 'loading' && !projects.length ? <p className="desktop-side-empty">{t('Local Studio에 연결하는 중…', 'Connecting to Local Studio…', '正在连接本地工作室…', 'Local Studio に接続しています…')}</p> : null}
         {studioState === 'error' && !projects.length ? <p className="desktop-side-empty">{t('연결하지 못했습니다. 다시 시도하세요.', 'Could not connect. Retry from the banner.', '无法连接。请从横幅重试。', '接続できません。バナーから再試行してください。')}</p> : null}
         {studioState === 'ready' && !projects.length && !folders.length ? (
@@ -448,10 +524,12 @@ export function DesktopProjectLibrary({
               </button>
               {menu.moveOpen ? (
                 <div className="desktop-library-submenu">
-                  <button type="button" role="menuitem" onClick={() => void run(`/api/v2/projects/${menu.id}/move`, { folder_id: null }, t('폴더에서 뺐습니다.', 'Removed from the folder.', '已移出文件夹。', 'フォルダから外しました。'))}>
-                    {t('폴더 없음', 'No folder', '未分组', 'フォルダなし')}
-                  </button>
-                  {folders.map((folder) => (
+                  {recent ? (
+                    <button type="button" role="menuitem" onClick={() => void run(`/api/v2/projects/${menu.id}/move`, { folder_id: recent.id }, t('최근기록으로 뺐습니다.', 'Moved back to Recent.', '已移回最近记录。', '最近へ戻しました。'))}>
+                      {t('최근기록으로', 'To Recent', '移到最近记录', '最近へ')}
+                    </button>
+                  ) : null}
+                  {folders.filter((folder) => folder.id !== recent?.id).map((folder) => (
                     <button key={folder.id} type="button" role="menuitem" onClick={() => void run(`/api/v2/projects/${menu.id}/move`, { folder_id: folder.id }, t('폴더로 옮겼습니다.', 'Moved to the folder.', '已移到文件夹。', 'フォルダへ移しました。'))}>
                       {folder.title}
                     </button>
@@ -462,6 +540,8 @@ export function DesktopProjectLibrary({
                 {t('휴지통으로', 'Move to trash', '移到废纸篓', 'ゴミ箱へ')}
               </button>
             </>
+          ) : recent?.id === menu.id ? (
+            <p className="desktop-library-empty">{t('최근기록은 지울 수 없습니다.', 'Recent cannot be deleted.', '最近记录不能删除。', '最近は消せません。')}</p>
           ) : (
             <>
               <button type="button" role="menuitem" onClick={() => {
