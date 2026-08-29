@@ -22,6 +22,7 @@
 | 램프 | 연결됨 / 연결되지않음만. `seconds_since_checkin`은 roster에 이미 있다. |
 | 업데이트 칩 | 새 버전이면 GitHub Release를 **연다**. exe를 받아 갈아끼우지는 않는다. `signed: false`면 `available_external`. |
 | 같은 PC 봇이 초대문을 읽기 | `docs/AUTO_TAB.ko.md` 3판. 계약 전에 화면에 넣지 않는다. |
+| 자리 확인 | 채팅 루틴·예약 작업·`keep`은 쓰지 않는다. Linux Grok은 `GROK_CREW_OK`만 보낸다. 운영자가 연결에 붙이면 책상이 `bot-entry`와 `still_here`를 한다. |
 | Agent 체크인 | 닫혀 있다. 램프를 Agent에 쓰려면 그 결정이 먼저다. |
 
 ---

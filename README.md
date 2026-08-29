@@ -42,7 +42,7 @@ The source files live in [`public/bot-skills/`](public/bot-skills/). Copying the
 
 1. Open `GrokCrew-Windows.exe`. The installer asks which TTS to keep, downloads that one, then copies the app. Next with no pick is Kokoro-82M.
 2. First open asks for a language. If the installer already left a voice, the TTS wizard stays closed.
-3. On **Connect**, copy the attach text again into the bot window. Grok Bot should check in from the registered Windows after approval. After that, run `keep` once on that Windows. The minute seat check is `keep`, not a chat scheduled job. **Disconnect** sends `disconnected` so `keep` stops. If that does not land, paste the bot `GROK_CREW_OK` line here. Copying alone does not connect.
+3. On **Connect**, copy the attach text again into the bot window. The bot sends only the `GROK_CREW_OK` line and stops. Do not make a Grok Routine, a scheduled job, or `keep` in chat. Paste that line on Connect and this desk enters the seat and holds the check. **Disconnect** sends `disconnected`. Copying alone does not connect.
 4. On **Start**, write what they want and press **Start production**. If the Grok seats are already checked in on this Windows, they read the waiting invite. This window waits. The **crew board** chat stacks each seat’s start and handoff line.
 5. When the preview appears, **save on this PC**. Posting is later, and only if they want it.
 

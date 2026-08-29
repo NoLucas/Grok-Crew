@@ -17,9 +17,9 @@ describe('desk composer restage', () => {
     assert.equal(text.includes('안 열리면'), false);
     assert.equal(text.includes('봇 없이 영상 열기'), false);
     assert.match(text, /이 창의 다른 연결/);
-    assert.match(text, /자리 확인은 이 Windows의 keep이 1분마다/);
-    assert.match(text, /채팅에 매 분 작업을 만들지 마세요/);
-    assert.match(text, /Seat check is Windows keep every minute/);
+    assert.match(text, /자리 확인은 이 책상이 합니다/);
+    assert.match(text, /채팅에 루틴·매 분 예약 작업을 만들지 마세요/);
+    assert.match(text, /This desk does the seat check/);
     assert.match(text, /desktop-spinner-inline/);
     assert.match(text, /확인 중/);
     assert.match(text, /끊는 중/);

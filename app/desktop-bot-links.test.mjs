@@ -81,21 +81,20 @@ describe('remote bot links', () => {
       assert.match(text, /Grok Bot/);
       assert.match(text, /7K2M9Q/);
       assert.match(text, /GROK_CREW_OK 7K2M9Q Grok Bot/);
-      assert.match(text, /127\.0\.0\.1:7214\/api\/bot-entry/);
       assert.match(text, /Invoke-RestMethod/);
       assert.match(text, /grok-planner/);
       assert.match(text, /plan_edit/);
       assert.match(text, /heartbeat/);
-      assert.match(text, /grok-crew.py keep/);
       assert.equal(SEAT_KEEP_SECONDS, 60);
       assert.equal(SEAT_ACTIVE_SECONDS, 300);
-      assert.match(text, new RegExp(`Start-Sleep -Seconds ${SEAT_KEEP_SECONDS}`));
-      assert.match(text, /1분마다|每 1 分钟|1 分ごと|every minute/);
+      assert.match(text, /루틴을 만들지 마세요|Do not create a Grok Routine|不要做 Routine|ルーチンを作らない/);
       assert.match(text, /예약 작업을 만들지 마세요|Do not create a chat scheduled|不要在聊天里做 still_here|予約作業を作らない/);
       assert.match(text, /그 Windows가 아니|cannot be verified|不是那台 Windows|その Windows ではない/);
-      assert.match(text, /keep가 돌아가면|keep 在跑时|keep が動いている|While keep is running/);
+      assert.match(text, /책상이 합니다|desk after the operator pastes|书桌来做|机がします/);
       assert.match(text, /disconnected/);
-      assert.match(text, /\$beat\.bot\.last_action -eq 'disconnected'/);
+      assert.doesNotMatch(text, /grok-crew.py keep/);
+      assert.doesNotMatch(text, /Start-Sleep/);
+      assert.doesNotMatch(text, /next-invite/);
       assert.doesNotMatch(text, /1분마다 같은 Windows에서 still_here heartbeat를 남기세요/);
       assert.doesNotMatch(text, /Leave a still_here heartbeat on the same Windows every minute so this desk knows the window is open/);
       assert.doesNotMatch(text, /5분마다|每 5 分钟|5 分ごと|every five minutes/);
@@ -117,9 +116,7 @@ describe('remote bot links', () => {
       assert.match(text, /이 대화가 그 Windows가 아니면|If this conversation is not that Windows|若这段对话不是那台 Windows|この会話がその Windows でなければ/);
       assert.match(text, /창이 없다고 하지 마세요|Do not say the window is missing|不要说没有窗口|窓がないと言わないでください/);
       assert.match(text, /책상이 입장|desk enters the seat|书桌会签到|机が入場/);
-      assert.match(text, /api\/bots\/next-invite/);
-      assert.match(text, /next-invite/);
-      assert.match(text, /사람이 초대문을 다시 붙이지 않습니다|操作员不会再粘贴一次|人が招待文をもう一度貼ることはありません|will not paste the invite again/);
+      assert.match(text, /사람이 다시 붙이지 않습니다|will not paste the invite again|不会再粘贴邀请|もう一度貼ることはありません/);
       assert.match(text, /GROK_CREW_OK 한 줄만|只发 GROK_CREW_OK|GROK_CREW_OK の一行だけ|only the GROK_CREW_OK line/);
       assert.match(text, /디스크에서 스크립트를 찾지 마세요|不要在磁盘上找脚本|ディスクでスクリプトを探さない|Do not search the disk for the script/);
       assert.doesNotMatch(text, /스크립트를 찾는 중|searching for the script/);
@@ -129,9 +126,9 @@ describe('remote bot links', () => {
       assert.doesNotMatch(text, /DESKTOP-LJFJI0U/);
     }
     const fallback = remoteConnectPaste('grok', '7K2M9Q', 'ko', 'planner', 8123);
-    assert.match(fallback, /127\.0\.0\.1:8123\/api\/bot-entry/);
     assert.match(fallback, /8123가 없다/);
     assert.doesNotMatch(fallback, /127\.0\.0\.1:7214/);
+    assert.doesNotMatch(fallback, /grok-crew.py keep/);
     assert.equal(studioPortFromApiBase('http://127.0.0.1:8123'), 8123);
     assert.equal(studioPortFromApiBase('https://evil.example:7214'), 7214);
     const agent = remoteConnectPaste('custom', '7K2M9Q', 'ko', 'scraper');

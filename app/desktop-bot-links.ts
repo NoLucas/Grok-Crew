@@ -657,26 +657,12 @@ export function seatId(kind: BotKind, role: BotRole, pairCode: string): string {
   return `${kind}-${role}-${pairCode}`;
 }
 
-function grokKeepLines(who: string, role: BotRole, origin: string): { py: string; ps: string; entry: string; beat: string; pull: string } {
-  const id = grokSeatBotId(role);
-  const purpose = seatPurpose(role);
-  const entry = `Invoke-RestMethod -Uri ${origin}/api/bot-entry -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","purpose":"${purpose}"}'`;
-  const beat = `Invoke-RestMethod -Uri ${origin}/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}","action":"still_here"}'`;
-  const pull = `Invoke-RestMethod -Uri ${origin}/api/bots/next-invite -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}"}'`;
-  return {
-    py: `python grok-crew.py keep --server ${origin} --bot-id ${id} --display-name "${who}" --purpose ${purpose}`,
-    ps: `${entry}; while ($true) { $beat = ${beat}; if ($beat.bot.last_action -eq 'disconnected') { break }; try { ${pull} } catch {}; Start-Sleep -Seconds ${SEAT_KEEP_SECONDS} }`,
-    entry,
-    beat,
-    pull,
-  };
-}
-
 function grokWindowsCheckIn(who: string, role: BotRole, language: string, studioPort = DEFAULT_STUDIO_PORT): string[] {
   const lang = language.slice(0, 2);
   const port = studioCheckInPort(studioPort);
   const origin = studioCheckInOrigin(port);
-  const keep = grokKeepLines(who, role, origin);
+  const id = grokSeatBotId(role);
+  const purpose = seatPurpose(role);
   const work = heartbeatWorkPair(role);
   const startHint = lang === 'zh'
     ? '开工时对下一位子说的一行'
@@ -698,20 +684,15 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     return [
       '명령을 실행할 컴퓨터는 운영자가 등록한 Windows Computer만입니다. 이름을 지어내지 마세요.',
       '봇 쪽 Linux·공유 컴퓨터에서 127.0.0.1을 열지 마세요. 그 주소는 이 책상이 아닙니다.',
-      '이 대화가 그 Windows가 아니면(Linux·공유·클라우드) 창과 7214를 확인하지 마세요. 창이 없다고 하지 마세요. 7214가 없다고 하지 마세요. GROK_CREW_OK 한 줄만 보내고 멈추세요. 운영자가 연결에 그 줄을 붙이면 그 Windows 책상이 입장합니다.',
-      'Grok exe를 찾지 마세요. 채팅 쪽에 still_here·매 분·1분마다 예약 작업을 만들지 마세요. 승인 창이 다시 뜹니다.',
+      `이 대화가 그 Windows가 아니면(Linux·공유·클라우드) 창과 ${port}를 확인하지 마세요. 창이 없다고 하지 마세요. ${port}가 없다고 하지 마세요. GROK_CREW_OK 한 줄만 보내고 멈추세요. 운영자가 연결에 그 줄을 붙이면 그 Windows 책상이 입장합니다.`,
+      '루틴을 만들지 마세요. Grok exe를 찾지 마세요. 채팅 쪽에 still_here·매 분·1분마다 예약 작업을 만들지 마세요. 승인 창이 다시 뜹니다.',
       '승인 글에 그 Windows가 아니라고 하거나 실행 면이 Linux·공유면 허용하지 마세요. GROK_CREW_OK 한 줄만 보내고 멈추세요.',
       '그 Windows가 맞고 승인이 한 번 뜨면 한 번만 받으세요. 거부되면 멈추고 한 줄로만 알리세요.',
       '그 Windows에서만, Grok Crew 창이 꺼져 있으면 멈추고 "창이 없다"고 하세요. 이 대화가 그 Windows가 아니면 창이 없다고 하지 마세요.',
-      '그 Windows에서만 아래 keep을 한 번 실행하세요. 이 한 줄이 입장하고, 그 자리에서 still_here와 초대문 읽기를 1분마다 합니다. 채팅에서 다시 보내지 마세요. Python이 있으면 그쪽만 써도 됩니다. 그 Windows가 아니면 keep을 실행하지 마세요.',
-      keep.py,
-      `(스크립트는 그 Windows에서 ${origin}/downloads/grok-crew.py)`,
-      'PowerShell이면 아래를 한 번만 돌리세요.',
-      keep.ps,
-      'keep가 돌아가면 7214·still_here·exe 확인을 다시 요청하지 마세요.',
-      '연결에서 연결 해제를 누르면 책상이 disconnected를 보냅니다. keep은 그 명령을 보고 멈춥니다. 채팅에서 keep을 다시 켜지 마세요.',
-      '초대문은 keep이 읽습니다. 사람이 초대문을 다시 붙이지 않습니다. 글을 받으면 그 일만 합니다. 404면 할 일이 아직 없습니다. 409면 다른 봇이 가져간 것입니다. 채팅에 토큰을 넣지 마세요.',
-      `할 일이 바뀌면 같은 Windows에서 heartbeat를 바로 한 번 보냅니다. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 시작과 넘김 모두 detail.note에 다음 자리에게 말하는 한 줄을 넣습니다. 그 두 줄이 크루 보드 대화입니다. 없는 말은 만들지 마세요. 채팅에는 토큰을 넣지 마세요.`,
+      `이 자리 bot_id는 ${id}입니다. purpose는 ${purpose}입니다. keep·루틴·예약 작업을 이 채팅에서 실행하지 마세요. 입장과 자리 확인은 운영자가 연결에 GROK_CREW_OK를 붙이면 그 Windows 책상이 합니다.`,
+      '연결에서 연결 해제를 누르면 책상이 disconnected를 보냅니다. 채팅에서 keep이나 루틴을 켜지 마세요.',
+      '초대문은 사람이 다시 붙이지 않습니다. 글을 받으면 그 일만 합니다. 채팅에 토큰을 넣지 마세요.',
+      `할 일이 바뀌면 그 Windows에서만 heartbeat를 바로 한 번 보냅니다. 루틴으로 보내지 마세요. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 시작과 넘김 모두 detail.note에 다음 자리에게 말하는 한 줄을 넣습니다. 그 두 줄이 크루 보드 대화입니다. 없는 말은 만들지 마세요. 채팅에는 토큰을 넣지 마세요.`,
       startBeat,
       readyBeat,
       `그 Windows에서만, ${port}가 안 열리면 멈추고 "${port}가 없다"고 하세요. 이 대화가 그 Windows가 아니면 ${port}가 없다고 하지 마세요. 디스크에서 스크립트를 찾지 마세요.`,
@@ -722,20 +703,15 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     return [
       '只在操作员已登记的 Windows Computer 上执行命令。不要编造主机名。',
       '不要在机器人那边的 Linux 或共享电脑上打开 127.0.0.1。那个地址不是这张书桌。',
-      '若这段对话不是那台 Windows（Linux、共享、云），不要检查窗口和 7214。不要说没有窗口。不要说没有 7214。只发 GROK_CREW_OK 那一行然后停下。操作员把那一行贴到连接后，那台 Windows 书桌会签到。',
-      '不要找 Grok exe。不要在聊天里做 still_here、每分钟、每 1 分钟预约作业。批准窗会再跳出来。',
+      `若这段对话不是那台 Windows（Linux、共享、云），不要检查窗口和 ${port}。不要说没有窗口。不要说没有 ${port}。只发 GROK_CREW_OK 那一行然后停下。操作员把那一行贴到连接后，那台 Windows 书桌会签到。`,
+      '不要做 Routine。不要找 Grok exe。不要在聊天里做 still_here、每分钟、每 1 分钟预约作业。批准窗会再跳出来。',
       '若批准文说不是那台 Windows，或执行面是 Linux/共享，不要允许。只发 GROK_CREW_OK 那一行然后停下。',
       '若就是那台 Windows 且批准只出现一次，接受一次。若拒绝，停下来只回一行。',
       '只在那台 Windows 上，若 Grok Crew 窗口是关的，停下来并写“没有窗口”。若这段对话不是那台 Windows，不要说没有窗口。',
-      '只在那台 Windows 上把下面的 keep 跑一次。这一行会签到，并在那里每 1 分钟做 still_here 和读邀请。不要从聊天再发。有 Python 用那一行即可。若这段对话不是那台 Windows，不要跑 keep。',
-      keep.py,
-      `(脚本在那台 Windows 上：${origin}/downloads/grok-crew.py)`,
-      '若用 PowerShell，只跑下面这一次。',
-      keep.ps,
-      'keep 在跑时，不要再请求检查 7214、still_here 或 exe。',
-      '连接里按下断开后书桌会发 disconnected。keep 看到后停下。不要从聊天再开 keep。',
-      '邀请由 keep 读取。操作员不会再粘贴一次。读到文字后只做那件事。404 表示还没有工作。409 表示别的机器人已经拿走。不要把令牌写进聊天。',
-      `事情一变就在同一台 Windows 上立刻发一次 heartbeat。action 先用 ${work.start}，做完改成 ${work.ready}。开工和转交都要在 detail.note 写给下一位子的一行。这两行就是组员看板对话。不要编造没有的话。不要把令牌写进聊天。`,
+      `这个位子 bot_id 是 ${id}。purpose 是 ${purpose}。不要在这个聊天里跑 keep、Routine 或预约作业。签到和位子确认由操作员把 GROK_CREW_OK 贴到连接后，那台 Windows 书桌来做。`,
+      '连接里按下断开后书桌会发 disconnected。不要从聊天再开 keep 或 Routine。',
+      '操作员不会再粘贴邀请。读到文字后只做那件事。不要把令牌写进聊天。',
+      `事情一变就只在那台 Windows 上立刻发一次 heartbeat。不要用 Routine 发。action 先用 ${work.start}，做完改成 ${work.ready}。开工和转交都要在 detail.note 写给下一位子的一行。这两行就是组员看板对话。不要编造没有的话。不要把令牌写进聊天。`,
       startBeat,
       readyBeat,
       `只在那台 Windows 上，若 ${port} 没开，停下来只写“没有 ${port}”。若这段对话不是那台 Windows，不要说没有 ${port}。不要在磁盘上找脚本。`,
@@ -746,20 +722,15 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     return [
       'コマンドを実行するコンピュータは、運営者が登録した Windows Computer だけです。名前を作らないでください。',
       'ボット側の Linux や共有コンピュータで 127.0.0.1 を開かないでください。その住所はこのデスクではありません。',
-      'この会話がその Windows でなければ（Linux・共有・クラウド）、窓と 7214 を確認しないでください。窓がないと言わないでください。7214 がないと言わないでください。GROK_CREW_OK の一行だけ送って止まってください。運営者が接続にその行を貼ると、その Windows の机が入場します。',
-      'Grok exe を探さないでください。チャット側に still_here・毎分・1 分ごとの予約作業を作らないでください。承認窓がまた出ます。',
+      `この会話がその Windows でなければ（Linux・共有・クラウド）、窓と ${port} を確認しないでください。窓がないと言わないでください。${port} がないと言わないでください。GROK_CREW_OK の一行だけ送って止まってください。運営者が接続にその行を貼ると、その Windows の机が入場します。`,
+      'ルーチンを作らないでください。Grok exe を探さないでください。チャット側に still_here・毎分・1 分ごとの予約作業を作らないでください。承認窓がまた出ます。',
       '承認文がその Windows ではない、または実行面が Linux・共有なら許可しないでください。GROK_CREW_OK の一行だけ送って止まってください。',
       'その Windows が正しく、承認が一度だけ出たら一度だけ受けてください。拒まれたら止まって一行だけ知らせてください。',
       'その Windows だけで、Grok Crew の窓が消えていたら止まって「窓がない」と書いてください。この会話がその Windows でなければ窓がないと言わないでください。',
-      'その Windows だけで下の keep を一度だけ実行してください。この一行で入場し、そこで still_here と招待文読みを 1 分ごとにします。チャットから再送しないでください。Python があればそちらだけでよいです。その Windows でなければ keep を実行しないでください。',
-      keep.py,
-      `(スクリプトはその Windows で ${origin}/downloads/grok-crew.py)`,
-      'PowerShell なら下を一度だけ回してください。',
-      keep.ps,
-      'keep が動いているなら、7214・still_here・exe 確認を再リクエストしないでください。',
-      '接続で接続を外すと机が disconnected を送ります。keep はその命令を見て止まります。チャットから keep を再起動しないでください。',
-      '招待文は keep が読みます。人が招待文をもう一度貼ることはありません。文を受け取ったらその仕事だけします。404 なら仕事はまだありません。409 なら他のボットが取りました。トークンをチャットに書かないでください。',
-      `仕事が変わったら同じ Windows ですぐ heartbeat を一度送ります。action は ${work.start} で始め、終わったら ${work.ready} です。開始と受け渡しの両方で detail.note に次の席への一言を入れてください。その二行がクルーボードの会話です。ない言葉は作らないでください。トークンをチャットに書かないでください。`,
+      `この席の bot_id は ${id} です。purpose は ${purpose} です。このチャットで keep・ルーチン・予約作業を実行しないでください。入場と席確認は、運営者が接続に GROK_CREW_OK を貼るとその Windows の机がします。`,
+      '接続で接続を外すと机が disconnected を送ります。チャットから keep やルーチンを再起動しないでください。',
+      '人が招待文をもう一度貼ることはありません。文を受け取ったらその仕事だけします。トークンをチャットに書かないでください。',
+      `仕事が変わったらその Windows だけですぐ heartbeat を一度送ります。ルーチンで送らないでください。action は ${work.start} で始め、終わったら ${work.ready} です。開始と受け渡しの両方で detail.note に次の席への一言を入れてください。その二行がクルーボードの会話です。ない言葉は作らないでください。トークンをチャットに書かないでください。`,
       startBeat,
       readyBeat,
       `その Windows だけで、${port} が開いていなければ止まって「${port} がない」と書いてください。この会話がその Windows でなければ ${port} がないと言わないでください。ディスクでスクリプトを探さないでください。`,
@@ -769,20 +740,15 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
   return [
     'Run commands only on the operator registered Windows Computer. Do not invent a host name.',
     'Do not open 127.0.0.1 from the bot Linux or shared computer. That address is not this desk.',
-    'If this conversation is not that Windows (Linux, shared, or cloud), do not check the window or 7214. Do not say the window is missing. Do not say 7214 is missing. Send only the GROK_CREW_OK line and stop. When the operator pastes that line on Connect, that Windows desk enters the seat.',
-    'Do not search for a Grok exe. Do not create a chat scheduled job named still_here, every minute, or 매 분. That approval window will return.',
+    `If this conversation is not that Windows (Linux, shared, or cloud), do not check the window or ${port}. Do not say the window is missing. Do not say ${port} is missing. Send only the GROK_CREW_OK line and stop. When the operator pastes that line on Connect, that Windows desk enters the seat.`,
+    'Do not create a Grok Routine. Do not search for a Grok exe. Do not create a chat scheduled job named still_here, every minute, or 매 분. That approval window will return.',
     'If the approval text says the surface cannot be verified as that Windows machine, or it is Linux or shared, do not allow. Send only the GROK_CREW_OK line and stop.',
     'If it is that Windows and approval appears once, accept it once. If it is denied, stop and say so in one line.',
     'On that Windows only, if Grok Crew is not open, stop and say the window is missing. If this conversation is not that Windows, do not say the window is missing.',
-    'On that Windows only, run keep once. That one command checks in, then leaves still_here and reads the invite every minute there. Do not send it again from chat. If Python is there, that line is enough. If this conversation is not that Windows, do not run keep.',
-    keep.py,
-    `(script on that Windows: ${origin}/downloads/grok-crew.py)`,
-    'If you use PowerShell, run the next line once.',
-    keep.ps,
-    'While keep is running, do not ask again to check 7214, still_here, or the exe.',
-    'If Connect sends disconnected, keep stops. Do not start keep again from chat.',
-    'keep reads the invite. The operator will not paste the invite again. When you get the text, do only that job. 404 means no job yet. 409 means another bot already took it. Do not put the token in chat.',
-    `When the job changes, send one heartbeat on that same Windows at once. Start with action ${work.start}, then ${work.ready} when done. On start and on handoff, put one spoken line to the next seat in detail.note. Those two lines are the crew board chat. Do not invent a line. Do not put the token in chat.`,
+    `This seat bot_id is ${id}. purpose is ${purpose}. Do not run keep, a Routine, or a scheduled job from this chat. Entry and the seat check happen on that Windows desk after the operator pastes GROK_CREW_OK on Connect.`,
+    'If Connect sends disconnected, do not start keep or a Routine from chat.',
+    'The operator will not paste the invite again. When you get the text, do only that job. Do not put the token in chat.',
+    `When the job changes, send one heartbeat on that Windows only, at once. Do not send it as a Routine. Start with action ${work.start}, then ${work.ready} when done. On start and on handoff, put one spoken line to the next seat in detail.note. Those two lines are the crew board chat. Do not invent a line. Do not put the token in chat.`,
     startBeat,
     readyBeat,
     `On that Windows only, if ${port} is not open, stop and say ${port} is missing. If this conversation is not that Windows, do not say ${port} is missing. Do not search the disk for the script.`,

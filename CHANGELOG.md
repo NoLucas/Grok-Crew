@@ -4,6 +4,11 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+### Desk
+
+- Grok seats enter without a chat Routine. The bot sends only `GROK_CREW_OK`. Pasting that line on Connect posts `bot-entry` from this Windows desk and holds `still_here` here. Connect paste no longer asks the chat to run `keep` or a minute loop.
+- Linux Grok must not say the window or port is missing. Those lines are only for the registered Windows.
+
 ## 1.0.16 - 2026-08-29
 
 Local 1.0.16. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.16` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.16) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.16). Guest notes: `docs/RELEASE_NOTES.v1.0.16.md`. Guest Drive download stays the last published file. Already-installed 1.0.15 desks check Grok-crew-test for this tag.
