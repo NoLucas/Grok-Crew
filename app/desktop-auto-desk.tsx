@@ -147,6 +147,7 @@ export function AutoDesk({
   const [stayOnCompose, setStayOnCompose] = useState(false);
   const [optionPane, setOptionPane] = useState<AutoOptionPane>('');
   const [nameOpen, setNameOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
   const [title, setTitle] = useState(wait?.title ?? '');
   const [goal, setGoal] = useState('');
   const [useOwn, setUseOwn] = useState(false);
@@ -693,32 +694,8 @@ export function AutoDesk({
             <p>{t('한 칸만 적으면 됩니다. 화면·올릴 곳·소리는 아래 칩입니다. 시작은 초대문을 복사하니, 지금 자리 창에 한 번 붙이세요.', 'Write in this one box. Pictures, where to post, and sound are chips below. Start copies the invite, so paste it once in the current seat window.', '只写这一栏。画面、发布处、声音是下面的芯片。一开始会复制邀请，请贴到现在的位子窗口一次。', 'ここ一欄だけ書いてください。画面・上げ先・音は下のチップです。始めると招待文をコピーするので、今の席の窓に一度貼ってください。')}</p>
           </header>
 
-          {mode === 'own_file' ? (
-            <section className="desktop-auto-composer-card desktop-auto-own">
-              <h2>{t('봇 없이 영상 열기', 'Open a video with no bot', '不用机器人打开视频', 'ボットなしで映像を開く')}</h2>
-              <p>{t('이 PC 영상을 바로 엽니다. 그러면 설정·편집·내보내기가 켜집니다.', 'Open a video on this PC. Setup, Edit, and Export then turn on.', '直接打开这台电脑上的视频。设置、编辑、导出就会打开。', 'この PC の映像を開く。設定・編集・書き出しが付く。')}</p>
-              <button
-                type="button"
-                className={ownOver ? 'desktop-simple-drop is-over' : 'desktop-simple-drop'}
-                disabled={locked}
-                onClick={() => void pickOwnFile()}
-                onDragEnter={(event) => { event.preventDefault(); setOwnOver(true); }}
-                onDragOver={(event) => { event.preventDefault(); setOwnOver(true); }}
-                onDragLeave={() => setOwnOver(false)}
-                onDrop={takeOwnFile}
-              >
-                <b>{ownOver
-                  ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
-                  : t('영상을 여기 놓거나 고르기', 'Drop a video here, or pick one', '把视频放这里，或选择', '映像をここに置くか選ぶ')}</b>
-                <span>{t('경로는 적지 마세요.', 'Do not type a path.', '不要填写路径。', 'パスは書かないでください。')}</span>
-              </button>
-              <button type="button" className="desktop-auto-text" onClick={() => setMode('hand_off')}>
-                {t('말로 만들기', 'Write it instead', '改成用文字做', '言葉で作る')}
-              </button>
-            </section>
-          ) : (
-            <form
-              className="desktop-auto-composer-card"
+          <form
+              className="desktop-auto-composer-card desktop-auto-composer-hero"
               onSubmit={(event) => {
                 event.preventDefault();
                 void startJob();
@@ -733,7 +710,7 @@ export function AutoDesk({
                     if (error) setError('');
                   }}
                   placeholder={t('예: 카페 오픈 15초, 손과 간판이 먼저. 주소여도 됩니다.', 'Example: a 15s cafe open, hands and the sign first. A URL is fine.', '例如：咖啡馆开业 15 秒，手先出、再出招牌。网址也可以。', '例: カフェ開店15秒、手と看板が先。URL でもよい。')}
-                  rows={5}
+                  rows={10}
                   aria-invalid={Boolean(error) && !titleFromPrompt(title, goal)}
                   disabled={saving}
                 />
@@ -747,10 +724,35 @@ export function AutoDesk({
                 >
                   {t('이름 붙이기', 'Add a name', '加名字', '名前を付ける')}
                 </button>
-                <button type="button" onClick={() => setMode('own_file')}>
+                <button
+                  type="button"
+                  className={ownOpen ? 'is-on' : ''}
+                  aria-pressed={ownOpen}
+                  onClick={() => setOwnOpen((value) => !value)}
+                >
                   {t('봇 없이 영상 열기', 'Open a video with no bot', '不用机器人打开视频', 'ボットなしで映像を開く')}
                 </button>
               </div>
+              {ownOpen ? (
+                <section className="desktop-auto-own">
+                  <p>{t('이 PC 영상을 바로 엽니다. 그러면 설정·편집·내보내기가 켜집니다.', 'Open a video on this PC. Setup, Edit, and Export then turn on.', '直接打开这台电脑上的视频。设置、编辑、导出就会打开。', 'この PC の映像を開く。設定・編集・書き出しが付く。')}</p>
+                  <button
+                    type="button"
+                    className={ownOver ? 'desktop-simple-drop is-quiet is-over' : 'desktop-simple-drop is-quiet'}
+                    disabled={locked}
+                    onClick={() => void pickOwnFile()}
+                    onDragEnter={(event) => { event.preventDefault(); setOwnOver(true); }}
+                    onDragOver={(event) => { event.preventDefault(); setOwnOver(true); }}
+                    onDragLeave={() => setOwnOver(false)}
+                    onDrop={takeOwnFile}
+                  >
+                    <b>{ownOver
+                      ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
+                      : t('영상을 여기 놓거나 고르기', 'Drop a video here, or pick one', '把视频放这里，或选择', '映像をここに置くか選ぶ')}</b>
+                    <span>{t('경로는 적지 마세요.', 'Do not type a path.', '不要填写路径。', 'パスは書かないでください。')}</span>
+                  </button>
+                </section>
+              ) : null}
               {nameOpen ? (
                 <label className="desktop-spec-field desktop-auto-name">
                   <span>{t('이름', 'Name', '名字', '名前')} <em>{t('없어도 됨', 'optional', '可以不填', 'なくてもよい')}</em></span>
@@ -1111,7 +1113,6 @@ export function AutoDesk({
                     : t('이걸로 만들기', 'Make this', '用这个做', 'これで作る')}
               </button>
             </form>
-          )}
         </>
       ) : null}
 

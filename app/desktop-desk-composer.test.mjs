@@ -24,7 +24,9 @@ describe('desk composer restage', () => {
     const auto = src('desktop-auto-desk.tsx');
     const chrome = src('desktop-workspace.tsx');
     assert.match(auto, /봇 없이 영상 열기/);
+    assert.match(auto, /어떤 영상을 만들까요\?/);
     assert.match(auto, /DesktopCrewBoard/);
+    assert.equal(auto.includes("mode === 'own_file' ?"), false);
     assert.equal(auto.includes('안 열리면'), false);
     assert.match(chrome, /t\('시작', 'Start', '开始', '開始'\)/);
   });
