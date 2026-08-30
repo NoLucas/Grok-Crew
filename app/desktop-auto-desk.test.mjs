@@ -937,8 +937,13 @@ describe('auto desk seats and inbox guards', () => {
     assert.equal(auto.includes('퍼센트는 없습니다'), false);
     assert.match(auto, /desktop-auto-new/);
     assert.match(auto, /samePcInviteReady/);
-    assert.match(auto, /samePcPull \? null/);
     assert.match(auto, /다시 복사 · \$\{pasteTarget\}/);
+    assert.match(auto, /samePcPull \|\| showArrived \? null/);
+    assert.match(auto, /desktop-auto-place/);
+    assert.match(auto, /desktop-auto-drop is-here/);
+    assert.match(auto, /data-arrived/);
+    assert.match(auto, /여기에 놓기 · 최근기록에도 같은 컷입니다/);
+    assert.doesNotMatch(auto, /desktop-auto-preview desktop-auto-canvas/);
     assert.match(auto, /사람 손길/);
     assert.match(auto, /GROK_CREW_OK만 보냈으면 아직 이 일이 안 간/);
     assert.match(auto, /봇이 읽을 글 보기/);

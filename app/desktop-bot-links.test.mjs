@@ -10,6 +10,7 @@ const {
   forgetBotLinksOnQuit,
   hasConnectedBot,
   hasWaitingCopiedSeat,
+  confirmedGrokRoles,
   seatReadyToStart,
   connectReadyLine,
   linkedByKind,
@@ -200,8 +201,10 @@ describe('remote bot links', () => {
       'GROK_CREW_OK QDWAVN Grok Bot 스크래핑',
       'ko',
     ).next;
-    assert.equal(seatIsConnected('grok', 'scraper', pasted, undefined), true);
-    assert.equal(hasConnectedBot(undefined, pasted), true);
+    assert.deepEqual(confirmedGrokRoles(pasted), ['scraper']);
+    assert.equal(seatReadyToStart(pasted), true);
+    assert.equal(seatIsConnected('grok', 'scraper', pasted, undefined), false);
+    assert.equal(hasConnectedBot(undefined, pasted), false);
     const idle = {
       bots: [{
         bot_id: 'grok-scraper',
@@ -216,6 +219,37 @@ describe('remote bot links', () => {
     assert.equal(seatIsConnected('grok', 'scraper', pasted, {
       bots: [{ bot_id: 'grok-scraper', display_name: 'Grok Bot 스크래핑', presence: 'active', last_action: 'still_here' }],
     }), true);
+  });
+
+  it('lights a Grok lamp only after this-PC roster entry, not clipboard OK alone', () => {
+    const pasted = confirmRemoteReplies(
+      { pairCode: 'QDWAVN', bots: [] },
+      'GROK_CREW_OK QDWAVN Grok Bot 기획자',
+      'ko',
+    ).next;
+    assert.deepEqual(confirmedGrokRoles(pasted), ['planner']);
+    assert.equal(seatIsConnected('grok', 'planner', pasted, undefined), false);
+    assert.equal(hasConnectedBot(undefined, pasted), false);
+    const entered = {
+      bots: [{
+        bot_id: 'grok-planner',
+        display_name: 'Grok Bot 기획자',
+        presence: 'active',
+        last_action: 'entered_local_studio',
+      }],
+    };
+    assert.equal(seatIsConnected('grok', 'planner', pasted, entered), true);
+    assert.equal(hasConnectedBot(entered, pasted), true);
+    const still = {
+      bots: [{
+        bot_id: 'grok-planner',
+        display_name: 'Grok Bot 기획자',
+        presence: 'idle',
+        last_action: 'still_here',
+      }],
+    };
+    assert.equal(seatIsConnected('grok', 'planner', pasted, still), true);
+    assert.equal(confirmedGrokRoles(pasted).includes('planner'), true);
   });
 
   it('keeps a checked-in seat connected through idle ticks until the operator releases it', () => {
@@ -432,7 +466,9 @@ describe('remote bot links', () => {
     assert.equal(hit.next.bots[0].place, 'this_pc');
     assert.ok(hit.next.bots[0].confirmedAt);
     assert.equal(hit.next.bots[0].confirmedFrom, 'ok-reply');
-    assert.equal(hasConnectedBot(undefined, hit.next), true);
+    assert.equal(hasConnectedBot(undefined, hit.next), false);
+    assert.deepEqual(confirmedGrokRoles(hit.next), ['editor']);
+    assert.equal(seatReadyToStart(hit.next), true);
     assert.equal(replyMatchesSeat('Grok Bot 편집자', 'grok', 'editor'), true);
     assert.equal(replyMatchesSeat('Grok Bot 편집자', 'grok', 'planner'), false);
   });
@@ -448,7 +484,9 @@ describe('remote bot links', () => {
     const hit = confirmRemoteReplies(empty, chat, 'ko');
     assert.equal(hit.confirmed.length, 3);
     assert.equal(hit.next.bots.filter((item) => item.status === 'connected').length, 3);
-    assert.equal(hasConnectedBot(undefined, hit.next), true);
+    assert.equal(hasConnectedBot(undefined, hit.next), false);
+    assert.equal(confirmedGrokRoles(hit.next).length, 3);
+    assert.equal(seatReadyToStart(hit.next), true);
     const stored = JSON.stringify(hit.next);
     memory.set(BOT_LINKS_KEY, stored);
     const again = readBotLinks();
@@ -504,7 +542,9 @@ describe('remote bot links', () => {
       'GROK_CREW_OK 7K2M9Q Grok Bot 기획자',
       'ko',
     ).next;
-    assert.equal(hasConnectedBot(undefined, next), true);
+    assert.equal(hasConnectedBot(undefined, next), false);
+    assert.deepEqual(confirmedGrokRoles(next), ['planner']);
+    assert.equal(seatReadyToStart(next), true);
     assert.equal(hasConnectedBot({ bots: [{ display_name: 'Cursor', presence: 'active' }] }, empty), false);
     assert.deepEqual(seatLampRows({
       bots: [{ bot_id: 'desk-bot', display_name: 'Cursor', presence: 'active' }],
@@ -515,6 +555,7 @@ describe('remote bot links', () => {
       'ko',
     ).next;
     assert.equal(hasConnectedBot(undefined, agent), true);
+    assert.equal(seatReadyToStart(agent), true);
     assert.deepEqual(seatLampRows(undefined, agent), [
       { role: 'planner', connected: true, family: 'custom' },
       { role: 'scraper', connected: false, family: 'none' },

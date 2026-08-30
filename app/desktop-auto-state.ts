@@ -794,7 +794,7 @@ export function pasteTargetForSeats(rows: AutoSeatRow[], language = 'ko'): strin
   return last?.name || seatName('grok', 'planner', language);
 }
 
-/** A connected Grok seat pulls next-invite on this Windows. Waiting copy-only and Agent seats still need a paste. */
+/** A Grok seat entered on this Windows pulls next-invite. Clipboard OK and Agent seats still need a paste. */
 export function samePcInviteReady(
   rows: AutoSeatRow[],
   roster?: CrewRoster | null,
@@ -803,9 +803,8 @@ export function samePcInviteReady(
   const role = pasteTargetRole(rows);
   const row = rows.find((item) => item.role === role);
   if (!row || row.kind !== 'grok' || !row.connected) return false;
-  const linked = (links?.bots ?? []).find((item) => item.kind === 'grok' && item.role === role);
-  if (linked?.confirmedFrom === 'ok-reply' && linked.status === 'connected') return true;
   if (heldRosterSeat(roster, role)) return true;
+  const linked = (links?.bots ?? []).find((item) => item.kind === 'grok' && item.role === role);
   if (linked?.place === 'other_pc') return false;
   return true;
 }

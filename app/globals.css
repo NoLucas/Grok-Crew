@@ -8120,6 +8120,22 @@ select {
   line-height: 1.45;
 }
 .desktop-auto-drop.is-quiet { opacity: .92; }
+.desktop-auto-drop.is-here {
+  padding: 12px;
+  border: 1px solid #cfead8;
+  border-radius: 12px;
+  background: #f3faf5;
+}
+.desktop-auto-place {
+  display: grid;
+  gap: 10px;
+}
+.desktop-auto-place video {
+  width: 100%;
+  max-height: min(62vh, 420px);
+  border-radius: 16px;
+  background: #111;
+}
 .desktop-simple-drop.is-quiet {
   padding: 12px 14px;
   min-height: 0;
@@ -9001,6 +9017,8 @@ select {
 }
 .desktop-shell[data-theme="dark"] .desktop-auto-preview,
 .desktop-shell[data-theme="low-dark"] .desktop-auto-preview,
+.desktop-shell[data-theme="dark"] .desktop-auto-drop.is-here,
+.desktop-shell[data-theme="low-dark"] .desktop-auto-drop.is-here,
 .desktop-shell[data-theme="dark"] .desktop-auto-save-card,
 .desktop-shell[data-theme="low-dark"] .desktop-auto-save-card {
   border-color: rgba(78, 203, 141, 0.35);

@@ -435,10 +435,11 @@ export function seatIsConnected(
   if (kind === 'grok') {
     const linked = linkedBySeat(links?.bots, kind, role);
     const rosterBot = knownRosterSeat(roster, role);
+    if (!rosterBot) return false;
     if (linked?.place === 'other_pc' && linked.confirmedFrom !== 'ok-reply') {
-      if (!rosterBot || !isGrokWorkAction(String(rosterBot.last_action || ''))) return false;
+      if (!isGrokWorkAction(String(rosterBot.last_action || ''))) return false;
     }
-    if (rosterBot) return Boolean(heldRosterSeat(roster, role));
+    return Boolean(heldRosterSeat(roster, role));
   }
   return linkedBySeat(links?.bots, kind, role)?.status === 'connected';
 }
@@ -469,7 +470,9 @@ export function hasWaitingCopiedSeat(links?: BotLinkState | null): boolean {
 
 /** Start may run after a connect copy or a real handshake. Lamps still use hasConnectedBot. */
 export function seatReadyToStart(links?: BotLinkState | null, roster?: CrewRoster | null): boolean {
-  return hasConnectedBot(roster, links) || hasWaitingCopiedSeat(links);
+  return hasConnectedBot(roster, links)
+    || hasWaitingCopiedSeat(links)
+    || confirmedGrokRoles(links).length > 0;
 }
 
 /** One follow bar for Grok or Agent. A leftover mystery roster bot does not light a lamp. */

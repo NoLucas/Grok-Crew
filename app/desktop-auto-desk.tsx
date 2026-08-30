@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { CrewRoster } from './desktop-bot-connect';
-import { hasConnectedBot, hasWaitingCopiedSeat, writeLastConnectBundle, type BotLinkState } from './desktop-bot-links';
+import { confirmedGrokRoles, hasConnectedBot, hasWaitingCopiedSeat, writeLastConnectBundle, type BotLinkState } from './desktop-bot-links';
 import {
   DEFAULT_RECIPE_ID,
   RECIPE_ORDER,
@@ -211,7 +211,7 @@ export function AutoDesk({
   const ownInputRef = useRef<HTMLInputElement>(null);
   const attachedName = attachedBotName(roster, remoteNames, links, language);
   const attached = Boolean(attachedName) || hasConnectedBot(roster, links);
-  const startReady = attached || hasWaitingCopiedSeat(links);
+  const startReady = attached || hasWaitingCopiedSeat(links) || confirmedGrokRoles(links).length > 0;
   const hasProject = Boolean(previewUrl || projectTitle);
   const cards = useMemo(() => {
     const byId = new Map(recipes.map((item) => [item.id, item]));
@@ -269,7 +269,6 @@ export function AutoDesk({
   const samePcPull = samePcInviteReady(seatRows, roster, links);
   const recentTitles = prefs.recentTitles.filter((item) => item !== title.trim());
   const waitingHandOff = mode === 'hand_off' && Boolean(wait) && machine === 'waiting';
-  const showCutDrop = mode === 'hand_off' && (Boolean(wait) || machine === 'waiting');
   const jobStage = autoDeskStage({
     wait,
     pull: pullStatus,
@@ -280,7 +279,9 @@ export function AutoDesk({
   const showComposer = jobStage === 'compose';
   const showWaiting = jobStage === 'waiting';
   const showArrived = jobStage === 'arrived';
-  const showCrewBoard = showWaiting || showArrived;
+  const showJobRun = showWaiting || showArrived;
+  const showCutDrop = mode === 'hand_off' && showJobRun;
+  const showCrewBoard = showJobRun;
   const soundLabel = wantTts
     ? t(`만듦 · ${voicePersonaLabel(voicePersona, language)}`, `Made · ${voicePersonaLabel(voicePersona, language)}`, `做了 · ${voicePersonaLabel(voicePersona, language)}`, `作った · ${voicePersonaLabel(voicePersona, language)}`)
     : t('끔', 'Off', '关', 'オフ');
@@ -1298,15 +1299,21 @@ export function AutoDesk({
         </>
       ) : null}
 
-      {showWaiting ? (
-        <section className="desktop-auto-job desktop-auto-run" aria-live="polite">
+      {showJobRun ? (
+        <section className="desktop-auto-job desktop-auto-run" aria-live="polite" data-arrived={showArrived ? 'yes' : 'no'}>
           <header className="desktop-auto-run-head">
             <div>
-              <p className="desktop-auto-run-kicker">{elapsedLabel
-                ? t(`${elapsedLabel}째`, `${elapsedLabel}`, `${elapsedLabel}`, `${elapsedLabel}`)
-                : t('방금 보냄', 'Just sent', '刚刚发送', 'たった今送った')}</p>
-              <h1>{titleFromPrompt(wait?.title || title, goal) || t('자리 넘김', 'Seat handoff', '位子转交', '席の受け渡し')}</h1>
-              <p>{waitHeadline.title}</p>
+              <p className="desktop-auto-run-kicker">{showArrived
+                ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
+                : elapsedLabel
+                  ? t(`${elapsedLabel}째`, `${elapsedLabel}`, `${elapsedLabel}`, `${elapsedLabel}`)
+                  : t('방금 보냄', 'Just sent', '刚刚发送', 'たった今送った')}</p>
+              <h1>{showArrived
+                ? (projectTitle || titleFromPrompt(wait?.title || title, goal) || t('도착한 컷', 'Arrived cut', '已到达的成片', '届いたカット'))
+                : (titleFromPrompt(wait?.title || title, goal) || t('자리 넘김', 'Seat handoff', '位子转交', '席の受け渡し'))}</h1>
+              <p>{showArrived
+                ? t('끝난 컷은 이 칸과 최근기록에 같은 파일로 있습니다.', 'The finished cut is in this slot and in Recent as the same file.', '完成的成片就在这一格，最近记录里是同一份文件。', '終わったカットはこの欄と最近記録に同じファイルであります。')
+                : waitHeadline.title}</p>
             </div>
             <button type="button" className="desktop-auto-text desktop-auto-new" onClick={writeAnother}>
               {t('새로 만들기', 'Create new', '新建', '新規作成')}
@@ -1330,7 +1337,7 @@ export function AutoDesk({
               </li>
             ))}
           </ol>
-          {samePcPull ? null : (
+          {samePcPull || showArrived ? null : (
           <div className="desktop-auto-interrupt">
             <p>{t(`사람 손길 · ${pasteTarget} 창에 한 번 붙이세요. 봇이 GROK_CREW_OK만 보냈으면 아직 이 일이 안 간 겁니다.`, `Your step · paste it once in the ${pasteTarget} window. If the bot only sent GROK_CREW_OK, the job has not arrived.`, `人手 · 请在 ${pasteTarget} 窗口贴一次。机器人只发了 GROK_CREW_OK 就说明这件事还没送到。`, `人の手 · ${pasteTarget} の窓に一度貼ってください。ボットが GROK_CREW_OK だけ送ったなら、この仕事はまだ届いていません。`)}</p>
             <button type="button" className="desktop-primary desktop-recopy-btn" disabled={!inviteText.trim()} onClick={() => { void recopyInvite(); }}>
@@ -1375,94 +1382,67 @@ export function AutoDesk({
             </ol>
           </details>
           {showCutDrop ? (
-            <section className="desktop-auto-drop is-quiet">
-              <input
-                ref={cutInputRef}
-                type="file"
-                accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm,.m4v,.mkv"
-                hidden
-                onChange={(event) => {
-                  const file = event.currentTarget.files?.[0];
-                  event.currentTarget.value = '';
-                  void acceptFinished(file);
-                }}
-              />
-              <button
-                type="button"
-                className={cutOver ? 'desktop-simple-drop is-over is-quiet' : 'desktop-simple-drop is-quiet'}
-                disabled={locked}
-                onClick={() => cutInputRef.current?.click()}
-                onDragEnter={(event) => { event.preventDefault(); setCutOver(true); }}
-                onDragOver={(event) => { event.preventDefault(); setCutOver(true); }}
-                onDragLeave={() => setCutOver(false)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  void acceptFinished(event.dataTransfer.files?.[0]);
-                }}
-              >
-                <b>{cutOver
-                  ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
-                  : t('완성되면 여기에 영상이 올라옵니다', 'The video will appear here when it is finished', '完成后视频会出现在这里', '完成すると、ここに映像が上がります')}</b>
-              </button>
+            <section className={showArrived ? 'desktop-auto-drop is-here' : 'desktop-auto-drop is-quiet'}>
+              {showArrived ? (
+                <div className="desktop-auto-place">
+                  {previewUrl ? (
+                    <video controls preload="metadata" src={previewUrl} />
+                  ) : (
+                    <p>{t('컷이 이 칸에 있습니다. 미리보기를 아직 읽지 못했습니다.', 'The cut is in this slot. The preview has not loaded yet.', '成片已在这一格。预览还没读到。', 'カットはこの欄にあります。プレビューはまだ読めません。')}</p>
+                  )}
+                  <p className="desktop-auto-preview-note">
+                    {outputReady
+                      ? t('이 PC에 두었음. 자동은 올리지 않았습니다.', 'Saved on this PC. Auto did not post it.', '已留在这台电脑。自动没有发布。', 'この PC に残しました。自動では上げていません。')
+                      : t('여기에 놓기 · 최근기록에도 같은 컷입니다.', 'Drop it here · Recent has the same cut.', '放在这里 · 最近记录也是同一份成片。', 'ここに置く · 最近記録にも同じカットがあります。')}
+                  </p>
+                  <div className="desktop-auto-preview-actions">
+                    <button type="button" className="desktop-primary" disabled={busy || savingFile || !hasProject} onClick={() => void saveLocal()}>
+                      {savingFile
+                        ? t('저장 중…', 'Saving…', '保存中…', '保存中…')
+                        : outputReady
+                          ? t('다시 이 PC에 저장', 'Save to this PC again', '再次保存到这台电脑', 'もう一度この PC に保存')
+                          : t('이 PC에 저장', 'Save to this PC', '保存到这台电脑', 'この PC に保存')}
+                    </button>
+                    <button type="button" className="desktop-secondary" disabled={!hasProject} onClick={onOpenEdit}>
+                      {t('타임라인에서 손질', 'Trim on the timeline', '在时间线上修一下', 'タイムラインで整える')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <input
+                    ref={cutInputRef}
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm,.m4v,.mkv"
+                    hidden
+                    onChange={(event) => {
+                      const file = event.currentTarget.files?.[0];
+                      event.currentTarget.value = '';
+                      void acceptFinished(file);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className={cutOver ? 'desktop-simple-drop is-over is-quiet' : 'desktop-simple-drop is-quiet'}
+                    disabled={locked}
+                    onClick={() => cutInputRef.current?.click()}
+                    onDragEnter={(event) => { event.preventDefault(); setCutOver(true); }}
+                    onDragOver={(event) => { event.preventDefault(); setCutOver(true); }}
+                    onDragLeave={() => setCutOver(false)}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      void acceptFinished(event.dataTransfer.files?.[0]);
+                    }}
+                  >
+                    <b>{cutOver
+                      ? t('여기에 놓기', 'Drop it here', '放在这里', 'ここに置く')
+                      : t('완성되면 여기에 영상이 올라옵니다', 'The video will appear here when it is finished', '完成后视频会出现在这里', '完成すると、ここに映像が上がります')}</b>
+                  </button>
+                </>
+              )}
             </section>
           ) : null}
-        </section>
-      ) : null}
-
-      {showArrived ? (
-        <section className="desktop-auto-preview desktop-auto-canvas">
-          <header className="desktop-auto-lead desktop-auto-lead-inline">
-            <div>
-              <p className="desktop-auto-run-kicker">{t('도착', 'Arrived', '已到', '到着')}</p>
-              <h1>{projectTitle || titleFromPrompt(wait?.title || title, goal) || t('도착한 컷', 'Arrived cut', '已到达的成片', '届いたカット')}</h1>
-              <p className="desktop-auto-preview-note">
-                {outputReady
-                  ? t('이 PC에 두었음. 자동은 올리지 않았습니다.', 'Saved on this PC. Auto did not post it.', '已留在这台电脑。自动没有发布。', 'この PC に残しました。自動では上げていません。')
-                  : t('첫 컷 · 더 올 수도 있음. 저장은 지금 해도 됩니다.', 'First cut · another may still arrive. You can save now.', '第一份成片 · 可能还会来。现在就可以保存。', '最初のカット · まだ来ることもあります。今保存してよい。')}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="desktop-auto-text"
-              onClick={writeAnother}
-            >
-              {t('새로 만들기', 'Create new', '新建', '新規作成')}
-            </button>
-          </header>
-          {previewUrl ? (
-            <video controls preload="metadata" src={previewUrl} />
-          ) : (
-            <p>{t('컷이 열렸습니다. 미리보기를 아직 읽지 못했습니다.', 'The cut is open. The preview has not loaded yet.', '成片已打开。预览还没读到。', 'カットは開いています。プレビューはまだ読めません。')}</p>
-          )}
-          <div className="desktop-auto-preview-actions">
-            <button type="button" className="desktop-primary" disabled={busy || savingFile || !hasProject} onClick={() => void saveLocal()}>
-              {savingFile
-                ? t('저장 중…', 'Saving…', '保存中…', '保存中…')
-                : outputReady
-                  ? t('다시 이 PC에 저장', 'Save to this PC again', '再次保存到这台电脑', 'もう一度この PC に保存')
-                  : t('이 PC에 저장', 'Save to this PC', '保存到这台电脑', 'この PC に保存')}
-            </button>
-            <button type="button" className="desktop-secondary" disabled={!hasProject} onClick={onOpenEdit}>
-              {t('타임라인에서 손질', 'Trim on the timeline', '在时间线上修一下', 'タイムラインで整える')}
-            </button>
-          </div>
-          <DesktopCrewBoard
-            rows={seatRows}
-            activity={activity}
-            loadState={activityState}
-            specId={wait?.specId}
-            jobTitle={titleFromPrompt(wait?.title || title, goal)}
-            layout="job"
-            onRetry={() => {
-              setActivityState('loading');
-              void request('/api/bot-activity').then((data) => {
-                const payload = data as { activity?: BotActivityItem[] };
-                setActivity(Array.isArray(payload.activity) ? payload.activity : []);
-                setActivityState('ready');
-              }).catch(() => setActivityState('error'));
-            }}
-          />
-          {askPublish || outputReady ? (
+          {showArrived && (askPublish || outputReady) ? (
             <section className="desktop-auto-card desktop-auto-save-card">
               <b>{t('이 PC에 두었음', 'Saved on this PC', '已留在这台电脑', 'この PC に残した')}</b>
               <p>{t(`폴더 · ${savePath || prefs.lastSavePath || t('출력 폴더', 'output folder', '输出文件夹', '出力フォルダ')}`, `Folder · ${savePath || prefs.lastSavePath || 'output folder'}`, `文件夹 · ${savePath || prefs.lastSavePath || '输出文件夹'}`, `フォルダ · ${savePath || prefs.lastSavePath || '出力フォルダ'}`)}</p>
