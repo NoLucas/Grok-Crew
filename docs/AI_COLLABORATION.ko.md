@@ -151,6 +151,9 @@ npm run verify:desktop  # Electron main/preload/tray 변경 시
 `통과함`처럼 요약하지 않고 명령, pass 수, 운영체제, 실패 또는 생략 이유를 적습니다. 로그에는
 토큰, 로컬 영상 경로, private relay payload, 복호화된 transcript를 포함하지 않습니다.
 
+다른 채팅·다른 모델에서 같은 구현 버릇을 쓰려면 `docs/agent-pack/SKILL.md`를 먼저 읽습니다.
+패킷 빈칸은 `docs/agent-pack/PACKET.md`입니다.
+
 ## 9. 충돌과 실패 처리
 
 - 기준 revision이 오래되었으면 자동 merge하지 않고 conflict review 상태로 보냅니다.
@@ -161,3 +164,8 @@ npm run verify:desktop  # Electron main/preload/tray 변경 시
   Maintainer에게 결정을 요청합니다.
 - rollback은 항상 새 timeline revision, PR revert, 또는 이전 릴리스 재설치처럼 복구 가능한
   방식으로 수행합니다.
+
+## 10. 다른 채팅에서 이 버릇을 여는 법
+
+구현 순서, 세 센서, 보안, 결정 연표는 `docs/agent-pack/`에 커밋되어 있습니다.
+입구는 `docs/agent-pack/SKILL.md`입니다. `.cursor/skills/` 개인 사본보다 이 폴더가 기준입니다.

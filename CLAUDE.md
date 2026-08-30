@@ -3,6 +3,10 @@
 This repository is jointly maintained with Codex. Read
 [`docs/AI_COLLABORATION.ko.md`](docs/AI_COLLABORATION.ko.md) before editing.
 
+To implement an idea the way this product was built, read
+[`docs/agent-pack/SKILL.md`](docs/agent-pack/SKILL.md) first. That pack is the
+shared skill for other chats: product lock, sensors, security, and packets.
+
 ## Repository and branch safety
 
 - The only permitted push target is `https://github.com/NoLucas/Grok-crew-test.git`.
