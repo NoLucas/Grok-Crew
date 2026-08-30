@@ -37,6 +37,24 @@ def test_loose_inbox_mp4_counts_as_pending_and_pulls(studio, tmp_path):
     assert handoff_status()["doors"]["editor"]["pending_count"] == 0
 
 
+def test_overwriting_same_inbox_name_changes_door_stamp(studio):
+    from handoff_inbox import door_inbox_dir, handoff_status
+
+    inbox = door_inbox_dir("editor")
+    inbox.mkdir(parents=True, exist_ok=True)
+    loose = inbox / "overwrite-same-name.mp4"
+    loose.write_bytes(b"old-cut")
+    first = handoff_status()["doors"]["editor"]
+    loose.write_bytes(b"new-cut-bytes-xxxxxxxx")
+    second = handoff_status()["doors"]["editor"]
+    assert first["pending_count"] == second["pending_count"]
+    assert "overwrite-same-name.mp4" in first["pending"]
+    assert first["pending"] == second["pending"]
+    assert second["total_bytes"] != first["total_bytes"]
+    assert second["newest_mtime"]
+    loose.unlink()
+
+
 def test_accept_dropped_media_builds_inbox_package(studio, tmp_path):
     source = tmp_path / "hook.mp4"
     source.write_bytes(b"cut-bytes")
