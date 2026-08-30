@@ -602,6 +602,9 @@ describe('remote bot links', () => {
     assert.equal(linkFreshForThisRun({
       confirmedAt: '2026-08-30T07:05:00.000Z',
     }, { sessionStartedAt: session, connectCopiedAt: '2026-08-30T07:10:00.000Z' }), false);
+    assert.equal(linkFreshForThisRun(leftover, {
+      connectCopiedAt: leftover.confirmedAt,
+    }), false);
     const generation = connectEssayGeneration({
       pairCode: 'QDWAVN',
       market: 'kr',

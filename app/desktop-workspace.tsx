@@ -418,6 +418,7 @@ export default function DesktopWorkspace() {
   useEffect(() => {
     setToolsDayTheme(false);
   }, []);
+  ensureDeskSessionStartedAt();
   useEffect(() => {
     ensureDeskSessionStartedAt();
   }, []);

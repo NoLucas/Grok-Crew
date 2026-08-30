@@ -62,12 +62,18 @@ const {
 } = await import('./desktop-auto-state.ts');
 
 const memory = new Map();
+const sessionMemory = new Map();
 
 globalThis.window = {
   localStorage: {
     getItem: (key) => (memory.has(key) ? memory.get(key) : null),
     setItem: (key, value) => { memory.set(key, String(value)); },
     removeItem: (key) => { memory.delete(key); },
+  },
+  sessionStorage: {
+    getItem: (key) => (sessionMemory.has(key) ? sessionMemory.get(key) : null),
+    setItem: (key, value) => { sessionMemory.set(key, String(value)); },
+    removeItem: (key) => { sessionMemory.delete(key); },
   },
 };
 
@@ -932,6 +938,17 @@ describe('auto desk seats and inbox guards', () => {
       }],
     };
     assert.equal(samePcInviteReady(rows, roster, deskEntered), false);
+    memory.set('grok-crew-last-connect-bundle', JSON.stringify({
+      market: 'kr',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+      copiedAt: '2026-08-29T15:00:00.000Z',
+      generation: 'desk-connect-1|QDWAVN|kr|instagram_reel|ko',
+    }));
+    sessionMemory.delete('grok-crew-desk-session');
+    assert.equal(samePcInviteReady(rows, roster, deskEntered), false);
+    memory.delete('grok-crew-last-connect-bundle');
+    sessionMemory.delete('grok-crew-desk-session');
     assert.equal(samePcInviteReady(rows, roster, deskEntered, {
       sessionStartedAt: '2026-08-30T07:00:00.000Z',
     }), false);
@@ -961,6 +978,7 @@ describe('auto desk seats and inbox guards', () => {
     assert.equal(auto.includes('퍼센트는 없습니다'), false);
     assert.match(auto, /desktop-auto-new/);
     assert.match(auto, /samePcInviteReady/);
+    assert.match(auto, /sessionStartedAt: ensureDeskSessionStartedAt\(\)/);
     assert.match(auto, /다시 복사 · \$\{pasteTarget\}/);
     assert.match(auto, /samePcPull \|\| showArrived \? null/);
     assert.match(auto, /desktop-auto-place/);

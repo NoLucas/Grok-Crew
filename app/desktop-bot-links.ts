@@ -1065,10 +1065,10 @@ export function linkFreshForThisRun(
   const stamp = Date.parse(String(linked?.confirmedAt || linked?.connectedAt || ''));
   if (!Number.isFinite(stamp) || stamp <= 0) return false;
   const session = Date.parse(String(freshness?.sessionStartedAt || ''));
+  if (!Number.isFinite(session)) return false;
+  if (stamp < session) return false;
   const copied = Date.parse(String(freshness?.connectCopiedAt || ''));
   if (Number.isFinite(copied) && stamp < copied) return false;
-  if (Number.isFinite(session) && stamp < session) return false;
-  if (!Number.isFinite(session) && !Number.isFinite(copied)) return false;
   return true;
 }
 

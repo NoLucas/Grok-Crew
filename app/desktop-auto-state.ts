@@ -3,9 +3,9 @@ import {
   GROK_SEAT_BOT_IDS,
   connectEssayIsCurrent,
   connectedRemoteNames,
+  ensureDeskSessionStartedAt,
   heldRosterSeat,
   linkFreshForThisRun,
-  readDeskSessionStartedAt,
   readLastConnectBundle,
   rosterMatchesSeat,
   seatIsConnected,
@@ -828,7 +828,7 @@ export function samePcInviteReady(
   const currentGeneration = freshness?.currentGeneration;
   if (!connectEssayIsCurrent(currentGeneration, savedGeneration)) return false;
   return linkFreshForThisRun(linked, {
-    sessionStartedAt: freshness?.sessionStartedAt ?? readDeskSessionStartedAt(),
+    sessionStartedAt: freshness?.sessionStartedAt ?? ensureDeskSessionStartedAt(),
     connectCopiedAt: freshness?.connectCopiedAt ?? bundle?.copiedAt,
   });
 }

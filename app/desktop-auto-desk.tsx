@@ -6,6 +6,7 @@ import {
   confirmedCustomRoles,
   confirmedGrokRoles,
   connectEssayGeneration,
+  ensureDeskSessionStartedAt,
   hasConnectedBot,
   hasWaitingCopiedSeat,
   readLastConnectBundle,
@@ -286,6 +287,7 @@ export function AutoDesk({
   const pasteTarget = pasteTargetForSeats(seatRows, language) || wait?.pasteTarget || '';
   const lastConnect = readLastConnectBundle();
   const samePcPull = samePcInviteReady(seatRows, roster, links, {
+    sessionStartedAt: ensureDeskSessionStartedAt(),
     connectCopiedAt: lastConnect?.copiedAt,
     connectGeneration: lastConnect?.generation,
     currentGeneration: connectEssayGeneration({
@@ -523,6 +525,7 @@ export function AutoDesk({
       };
       try {
         if (samePcInviteReady(seatRows, roster, links, {
+          sessionStartedAt: ensureDeskSessionStartedAt(),
           connectCopiedAt: lastConnect?.copiedAt,
           connectGeneration: lastConnect?.generation,
           currentGeneration: connectEssayGeneration({
