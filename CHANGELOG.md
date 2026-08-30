@@ -4,6 +4,18 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.20 - 2026-08-30
+
+Local 1.0.20. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.20` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.20) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.20). Guest notes: `docs/RELEASE_NOTES.v1.0.20.md`. Guest Drive download stays the last published file. Already-installed 1.0.19 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- A Grok lamp lights only after this-PC `bot-entry` / roster. Chat saying connected, or clipboard `GROK_CREW_OK` alone, is not a lamp. The OK line still lets the desk enter so Start can run.
+- After Start, a checked-in Grok seat reads `next-invite` once. Copy-again hides after that this-PC connect. The desk keep tick does not steal the invite.
+- A new inbox file after this wait started may land in Drop it here even without `edit_spec_id`. Leftover files that did not raise pending do not close today’s wait.
+- The finished cut’s home is Drop it here. Recent is the same file, not a second place to hunt.
+- Duplicate crew-talk bubbles with the same role, note, and action no longer stack.
+
 ## 1.0.19 - 2026-08-29
 
 Local 1.0.19. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.19` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.19) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.19). Guest notes: `docs/RELEASE_NOTES.v1.0.19.md`. Guest Drive download stays the last published file. Already-installed 1.0.18 desks check Grok-crew-test for this tag.

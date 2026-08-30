@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.19** · with Grok Bot · free now
+**v1.0.20** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -42,13 +42,22 @@ The source files live in [`public/bot-skills/`](public/bot-skills/). Copying the
 
 1. Open `GrokCrew-Windows.exe`. The installer asks which TTS to keep, downloads that one, then copies the app. Next with no pick is Kokoro-82M.
 2. First open asks for a language. If the installer already left a voice, the TTS wizard stays closed.
-3. On **Connect**, copy the attach text into the bot window. Copying is not a connection. If the bot only sends `GROK_CREW_OK` and stops, the job has not arrived. Paste the **Start** invite in that window so it does the seat’s job. Do not make a Grok Routine, a scheduled job, or `keep` in chat. **Disconnect** sends `disconnected`.
-4. On **Start**, write what they want and press **Start production**. If the Grok seats are already checked in on this Windows, they read the waiting invite. This window waits. The **crew board** chat stacks each seat’s start and handoff line.
-5. When the preview appears, **save on this PC**. Posting is later, and only if they want it.
+3. On **Connect**, copy the attach text into the bot window. Copying, or the bot saying connected in chat, is not a lamp. A two-line reply lets this desk enter. The lamp turns on only after this Windows check-in. Recopy the connect essay for a bot that already attached. Do not make a Grok Routine, a scheduled job, or `keep` in chat. **Disconnect** sends `disconnected`.
+4. On **Start**, write what they want and press **Start production**. A Grok seat already on this Windows reads `next-invite` once. Copy-again hides. This window waits. The **crew board** chat stacks each seat’s start and handoff line.
+5. The finished cut lands in **Drop it here**. **Recent** is the same file. **Save on this PC**. Posting is later, and only if they want it.
 
 If attach fails, **Connect** says how to fix it. Do not open Start first.
 
 ---
+
+## What changed in v1.0.20
+
+- The lamp turns on only after this Windows check-in. Chat saying connected, or clipboard `GROK_CREW_OK` alone, is not a lamp.
+- A connected Grok seat reads `next-invite` once after Start. Copy-again hides.
+- A new inbox file after this wait started may close Drop it here even without a spec id. Leftover files do not.
+- The finished cut’s home is Drop it here. Recent is the same file.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.20 notes](docs/RELEASE_NOTES.v1.0.20.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.20.
 
 ## What changed in v1.0.19
 
@@ -57,7 +66,7 @@ If attach fails, **Connect** says how to fix it. Do not open Start first.
 - Start pastes the job into the same chat. Linux Grok does not open `127.0.0.1`.
 - Sidebar video previews can pause.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.19 notes](docs/RELEASE_NOTES.v1.0.19.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.19.
+The 1.0.19 list is in [the 1.0.19 notes](docs/RELEASE_NOTES.v1.0.19.md).
 
 ## What changed in v1.0.18
 
