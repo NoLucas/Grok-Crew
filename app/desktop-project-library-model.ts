@@ -126,9 +126,12 @@ export function groupLibraryProjects(
   const ordered = recent
     ? [recent, ...folders.filter((folder) => folder.id !== recent.id && !isRecentFolderTitle(folder.title))]
     : folders;
+  const newestFirst = (items: LibraryProject[]) => (
+    [...items].sort((left, right) => String(right.updated_at || '').localeCompare(String(left.updated_at || '')))
+  );
   return {
-    folders: ordered.map((folder) => ({ folder, projects: buckets.get(folder.id) ?? [] })),
-    unfiled: recent ? [] : unfiled,
+    folders: ordered.map((folder) => ({ folder, projects: newestFirst(buckets.get(folder.id) ?? []) })),
+    unfiled: recent ? [] : newestFirst(unfiled),
   };
 }
 

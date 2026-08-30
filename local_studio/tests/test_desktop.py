@@ -111,6 +111,36 @@ def test_forget_bot_sessions_clears_checkins(studio):
         assert conn.execute("SELECT COUNT(*) FROM bot_sessions").fetchone()[0] == 0
 
 
+def test_duplicate_work_note_does_not_insert_second_activity(studio):
+    first = {
+        "bot_id": "grok-scraper",
+        "display_name": "Grok Bot 스크래핑",
+        "action": "collect_started",
+        "detail": {"note": "타르코프 원본 두 개 수집 시작."},
+    }
+    studio.record_bot_heartbeat(first)
+    studio.record_bot_heartbeat(first)
+    studio.record_bot_heartbeat(first)
+    with db() as conn:
+        same = conn.execute(
+            "SELECT COUNT(*) FROM bot_activity WHERE bot_id = ? AND action = ?",
+            ("grok-scraper", "collect_started"),
+        ).fetchone()[0]
+    assert same == 1
+    studio.record_bot_heartbeat({
+        "bot_id": "grok-scraper",
+        "display_name": "Grok Bot 스크래핑",
+        "action": "collect_started",
+        "detail": {"note": "다른 원본을 고른다."},
+    })
+    with db() as conn:
+        changed = conn.execute(
+            "SELECT COUNT(*) FROM bot_activity WHERE bot_id = ? AND action = ?",
+            ("grok-scraper", "collect_started"),
+        ).fetchone()[0]
+    assert changed == 2
+
+
 def test_still_here_does_not_revive_a_disconnected_seat(studio):
     studio.record_bot_heartbeat({"bot_id": "grok-planner", "display_name": "Grok Bot 기획자", "action": "entered_local_studio"})
     gone = studio.record_bot_heartbeat({"bot_id": "grok-planner", "display_name": "Grok Bot 기획자", "action": "disconnected"})

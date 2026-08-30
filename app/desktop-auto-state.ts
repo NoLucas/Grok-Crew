@@ -794,7 +794,7 @@ export function pasteTargetForSeats(rows: AutoSeatRow[], language = 'ko'): strin
   return last?.name || seatName('grok', 'planner', language);
 }
 
-/** Same-PC Grok check-in can POST /api/bots/next-invite. Paste-only and Agent seats cannot. */
+/** A connected Grok seat pulls next-invite on this Windows. Waiting copy-only and Agent seats still need a paste. */
 export function samePcInviteReady(
   rows: AutoSeatRow[],
   roster?: CrewRoster | null,
@@ -804,8 +804,10 @@ export function samePcInviteReady(
   const row = rows.find((item) => item.role === role);
   if (!row || row.kind !== 'grok' || !row.connected) return false;
   const linked = (links?.bots ?? []).find((item) => item.kind === 'grok' && item.role === role);
+  if (linked?.confirmedFrom === 'ok-reply' && linked.status === 'connected') return true;
+  if (heldRosterSeat(roster, role)) return true;
   if (linked?.place === 'other_pc') return false;
-  return Boolean(heldRosterSeat(roster, role));
+  return true;
 }
 
 export function shouldAutoPullInbox(input: {
@@ -834,15 +836,51 @@ export function importedEditSpecId(imported: unknown): string {
   return String(project?.edit_spec_id || '').trim();
 }
 
-/** wrap_loose leftover has no spec id. Do not end the current wait for yesterday’s file. */
+export type ArrivedImport = {
+  project?: { id?: string; edit_spec_id?: string };
+  edit_spec_id?: string;
+  folder?: string;
+  agent?: string;
+};
+
+function importFolderStamp(folder?: string): string {
+  const text = String(folder || '');
+  const stamp = text.match(/(\d{4}-\d{2}-\d{2}T[\d-]+Z?)/);
+  return stamp?.[1] || text;
+}
+
+/** Prefer the wait’s spec. A new wrap_loose cut has no spec — take the newest of those. */
+export function pickArrivedImport(
+  imported: ArrivedImport[] | undefined,
+  waitSpecId?: string,
+): ArrivedImport | null {
+  const rows = (imported ?? []).filter((item) => String(item?.project?.id || '').trim());
+  if (!rows.length) return null;
+  const wait = String(waitSpecId || '').trim();
+  if (wait) {
+    const match = rows.find((item) => importedEditSpecId([item]) === wait);
+    if (match) return match;
+  }
+  const loose = rows.filter((item) => !importedEditSpecId([item]));
+  if (!loose.length) return rows[rows.length - 1] ?? null;
+  return [...loose].sort((left, right) => importFolderStamp(right.folder).localeCompare(importFolderStamp(left.folder)))[0] ?? null;
+}
+
+/**
+ * Pending already rose after this wait started. A matching spec or a new
+ * wrap_loose file (no spec) may close the wait. A different spec stays leftover.
+ */
 export function shouldClearWaitForImport(input: {
   waitSpecId?: string;
   importedSpecId?: string | null;
+  importedProjectId?: string | null;
 }): boolean {
   const wait = String(input.waitSpecId || '').trim();
   const imported = String(input.importedSpecId || '').trim();
-  if (!wait || !imported) return false;
-  return imported === wait;
+  const projectId = String(input.importedProjectId || '').trim();
+  if (!wait || !projectId) return false;
+  if (imported && imported !== wait) return false;
+  return true;
 }
 
 export function autoWaitHeadline(rows: AutoSeatRow[], language = 'ko'): {

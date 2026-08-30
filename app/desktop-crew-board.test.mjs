@@ -82,6 +82,26 @@ describe('crew board notes', () => {
     assert.match(crewTalkLine(thread[0], 'ko'), /기획자 → Grok Bot 스크래핑/);
   });
 
+  it('collapses the same started note posted three times', () => {
+    const now = Date.now();
+    const thread = crewTalkThread([
+      { id: '3', bot_id: 'grok-scraper', action: 'collect_started', created_at: new Date(now - 10_000).toISOString(), detail_json: { note: '타르코프 원본 두 개 수집 시작.' } },
+      { id: '2', bot_id: 'grok-scraper', action: 'collect_started', created_at: new Date(now - 20_000).toISOString(), detail_json: { note: '타르코프 원본 두 개 수집 시작.' } },
+      { id: '1', bot_id: 'grok-scraper', action: 'collect_started', created_at: new Date(now - 30_000).toISOString(), detail_json: { note: '타르코프 원본 두 개 수집 시작.' } },
+    ], 'ko');
+    assert.equal(thread.length, 1);
+    assert.equal(thread[0].note, '타르코프 원본 두 개 수집 시작.');
+    const mixed = crewTalkThread([
+      { id: 'e3', bot_id: 'grok-editor', action: 'cut_started', created_at: new Date(now - 4_000).toISOString(), detail_json: { note: '탈출 본편만 자릅니다.' } },
+      { id: 'e2', bot_id: 'grok-editor', action: 'cut_started', created_at: new Date(now - 5_000).toISOString(), detail_json: { note: '탈출 본편만 자릅니다.' } },
+      { id: 'e1', bot_id: 'grok-editor', action: 'cut_started', created_at: new Date(now - 6_000).toISOString(), detail_json: { note: '탈출 본편만 자릅니다.' } },
+      { id: 'p', bot_id: 'grok-planner', action: 'plan_ready', created_at: new Date(now - 8_000).toISOString(), detail_json: { note: '인박스 컷 뒷부분이 깨졌다.' } },
+    ], 'ko');
+    assert.equal(mixed.length, 2);
+    assert.equal(mixed[0].note, '인박스 컷 뒷부분이 깨졌다.');
+    assert.equal(mixed[1].note, '탈출 본편만 자릅니다.');
+  });
+
   it('shows a started note as a spoken line to the next seat', () => {
     const now = Date.now();
     const thread = crewTalkThread([

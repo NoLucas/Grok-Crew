@@ -43,12 +43,14 @@ import { DesktopReviseCard } from './desktop-revise-card';
 import {
   autoHeaderDot,
   importedEditSpecId,
+  pickArrivedImport,
   ownedFileName,
   safeWorkspaceRel,
   shouldAutoPullInbox,
   shouldClearWaitForImport,
   studioDownloadBase,
   writeAutoPrefs,
+  type ArrivedImport,
 } from './desktop-auto-state';
 import { DesktopVoiceSetup } from './desktop-voice-setup';
 import { DesktopLanguageGate, LANGUAGE_GATE_BODY_CLASS } from './desktop-language-gate';
@@ -647,9 +649,10 @@ export default function DesktopWorkspace() {
     void api('/api/v2/handoff/pull', { method: 'POST', body: JSON.stringify({ door: 'editor' }) })
       .then(async (result) => {
         pullKeyRef.current = key;
-        const imported = Array.isArray(result.imported) ? result.imported as Array<{ project?: { id?: string }; agent?: string; edit_spec_id?: string }> : [];
-        const projectId = imported[0]?.project?.id;
-        const importedSpec = importedEditSpecId(imported);
+        const imported = Array.isArray(result.imported) ? result.imported as ArrivedImport[] : [];
+        const arrived = pickArrivedImport(imported, deskWaitRef.current?.specId);
+        const projectId = arrived?.project?.id;
+        const importedSpec = importedEditSpecId(arrived ? [arrived] : []);
         await refreshWorkspace(true);
         if (!projectId) {
           if (deskWaitRef.current) setDeskPulse({ lastCheckedAt: new Date().toISOString(), pull: 'none' });
@@ -658,6 +661,7 @@ export default function DesktopWorkspace() {
         if (!shouldClearWaitForImport({
           waitSpecId: deskWaitRef.current?.specId,
           importedSpecId: importedSpec,
+          importedProjectId: projectId,
         })) {
           return;
         }
@@ -673,8 +677,23 @@ export default function DesktopWorkspace() {
         setPeekAuto(true);
         setSelectedProjectId(projectId);
         setActivePanel('auto');
+        try {
+          const recent = await ensureRecentFolder({
+            folders: workspace.project_folders ?? [],
+            request: api,
+            language,
+            storage: typeof window === 'undefined' ? undefined : window.localStorage,
+          });
+          await api(`/api/v2/projects/${projectId}/move`, {
+            method: 'POST',
+            body: JSON.stringify({ folder_id: recent.folder.id }),
+          });
+        } catch {
+          /* Recent folder is best-effort. The cut is already imported. */
+        }
+        await refreshWorkspace(true);
         await refreshProject(projectId);
-        const name = handoffSenderLabel({ handoff_agent: imported[0]?.agent, handoff_door: 'editor' }, t);
+        const name = handoffSenderLabel({ handoff_agent: arrived?.agent ?? imported[0]?.agent, handoff_door: 'editor' }, t);
         setMessage(t(`${name} 쪽에서 넘긴 컷을 열었습니다.`, `Opened the cut from ${name}.`, `已打开 ${name} 交来的剪辑。`, `${name} が渡したカットを開きました。`));
       })
       .catch(() => {
@@ -684,7 +703,7 @@ export default function DesktopWorkspace() {
       .finally(() => {
         pullingRef.current = false;
       });
-  }, [api, botPanelOpen, deskWait, editorInbox?.inbox_dir, editorPending, refreshProject, refreshWorkspace, studioState, t]);
+  }, [api, botPanelOpen, deskWait, editorInbox?.inbox_dir, editorPending, language, refreshProject, refreshWorkspace, studioState, t, workspace.project_folders]);
   useEffect(() => {
     if (!window.grokCrew) return;
     void window.grokCrew.githubStatus().then(setGithub).catch(() => undefined);

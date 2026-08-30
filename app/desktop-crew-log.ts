@@ -327,6 +327,10 @@ export function crewTalkThread(
     if (!note) continue;
     const ready = kind === 'ready';
     const afterCollect = row.role === 'planner' && collectSeen;
+    const prev = thread[thread.length - 1];
+    if (prev && prev.role === row.role && prev.note === note && prev.actionLabel === heartbeatActionLabel(row.item.action, language)) {
+      continue;
+    }
     thread.push({
       id: String(row.item.id || `${row.item.bot_id}-${row.item.action}-${row.item.created_at}`),
       kind: 'work',

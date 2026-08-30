@@ -368,7 +368,7 @@ export function confirmRemoteReplies(
           name: seatName(kind, role, lang === 'zh' || lang === 'ja' || lang === 'en' ? lang : 'ko'),
           kind,
           role,
-          place: 'other_pc',
+          place: 'this_pc',
           status: 'connected',
           pairCode: state.pairCode,
           connectedAt: now,
@@ -698,12 +698,12 @@ export function connectReadyLine(role: BotRole, language = 'ko'): string {
   const lang = language.slice(0, 2);
   if (role === 'scraper') {
     return lang === 'zh'
-      ? '采集已就绪。开始文字或策划一到，马上收。'
+      ? '采集已就绪。一点开始或策划一到，马上收。'
       : lang === 'ja'
-        ? '収集の準備ができました。開始の文か企画が来たらすぐ受けます。'
+        ? '収集の準備ができました。開始を押すか企画が来たらすぐ受けます。'
         : lang === 'en'
-          ? 'Scraper ready. When the Start invite or plan arrives, fetch at once.'
-          : '수집 준비됨. 시작 글이나 기획이 오면 바로 받습니다.';
+          ? 'Scraper ready. When Start is pressed or a plan arrives, fetch at once.'
+          : '수집 준비됨. 시작을 누르거나 기획이 오면 바로 받습니다.';
   }
   if (role === 'editor') {
     return lang === 'zh'
@@ -715,12 +715,12 @@ export function connectReadyLine(role: BotRole, language = 'ko'): string {
           : '편집 준비됨. 자를 방법이 오면 바로 자릅니다.';
   }
   return lang === 'zh'
-    ? '策划已就绪。开始文字一贴到这个窗口，马上写结构。'
+    ? '策划已就绪。一点开始，就在这台 Windows 上立刻接工作。'
     : lang === 'ja'
-      ? '企画の準備ができました。開始の文をこの窓に貼ったらすぐ構成を書きます。'
+      ? '企画の準備ができました。開始を押したらこの Windows で仕事をすぐ受けます。'
       : lang === 'en'
-        ? 'Planner ready. When the Start invite is pasted in this chat, write the plan at once.'
-        : '기획 준비됨. 시작 글을 이 창에 붙이면 바로 구성을 적습니다.';
+        ? 'Planner ready. When Start is pressed, take the job on this Windows at once.'
+        : '기획 준비됨. 시작을 누르면 이 Windows에서 일을 바로 받습니다.';
 }
 
 function grokWindowsCheckIn(who: string, role: BotRole, language: string, studioPort = DEFAULT_STUDIO_PORT): string[] {
@@ -746,6 +746,7 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
         : '다음 자리에 남긴 한 줄';
   const startBeat = `Invoke-RestMethod -Uri ${origin}/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${grokSeatBotId(role)}","display_name":"${who}","action":"${work.start}","detail":{"note":"${startHint}"}}'`;
   const readyBeat = `Invoke-RestMethod -Uri ${origin}/api/bots/heartbeat -Method POST -ContentType 'application/json' -Body '{"bot_id":"${grokSeatBotId(role)}","display_name":"${who}","action":"${work.ready}","detail":{"note":"${noteHint}"}}'`;
+  const nextInvite = `Invoke-RestMethod -Uri ${origin}/api/bots/next-invite -Method POST -ContentType 'application/json' -Body '{"bot_id":"${id}","display_name":"${who}"}'`;
   if (lang === 'ko') {
     return [
       '명령을 실행할 컴퓨터는 운영자가 등록한 Windows Computer만입니다. 이름을 지어내지 마세요.',
@@ -757,10 +758,12 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       '그 Windows에서만, Grok Crew 창이 꺼져 있으면 멈추고 "창이 없다"고 하세요. 이 대화가 그 Windows가 아니면 창이 없다고 하지 마세요.',
       `이 자리 bot_id는 ${id}입니다. purpose는 ${purpose}입니다. keep·루틴·예약 작업을 이 채팅에서 실행하지 마세요. 입장과 자리 확인은 이 Windows 책상이 합니다.`,
       '연결에서 연결 해제를 누르면 책상이 disconnected를 보냅니다. 채팅에서 keep이나 루틴을 켜지 마세요.',
-      '시작에서 나온 글을 이 창에 붙이면 그 일만 합니다. 채팅에 토큰을 넣지 마세요.',
+      '연결 이후 시작을 누르면 할 일이 이 Windows에 기다립니다. 그 Windows에서만 next-invite를 한 번 읽어 그 일만 합니다. 운영자가 시작 글을 다시 붙이지 않습니다. 루틴으로 반복하지 마세요. 채팅에 토큰을 넣지 마세요.',
       `할 일이 바뀌면 그 Windows에서만 heartbeat를 바로 한 번 보냅니다. 루틴으로 보내지 마세요. action은 ${work.start}로 시작했다가 끝나면 ${work.ready}입니다. 시작과 넘김 모두 detail.note에 다음 자리에게 말하는 한 줄을 넣습니다. 그 두 줄이 크루 보드 대화입니다. 없는 말은 만들지 마세요. 채팅에는 토큰을 넣지 마세요.`,
       startBeat,
       readyBeat,
+      '책상이 일을 기다리는 화면이면 그 Windows에서만 아래 next-invite를 한 번 실행하세요. 없으면 404입니다. 매 분 반복하지 마세요.',
+      nextInvite,
       `그 Windows에서만, ${port}가 안 열리면 멈추고 "${port}가 없다"고 하세요. 이 대화가 그 Windows가 아니면 ${port}가 없다고 하지 마세요. 디스크에서 스크립트를 찾지 마세요.`,
     ];
   }
@@ -775,10 +778,12 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       '只在那台 Windows 上，若 Grok Crew 窗口是关的，停下来并写“没有窗口”。若这段对话不是那台 Windows，不要说没有窗口。',
       `这个位子 bot_id 是 ${id}。purpose 是 ${purpose}。不要在这个聊天里跑 keep、Routine 或预约作业。签到和位子确认由这台 Windows 书桌来做。`,
       '连接里按下断开后书桌会发 disconnected。不要从聊天再开 keep 或 Routine。',
-      '操作员把开始里的文字贴到这个窗口后，只做那件事。不要把令牌写进聊天。',
+      '连接之后一点开始，工作就等在这台 Windows 上。只在那台 Windows 上读一次 next-invite，只做那件事。操作员不会再粘贴邀请。不要用 Routine 重复。不要把令牌写进聊天。',
       `事情一变就只在那台 Windows 上立刻发一次 heartbeat。不要用 Routine 发。action 先用 ${work.start}，做完改成 ${work.ready}。开工和转交都要在 detail.note 写给下一位子的一行。这两行就是组员看板对话。不要编造没有的话。不要把令牌写进聊天。`,
       startBeat,
       readyBeat,
+      '若书桌在等这件事，只在那台 Windows 上执行下面的 next-invite 一次。没有就是 404。不要每分钟重复。',
+      nextInvite,
       `只在那台 Windows 上，若 ${port} 没开，停下来只写“没有 ${port}”。若这段对话不是那台 Windows，不要说没有 ${port}。不要在磁盘上找脚本。`,
     ];
   }
@@ -793,10 +798,12 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
       'その Windows だけで、Grok Crew の窓が消えていたら止まって「窓がない」と書いてください。この会話がその Windows でなければ窓がないと言わないでください。',
       `この席の bot_id は ${id} です。purpose は ${purpose} です。このチャットで keep・ルーチン・予約作業を実行しないでください。入場と席確認はこの Windows の机がします。`,
       '接続で接続を外すと机が disconnected を送ります。チャットから keep やルーチンを再起動しないでください。',
-      '開始で出た文をこの窓に貼ったら、その仕事だけします。トークンをチャットに書かないでください。',
+      '接続のあと開始を押すと、仕事はこの Windows で待ちます。その Windows だけで next-invite を一度読んで、その仕事だけします。運営者が開始の文をもう一度貼ることはありません。ルーチンで繰り返さないでください。トークンをチャットに書かないでください。',
       `仕事が変わったらその Windows だけですぐ heartbeat を一度送ります。ルーチンで送らないでください。action は ${work.start} で始め、終わったら ${work.ready} です。開始と受け渡しの両方で detail.note に次の席への一言を入れてください。その二行がクルーボードの会話です。ない言葉は作らないでください。トークンをチャットに書かないでください。`,
       startBeat,
       readyBeat,
+      '机が仕事を待っている画面なら、その Windows だけで下の next-invite を一度実行してください。なければ 404 です。毎分繰り返さないでください。',
+      nextInvite,
       `その Windows だけで、${port} が開いていなければ止まって「${port} がない」と書いてください。この会話がその Windows でなければ ${port} がないと言わないでください。ディスクでスクリプトを探さないでください。`,
     ];
   }
@@ -810,12 +817,43 @@ function grokWindowsCheckIn(who: string, role: BotRole, language: string, studio
     'On that Windows only, if Grok Crew is not open, stop and say the window is missing. If this conversation is not that Windows, do not say the window is missing.',
     `This seat bot_id is ${id}. purpose is ${purpose}. Do not run keep, a Routine, or a scheduled job from this chat. Entry and the seat check happen on that Windows desk.`,
     'If Connect sends disconnected, do not start keep or a Routine from chat.',
-    'When the operator pastes the Start invite in this chat, do only that job. Do not put the token in chat.',
+    'After connect, Start leaves the job waiting on this Windows. On that Windows only, read next-invite once and do only that job. The operator will not paste the invite again. Do not repeat it as a Routine. Do not put the token in chat.',
     `When the job changes, send one heartbeat on that Windows only, at once. Do not send it as a Routine. Start with action ${work.start}, then ${work.ready} when done. On start and on handoff, put one spoken line to the next seat in detail.note. Those two lines are the crew board chat. Do not invent a line. Do not put the token in chat.`,
     startBeat,
     readyBeat,
+    'If the desk is waiting for work, run the next-invite below once on that Windows only. A miss is 404. Do not repeat every minute.',
+    nextInvite,
     `On that Windows only, if ${port} is not open, stop and say ${port} is missing. If this conversation is not that Windows, do not say ${port} is missing. Do not search the disk for the script.`,
   ];
+}
+
+function connectJobFooter(family: 'grok' | 'custom', language: string): [string, string] {
+  const lang = language.slice(0, 2);
+  const cut = lang === 'zh'
+    ? '完成的成片放到剪辑收件箱。会出现在这个窗口的“放在这里”和最近记录。'
+    : lang === 'ja'
+      ? '終わったカットは編集インボックスに置きます。この窓の「ここに置く」と最近記録に上がります。'
+      : lang === 'en'
+        ? 'Put the finished cut in the editor inbox. It will appear in Drop it here and Recent on this window.'
+        : '끝난 컷은 편집 인박스에 둡니다. 이 창의 여기에 놓기와 최근기록에 올라옵니다.';
+  if (family !== 'grok') {
+    const role = lang === 'zh'
+      ? '这段文字是角色。若已看到标题或目标，现在按上面的角色做。策划、采集、剪辑写在这个聊天里。不要再只发那一行标记。'
+      : lang === 'ja'
+        ? 'この文は役割です。題や目標が見えたら上の役割どおり今やってください。企画・収集・編集はこのチャットに書きます。印の一行だけを再送しないでください。'
+        : lang === 'en'
+          ? 'This text is the role. If a title or goal is already here, do that job with the role above. Write the plan, fetch, or cut in this chat. Do not send the mark line again.'
+          : '이 글은 역할입니다. 제목·목표가 보이면 위 역할대로 지금 하세요. 기획·수집·편집은 이 채팅에서 바로 적습니다. 표시 한 줄을 다시 보내지 마세요.';
+    return [role, cut];
+  }
+  const job = lang === 'zh'
+    ? '这段文字是角色。连接之后一点开始就会有工作。在那台 Windows 上用 next-invite 接住，立刻按上面的角色做。操作员不会再粘贴邀请。策划、采集、剪辑写在这个聊天里。不要再只发那一行标记。'
+    : lang === 'ja'
+      ? 'この文は役割です。接続のあと開始を押すと仕事が生まれます。その Windows で next-invite で受けて、上の役割どおりすぐやってください。運営者が開始の文をもう一度貼ることはありません。企画・収集・編集はこのチャットに書きます。印の一行だけを再送しないでください。'
+      : lang === 'en'
+        ? 'This text is the role. After connect, Start creates the job. On that Windows, read it once with next-invite and do that job with the role above. The operator will not paste the invite again. Write the plan, fetch, or cut in this chat. Do not send the mark line again.'
+        : '이 글은 역할입니다. 연결 이후 시작을 누르면 할 일이 생깁니다. 그 Windows에서 next-invite로 받아 위 역할대로 바로 하세요. 운영자가 시작 글을 다시 붙이지 않습니다. 기획·수집·편집은 이 채팅에서 바로 적습니다. 표시 한 줄을 다시 보내지 마세요.';
+  return [job, cut];
 }
 
 export function remoteConnectPaste(
@@ -835,6 +873,7 @@ export function remoteConnectPaste(
   const job = roleLabel(role, lang === 'zh' || lang === 'ja' || lang === 'en' ? lang : 'ko');
   const windows = family === 'grok' ? grokWindowsCheckIn(who, role, lang, studioPort) : [];
   const ready = connectReadyLine(role, lang);
+  const [jobFooter, cutFooter] = connectJobFooter(family, lang);
   if (lang === 'ko') {
     return [
       `당신은 Grok Crew와 연결합니다. 이름은 ${who}입니다.`,
@@ -850,9 +889,9 @@ export function remoteConnectPaste(
       line,
       ready,
       '',
-      '이 글은 역할입니다. 운영자가 다음에 붙이는 시작 글이 할 일입니다. 그 글을 받으면 위 역할대로 바로 하세요. 기획·수집·편집은 이 채팅에서 바로 적습니다. 표시 한 줄을 다시 보내지 마세요.',
+      jobFooter,
       '',
-      '끝난 컷은 운영자가 이 Windows 창에 놓습니다.',
+      cutFooter,
     ].join('\n');
   }
   if (lang === 'zh') {
@@ -870,9 +909,9 @@ export function remoteConnectPaste(
       line,
       ready,
       '',
-      '这段文字是角色。操作员接下来贴的开始文字才是工作。收到后立刻按上面的角色做。策划、采集、剪辑写在这个聊天里。不要再只发那一行标记。',
+      jobFooter,
       '',
-      '完成的成片由操作员放到这个 Windows 窗口。',
+      cutFooter,
     ].join('\n');
   }
   if (lang === 'ja') {
@@ -890,9 +929,9 @@ export function remoteConnectPaste(
       line,
       ready,
       '',
-      'この文は役割です。運営者が次に貼る開始の文が仕事です。それを受けたら上の役割どおりすぐやってください。企画・収集・編集はこのチャットに書きます。印の一行だけを再送しないでください。',
+      jobFooter,
       '',
-      '終わったカットは運営者がこの Windows の窓に置きます。',
+      cutFooter,
     ].join('\n');
   }
   return [
@@ -909,9 +948,9 @@ export function remoteConnectPaste(
     line,
     ready,
     '',
-    'This text is the role. The next Start invite the operator pastes is the job. When you get it, do that job with the role above. Write the plan, fetch, or cut in this chat. Do not send the mark line again.',
+    jobFooter,
     '',
-    'The operator drops the finished cut on this Windows window.',
+    cutFooter,
   ].join('\n');
 }
 

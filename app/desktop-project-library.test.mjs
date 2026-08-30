@@ -39,7 +39,7 @@ test("groups projects into folders and leaves the rest unfiled", () => {
     [{ id: "fld_1", title: "릴스" }],
   );
   assert.equal(grouped.folders[0].projects[0].id, "a");
-  assert.deepEqual(grouped.unfiled.map((item) => item.id), ["b", "c"]);
+  assert.deepEqual(grouped.unfiled.map((item) => item.id), ["c", "b"]);
 });
 
 test("library chrome drops the unfiled bucket and the add-folder toolbar", () => {
@@ -152,7 +152,7 @@ test("hides extra recent-titled folders and pours their projects into the rememb
     "fld_recent",
   );
   assert.deepEqual(grouped.folders.map((item) => item.folder.id), ["fld_recent", "fld_1"]);
-  assert.deepEqual(grouped.folders[0].projects.map((item) => item.id), ["a", "b"]);
+  assert.deepEqual(grouped.folders[0].projects.map((item) => item.id), ["b", "a"]);
 });
 
 test("keeps recent-owned projects when parking unfiled ones", () => {
@@ -164,7 +164,7 @@ test("keeps recent-owned projects when parking unfiled ones", () => {
     [{ id: "fld_recent", title: "최근기록" }],
     "fld_recent",
   );
-  assert.deepEqual(grouped.folders[0].projects.map((item) => item.id), ["r", "b"]);
+  assert.deepEqual(grouped.folders[0].projects.map((item) => item.id), ["b", "r"]);
   assert.deepEqual(grouped.unfiled, []);
 });
 

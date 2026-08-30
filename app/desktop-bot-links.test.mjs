@@ -98,7 +98,7 @@ describe('remote bot links', () => {
       assert.match(text, /disconnected/);
       assert.doesNotMatch(text, /grok-crew.py keep/);
       assert.doesNotMatch(text, /Start-Sleep/);
-      assert.doesNotMatch(text, /next-invite/);
+      assert.match(text, /next-invite/);
       assert.doesNotMatch(text, /1분마다 같은 Windows에서 still_here heartbeat를 남기세요/);
       assert.doesNotMatch(text, /Leave a still_here heartbeat on the same Windows every minute so this desk knows the window is open/);
       assert.doesNotMatch(text, /5분마다|每 5 分钟|5 分ごと|every five minutes/);
@@ -122,13 +122,14 @@ describe('remote bot links', () => {
       assert.match(text, /GROK_CREW_OK만 보내고 멈추면 실패|只发 GROK_CREW_OK 就停下来算失败|GROK_CREW_OK だけ送って止まると失敗|Sending only GROK_CREW_OK and stopping is a failure/);
       assert.match(text, /첫 답은 아래 두 줄|第一句回复必须是下面两行|最初の返事は次の二行|The first reply must be these two lines/);
       assert.match(text, /한 줄만 쓰면 실패한|只写一行就是失败|一行だけなら失敗|One line only is a failure/);
-      assert.match(text, /시작 글이 할 일|开始文字才是工作|開始の文が仕事|Start invite the operator pastes is the job/);
+      assert.match(text, /시작을 누르면 할 일|一点开始就会有工作|開始を押すと仕事|After connect, Start creates the job/);
+      assert.match(text, /다시 붙이지 않습니다|will not paste the invite again|不会再粘贴邀请|もう一度貼ることはありません/);
       assert.match(text, /위 역할대로|按上面的角色|上の役割どおり|with the role above/);
       assert.match(text, /기획 준비됨|策划已就绪|企画の準備ができました|Planner ready/);
       assert.doesNotMatch(text, /연결에 그 줄을 붙이면|pastes that line on Connect|贴到连接后|接続にその行を貼ると/);
       assert.doesNotMatch(text, /한 줄만 보내고 멈추세요|Send only the GROK_CREW_OK line and stop|只发 GROK_CREW_OK 那一行然后停下|一行だけ送って止まってください/);
       assert.doesNotMatch(text, /첫 답은 아래 한 줄|第一句回复是下面这一行|最初の返事は次の一行|The first reply is this one line/);
-      assert.doesNotMatch(text, /사람이 다시 붙이지 않습니다|will not paste the invite again|不会再粘贴邀请|もう一度貼ることはありません/);
+      assert.doesNotMatch(text, /시작 글이 할 일|开始文字才是工作|開始の文が仕事|Start invite the operator pastes is the job/);
       assert.match(text, /디스크에서 스크립트를 찾지 마세요|不要在磁盘上找脚本|ディスクでスクリプトを探さない|Do not search the disk for the script/);
       assert.doesNotMatch(text, /스크립트를 찾는 중|searching for the script/);
       assert.doesNotMatch(text, /Claude/);
@@ -334,7 +335,7 @@ describe('remote bot links', () => {
     assert.equal(seatReadyToStart(next), true);
     assert.equal(hasWaitingCopiedSeat(empty), false);
     assert.equal(seatReadyToStart(empty), false);
-    assert.equal(connectReadyLine('planner', 'ko'), '기획 준비됨. 시작 글을 이 창에 붙이면 바로 구성을 적습니다.');
+    assert.equal(connectReadyLine('planner', 'ko'), '기획 준비됨. 시작을 누르면 이 Windows에서 일을 바로 받습니다.');
     assert.match(connectReadyLine('scraper', 'en'), /Scraper ready/);
     assert.match(connectReadyLine('editor', 'zh'), /剪辑已就绪/);
   });
@@ -428,6 +429,7 @@ describe('remote bot links', () => {
     const hit = confirmRemoteReplies(waiting, 'GROK_CREW_OK QDWAVN Grok Bot 편집자', 'ko');
     assert.deepEqual(hit.confirmed, [{ kind: 'grok', role: 'editor' }]);
     assert.equal(hit.next.bots[0].status, 'connected');
+    assert.equal(hit.next.bots[0].place, 'this_pc');
     assert.ok(hit.next.bots[0].confirmedAt);
     assert.equal(hit.next.bots[0].confirmedFrom, 'ok-reply');
     assert.equal(hasConnectedBot(undefined, hit.next), true);

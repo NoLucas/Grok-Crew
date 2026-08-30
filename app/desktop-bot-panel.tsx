@@ -313,7 +313,7 @@ export function DesktopBotPanel({
     <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
       <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('연결 글을 봇 창에 붙이세요. 봇이 GROK_CREW_OK만 보내고 멈추면 아직 일이 안 간 겁니다. 시작에서 나온 글을 그 창에 붙여야 합니다. 채팅에 루틴·keep을 만들지 마세요.', 'Paste the connect text in the bot window. If the bot only sends GROK_CREW_OK and stops, the job has not arrived. Paste the Start invite in that window. Do not make a Routine or keep in chat.', '把连接文字贴到机器人窗口。机器人只发 GROK_CREW_OK 就停下，说明工作还没送到。把开始里的文字贴到那个窗口。不要在聊天里做 Routine 或 keep。', '接続文をボット窓に貼る。ボットが GROK_CREW_OK だけ送って止まるなら、仕事はまだ届いていません。開始の文をその窓に貼ってください。チャットにルーチンや keep を作らないでください。')}</p>
+        <p>{t('연결 글을 봇 창에 붙이세요. 봇이 GROK_CREW_OK만 보내고 멈추면 아직 일이 안 간 겁니다. 두 줄로 답하면 연결되고, 시작 이후에는 다시 붙이지 않습니다. 채팅에 루틴·keep을 만들지 마세요.', 'Paste the connect text in the bot window. If the bot only sends GROK_CREW_OK and stops, the job has not arrived. A two-line reply connects the seat. After that, Start runs without another paste. Do not make a Routine or keep in chat.', '把连接文字贴到机器人窗口。机器人只发 GROK_CREW_OK 就停下，说明工作还没送到。两行回复后即已连接，开始之后不用再贴。不要在聊天里做 Routine 或 keep。', '接続文をボット窓に貼る。ボットが GROK_CREW_OK だけ送って止まるなら、仕事はまだ届いていません。二行で答えれば接続され、開始のあとはもう一度貼りません。チャットにルーチンや keep を作らないでください。')}</p>
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">

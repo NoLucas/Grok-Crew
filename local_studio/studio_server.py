@@ -133,17 +133,36 @@ def record_bot_heartbeat(body: dict[str, Any]) -> dict[str, Any]:
     detail = safe_detail(body.get("detail", {}))
     now = utc_now()
     with db() as conn:
-        existing = conn.execute("SELECT last_action FROM bot_sessions WHERE bot_id = ?", (bot_id,)).fetchone()
-        previous = str((row_dict(existing) or {}).get("last_action") or "").strip() if existing else ""
+        existing = conn.execute("SELECT last_action, last_detail_json FROM bot_sessions WHERE bot_id = ?", (bot_id,)).fetchone()
+        existing_row = row_dict(existing) or {}
+        previous = str(existing_row.get("last_action") or "").strip() if existing else ""
+        previous_detail: dict[str, Any] = {}
+        raw_detail = existing_row.get("last_detail_json") if existing else None
+        if isinstance(raw_detail, dict):
+            previous_detail = raw_detail
+        elif isinstance(raw_detail, str) and raw_detail.strip():
+            try:
+                loaded = json.loads(raw_detail)
+            except json.JSONDecodeError:
+                loaded = {}
+            if isinstance(loaded, dict):
+                previous_detail = loaded
         # Operator disconnect sticks until a new bot-entry. keep still_here must not relight the lamp.
         if previous == "disconnected" and action not in {"disconnected", "entered_local_studio"}:
             row = conn.execute("SELECT * FROM bot_sessions WHERE bot_id = ?", (bot_id,)).fetchone()
             return row_dict(row) or {}
+        same_work_note = (
+            previous == action
+            and (action.endswith("_started") or action.endswith("_ready"))
+            and str(previous_detail.get("note") or "").strip()
+            and str(previous_detail.get("note") or "").strip() == str(detail.get("note") or "").strip()
+        )
         conn.execute("""INSERT INTO bot_sessions (bot_id, display_name, last_action, last_detail_json, last_seen, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(bot_id) DO UPDATE SET display_name = excluded.display_name, last_action = excluded.last_action,
             last_detail_json = excluded.last_detail_json, last_seen = excluded.last_seen""", (bot_id, display_name, action, json.dumps(detail), now, now))
-        conn.execute("INSERT INTO bot_activity (id, bot_id, action, detail_json, created_at) VALUES (?, ?, ?, ?, ?)", (str(uuid.uuid4()), bot_id, action, json.dumps(detail), now))
+        if not same_work_note:
+            conn.execute("INSERT INTO bot_activity (id, bot_id, action, detail_json, created_at) VALUES (?, ?, ?, ?, ?)", (str(uuid.uuid4()), bot_id, action, json.dumps(detail), now))
         row = conn.execute("SELECT * FROM bot_sessions WHERE bot_id = ?", (bot_id,)).fetchone()
     event(None, None, "bot_heartbeat", {"bot_id": bot_id, "action": action})
     return row_dict(row) or {}

@@ -15,6 +15,7 @@ const {
   autoSeatRows,
   autoSourceMode,
   importedEditSpecId,
+  pickArrivedImport,
   pasteTargetForSeats,
   pasteTargetRole,
   samePcInviteReady,
@@ -927,7 +928,7 @@ describe('auto desk seats and inbox guards', () => {
         confirmedFrom: 'ok-reply',
       }],
     };
-    assert.equal(samePcInviteReady(rows, roster, deskEntered), false);
+    assert.equal(samePcInviteReady(rows, roster, deskEntered), true);
     const auto = readFileSync(new URL('./desktop-auto-desk.tsx', import.meta.url), 'utf8');
     assert.match(auto, /완성되면 여기에 영상이 올라옵니다/);
     assert.match(auto, /jobTitle=\{titleFromPrompt\(wait\?\.title \|\| title, goal\)\}/);
@@ -976,6 +977,47 @@ describe('auto desk seats and inbox guards', () => {
       language: 'ko',
     });
     assert.equal(samePcInviteReady(agent, undefined), false);
+    const workingEditor = alwaysCrewSeats({
+      roster: {
+        bots: [
+          { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'plan_ready' },
+          { bot_id: 'grok-scraper', display_name: 'Grok Bot 스크래핑', presence: 'active', last_action: 'collect_ready' },
+          { bot_id: 'grok-editor', display_name: 'Grok Bot 편집자', presence: 'active', last_action: 'cut_started' },
+        ],
+      },
+      links: {
+        pairCode: 'QDWAVN',
+        bots: [{
+          id: 'e1',
+          name: 'Grok Bot 편집자',
+          kind: 'grok',
+          role: 'editor',
+          place: 'other_pc',
+          status: 'waiting',
+          pairCode: 'QDWAVN',
+        }],
+      },
+      language: 'ko',
+    });
+    assert.equal(pasteTargetRole(workingEditor), 'editor');
+    assert.equal(samePcInviteReady(workingEditor, {
+      bots: [
+        { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'plan_ready' },
+        { bot_id: 'grok-scraper', display_name: 'Grok Bot 스크래핑', presence: 'active', last_action: 'collect_ready' },
+        { bot_id: 'grok-editor', display_name: 'Grok Bot 편집자', presence: 'active', last_action: 'cut_started' },
+      ],
+    }, {
+      pairCode: 'QDWAVN',
+      bots: [{
+        id: 'e1',
+        name: 'Grok Bot 편집자',
+        kind: 'grok',
+        role: 'editor',
+        place: 'other_pc',
+        status: 'waiting',
+        pairCode: 'QDWAVN',
+      }],
+    }), true);
   });
 
   it('does not auto-pull leftover inbox files or close a wait for a wrap_loose cut', () => {
@@ -1004,9 +1046,21 @@ describe('auto desk seats and inbox guards', () => {
       pending: 2,
       pendingAtWaitStart: 1,
     }), true);
-    assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: '' }), false);
-    assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: 'spec-old' }), false);
-    assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: 'spec-today' }), true);
+    assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: '', importedProjectId: 'proj-1' }), true);
+    assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: 'spec-old', importedProjectId: 'proj-1' }), false);
+    assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: 'spec-today', importedProjectId: 'proj-1' }), true);
+    assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: '', importedProjectId: '' }), false);
+    const leftover = pickArrivedImport([
+      { project: { id: 'old' }, folder: 'drop-old-2026-08-28T01-00-00Z' },
+      { project: { id: 'fresh' }, folder: 'drop-fresh-2026-08-29T17-00-00Z' },
+      { project: { id: 'match' }, edit_spec_id: 'spec-today', folder: 'drop-match' },
+    ], 'spec-today');
+    assert.equal(leftover?.project?.id, 'match');
+    const loose = pickArrivedImport([
+      { project: { id: 'old' }, folder: 'drop-old-2026-08-28T01-00-00Z' },
+      { project: { id: 'fresh' }, folder: 'drop-fresh-2026-08-29T17-00-00Z' },
+    ], 'spec-today');
+    assert.equal(loose?.project?.id, 'fresh');
     assert.equal(importedEditSpecId([{ project: { id: 'p1' }, edit_spec_id: 'spec-today' }]), 'spec-today');
     assert.equal(importedEditSpecId([{ project: { id: 'p1' } }]), '');
   });
