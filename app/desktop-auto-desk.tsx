@@ -1339,7 +1339,7 @@ export function AutoDesk({
           </ol>
           {samePcPull || showArrived ? null : (
           <div className="desktop-auto-interrupt">
-            <p>{t(`사람 손길 · ${pasteTarget} 창에 한 번 붙이세요. 봇이 GROK_CREW_OK만 보냈으면 아직 이 일이 안 간 겁니다.`, `Your step · paste it once in the ${pasteTarget} window. If the bot only sent GROK_CREW_OK, the job has not arrived.`, `人手 · 请在 ${pasteTarget} 窗口贴一次。机器人只发了 GROK_CREW_OK 就说明这件事还没送到。`, `人の手 · ${pasteTarget} の窓に一度貼ってください。ボットが GROK_CREW_OK だけ送ったなら、この仕事はまだ届いていません。`)}</p>
+            <p>{t(`사람 손길 · ${pasteTarget} 창에 한 번 붙이세요. 불이 켜져 있어도 이 자리 글이 안 갔으면 아직 일이 안 간 겁니다.`, `Your step · paste it once in the ${pasteTarget} window. If this seat never got the job, a lit lamp does not mean it arrived.`, `人手 · 请在 ${pasteTarget} 窗口贴一次。灯亮着也不算送到，除非这个位子已经拿到这篇。`, `人の手 · ${pasteTarget} の窓に一度貼ってください。ランプが点いていても、この席に文が行っていなければ仕事はまだ届いていません。`)}</p>
             <button type="button" className="desktop-primary desktop-recopy-btn" disabled={!inviteText.trim()} onClick={() => { void recopyInvite(); }}>
               {copied
                 ? t(`복사했습니다. ${pasteTarget} 창에 붙이세요.`, `Copied. Paste it in the ${pasteTarget} window.`, `已复制。请贴到 ${pasteTarget} 窗口。`, `コピーしました。${pasteTarget} の窓に貼ってください。`)

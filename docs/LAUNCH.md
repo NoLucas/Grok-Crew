@@ -31,6 +31,7 @@ Use this before the first public GitHub release.
 - [x] Write `v1.0.18` notes in `docs/RELEASE_NOTES.v1.0.18.md` and `CHANGELOG.md`. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. The update feed tag and the Windows installer are [NoLucas/Grok-crew-test v1.0.18](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.18). The same installer files are also attached on [Grok-Crew v1.0.18](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.18).
 - [x] Write `v1.0.19` notes in `docs/RELEASE_NOTES.v1.0.19.md` and `CHANGELOG.md`. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. The update feed tag and the Windows installer are [NoLucas/Grok-crew-test v1.0.19](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.19). The same installer files are also attached on [Grok-Crew v1.0.19](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.19).
 - [x] Write `v1.0.20` notes in `docs/RELEASE_NOTES.v1.0.20.md` and `CHANGELOG.md`. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. The update feed tag and the Windows installer are [NoLucas/Grok-crew-test v1.0.20](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.20). The same installer files are also attached on [Grok-Crew v1.0.20](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.20).
+- [x] Write `v1.0.21` notes in `docs/RELEASE_NOTES.v1.0.21.md` and `CHANGELOG.md`. Guest download stays the same Google Drive `GrokCrew-Windows.exe`. The update feed tag and the Windows installer are [NoLucas/Grok-crew-test v1.0.21](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.21). The same installer files are also attached on [Grok-Crew v1.0.21](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.21).
 - [x] Review `npm audit` before release. Do not use a forced dependency upgrade without rebuilding and testing the workspace. (2026-08-26: `npm audit` and `npm audit --omit=dev` report 0 vulnerabilities. `vinext` is installed and locked at `1.0.0-beta.8`, which is the latest published `1.0.0-beta.*`. The 2026-08-24 note about 13 findings and a deferred beta.3→beta.8 jump is stale. Do not run `npm audit fix --force`. Do not bump wrangler/miniflare or a future vinext 1.0.0 stable in this pass.)
 
 ## First experience
@@ -42,7 +43,7 @@ Use this before the first public GitHub release.
 
 ## Announcement
 
-This repository does not post social copy for you. Guest facts live in `README.md` and `docs/RELEASE_NOTES.v1.0.20.md`.
+This repository does not post social copy for you. Guest facts live in `README.md` and `docs/RELEASE_NOTES.v1.0.21.md`.
 
 - [ ] Publish a short note on the channel you actually use (social, Discord, HN, or a GitHub Release note).
 

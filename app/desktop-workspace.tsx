@@ -650,7 +650,11 @@ export default function DesktopWorkspace() {
       .then(async (result) => {
         pullKeyRef.current = key;
         const imported = Array.isArray(result.imported) ? result.imported as ArrivedImport[] : [];
-        const arrived = pickArrivedImport(imported, deskWaitRef.current?.specId);
+        const arrived = pickArrivedImport(
+          imported,
+          deskWaitRef.current?.specId,
+          deskWaitRef.current?.copiedAt,
+        );
         const projectId = arrived?.project?.id;
         const importedSpec = importedEditSpecId(arrived ? [arrived] : []);
         await refreshWorkspace(true);
@@ -677,6 +681,7 @@ export default function DesktopWorkspace() {
         setPeekAuto(true);
         setSelectedProjectId(projectId);
         setActivePanel('auto');
+        let recentFailed = false;
         try {
           const recent = await ensureRecentFolder({
             folders: workspace.project_folders ?? [],
@@ -689,12 +694,14 @@ export default function DesktopWorkspace() {
             body: JSON.stringify({ folder_id: recent.folder.id }),
           });
         } catch {
-          /* Recent folder is best-effort. The cut is already imported. */
+          recentFailed = true;
         }
         await refreshWorkspace(true);
         await refreshProject(projectId);
         const name = handoffSenderLabel({ handoff_agent: arrived?.agent ?? imported[0]?.agent, handoff_door: 'editor' }, t);
-        setMessage(t(`${name} 쪽에서 넘긴 컷을 열었습니다.`, `Opened the cut from ${name}.`, `已打开 ${name} 交来的剪辑。`, `${name} が渡したカットを開きました。`));
+        setMessage(recentFailed
+          ? t(`${name} 쪽에서 넘긴 컷을 열었습니다. 최근기록으로 옮기지 못했습니다.`, `Opened the cut from ${name}. Could not move it to Recent.`, `已打开 ${name} 交来的剪辑。没能移到最近记录。`, `${name} が渡したカットを開きました。最近記録へ移せませんでした。`)
+          : t(`${name} 쪽에서 넘긴 컷을 열었습니다.`, `Opened the cut from ${name}.`, `已打开 ${name} 交来的剪辑。`, `${name} が渡したカットを開きました。`));
       })
       .catch(() => {
         setDeskPulse({ lastCheckedAt: new Date().toISOString(), pull: deskWaitRef.current ? 'failed' : 'idle' });

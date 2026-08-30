@@ -913,7 +913,7 @@ describe('auto desk seats and inbox guards', () => {
       bots: [{ bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'still_here' }],
     };
     const rows = alwaysCrewSeats({ roster, language: 'ko' });
-    assert.equal(samePcInviteReady(rows, roster), true);
+    assert.equal(samePcInviteReady(rows, roster), false);
     const deskEntered = {
       pairCode: 'QDWAVN',
       bots: [{
@@ -945,7 +945,7 @@ describe('auto desk seats and inbox guards', () => {
     assert.match(auto, /여기에 놓기 · 최근기록에도 같은 컷입니다/);
     assert.doesNotMatch(auto, /desktop-auto-preview desktop-auto-canvas/);
     assert.match(auto, /사람 손길/);
-    assert.match(auto, /GROK_CREW_OK만 보냈으면 아직 이 일이 안 간/);
+    assert.match(auto, /불이 켜져 있어도 이 자리 글이 안 갔으면/);
     assert.match(auto, /봇이 읽을 글 보기/);
     assert.match(auto, /hasWaitingCopiedSeat/);
     assert.match(auto, /연결에서 붙일 글을 먼저 복사하세요/);
@@ -1066,6 +1066,15 @@ describe('auto desk seats and inbox guards', () => {
       { project: { id: 'fresh' }, folder: 'drop-fresh-2026-08-29T17-00-00Z' },
     ], 'spec-today');
     assert.equal(loose?.project?.id, 'fresh');
+    const afterWait = pickArrivedImport([
+      { project: { id: 'old' }, folder: 'drop-old-2026-08-28T01-00-00Z' },
+      { project: { id: 'leftover' }, folder: 'drop-leftover-2026-08-29T17-00-00Z' },
+      { project: { id: 'new' }, folder: 'drop-new-2026-08-30T07-00-00Z' },
+    ], 'spec-today', '2026-08-30T06:00:00.000Z');
+    assert.equal(afterWait?.project?.id, 'new');
+    assert.equal(pickArrivedImport([
+      { project: { id: 'old' }, folder: 'drop-old-2026-08-28T01-00-00Z' },
+    ], 'spec-today', '2026-08-30T06:00:00.000Z'), null);
     assert.equal(importedEditSpecId([{ project: { id: 'p1' }, edit_spec_id: 'spec-today' }]), 'spec-today');
     assert.equal(importedEditSpecId([{ project: { id: 'p1' } }]), '');
   });

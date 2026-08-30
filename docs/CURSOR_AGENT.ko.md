@@ -24,7 +24,7 @@ Grok Crew가 이 PC에서 켜져 있을 때:
 python grok-crew.py entry --bot-id cursor-desk --display-name "Cursor" --purpose edit_video
 ```
 
-Grok 자리는 채팅 루틴이나 `keep`을 만들지 않습니다. **연결** 글 복사와 채팅의 「연결됨」은 램프가 아닙니다. 봇이 두 줄로 답하면 이 책상이 입장합니다. 불은 이 Windows에 들어온 뒤에만 켜집니다. 이미 붙은 자리는 시작 이후 next-invite를 한 번 읽습니다. `GROK_CREW_OK`만 보내고 멈추면 아직 일이 안 간 겁니다. Cursor 같은 PC 예는 위 `entry` 한 줄 그대로입니다.
+Grok 자리는 채팅 루틴이나 `keep`을 만들지 않습니다. **연결** 글 복사와 채팅의 「연결됨」은 램프가 아닙니다. 봇이 두 줄로 답하면 이 책상이 입장합니다. 불은 이 Windows에 들어온 뒤에만 켜집니다. 이미 붙은 자리는 시작 이후 next-invite를 한 번 읽습니다. 어제 leftover 명단만으로는 시작 글을 숨기지 않습니다. `GROK_CREW_OK`만 보내고 멈추면 아직 일이 안 간 겁니다. Cursor 같은 PC 예는 위 `entry` 한 줄 그대로입니다.
 
 스크립트는 `http://127.0.0.1:7214/downloads/grok-crew.py`입니다. 토큰이 켜져 있으면 런타임에서만 받습니다. `.env`를 읽지 않습니다.
 

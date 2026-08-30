@@ -794,7 +794,7 @@ export function pasteTargetForSeats(rows: AutoSeatRow[], language = 'ko'): strin
   return last?.name || seatName('grok', 'planner', language);
 }
 
-/** A Grok seat entered on this Windows pulls next-invite. Clipboard OK and Agent seats still need a paste. */
+/** A this-PC Grok entry pulls next-invite. Leftover roster ticks and Agent seats still need a paste. */
 export function samePcInviteReady(
   rows: AutoSeatRow[],
   roster?: CrewRoster | null,
@@ -803,10 +803,14 @@ export function samePcInviteReady(
   const role = pasteTargetRole(rows);
   const row = rows.find((item) => item.role === role);
   if (!row || row.kind !== 'grok' || !row.connected) return false;
-  if (heldRosterSeat(roster, role)) return true;
+  const held = heldRosterSeat(roster, role);
+  if (!held) return false;
   const linked = (links?.bots ?? []).find((item) => item.kind === 'grok' && item.role === role);
-  if (linked?.place === 'other_pc') return false;
-  return true;
+  if (!linked) return false;
+  if (linked.place === 'other_pc' && linked.confirmedFrom !== 'ok-reply') {
+    return /_started$|_ready$/.test(String(held.last_action || ''));
+  }
+  return linked.confirmedFrom === 'ok-reply' || linked.place === 'this_pc';
 }
 
 export function shouldAutoPullInbox(input: {
@@ -848,10 +852,26 @@ function importFolderStamp(folder?: string): string {
   return stamp?.[1] || text;
 }
 
-/** Prefer the wait’s spec. A new wrap_loose cut has no spec — take the newest of those. */
+function sortableFolderStamp(value?: string): string {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const asIso = raw.replace(/T(\d{2})-(\d{2})-(\d{2})/, 'T$1:$2:$3');
+  const ms = Date.parse(asIso);
+  return Number.isFinite(ms) ? new Date(ms).toISOString() : '';
+}
+
+function importStampIsAtOrAfter(folder: string | undefined, waitCopiedAt?: string): boolean {
+  const wait = sortableFolderStamp(waitCopiedAt);
+  const folderStamp = sortableFolderStamp(importFolderStamp(folder));
+  if (!wait || !folderStamp) return false;
+  return folderStamp >= wait;
+}
+
+/** Prefer the wait’s spec. A new wrap_loose cut has no spec — take the newest after this wait. */
 export function pickArrivedImport(
   imported: ArrivedImport[] | undefined,
   waitSpecId?: string,
+  waitCopiedAt?: string,
 ): ArrivedImport | null {
   const rows = (imported ?? []).filter((item) => String(item?.project?.id || '').trim());
   if (!rows.length) return null;
@@ -861,8 +881,15 @@ export function pickArrivedImport(
     if (match) return match;
   }
   const loose = rows.filter((item) => !importedEditSpecId([item]));
-  if (!loose.length) return rows[rows.length - 1] ?? null;
-  return [...loose].sort((left, right) => importFolderStamp(right.folder).localeCompare(importFolderStamp(left.folder)))[0] ?? null;
+  const afterWait = waitCopiedAt
+    ? loose.filter((item) => importStampIsAtOrAfter(item.folder, waitCopiedAt))
+    : loose;
+  if (waitCopiedAt && wait) {
+    if (!afterWait.length) return null;
+    return [...afterWait].sort((left, right) => importFolderStamp(right.folder).localeCompare(importFolderStamp(left.folder)))[0] ?? null;
+  }
+  if (!afterWait.length) return rows[rows.length - 1] ?? null;
+  return [...afterWait].sort((left, right) => importFolderStamp(right.folder).localeCompare(importFolderStamp(left.folder)))[0] ?? null;
 }
 
 /**

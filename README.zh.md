@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — 本地影像工作台" width="100%" />
 </p>
 
-**v1.0.20** · with Grok Bot · 现在免费
+**v1.0.21** · with Grok Bot · 现在免费
 
 不必再通宵自己剪 Shorts。
 接上已经在用的 **Grok Bot** 或 Agent，成品进 **这台电脑的文件夹**。
@@ -50,6 +50,14 @@
 
 ---
 
+## v1.0.21 改了什么
+
+- 昨天剩下的名册不会藏起再复制。灯亮着也不算送到，除非这个位子已经拿到这篇。
+- 只有这次等待开始之后的收件箱文件会关上「放在这里」。更早的文件夹不选。
+- 没能移到最近记录时会说一句。
+
+完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.21 发布说明](docs/RELEASE_NOTES.v1.0.21.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.21。
+
 ## v1.0.20 改了什么
 
 - 灯只在进入这台 Windows 后亮。聊天里说已连接，或剪贴板只有 `GROK_CREW_OK`，都不是灯。
@@ -57,7 +65,7 @@
 - 这次等待开始后新来的收件箱文件，即使没有规格 id，也可以关上「放在这里」。昨天剩下的文件不会关。
 - 完成成片的家是「放在这里」。最近记录是同一份文件。
 
-完整列表见 [CHANGELOG.md](CHANGELOG.md) 和 [1.0.20 发布说明](docs/RELEASE_NOTES.v1.0.20.md)。客人用的网盘文件不变。已安装的书桌看 Grok-crew-test 的 v1.0.20。
+1.0.20 列表见 [1.0.20 发布说明](docs/RELEASE_NOTES.v1.0.20.md)。
 
 ## v1.0.19 改了什么
 

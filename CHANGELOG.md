@@ -4,6 +4,17 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.21 - 2026-08-30
+
+Local 1.0.21. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.21` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.21) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.21). Guest notes: `docs/RELEASE_NOTES.v1.0.21.md`. Guest Drive download stays the last published file. Already-installed 1.0.20 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- A leftover roster `still_here` tick no longer hides Copy again. Hide only after a this-PC Grok entry (OK reply or a live work action).
+- `pickArrivedImport` keeps leftover wrap_loose folders from before this wait started. A matching spec still wins.
+- If the cut cannot move into Recent, the desk says so. The cut stays open in Drop it here.
+- Connect copy tells the operator to recopy the essay for a bot that already attached.
+
 ## 1.0.20 - 2026-08-30
 
 Local 1.0.20. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.20` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.20) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.20). Guest notes: `docs/RELEASE_NOTES.v1.0.20.md`. Guest Drive download stays the last published file. Already-installed 1.0.19 desks check Grok-crew-test for this tag.

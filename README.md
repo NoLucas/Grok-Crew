@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.20** · with Grok Bot · free now
+**v1.0.21** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,6 +50,14 @@ If attach fails, **Connect** says how to fix it. Do not open Start first.
 
 ---
 
+## What changed in v1.0.21
+
+- A leftover roster tick no longer hides Copy again. If the lamp is on but the seat never got this job, paste the Start invite.
+- Only inbox files from after this wait started close Drop it here. Older folders stay leftover.
+- If the cut cannot move to Recent, the desk says so.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.21 notes](docs/RELEASE_NOTES.v1.0.21.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.21.
+
 ## What changed in v1.0.20
 
 - The lamp turns on only after this Windows check-in. Chat saying connected, or clipboard `GROK_CREW_OK` alone, is not a lamp.
@@ -57,7 +65,7 @@ If attach fails, **Connect** says how to fix it. Do not open Start first.
 - A new inbox file after this wait started may close Drop it here even without a spec id. Leftover files do not.
 - The finished cut’s home is Drop it here. Recent is the same file.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.20 notes](docs/RELEASE_NOTES.v1.0.20.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.20.
+The 1.0.20 list is in [the 1.0.20 notes](docs/RELEASE_NOTES.v1.0.20.md).
 
 ## What changed in v1.0.19
 
