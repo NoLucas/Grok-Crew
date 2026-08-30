@@ -4,6 +4,19 @@ All notable changes to Grok Crew are documented here.
 
 ## Unreleased
 
+## 1.0.22 - 2026-08-30
+
+Local 1.0.22. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.22` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.22) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.22). Guest notes: `docs/RELEASE_NOTES.v1.0.22.md`. Guest Drive download stays the last published file. Already-installed 1.0.21 desks check Grok-crew-test for this tag.
+
+### Desk
+
+- Yesterday’s saved OK no longer hides Copy again. Hide only after a confirm in this desk session and after this connect-essay copy.
+- The Agent lamp matches Grok: this-PC roster entry, not clipboard OK. Start can still open from a fresh OK.
+- An inbox overwrite with the same pending name still opens Drop it here when mtime or bytes change.
+- A file left only in the collector or materials box gets a one-line wrong-door notice. The desk does not pull that door as a finished cut.
+- After a Recent-move failure, the existing Move again control retries the same file.
+- A stale connect-essay generation keeps the Start copy-again slot open.
+
 ## 1.0.21 - 2026-08-30
 
 Local 1.0.21. Windows installer: `GrokCrew-Windows.exe` on the `v1.0.21` GitHub Release of [Grok-crew-test](https://github.com/NoLucas/Grok-crew-test/releases/tag/v1.0.21) and the same files on [Grok-Crew](https://github.com/NoLucas/Grok-Crew/releases/tag/v1.0.21). Guest notes: `docs/RELEASE_NOTES.v1.0.21.md`. Guest Drive download stays the last published file. Already-installed 1.0.20 desks check Grok-crew-test for this tag.

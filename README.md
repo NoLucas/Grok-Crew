@@ -4,7 +4,7 @@
   <img src="public/hero.png" alt="Grok Crew with Grok Bot — local video desk" width="100%" />
 </p>
 
-**v1.0.21** · with Grok Bot · free now
+**v1.0.22** · with Grok Bot · free now
 
 You do not have to stay up cutting Shorts by hand.
 Attach the **Grok Bot** or Agent they already use. The finished file lands in **their folder on this PC**.
@@ -50,13 +50,23 @@ If attach fails, **Connect** says how to fix it. Do not open Start first.
 
 ---
 
+## What changed in v1.0.22
+
+- Yesterday’s saved OK no longer hides Copy again. Hide only after a confirm in this run and after this connect-essay copy.
+- The Agent lamp waits for this-PC roster entry, like Grok. Clipboard OK alone stays dark.
+- An inbox overwrite with the same name still opens Drop it here when time or size changes.
+- A file left only in the collector or materials box gets a one-line notice. Recent-move failure keeps Move again.
+- A stale connect essay keeps the Start copy slot open. Recopy the essay for a bot that already attached.
+
+The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.22 notes](docs/RELEASE_NOTES.v1.0.22.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.22.
+
 ## What changed in v1.0.21
 
 - A leftover roster tick no longer hides Copy again. If the lamp is on but the seat never got this job, paste the Start invite.
 - Only inbox files from after this wait started close Drop it here. Older folders stay leftover.
 - If the cut cannot move to Recent, the desk says so.
 
-The full list is in [CHANGELOG.md](CHANGELOG.md) and [the 1.0.21 notes](docs/RELEASE_NOTES.v1.0.21.md). Guest Drive download stays the last published file. Already-installed desks check Grok-crew-test for v1.0.21.
+The 1.0.21 list is in [the 1.0.21 notes](docs/RELEASE_NOTES.v1.0.21.md).
 
 ## What changed in v1.0.20
 
