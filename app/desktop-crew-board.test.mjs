@@ -216,12 +216,13 @@ describe('crew board notes', () => {
       roster: {
         bots: [
           { bot_id: 'grok-planner', display_name: 'Grok Bot 기획자', presence: 'active', last_action: 'plan_ready' },
+          { display_name: 'Agent 스크래핑', presence: 'active', last_action: 'entered_local_studio' },
         ],
       },
       links: {
         pairCode: 'ABCD',
         bots: [
-          { id: 'c1', name: 'Agent 스크래핑', kind: 'custom', role: 'scraper', place: 'other_pc', status: 'connected', pairCode: 'ABCD' },
+          { id: 'c1', name: 'Agent 스크래핑', kind: 'custom', role: 'scraper', place: 'this_pc', status: 'connected', pairCode: 'ABCD', confirmedFrom: 'ok-reply', confirmedAt: '2026-08-30T07:05:00.000Z' },
         ],
       },
       language: 'ko',

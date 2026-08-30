@@ -29,6 +29,8 @@ def test_loose_inbox_mp4_counts_as_pending_and_pulls(studio, tmp_path):
     status = handoff_status()
     assert status["doors"]["editor"]["pending_count"] >= 1
     assert "reel-15s.mp4" in status["doors"]["editor"]["pending"]
+    assert status["doors"]["editor"]["total_bytes"] >= 9
+    assert status["doors"]["editor"]["newest_mtime"]
     pulled = pull_handoff({"door": "editor"})
     assert any(item.get("ok") for item in pulled["imported"])
     assert not loose.exists()

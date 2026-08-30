@@ -233,6 +233,7 @@ def apply_package_local(
     created = imported.get("project") if isinstance(imported.get("project"), dict) else {}
     if spec_id and created.get("id"):
         attach_spec_project(spec_id, str(created["id"]))
+    newest, total = _path_stamp(folder)
     return {
         "ok": True,
         "folder": folder.name,
@@ -242,6 +243,8 @@ def apply_package_local(
         "edit_spec_id": spec_id or None,
         "door": package_door,
         "agent": sender,
+        "updated_at": datetime.fromtimestamp(newest, tz=timezone.utc).isoformat(timespec="seconds") if newest else "",
+        "total_bytes": total,
     }
 
 
@@ -559,15 +562,43 @@ def write_demo_package(spec_id: str | None = None, door: str | None = None) -> d
     }
 
 
+def _path_stamp(path: Path) -> tuple[float, int]:
+    try:
+        st = path.stat()
+    except OSError:
+        return 0.0, 0
+    newest = st.st_mtime
+    total = st.st_size if path.is_file() else 0
+    if path.is_dir():
+        for child in path.rglob("*"):
+            if not child.is_file():
+                continue
+            try:
+                cst = child.stat()
+            except OSError:
+                continue
+            newest = max(newest, cst.st_mtime)
+            total += cst.st_size
+    return newest, total
+
+
 def _door_status(door: str) -> dict[str, Any]:
     pending = pending_inbox_folders_for_door(door)
     loose = pending_inbox_media_for_door(door)
     inbox = door_inbox_dir(door)
+    newest = 0.0
+    total = 0
+    for item in [*pending, *loose]:
+        mtime, size = _path_stamp(item)
+        newest = max(newest, mtime)
+        total += size
     return {
         "door": door,
         "inbox_dir": str(inbox),
         "pending_count": len(pending) + len(loose),
         "pending": [item.name for item in pending] + [item.name for item in loose],
+        "newest_mtime": datetime.fromtimestamp(newest, tz=timezone.utc).isoformat(timespec="seconds") if newest else "",
+        "total_bytes": total,
     }
 
 

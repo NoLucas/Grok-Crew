@@ -398,9 +398,20 @@ export function rosterMatchesSeat(bot: Pick<CrewBot, 'bot_id' | 'display_name'>,
   return replyMatchesSeat(String(bot.display_name || ''), 'grok', role);
 }
 
+export function rosterMatchesCustomSeat(bot: Pick<CrewBot, 'bot_id' | 'display_name'>, role: BotRole): boolean {
+  const id = String(bot.bot_id || '').trim().toLowerCase();
+  if (id.startsWith('grok-')) return false;
+  return replyMatchesSeat(String(bot.display_name || ''), 'custom', role);
+}
+
 export function knownRosterSeat(roster?: CrewRoster | null, role?: BotRole): CrewBot | null {
   if (!role) return null;
   return (roster?.bots ?? []).find((bot) => rosterMatchesSeat(bot, role)) ?? null;
+}
+
+export function knownCustomRosterSeat(roster?: CrewRoster | null, role?: BotRole): CrewBot | null {
+  if (!role) return null;
+  return (roster?.bots ?? []).find((bot) => rosterMatchesCustomSeat(bot, role)) ?? null;
 }
 
 export function activeRosterSeat(roster?: CrewRoster | null, role?: BotRole): CrewBot | null {
@@ -413,6 +424,13 @@ export function activeRosterSeat(roster?: CrewRoster | null, role?: BotRole): Cr
 /** Held until the operator releases it, or the seat writes disconnected. Idle ticks do not drop the lamp. */
 export function heldRosterSeat(roster?: CrewRoster | null, role?: BotRole): CrewBot | null {
   const bot = knownRosterSeat(roster, role);
+  if (!bot) return null;
+  if (String(bot.last_action || '').trim() === 'disconnected') return null;
+  return bot;
+}
+
+export function heldCustomRosterSeat(roster?: CrewRoster | null, role?: BotRole): CrewBot | null {
+  const bot = knownCustomRosterSeat(roster, role);
   if (!bot) return null;
   if (String(bot.last_action || '').trim() === 'disconnected') return null;
   return bot;
@@ -441,7 +459,13 @@ export function seatIsConnected(
     }
     return Boolean(heldRosterSeat(roster, role));
   }
-  return linkedBySeat(links?.bots, kind, role)?.status === 'connected';
+  const linked = linkedBySeat(links?.bots, kind, role);
+  const rosterBot = knownCustomRosterSeat(roster, role);
+  if (!rosterBot) return false;
+  if (linked?.place === 'other_pc' && linked.confirmedFrom !== 'ok-reply') {
+    if (!isGrokWorkAction(String(rosterBot.last_action || ''))) return false;
+  }
+  return Boolean(heldCustomRosterSeat(roster, role));
 }
 
 export function familyIsConnected(
@@ -472,7 +496,8 @@ export function hasWaitingCopiedSeat(links?: BotLinkState | null): boolean {
 export function seatReadyToStart(links?: BotLinkState | null, roster?: CrewRoster | null): boolean {
   return hasConnectedBot(roster, links)
     || hasWaitingCopiedSeat(links)
-    || confirmedGrokRoles(links).length > 0;
+    || confirmedGrokRoles(links).length > 0
+    || confirmedCustomRoles(links).length > 0;
 }
 
 /** One follow bar for Grok or Agent. A leftover mystery roster bot does not light a lamp. */
@@ -673,6 +698,14 @@ export function grokKeepBeatBody(
 export function confirmedGrokRoles(links?: BotLinkState | null): BotRole[] {
   return BOT_ROLES.filter((role) => {
     const bot = linkedBySeat(links?.bots, 'grok', role);
+    return bot?.status === 'connected' && bot.confirmedFrom === 'ok-reply' && Boolean(bot.confirmedAt);
+  });
+}
+
+/** Clipboard OK is enough to start. It is not enough to light an Agent lamp. */
+export function confirmedCustomRoles(links?: BotLinkState | null): BotRole[] {
+  return BOT_ROLES.filter((role) => {
+    const bot = linkedBySeat(links?.bots, 'custom', role);
     return bot?.status === 'connected' && bot.confirmedFrom === 'ok-reply' && Boolean(bot.confirmedAt);
   });
 }
@@ -958,13 +991,86 @@ export function remoteConnectPaste(
 }
 
 export const LAST_CONNECT_BUNDLE_KEY = 'grok-crew-last-connect-bundle';
+export const DESK_SESSION_KEY = 'grok-crew-desk-session';
+/** Bump when the connect essay changes so an old copy keeps Start open. */
+export const CONNECT_ESSAY_REVISION = 'desk-connect-1';
 
 export type LastConnectBundle = {
   market: string;
   recipeId: string;
   language: string;
   copiedAt: string;
+  generation?: string;
 };
+
+function sessionStore(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function connectEssayGeneration(input: {
+  pairCode?: string;
+  market?: string;
+  recipeId?: string;
+  language?: string;
+}): string {
+  return [
+    CONNECT_ESSAY_REVISION,
+    String(input.pairCode || '').trim().toUpperCase(),
+    String(input.market || '').trim(),
+    String(input.recipeId || '').trim(),
+    String(input.language || 'ko').slice(0, 2),
+  ].join('|');
+}
+
+export function connectEssayIsCurrent(
+  current: string | undefined,
+  saved: string | undefined,
+): boolean {
+  const now = String(current || '').trim();
+  const was = String(saved || '').trim();
+  if (!now || !was) return true;
+  return now === was;
+}
+
+export function ensureDeskSessionStartedAt(
+  store?: Storage | null,
+  now = Date.now(),
+): string {
+  const memory = store === undefined ? sessionStore() : store;
+  const existing = String(memory?.getItem(DESK_SESSION_KEY) || '').trim();
+  if (existing) return existing;
+  const stamp = new Date(now).toISOString();
+  try {
+    memory?.setItem(DESK_SESSION_KEY, stamp);
+  } catch {
+    /* session storage may be blocked */
+  }
+  return stamp;
+}
+
+export function readDeskSessionStartedAt(store?: Storage | null): string {
+  const memory = store === undefined ? sessionStore() : store;
+  return String(memory?.getItem(DESK_SESSION_KEY) || '').trim();
+}
+
+export function linkFreshForThisRun(
+  linked: Pick<LinkedBot, 'confirmedAt' | 'connectedAt'> | null | undefined,
+  freshness?: { sessionStartedAt?: string; connectCopiedAt?: string },
+): boolean {
+  const stamp = Date.parse(String(linked?.confirmedAt || linked?.connectedAt || ''));
+  if (!Number.isFinite(stamp) || stamp <= 0) return false;
+  const session = Date.parse(String(freshness?.sessionStartedAt || ''));
+  const copied = Date.parse(String(freshness?.connectCopiedAt || ''));
+  if (Number.isFinite(copied) && stamp < copied) return false;
+  if (Number.isFinite(session) && stamp < session) return false;
+  if (!Number.isFinite(session) && !Number.isFinite(copied)) return false;
+  return true;
+}
 
 function asLastConnectBundle(value: unknown): LastConnectBundle | null {
   if (!value || typeof value !== 'object') return null;
@@ -973,8 +1079,11 @@ function asLastConnectBundle(value: unknown): LastConnectBundle | null {
   const recipeId = String(record.recipeId || '').trim();
   const language = String(record.language || '').trim() || 'ko';
   const copiedAt = String(record.copiedAt || '').trim();
+  const generation = String(record.generation || '').trim();
   if (!market || !recipeId) return null;
-  return { market, recipeId, language, copiedAt };
+  return generation
+    ? { market, recipeId, language, copiedAt, generation }
+    : { market, recipeId, language, copiedAt };
 }
 
 export function readLastConnectBundle(): LastConnectBundle | null {
@@ -991,13 +1100,25 @@ export function writeLastConnectBundle(next: {
   market?: string;
   recipeId?: string;
   language?: string;
-}): LastConnectBundle | null {
+  pairCode?: string;
+}, opts?: { touchCopiedAt?: boolean }): LastConnectBundle | null {
   const current = readLastConnectBundle();
+  const touch = opts?.touchCopiedAt !== false;
+  const language = next.language || current?.language || 'ko';
+  const market = next.market || current?.market;
+  const recipeId = next.recipeId || current?.recipeId;
+  const generation = connectEssayGeneration({
+    pairCode: next.pairCode,
+    market,
+    recipeId,
+    language,
+  });
   const saved = asLastConnectBundle({
-    market: next.market || current?.market,
-    recipeId: next.recipeId || current?.recipeId,
-    language: next.language || current?.language || 'ko',
-    copiedAt: new Date().toISOString(),
+    market,
+    recipeId,
+    language,
+    copiedAt: touch ? new Date().toISOString() : (current?.copiedAt || new Date().toISOString()),
+    generation: touch ? generation : (current?.generation || generation),
   });
   if (!saved) return null;
   storage()?.setItem(LAST_CONNECT_BUNDLE_KEY, JSON.stringify(saved));

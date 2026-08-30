@@ -126,6 +126,7 @@ export function DesktopBotPanel({
       market: nextMarket,
       recipeId: nextRecipe,
       language,
+      pairCode: links.pairCode,
     });
     if (saved) setLastBundle(saved);
   };
@@ -196,7 +197,7 @@ export function DesktopBotPanel({
     const next = markRemoteCopied(links, { kind: seat.kind, role: seat.role, language });
     writeBotLinks(next);
     onLinksChange(next, 'copy');
-    if (seat.kind === 'grok') rememberBundle();
+    rememberBundle();
     setReleasedNote(t(
       '복사했습니다. 그 글을 봇 창에 붙이세요. 복사만으로는 연결되지 않습니다.',
       'Copied. Paste that text in the bot window. Copying is not a connection.',
@@ -313,7 +314,7 @@ export function DesktopBotPanel({
     <div className="desktop-spec-desk desktop-bot-room" data-stage="compose">
       <header className="desktop-auto-lead">
         <h1>{t('연결', 'Connect', '连接', '接続')}</h1>
-        <p>{t('연결 글을 봇 창에 붙이세요. 이미 붙은 봇은 이 글을 다시 복사하세요. 봇이 GROK_CREW_OK만 보내고 멈추면 아직 일이 안 간 겁니다. 두 줄로 답하면 이 책상이 입장합니다. 불은 이 Windows에 들어온 뒤에만 켜집니다. 어제 leftover 명단만으로는 시작 글을 숨기지 않습니다. 채팅에 루틴·keep을 만들지 마세요.', 'Paste the connect text in the bot window. Recopy it for a bot that already attached. If the bot only sends GROK_CREW_OK and stops, the job has not arrived. A two-line reply lets this desk enter. The lamp turns on only after this Windows check-in. A leftover roster tick does not hide the Start invite. Do not make a Routine or keep in chat.', '把连接文字贴到机器人窗口。已经接上的机器人请再复制一次。机器人只发 GROK_CREW_OK 就停下，说明工作还没送到。两行回复后这张书桌会签到。灯只在进入这台 Windows 后亮。昨天剩下的名册不会藏起开始文。不要在聊天里做 Routine 或 keep。', '接続文をボット窓に貼る。すでに付いたボットはこの文をもう一度コピーしてください。ボットが GROK_CREW_OK だけ送って止まるなら、仕事はまだ届いていません。二行で答えればこの机が入場します。ランプはこの Windows に入ってから点きます。昨日残った名簿だけでは開始の文を隠しません。チャットにルーチンや keep を作らないでください。')}</p>
+        <p>{t('연결 글을 봇 창에 붙이세요. 이미 붙은 봇은 이 글을 다시 복사하세요. 봇이 GROK_CREW_OK만 보내고 멈추면 아직 일이 안 간 겁니다. 두 줄로 답하면 이 책상이 입장합니다. 불은 이 Windows에 들어온 뒤에만 켜집니다. 어제 leftover 명단이나 저장된 OK만으로는 시작 글을 숨기지 않습니다. Agent 불도 입장 뒤에만 켭니다. 채팅에 루틴·keep을 만들지 마세요.', 'Paste the connect text in the bot window. Recopy it for a bot that already attached. If the bot only sends GROK_CREW_OK and stops, the job has not arrived. A two-line reply lets this desk enter. The lamp turns on only after this Windows check-in. A leftover roster tick or a saved OK from yesterday does not hide the Start invite. The Agent lamp also waits for this-PC entry. Do not make a Routine or keep in chat.', '把连接文字贴到机器人窗口。已经接上的机器人请再复制一次。机器人只发 GROK_CREW_OK 就停下，说明工作还没送到。两行回复后这张书桌会签到。灯只在进入这台 Windows 后亮。昨天剩下的名册或保存的 OK 不会藏起开始文。Agent 灯也要等这台电脑签到。不要在聊天里做 Routine 或 keep。', '接続文をボット窓に貼る。すでに付いたボットはこの文をもう一度コピーしてください。ボットが GROK_CREW_OK だけ送って止まるなら、仕事はまだ届いていません。二行で答えればこの机が入場します。ランプはこの Windows に入ってから点きます。昨日残った名簿や保存した OK だけでは開始の文を隠しません。Agent のランプも入場のあと点きます。チャットにルーチンや keep を作らないでください。')}</p>
       </header>
 
       <section className={`desktop-auto-connect${connected ? ' is-ready' : ''}`} aria-live="polite">

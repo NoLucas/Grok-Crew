@@ -1,8 +1,12 @@
 import type { CrewRoster } from './desktop-bot-connect';
 import {
   GROK_SEAT_BOT_IDS,
+  connectEssayIsCurrent,
   connectedRemoteNames,
   heldRosterSeat,
+  linkFreshForThisRun,
+  readDeskSessionStartedAt,
+  readLastConnectBundle,
   rosterMatchesSeat,
   seatIsConnected,
   type BotLinkState,
@@ -794,11 +798,19 @@ export function pasteTargetForSeats(rows: AutoSeatRow[], language = 'ko'): strin
   return last?.name || seatName('grok', 'planner', language);
 }
 
-/** A this-PC Grok entry pulls next-invite. Leftover roster ticks and Agent seats still need a paste. */
+export type InviteFreshness = {
+  sessionStartedAt?: string;
+  connectCopiedAt?: string;
+  connectGeneration?: string;
+  currentGeneration?: string;
+};
+
+/** A this-PC Grok entry pulls next-invite. Leftover roster ticks, yesterday's OK, and Agent seats still need a paste. */
 export function samePcInviteReady(
   rows: AutoSeatRow[],
   roster?: CrewRoster | null,
   links?: BotLinkState | null,
+  freshness?: InviteFreshness,
 ): boolean {
   const role = pasteTargetRole(rows);
   const row = rows.find((item) => item.role === role);
@@ -810,7 +822,62 @@ export function samePcInviteReady(
   if (linked.place === 'other_pc' && linked.confirmedFrom !== 'ok-reply') {
     return /_started$|_ready$/.test(String(held.last_action || ''));
   }
-  return linked.confirmedFrom === 'ok-reply' || linked.place === 'this_pc';
+  if (!(linked.confirmedFrom === 'ok-reply' || linked.place === 'this_pc')) return false;
+  const bundle = readLastConnectBundle();
+  const savedGeneration = freshness?.connectGeneration ?? bundle?.generation;
+  const currentGeneration = freshness?.currentGeneration;
+  if (!connectEssayIsCurrent(currentGeneration, savedGeneration)) return false;
+  return linkFreshForThisRun(linked, {
+    sessionStartedAt: freshness?.sessionStartedAt ?? readDeskSessionStartedAt(),
+    connectCopiedAt: freshness?.connectCopiedAt ?? bundle?.copiedAt,
+  });
+}
+
+export type InboxDoorStamp = {
+  pending: number;
+  names: string;
+  newestMtime: string;
+  totalBytes: number;
+};
+
+export type InboxDoorSnapshot = {
+  pending_count?: number;
+  pending?: string[];
+  newest_mtime?: string;
+  total_bytes?: number;
+};
+
+export function inboxDoorStamp(door?: InboxDoorSnapshot | null): InboxDoorStamp {
+  const names = [...(door?.pending ?? [])].map((item) => String(item || '').trim()).filter(Boolean).sort();
+  return {
+    pending: Number(door?.pending_count ?? 0) || 0,
+    names: names.join('\n'),
+    newestMtime: String(door?.newest_mtime || '').trim(),
+    totalBytes: Number(door?.total_bytes ?? 0) || 0,
+  };
+}
+
+export function inboxStampChanged(start: InboxDoorStamp | null | undefined, next: InboxDoorStamp): boolean {
+  if (!start) return next.pending > 0;
+  if (next.pending > start.pending) return true;
+  if (next.names && next.names !== start.names) return true;
+  if (next.newestMtime && start.newestMtime && next.newestMtime > start.newestMtime) return true;
+  if (next.pending >= 1 && next.totalBytes > 0 && start.totalBytes >= 0 && next.totalBytes !== start.totalBytes) {
+    return true;
+  }
+  return false;
+}
+
+export function misplacedInboxDoor(input: {
+  editorPending?: number;
+  collectorPending?: number;
+  materialsPending?: number;
+}): 'collector' | 'materials' | '' {
+  const editor = Number(input.editorPending ?? 0) || 0;
+  if (editor > 0) return '';
+  if ((Number(input.collectorPending ?? 0) || 0) > 0) return 'collector';
+  if ((Number(input.materialsPending ?? 0) || 0) > 0) return 'materials';
+  return '';
 }
 
 export function shouldAutoPullInbox(input: {
@@ -818,9 +885,15 @@ export function shouldAutoPullInbox(input: {
   wait: DeskWaitState | null | undefined;
   pending: number;
   pendingAtWaitStart: number | null;
+  stamp?: InboxDoorStamp | null;
+  stampAtWaitStart?: InboxDoorStamp | null;
 }): boolean {
   if (input.connectOpen) return false;
   if (!input.wait?.specId) return false;
+  if (input.stamp) {
+    if (!inboxStampChanged(input.stampAtWaitStart ?? null, input.stamp)) return false;
+    return input.stamp.pending >= 1;
+  }
   if (!Number.isFinite(input.pending) || input.pending < 1) return false;
   if (typeof input.pendingAtWaitStart === 'number' && input.pending <= input.pendingAtWaitStart) return false;
   return true;
@@ -844,6 +917,7 @@ export type ArrivedImport = {
   edit_spec_id?: string;
   folder?: string;
   agent?: string;
+  updated_at?: string;
 };
 
 function importFolderStamp(folder?: string): string {
@@ -860,10 +934,17 @@ function sortableFolderStamp(value?: string): string {
   return Number.isFinite(ms) ? new Date(ms).toISOString() : '';
 }
 
-function importStampIsAtOrAfter(folder: string | undefined, waitCopiedAt?: string): boolean {
+function importStampIsAtOrAfter(
+  folder: string | undefined,
+  waitCopiedAt?: string,
+  updatedAt?: string,
+): boolean {
   const wait = sortableFolderStamp(waitCopiedAt);
+  if (!wait) return false;
+  const fileStamp = sortableFolderStamp(updatedAt);
+  if (fileStamp && fileStamp >= wait) return true;
   const folderStamp = sortableFolderStamp(importFolderStamp(folder));
-  if (!wait || !folderStamp) return false;
+  if (!folderStamp) return false;
   return folderStamp >= wait;
 }
 
@@ -882,7 +963,7 @@ export function pickArrivedImport(
   }
   const loose = rows.filter((item) => !importedEditSpecId([item]));
   const afterWait = waitCopiedAt
-    ? loose.filter((item) => importStampIsAtOrAfter(item.folder, waitCopiedAt))
+    ? loose.filter((item) => importStampIsAtOrAfter(item.folder, waitCopiedAt, item.updated_at))
     : loose;
   if (waitCopiedAt && wait) {
     if (!afterWait.length) return null;

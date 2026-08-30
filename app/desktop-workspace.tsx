@@ -22,6 +22,7 @@ import {
   confirmedGrokRoles,
   disconnectHeartbeatBody,
   ensureBotLinks,
+  ensureDeskSessionStartedAt,
   forgetBotLinksOnQuit,
   grokSeatsToDisconnect,
   hasConnectedBot,
@@ -43,6 +44,8 @@ import { DesktopReviseCard } from './desktop-revise-card';
 import {
   autoHeaderDot,
   importedEditSpecId,
+  inboxDoorStamp,
+  misplacedInboxDoor,
   pickArrivedImport,
   ownedFileName,
   safeWorkspaceRel,
@@ -51,6 +54,7 @@ import {
   studioDownloadBase,
   writeAutoPrefs,
   type ArrivedImport,
+  type InboxDoorStamp,
 } from './desktop-auto-state';
 import { DesktopVoiceSetup } from './desktop-voice-setup';
 import { DesktopLanguageGate, LANGUAGE_GATE_BODY_CLASS } from './desktop-language-gate';
@@ -190,7 +194,13 @@ type StyleRecipe = {
   must_drop?: string;
   collect?: { query?: string; clip_count?: { min?: number; max?: number } };
 };
-type DoorInboxStatus = { pending_count?: number; inbox_dir?: string };
+type DoorInboxStatus = {
+  pending_count?: number;
+  inbox_dir?: string;
+  pending?: string[];
+  newest_mtime?: string;
+  total_bytes?: number;
+};
 type OutboxDoorStatus = { pending_count?: number; outbox_dir?: string; git_prefix?: string };
 type HandoffStatus = {
   pending_count?: number;
@@ -395,7 +405,8 @@ export default function DesktopWorkspace() {
   const [firstCut, setFirstCut] = useState(false);
   const [deskPulse, setDeskPulse] = useState<{ lastCheckedAt: string; pull: DeskPullStatus }>({ lastCheckedAt: '', pull: 'idle' });
   const deskWaitRef = useRef<DeskWaitState | null>(null);
-  const inboxPendingAtWaitRef = useRef<number | null>(null);
+  const inboxPendingAtWaitRef = useRef<InboxDoorStamp | null>(null);
+  const [recentMoveFailed, setRecentMoveFailed] = useState<{ projectId: string; name: string } | null>(null);
   const seatSnapRef = useRef<ReturnType<typeof seatConnectSnapshot> | null>(null);
   const lostPingedRef = useRef(new Set<string>());
   const [lostSeats, setLostSeats] = useState<Array<{ key: SeatKey; kind: 'grok' | 'custom'; role: BotRole }>>([]);
@@ -406,6 +417,9 @@ export default function DesktopWorkspace() {
 
   useEffect(() => {
     setToolsDayTheme(false);
+  }, []);
+  useEffect(() => {
+    ensureDeskSessionStartedAt();
   }, []);
   useEffect(() => {
     if (voiceSetup.done) return;
@@ -623,7 +637,18 @@ export default function DesktopWorkspace() {
   }, [refreshWorkspace, workspace.first_run?.voice_model?.download?.status]);
 
   const editorInbox = workspace.handoff?.doors?.editor ?? workspace.handoff?.doors?.grok;
+  const collectorInbox = workspace.handoff?.doors?.collector ?? workspace.handoff?.doors?.agent;
   const editorPending = editorInbox?.pending_count ?? 0;
+  const collectorPending = collectorInbox?.pending_count ?? 0;
+  const materialsPending = workspace.handoff?.materials?.pending_count ?? 0;
+  const editorStamp = inboxDoorStamp(editorInbox);
+  const wrongDoor = deskWait
+    ? misplacedInboxDoor({
+      editorPending,
+      collectorPending,
+      materialsPending,
+    })
+    : '';
   const pullKeyRef = useRef('');
   const pullingRef = useRef(false);
   useEffect(() => {
@@ -632,18 +657,42 @@ export default function DesktopWorkspace() {
       return;
     }
     if (inboxPendingAtWaitRef.current === null) {
-      inboxPendingAtWaitRef.current = editorPending;
+      inboxPendingAtWaitRef.current = editorStamp;
     }
-  }, [deskWait, editorPending]);
+  }, [deskWait, editorStamp]);
+  const moveOpenedCutToRecent = useCallback(async (projectId: string) => {
+    const recent = await ensureRecentFolder({
+      folders: workspace.project_folders ?? [],
+      request: api,
+      language,
+      storage: typeof window === 'undefined' ? undefined : window.localStorage,
+    });
+    await api(`/api/v2/projects/${projectId}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ folder_id: recent.folder.id }),
+    });
+  }, [api, language, workspace.project_folders]);
+  const retryRecentMove = useCallback(async () => {
+    if (!recentMoveFailed) return;
+    try {
+      await moveOpenedCutToRecent(recentMoveFailed.projectId);
+      setRecentMoveFailed(null);
+      await refreshWorkspace(true);
+    } catch {
+      /* keep the retry button */
+    }
+  }, [moveOpenedCutToRecent, recentMoveFailed, refreshWorkspace]);
   useEffect(() => {
     if (studioState !== 'ready' || pullingRef.current) return;
     if (!shouldAutoPullInbox({
       connectOpen: botPanelOpen,
       wait: deskWait,
       pending: editorPending,
-      pendingAtWaitStart: inboxPendingAtWaitRef.current,
+      pendingAtWaitStart: inboxPendingAtWaitRef.current?.pending ?? null,
+      stamp: editorStamp,
+      stampAtWaitStart: inboxPendingAtWaitRef.current,
     })) return;
-    const key = `${editorPending}:${editorInbox?.inbox_dir ?? ''}:${deskWait?.specId ?? ''}`;
+    const key = `${editorStamp.pending}:${editorStamp.names}:${editorStamp.newestMtime}:${editorStamp.totalBytes}:${deskWait?.specId ?? ''}`;
     if (pullKeyRef.current === key) return;
     pullingRef.current = true;
     void api('/api/v2/handoff/pull', { method: 'POST', body: JSON.stringify({ door: 'editor' }) })
@@ -682,23 +731,16 @@ export default function DesktopWorkspace() {
         setSelectedProjectId(projectId);
         setActivePanel('auto');
         let recentFailed = false;
+        const name = handoffSenderLabel({ handoff_agent: arrived?.agent ?? imported[0]?.agent, handoff_door: 'editor' }, t);
         try {
-          const recent = await ensureRecentFolder({
-            folders: workspace.project_folders ?? [],
-            request: api,
-            language,
-            storage: typeof window === 'undefined' ? undefined : window.localStorage,
-          });
-          await api(`/api/v2/projects/${projectId}/move`, {
-            method: 'POST',
-            body: JSON.stringify({ folder_id: recent.folder.id }),
-          });
+          await moveOpenedCutToRecent(projectId);
+          setRecentMoveFailed(null);
         } catch {
           recentFailed = true;
+          setRecentMoveFailed({ projectId, name });
         }
         await refreshWorkspace(true);
         await refreshProject(projectId);
-        const name = handoffSenderLabel({ handoff_agent: arrived?.agent ?? imported[0]?.agent, handoff_door: 'editor' }, t);
         setMessage(recentFailed
           ? t(`${name} 쪽에서 넘긴 컷을 열었습니다. 최근기록으로 옮기지 못했습니다.`, `Opened the cut from ${name}. Could not move it to Recent.`, `已打开 ${name} 交来的剪辑。没能移到最近记录。`, `${name} が渡したカットを開きました。最近記録へ移せませんでした。`)
           : t(`${name} 쪽에서 넘긴 컷을 열었습니다.`, `Opened the cut from ${name}.`, `已打开 ${name} 交来的剪辑。`, `${name} が渡したカットを開きました。`));
@@ -710,7 +752,7 @@ export default function DesktopWorkspace() {
       .finally(() => {
         pullingRef.current = false;
       });
-  }, [api, botPanelOpen, deskWait, editorInbox?.inbox_dir, editorPending, language, refreshProject, refreshWorkspace, studioState, t, workspace.project_folders]);
+  }, [api, botPanelOpen, deskWait, editorInbox?.inbox_dir, editorPending, editorStamp, language, moveOpenedCutToRecent, refreshProject, refreshWorkspace, studioState, t]);
   useEffect(() => {
     if (!window.grokCrew) return;
     void window.grokCrew.githubStatus().then(setGithub).catch(() => undefined);
@@ -1804,14 +1846,21 @@ export default function DesktopWorkspace() {
                 outputReady={outputReady}
                 savingFile={busy && Boolean(project) && activePanel === 'auto'}
                 saveFailed={autoSaveFailed}
-                
+                deskNotice={wrongDoor === 'collector'
+                  ? t('수집함에 파일이 있습니다. 끝난 컷은 편집 인박스에 두세요.', 'There is a file in the collector box. Put the finished cut in the editor inbox.', '收集箱里有文件。请把完成的成片放到剪辑收件箱。', '収集箱にファイルがあります。終わったカットは編集インボックスに置いてください。')
+                  : wrongDoor === 'materials'
+                    ? t('자료함에만 파일이 있습니다. 끝난 컷은 편집 인박스에 두세요.', 'The file is only in the materials box. Put the finished cut in the editor inbox.', '文件只在资料箱里。请把完成的成片放到剪辑收件箱。', '素材箱にだけファイルがあります。終わったカットは編集インボックスに置いてください。')
+                    : ''}
+                recentMoveFailed={Boolean(recentMoveFailed)}
+                onRetryRecent={() => { void retryRecentMove(); }}
                 onOpenSample={() => { setSpecDeskOpen(false); void openSampleProject(); }}
                 onOpenOwnFootage={() => { setSpecDeskOpen(false); void openOwnFileFromDesk(); }}
                 onCopied={(next) => {
                   writeDeskWait(next);
                   deskWaitRef.current = next;
-                  inboxPendingAtWaitRef.current = editorPending;
+                  inboxPendingAtWaitRef.current = editorStamp;
                   setDeskWait(next);
+                  setRecentMoveFailed(null);
                   setDeskPulse({ lastCheckedAt: next.copiedAt, pull: 'none' });
                 }}
                 onPickedFile={(sourcePath) => { void createProjectFromPath(sourcePath); }}
@@ -1825,6 +1874,7 @@ export default function DesktopWorkspace() {
                   clearDeskWait();
                   deskWaitRef.current = null;
                   setDeskWait(null);
+                  setRecentMoveFailed(null);
                   setDeskPulse({ lastCheckedAt: '', pull: 'idle' });
                   setSelectedProjectId('');
                   setActivePanel('auto');

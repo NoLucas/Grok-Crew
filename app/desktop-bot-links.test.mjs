@@ -11,6 +11,13 @@ const {
   hasConnectedBot,
   hasWaitingCopiedSeat,
   confirmedGrokRoles,
+  confirmedCustomRoles,
+  connectEssayGeneration,
+  connectEssayIsCurrent,
+  CONNECT_ESSAY_REVISION,
+  DESK_SESSION_KEY,
+  ensureDeskSessionStartedAt,
+  linkFreshForThisRun,
   seatReadyToStart,
   connectReadyLine,
   linkedByKind,
@@ -55,11 +62,17 @@ const {
 } = await import('./desktop-bot-links.ts');
 
 const memory = new Map();
+const sessionMemory = new Map();
 globalThis.window = {
   localStorage: {
     getItem: (key) => (memory.has(key) ? memory.get(key) : null),
     setItem: (key, value) => { memory.set(key, String(value)); },
     removeItem: (key) => { memory.delete(key); },
+  },
+  sessionStorage: {
+    getItem: (key) => (sessionMemory.has(key) ? sessionMemory.get(key) : null),
+    setItem: (key, value) => { sessionMemory.set(key, String(value)); },
+    removeItem: (key) => { sessionMemory.delete(key); },
   },
 };
 
@@ -554,13 +567,51 @@ describe('remote bot links', () => {
       'GROK_CREW_OK QDWAVN Agent 기획자',
       'ko',
     ).next;
-    assert.equal(hasConnectedBot(undefined, agent), true);
+    assert.equal(hasConnectedBot(undefined, agent), false);
     assert.equal(seatReadyToStart(agent), true);
+    assert.deepEqual(confirmedCustomRoles(agent), ['planner']);
     assert.deepEqual(seatLampRows(undefined, agent), [
+      { role: 'planner', connected: false, family: 'none' },
+      { role: 'scraper', connected: false, family: 'none' },
+      { role: 'editor', connected: false, family: 'none' },
+    ]);
+    const agentEntered = {
+      bots: [{ display_name: 'Agent 기획자', presence: 'active', last_action: 'entered_local_studio' }],
+    };
+    assert.equal(seatIsConnected('custom', 'planner', agent, agentEntered), true);
+    assert.equal(hasConnectedBot(agentEntered, agent), true);
+    assert.deepEqual(seatLampRows(agentEntered, agent), [
       { role: 'planner', connected: true, family: 'custom' },
       { role: 'scraper', connected: false, family: 'none' },
       { role: 'editor', connected: false, family: 'none' },
     ]);
+  });
+
+  it('does not treat a leftover saved OK as a fresh connect for this run', () => {
+    const session = ensureDeskSessionStartedAt(window.sessionStorage, Date.parse('2026-08-30T07:00:00.000Z'));
+    assert.equal(session, '2026-08-30T07:00:00.000Z');
+    assert.equal(window.sessionStorage.getItem(DESK_SESSION_KEY), session);
+    const leftover = {
+      confirmedAt: '2026-08-29T16:00:00.000Z',
+      connectedAt: '2026-08-29T16:00:00.000Z',
+    };
+    assert.equal(linkFreshForThisRun(leftover, { sessionStartedAt: session }), false);
+    assert.equal(linkFreshForThisRun({
+      confirmedAt: '2026-08-30T07:05:00.000Z',
+    }, { sessionStartedAt: session }), true);
+    assert.equal(linkFreshForThisRun({
+      confirmedAt: '2026-08-30T07:05:00.000Z',
+    }, { sessionStartedAt: session, connectCopiedAt: '2026-08-30T07:10:00.000Z' }), false);
+    const generation = connectEssayGeneration({
+      pairCode: 'QDWAVN',
+      market: 'kr',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+    });
+    assert.match(generation, new RegExp(`^${CONNECT_ESSAY_REVISION}\\|QDWAVN\\|`));
+    assert.equal(connectEssayIsCurrent(generation, generation), true);
+    assert.equal(connectEssayIsCurrent(generation, `${CONNECT_ESSAY_REVISION}|OLD|kr|instagram_reel|ko`), false);
+    assert.equal(connectEssayIsCurrent(generation, ''), true);
   });
 
   it('prefers the connected row for a kind', () => {
@@ -644,9 +695,15 @@ describe('remote bot links', () => {
     assert.match(text, /자리마다 해당 덩어리만/);
     assert.match(text, /127\.0\.0\.1:7214/);
     assert.doesNotMatch(text, /LOCAL_STUDIO_TOKEN|Bearer |token=/i);
-    const saved = writeLastConnectBundle({ market: 'kr', recipeId: 'instagram_reel', language: 'ko' });
+    const saved = writeLastConnectBundle({ market: 'kr', recipeId: 'instagram_reel', language: 'ko', pairCode: '7K2M9Q' });
     assert.equal(saved?.market, 'kr');
     assert.equal(readLastConnectBundle()?.recipeId, 'instagram_reel');
+    assert.equal(saved?.generation, connectEssayGeneration({
+      pairCode: '7K2M9Q',
+      market: 'kr',
+      recipeId: 'instagram_reel',
+      language: 'ko',
+    }));
     assert.ok(memory.get(LAST_CONNECT_BUNDLE_KEY));
     assert.doesNotMatch(String(memory.get(LAST_CONNECT_BUNDLE_KEY)), /Invoke-RestMethod|LOCAL_STUDIO/);
   });

@@ -2,7 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { CrewRoster } from './desktop-bot-connect';
-import { confirmedGrokRoles, hasConnectedBot, hasWaitingCopiedSeat, writeLastConnectBundle, type BotLinkState } from './desktop-bot-links';
+import {
+  confirmedCustomRoles,
+  confirmedGrokRoles,
+  connectEssayGeneration,
+  hasConnectedBot,
+  hasWaitingCopiedSeat,
+  readLastConnectBundle,
+  writeLastConnectBundle,
+  type BotLinkState,
+} from './desktop-bot-links';
 import {
   DEFAULT_RECIPE_ID,
   RECIPE_ORDER,
@@ -111,6 +120,9 @@ type AutoDeskProps = {
   onPendingReviseConsumed?: () => void;
   projectSourcePath?: string;
   request: (path: string, init?: RequestInit) => Promise<JsonObject>;
+  deskNotice?: string;
+  recentMoveFailed?: boolean;
+  onRetryRecent?: () => void;
 };
 
 export function AutoDesk({
@@ -148,6 +160,9 @@ export function AutoDesk({
   onPendingReviseConsumed,
   projectSourcePath = '',
   request,
+  deskNotice = '',
+  recentMoveFailed = false,
+  onRetryRecent,
 }: AutoDeskProps) {
   const { language, t } = useLanguage();
   const [prefs, setPrefs] = useState(() => readAutoPrefs());
@@ -211,7 +226,10 @@ export function AutoDesk({
   const ownInputRef = useRef<HTMLInputElement>(null);
   const attachedName = attachedBotName(roster, remoteNames, links, language);
   const attached = Boolean(attachedName) || hasConnectedBot(roster, links);
-  const startReady = attached || hasWaitingCopiedSeat(links) || confirmedGrokRoles(links).length > 0;
+  const startReady = attached
+    || hasWaitingCopiedSeat(links)
+    || confirmedGrokRoles(links).length > 0
+    || confirmedCustomRoles(links).length > 0;
   const hasProject = Boolean(previewUrl || projectTitle);
   const cards = useMemo(() => {
     const byId = new Map(recipes.map((item) => [item.id, item]));
@@ -266,7 +284,17 @@ export function AutoDesk({
   const stageRows = crewStagePipeline(seatRows, scopedActivity, language);
   const waitHeadline = autoWaitHeadline(seatRows, language);
   const pasteTarget = pasteTargetForSeats(seatRows, language) || wait?.pasteTarget || '';
-  const samePcPull = samePcInviteReady(seatRows, roster, links);
+  const lastConnect = readLastConnectBundle();
+  const samePcPull = samePcInviteReady(seatRows, roster, links, {
+    connectCopiedAt: lastConnect?.copiedAt,
+    connectGeneration: lastConnect?.generation,
+    currentGeneration: connectEssayGeneration({
+      pairCode: links?.pairCode,
+      market,
+      recipeId,
+      language,
+    }),
+  });
   const recentTitles = prefs.recentTitles.filter((item) => item !== title.trim());
   const waitingHandOff = mode === 'hand_off' && Boolean(wait) && machine === 'waiting';
   const jobStage = autoDeskStage({
@@ -484,7 +512,7 @@ export function AutoDesk({
       }));
       if (wantTts) setVoiceSaved(true);
       setMarketNeedsRecopy(false);
-      writeLastConnectBundle({ market, recipeId, language });
+      writeLastConnectBundle({ market, recipeId, language, pairCode: links?.pairCode }, { touchCopiedAt: false });
       setPrefs(rememberRecentTitle(heading));
       const nextWait: DeskWaitState = {
         specId: record.id,
@@ -494,7 +522,16 @@ export function AutoDesk({
         inviteText: text,
       };
       try {
-        if (samePcInviteReady(seatRows, roster, links)) {
+        if (samePcInviteReady(seatRows, roster, links, {
+          connectCopiedAt: lastConnect?.copiedAt,
+          connectGeneration: lastConnect?.generation,
+          currentGeneration: connectEssayGeneration({
+            pairCode: links?.pairCode,
+            market,
+            recipeId,
+            language,
+          }),
+        })) {
           setClipboardBlocked(false);
           onCopied(nextWait);
         } else {
@@ -1395,6 +1432,16 @@ export function AutoDesk({
                       ? t('이 PC에 두었음. 자동은 올리지 않았습니다.', 'Saved on this PC. Auto did not post it.', '已留在这台电脑。自动没有发布。', 'この PC に残しました。自動では上げていません。')
                       : t('여기에 놓기 · 최근기록에도 같은 컷입니다.', 'Drop it here · Recent has the same cut.', '放在这里 · 最近记录也是同一份成片。', 'ここに置く · 最近記録にも同じカットがあります。')}
                   </p>
+                  {recentMoveFailed ? (
+                    <div className="desktop-auto-preview-actions">
+                      <p className="desktop-auto-preview-note">
+                        {t('최근기록으로 옮기지 못했습니다.', 'Could not move it to Recent.', '没能移到最近记录。', '最近記録へ移せませんでした。')}
+                      </p>
+                      <button type="button" className="desktop-secondary" disabled={busy || !onRetryRecent} onClick={() => onRetryRecent?.()}>
+                        {t('다시 옮기기', 'Move again', '再移一次', 'もう一度移す')}
+                      </button>
+                    </div>
+                  ) : null}
                   <div className="desktop-auto-preview-actions">
                     <button type="button" className="desktop-primary" disabled={busy || savingFile || !hasProject} onClick={() => void saveLocal()}>
                       {savingFile
@@ -1489,6 +1536,7 @@ export function AutoDesk({
         <p className="desktop-spec-error">{t('클립보드를 쓰지 못했습니다. 위의 글을 직접 복사하세요.', 'The clipboard was blocked. Copy the text above yourself.', '无法使用剪贴板。请手动复制上面的文字。', 'クリップボードを使えませんでした。上の文を自分でコピーしてください。')}</p>
       ) : null}
 
+      {deskNotice ? <p className="desktop-spec-error" role="status">{deskNotice}</p> : null}
       {error ? <p className="desktop-spec-error" role="alert">{error}</p> : null}
       {sendFailed || pullStatus === 'failed' || saveFailed ? (
         <button type="button" className="desktop-secondary" disabled={formLocked} onClick={() => void startJob()}>

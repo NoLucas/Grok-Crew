@@ -19,6 +19,9 @@ const {
   pasteTargetForSeats,
   pasteTargetRole,
   samePcInviteReady,
+  inboxDoorStamp,
+  inboxStampChanged,
+  misplacedInboxDoor,
   preferredSeatFamily,
   shouldAutoPullInbox,
   shouldClearWaitForImport,
@@ -928,7 +931,28 @@ describe('auto desk seats and inbox guards', () => {
         confirmedFrom: 'ok-reply',
       }],
     };
-    assert.equal(samePcInviteReady(rows, roster, deskEntered), true);
+    assert.equal(samePcInviteReady(rows, roster, deskEntered), false);
+    assert.equal(samePcInviteReady(rows, roster, deskEntered, {
+      sessionStartedAt: '2026-08-30T07:00:00.000Z',
+    }), false);
+    assert.equal(samePcInviteReady(rows, roster, {
+      ...deskEntered,
+      bots: [{ ...deskEntered.bots[0], confirmedAt: '2026-08-30T07:05:00.000Z', connectedAt: '2026-08-30T07:05:00.000Z' }],
+    }, {
+      sessionStartedAt: '2026-08-30T07:00:00.000Z',
+      connectCopiedAt: '2026-08-30T07:01:00.000Z',
+      connectGeneration: 'desk-connect-1|QDWAVN|kr|instagram_reel|ko',
+      currentGeneration: 'desk-connect-1|QDWAVN|kr|instagram_reel|ko',
+    }), true);
+    assert.equal(samePcInviteReady(rows, roster, {
+      ...deskEntered,
+      bots: [{ ...deskEntered.bots[0], confirmedAt: '2026-08-30T07:05:00.000Z', connectedAt: '2026-08-30T07:05:00.000Z' }],
+    }, {
+      sessionStartedAt: '2026-08-30T07:00:00.000Z',
+      connectCopiedAt: '2026-08-30T07:01:00.000Z',
+      connectGeneration: 'desk-connect-1|OLD|kr|instagram_reel|ko',
+      currentGeneration: 'desk-connect-1|QDWAVN|kr|instagram_reel|ko',
+    }), false);
     const auto = readFileSync(new URL('./desktop-auto-desk.tsx', import.meta.url), 'utf8');
     assert.match(auto, /완성되면 여기에 영상이 올라옵니다/);
     assert.match(auto, /jobTitle=\{titleFromPrompt\(wait\?\.title \|\| title, goal\)\}/);
@@ -943,6 +967,11 @@ describe('auto desk seats and inbox guards', () => {
     assert.match(auto, /desktop-auto-drop is-here/);
     assert.match(auto, /data-arrived/);
     assert.match(auto, /여기에 놓기 · 최근기록에도 같은 컷입니다/);
+    assert.match(auto, /다시 옮기기/);
+    assert.match(auto, /deskNotice/);
+    const workspace = readFileSync(new URL('./desktop-workspace.tsx', import.meta.url), 'utf8');
+    assert.match(workspace, /수집함에 파일이 있습니다/);
+    assert.match(workspace, /다시 옮기기|onRetryRecent/);
     assert.doesNotMatch(auto, /desktop-auto-preview desktop-auto-canvas/);
     assert.match(auto, /사람 손길/);
     assert.match(auto, /불이 켜져 있어도 이 자리 글이 안 갔으면/);
@@ -1051,6 +1080,39 @@ describe('auto desk seats and inbox guards', () => {
       pending: 2,
       pendingAtWaitStart: 1,
     }), true);
+    const leftoverStamp = inboxDoorStamp({
+      pending_count: 1,
+      pending: ['drop-old-2026-08-28T01-00-00Z'],
+      newest_mtime: '2026-08-28T01:00:00+00:00',
+      total_bytes: 40,
+    });
+    const overwritten = inboxDoorStamp({
+      pending_count: 1,
+      pending: ['drop-old-2026-08-28T01-00-00Z'],
+      newest_mtime: '2026-08-30T07:10:00+00:00',
+      total_bytes: 96,
+    });
+    assert.equal(inboxStampChanged(leftoverStamp, leftoverStamp), false);
+    assert.equal(inboxStampChanged(leftoverStamp, overwritten), true);
+    assert.equal(shouldAutoPullInbox({
+      connectOpen: false,
+      wait,
+      pending: 1,
+      pendingAtWaitStart: 1,
+      stamp: leftoverStamp,
+      stampAtWaitStart: leftoverStamp,
+    }), false);
+    assert.equal(shouldAutoPullInbox({
+      connectOpen: false,
+      wait,
+      pending: 1,
+      pendingAtWaitStart: 1,
+      stamp: overwritten,
+      stampAtWaitStart: leftoverStamp,
+    }), true);
+    assert.equal(misplacedInboxDoor({ editorPending: 0, collectorPending: 1, materialsPending: 0 }), 'collector');
+    assert.equal(misplacedInboxDoor({ editorPending: 1, collectorPending: 2, materialsPending: 0 }), '');
+    assert.equal(misplacedInboxDoor({ editorPending: 0, collectorPending: 0, materialsPending: 2 }), 'materials');
     assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: '', importedProjectId: 'proj-1' }), true);
     assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: 'spec-old', importedProjectId: 'proj-1' }), false);
     assert.equal(shouldClearWaitForImport({ waitSpecId: 'spec-today', importedSpecId: 'spec-today', importedProjectId: 'proj-1' }), true);
@@ -1075,6 +1137,9 @@ describe('auto desk seats and inbox guards', () => {
     assert.equal(pickArrivedImport([
       { project: { id: 'old' }, folder: 'drop-old-2026-08-28T01-00-00Z' },
     ], 'spec-today', '2026-08-30T06:00:00.000Z'), null);
+    assert.equal(pickArrivedImport([
+      { project: { id: 'over' }, folder: 'drop-old-2026-08-28T01-00-00Z', updated_at: '2026-08-30T07:10:00+00:00' },
+    ], 'spec-today', '2026-08-30T06:00:00.000Z')?.project?.id, 'over');
     assert.equal(importedEditSpecId([{ project: { id: 'p1' }, edit_spec_id: 'spec-today' }]), 'spec-today');
     assert.equal(importedEditSpecId([{ project: { id: 'p1' } }]), '');
   });
